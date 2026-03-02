@@ -1,0 +1,146 @@
+# JGlimsPlugin Configuration
+# All multipliers stack multiplicatively unless noted otherwise.
+
+# ==========================================
+# MOB DIFFICULTY SYSTEM
+# ==========================================
+mob-difficulty:
+  enabled: true
+
+  # Global baseline multiplier applied to ALL hostile mobs everywhere
+  baseline:
+    health: 1.5
+    damage: 1.5
+
+  # Overworld distance scaling (from world spawn)
+  # Format: max-distance: [health-mult, damage-mult, speed-mult]
+  overworld-distance:
+    200:   [1.0, 1.0, 1.0]
+    350:   [1.3, 1.2, 1.0]
+    600:   [1.6, 1.4, 1.05]
+    800:   [2.0, 1.7, 1.1]
+    1000:  [2.5, 2.0, 1.15]
+    99999: [3.0, 2.3, 1.2]
+
+  # Biome-specific multipliers (Overworld) - stacks with distance + baseline
+  overworld-biomes:
+    PALE_GARDEN:       [1.8, 1.8]
+    DEEP_DARK:         [2.0, 1.8]
+    SWAMP:             [1.3, 1.2]
+    MANGROVE_SWAMP:    [1.3, 1.2]
+    DARK_FOREST:       [1.4, 1.3]
+    DRIPSTONE_CAVES:   [1.5, 1.3]
+    LUSH_CAVES:        [0.8, 0.9]
+
+  # Nether biome multipliers (NO distance scaling, stacks with baseline only)
+  nether-biomes:
+    NETHER_WASTES:     [1.5, 1.4]
+    SOUL_SAND_VALLEY:  [1.8, 1.6]
+    CRIMSON_FOREST:    [1.6, 1.5]
+    WARPED_FOREST:     [1.6, 1.5]
+    BASALT_DELTAS:     [2.0, 1.8]
+
+  # End multiplier (flat, no distance scaling)
+  end:
+    health: 2.0
+    damage: 1.8
+
+  # Boss stat multipliers (stacks with everything above)
+  bosses:
+    ENDER_DRAGON:
+      health: 3.0
+      damage: 2.5
+    WITHER:
+      health: 2.0
+      damage: 1.8
+    WARDEN:
+      health: 1.5
+      damage: 2.0
+    ELDER_GUARDIAN:
+      health: 2.0
+      damage: 1.5
+
+# ==========================================
+# CREEPER SPAWN REDUCTION
+# ==========================================
+creeper:
+  enabled: true
+  # Chance a creeper spawn is CANCELLED (0.0 = no reduction, 1.0 = no creepers at all)
+  # 0.5 means 50% of creeper spawns are blocked, making them half as common
+  cancel-chance: 0.5
+
+# ==========================================
+# PALE GARDEN FOG
+# ==========================================
+pale-garden-fog:
+  enabled: true
+  # Check interval in ticks (20 ticks = 1 second, 40 ticks = 2 seconds)
+  check-interval: 40
+
+# ==========================================
+# LOOT TABLE BOOSTER
+# ==========================================
+loot-booster:
+  enabled: true
+  # Guaranteed enchanted book in every generated chest
+  chest-enchanted-book: true
+  # Guardian drop range [min, max] (vanilla is [0, 2])
+  guardian-prismarine-shards: [1, 3]
+  # Elder Guardian drop range [min, max] (vanilla is [1, 2])
+  elder-guardian-prismarine-shards: [3, 5]
+  # Ghast tear drop range [min, max] (vanilla is [0, 1])
+  ghast-tears: [1, 2]
+  # Echo shard chance in Ancient City chests (vanilla ~0.25)
+  echo-shard-chance: 0.40
+
+# ==========================================
+# BLESSINGS
+# ==========================================
+blessings:
+  c-bless:
+    max-uses: 10
+    hearts-per-use: 1
+  ami-bless:
+    max-uses: 10
+    damage-percent-per-use: 2.0
+  la-bless:
+    max-uses: 10
+    defense-percent-per-use: 1.0
+
+# ==========================================
+# INVENTORY SORTING
+# ==========================================
+inventory-sort:
+  enabled: true
+
+# ==========================================
+# ENCHANTMENT TRANSFER
+# ==========================================
+enchantment-transfer:
+  enabled: true
+
+# ==========================================
+# ANVIL TOO EXPENSIVE REMOVAL
+# ==========================================
+anvil:
+  remove-too-expensive: true
+  # XP cost reduction percentage (0.50 = 50% cheaper)
+  xp-cost-reduction: 0.50
+
+# ==========================================
+# SICKLE SYSTEM
+# ==========================================
+sickle:
+  enabled: true
+
+# ==========================================
+# SUPER TOOLS SYSTEM
+# ==========================================
+super-tools:
+  enabled: true
+
+# ==========================================
+# DROP RATE BOOSTER
+# ==========================================
+drop-rate-booster:
+  enabled: true
