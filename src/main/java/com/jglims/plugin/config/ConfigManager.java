@@ -1,95 +1,116 @@
 package com.jglims.plugin.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
-
-import com.jglims.plugin.JGlimsPlugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class ConfigManager {
 
-    private final JGlimsPlugin plugin;
+    private final JavaPlugin plugin;
     private FileConfiguration config;
 
-    // Mob difficulty
+    // --- Mob Difficulty ---
     private boolean mobDifficultyEnabled;
-    private double baselineHealth;
-    private double baselineDamage;
+    private double baselineHealthMultiplier;
+    private double baselineDamageMultiplier;
 
-    // Creeper reduction
+    // Distance multipliers (overworld)
+    private double dist350Health, dist350Damage;
+    private double dist700Health, dist700Damage;
+    private double dist1000Health, dist1000Damage;
+    private double dist2000Health, dist2000Damage;
+    private double dist3000Health, dist3000Damage;
+    private double dist5000Health, dist5000Damage;
+
+    // Biome multipliers
+    private double biomePaleGarden;
+    private double biomeDeepDark;
+    private double biomeSwamp;
+    private double biomeNetherWastesHealth, biomeNetherWastesDamage;
+    private double biomeSoulSandValleyHealth, biomeSoulSandValleyDamage;
+    private double biomeCrimsonForestHealth, biomeCrimsonForestDamage;
+    private double biomeWarpedForestHealth, biomeWarpedForestDamage;
+    private double biomeBasaltDeltasHealth, biomeBasaltDeltasDamage;
+    private double biomeEndHealth, biomeEndDamage;
+
+    // --- Boss Enhancer ---
+    private double enderDragonHealthMult, enderDragonDamageMult;
+    private double witherHealthMult, witherDamageMult;
+    private double wardenHealthMult, wardenDamageMult;
+    private double elderGuardianHealthMult, elderGuardianDamageMult;
+
+    // --- Creeper Reduction ---
     private boolean creeperReductionEnabled;
     private double creeperCancelChance;
 
-    // Pale Garden fog
+    // --- Pale Garden Fog ---
     private boolean paleGardenFogEnabled;
-    private int paleGardenFogInterval;
+    private int paleGardenFogCheckInterval;
 
-    // Loot booster
+    // --- Loot Booster ---
     private boolean lootBoosterEnabled;
     private boolean chestEnchantedBook;
-    private int guardianPrismarineMin;
-    private int guardianPrismarineMax;
-    private int elderGuardianPrismarineMin;
-    private int elderGuardianPrismarineMax;
-    private int ghastTearMin;
-    private int ghastTearMax;
+    private int guardianShardsMin, guardianShardsMax;
+    private int elderGuardianShardsMin, elderGuardianShardsMax;
+    private int ghastTearsMin, ghastTearsMax;
     private double echoShardChance;
 
-    // Mob book drops (NEW v1.1.0)
+    // --- Mob Book Drops ---
     private boolean mobBookDropsEnabled;
-    private double hostileMobBookChance;
+    private double hostileBookChance;
     private double bossCustomBookChance;
     private double lootingBonusRegular;
     private double lootingBonusBoss;
 
-    // Blessings
+    // --- Blessings ---
     private int cBlessMaxUses;
-    private int cBlessHeartsPerUse;
+    private int cBlessHealPerUse;
     private int amiBlessMaxUses;
-    private double amiBlessDmgPerUse;
+    private double amiBlessDamagePercentPerUse;
     private int laBlessMaxUses;
-    private double laBlessDefPerUse;
+    private double laBlessDefensePercentPerUse;
 
-    // Anvil
-    private boolean removeTooExpensive;
+    // --- Anvil ---
+    private boolean removeToolExpensive;
     private double xpCostReduction;
 
-    // Toggles
+    // --- Toggles ---
     private boolean inventorySortEnabled;
     private boolean enchantTransferEnabled;
     private boolean sickleEnabled;
     private boolean battleAxeEnabled;
     private boolean battleBowEnabled;
     private boolean battleMaceEnabled;
+    private boolean battleShovelEnabled;
     private boolean superToolsEnabled;
     private boolean dropRateBoosterEnabled;
+    private boolean spearEnabled;
 
-    // Drop rate booster extras (NEW v1.1.0)
+    // --- Drop Rate Booster ---
     private double tridentDropChance;
-    private int breezeWindChargeMin;
-    private int breezeWindChargeMax;
+    private int breezeWindChargeMin, breezeWindChargeMax;
 
-    // Villager trades (NEW v1.1.0)
+    // --- Villager Trades ---
     private boolean villagerTradesEnabled;
-    private double villagerPriceReduction;
+    private double priceReduction;
     private boolean disableTradeLocking;
 
-    // King mob (NEW v1.1.0)
+    // --- King Mob ---
     private boolean kingMobEnabled;
     private int spawnsPerKing;
-    private double kingHealthMult;
-    private double kingDamageMult;
-    private int kingDiamondMin;
-    private int kingDiamondMax;
+    private double kingHealthMultiplier;
+    private double kingDamageMultiplier;
+    private int kingDiamondDropMin, kingDiamondDropMax;
 
-    // Axe nerf (NEW v1.1.0)
+    // --- Axe Nerf ---
     private boolean axeNerfEnabled;
-    private double axeNerfAttackSpeed;
+    private double axeAttackSpeed;
 
-    // Weapon mastery (NEW v1.2.0)
+    // --- Weapon Mastery ---
     private boolean weaponMasteryEnabled;
     private int masteryMaxKills;
     private double masteryMaxBonusPercent;
 
-    // Blood moon (NEW v1.2.0)
+    // --- Blood Moon ---
     private boolean bloodMoonEnabled;
     private int bloodMoonCheckInterval;
     private double bloodMoonChance;
@@ -98,17 +119,33 @@ public class ConfigManager {
     private int bloodMoonBossEveryNth;
     private double bloodMoonBossHealthMult;
     private double bloodMoonBossDamageMult;
-    private int bloodMoonBossDiamondMin;
-    private int bloodMoonBossDiamondMax;
+    private int bloodMoonBossDiamondMin, bloodMoonBossDiamondMax;
     private boolean bloodMoonDoubleDrops;
 
-    // Guilds (NEW v1.2.0)
+    // --- Guilds ---
     private boolean guildsEnabled;
     private int guildsMaxMembers;
     private boolean guildsFriendlyFire;
 
-    public ConfigManager(JGlimsPlugin plugin) {
+    // --- Best Buddies (Dog Armor) ---
+    private double dogArmorDamageReduction;
+
+    // --- Super Tools ---
+    private double superIronBonusDamage;
+    private double superDiamondBonusDamage;
+    private double superNetheriteBonusDamage;
+    private double superNethPerEnchantBonus;
+
+    // --- Ore Detect (Super Pickaxe) ---
+    private int oreDetectRadiusDiamond;
+    private int oreDetectRadiusNetherite;
+    private int oreDetectAncientDebrisRadiusDiamond;
+    private int oreDetectAncientDebrisRadiusNetherite;
+    private int oreDetectDurationTicks;
+
+    public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
+        loadConfig();
     }
 
     public void loadConfig() {
@@ -116,92 +153,132 @@ public class ConfigManager {
         plugin.reloadConfig();
         config = plugin.getConfig();
 
-        // Mob difficulty
+        // --- Mob Difficulty ---
         mobDifficultyEnabled = config.getBoolean("mob-difficulty.enabled", true);
-        baselineHealth = config.getDouble("mob-difficulty.baseline.health", 2.0);
-        baselineDamage = config.getDouble("mob-difficulty.baseline.damage", 2.0);
+        baselineHealthMultiplier = config.getDouble("mob-difficulty.baseline-health-multiplier", 1.0);
+        baselineDamageMultiplier = config.getDouble("mob-difficulty.baseline-damage-multiplier", 1.0);
 
-        // Creeper
-        creeperReductionEnabled = config.getBoolean("creeper.enabled", true);
-        creeperCancelChance = config.getDouble("creeper.cancel-chance", 0.5);
+        // Distance multipliers
+        dist350Health = config.getDouble("mob-difficulty.distance.350.health", 1.5);
+        dist350Damage = config.getDouble("mob-difficulty.distance.350.damage", 1.3);
+        dist700Health = config.getDouble("mob-difficulty.distance.700.health", 2.0);
+        dist700Damage = config.getDouble("mob-difficulty.distance.700.damage", 1.6);
+        dist1000Health = config.getDouble("mob-difficulty.distance.1000.health", 2.5);
+        dist1000Damage = config.getDouble("mob-difficulty.distance.1000.damage", 1.9);
+        dist2000Health = config.getDouble("mob-difficulty.distance.2000.health", 3.0);
+        dist2000Damage = config.getDouble("mob-difficulty.distance.2000.damage", 2.2);
+        dist3000Health = config.getDouble("mob-difficulty.distance.3000.health", 3.5);
+        dist3000Damage = config.getDouble("mob-difficulty.distance.3000.damage", 2.5);
+        dist5000Health = config.getDouble("mob-difficulty.distance.5000.health", 4.0);
+        dist5000Damage = config.getDouble("mob-difficulty.distance.5000.damage", 3.0);
 
-        // Pale Garden fog
+        // Biome multipliers
+        biomePaleGarden = config.getDouble("mob-difficulty.biome.pale-garden", 2.0);
+        biomeDeepDark = config.getDouble("mob-difficulty.biome.deep-dark", 2.5);
+        biomeSwamp = config.getDouble("mob-difficulty.biome.swamp", 1.4);
+        biomeNetherWastesHealth = config.getDouble("mob-difficulty.biome.nether-wastes.health", 1.7);
+        biomeNetherWastesDamage = config.getDouble("mob-difficulty.biome.nether-wastes.damage", 1.7);
+        biomeSoulSandValleyHealth = config.getDouble("mob-difficulty.biome.soul-sand-valley.health", 1.9);
+        biomeSoulSandValleyDamage = config.getDouble("mob-difficulty.biome.soul-sand-valley.damage", 1.9);
+        biomeCrimsonForestHealth = config.getDouble("mob-difficulty.biome.crimson-forest.health", 2.0);
+        biomeCrimsonForestDamage = config.getDouble("mob-difficulty.biome.crimson-forest.damage", 2.0);
+        biomeWarpedForestHealth = config.getDouble("mob-difficulty.biome.warped-forest.health", 2.0);
+        biomeWarpedForestDamage = config.getDouble("mob-difficulty.biome.warped-forest.damage", 2.0);
+        biomeBasaltDeltasHealth = config.getDouble("mob-difficulty.biome.basalt-deltas.health", 2.3);
+        biomeBasaltDeltasDamage = config.getDouble("mob-difficulty.biome.basalt-deltas.damage", 2.3);
+        biomeEndHealth = config.getDouble("mob-difficulty.biome.end.health", 2.5);
+        biomeEndDamage = config.getDouble("mob-difficulty.biome.end.damage", 2.0);
+
+        // --- Boss Enhancer ---
+        enderDragonHealthMult = config.getDouble("boss-enhancer.ender-dragon.health", 3.5);
+        enderDragonDamageMult = config.getDouble("boss-enhancer.ender-dragon.damage", 3.0);
+        witherHealthMult = config.getDouble("boss-enhancer.wither.health", 1.0);
+        witherDamageMult = config.getDouble("boss-enhancer.wither.damage", 1.0);
+        wardenHealthMult = config.getDouble("boss-enhancer.warden.health", 1.0);
+        wardenDamageMult = config.getDouble("boss-enhancer.warden.damage", 1.0);
+        elderGuardianHealthMult = config.getDouble("boss-enhancer.elder-guardian.health", 2.5);
+        elderGuardianDamageMult = config.getDouble("boss-enhancer.elder-guardian.damage", 1.8);
+
+        // --- Creeper Reduction ---
+        creeperReductionEnabled = config.getBoolean("creeper-reduction.enabled", true);
+        creeperCancelChance = config.getDouble("creeper-reduction.cancel-chance", 0.5);
+
+        // --- Pale Garden Fog ---
         paleGardenFogEnabled = config.getBoolean("pale-garden-fog.enabled", true);
-        paleGardenFogInterval = config.getInt("pale-garden-fog.check-interval", 40);
+        paleGardenFogCheckInterval = config.getInt("pale-garden-fog.check-interval", 40);
 
-        // Loot booster
+        // --- Loot Booster ---
         lootBoosterEnabled = config.getBoolean("loot-booster.enabled", true);
         chestEnchantedBook = config.getBoolean("loot-booster.chest-enchanted-book", true);
-        var guardianShards = config.getIntegerList("loot-booster.guardian-prismarine-shards");
-        guardianPrismarineMin = guardianShards.size() >= 1 ? guardianShards.get(0) : 1;
-        guardianPrismarineMax = guardianShards.size() >= 2 ? guardianShards.get(1) : 3;
-        var elderShards = config.getIntegerList("loot-booster.elder-guardian-prismarine-shards");
-        elderGuardianPrismarineMin = elderShards.size() >= 1 ? elderShards.get(0) : 3;
-        elderGuardianPrismarineMax = elderShards.size() >= 2 ? elderShards.get(1) : 5;
-        var ghastDrops = config.getIntegerList("loot-booster.ghast-tears");
-        ghastTearMin = ghastDrops.size() >= 1 ? ghastDrops.get(0) : 1;
-        ghastTearMax = ghastDrops.size() >= 2 ? ghastDrops.get(1) : 2;
+        guardianShardsMin = config.getInt("loot-booster.guardian-shards-min", 1);
+        guardianShardsMax = config.getInt("loot-booster.guardian-shards-max", 3);
+        elderGuardianShardsMin = config.getInt("loot-booster.elder-guardian-shards-min", 3);
+        elderGuardianShardsMax = config.getInt("loot-booster.elder-guardian-shards-max", 5);
+        ghastTearsMin = config.getInt("loot-booster.ghast-tears-min", 1);
+        ghastTearsMax = config.getInt("loot-booster.ghast-tears-max", 2);
         echoShardChance = config.getDouble("loot-booster.echo-shard-chance", 0.40);
 
-        // Mob book drops
+        // --- Mob Book Drops ---
         mobBookDropsEnabled = config.getBoolean("mob-book-drops.enabled", true);
-        hostileMobBookChance = config.getDouble("mob-book-drops.hostile-mob-chance", 0.05);
+        hostileBookChance = config.getDouble("mob-book-drops.hostile-chance", 0.05);
         bossCustomBookChance = config.getDouble("mob-book-drops.boss-custom-chance", 0.15);
         lootingBonusRegular = config.getDouble("mob-book-drops.looting-bonus-regular", 0.02);
         lootingBonusBoss = config.getDouble("mob-book-drops.looting-bonus-boss", 0.05);
 
-        // Blessings
+        // --- Blessings ---
         cBlessMaxUses = config.getInt("blessings.c-bless.max-uses", 10);
-        cBlessHeartsPerUse = config.getInt("blessings.c-bless.hearts-per-use", 1);
+        cBlessHealPerUse = config.getInt("blessings.c-bless.heal-per-use", 1);
         amiBlessMaxUses = config.getInt("blessings.ami-bless.max-uses", 10);
-        amiBlessDmgPerUse = config.getDouble("blessings.ami-bless.damage-percent-per-use", 2.0);
+        amiBlessDamagePercentPerUse = config.getDouble("blessings.ami-bless.damage-percent-per-use", 2.0);
         laBlessMaxUses = config.getInt("blessings.la-bless.max-uses", 10);
-        laBlessDefPerUse = config.getDouble("blessings.la-bless.defense-per-use", 2.0);
+        laBlessDefensePercentPerUse = config.getDouble("blessings.la-bless.defense-percent-per-use", 2.0);
 
-        // Anvil
-        removeTooExpensive = config.getBoolean("anvil.remove-too-expensive", true);
-        xpCostReduction = config.getDouble("anvil.xp-cost-reduction", 0.50);
+        // --- Anvil ---
+        removeToolExpensive = config.getBoolean("anvil.remove-too-expensive", true);
+        xpCostReduction = config.getDouble("anvil.xp-cost-reduction", 0.5);
 
-        // Toggles
-        inventorySortEnabled = config.getBoolean("inventory-sort.enabled", true);
-        enchantTransferEnabled = config.getBoolean("enchantment-transfer.enabled", true);
-        sickleEnabled = config.getBoolean("sickle.enabled", true);
-        battleAxeEnabled = config.getBoolean("battle-axe.enabled", true);
-        battleBowEnabled = config.getBoolean("battle-bow.enabled", true);
-        battleMaceEnabled = config.getBoolean("battle-mace.enabled", true);
-        superToolsEnabled = config.getBoolean("super-tools.enabled", true);
-        dropRateBoosterEnabled = config.getBoolean("drop-rate-booster.enabled", true);
+        // --- Toggles ---
+        inventorySortEnabled = config.getBoolean("toggles.inventory-sort", true);
+        enchantTransferEnabled = config.getBoolean("toggles.enchant-transfer", true);
+        sickleEnabled = config.getBoolean("toggles.sickle", true);
+        battleAxeEnabled = config.getBoolean("toggles.battle-axe", true);
+        battleBowEnabled = config.getBoolean("toggles.battle-bow", true);
+        battleMaceEnabled = config.getBoolean("toggles.battle-mace", true);
+        battleShovelEnabled = config.getBoolean("toggles.battle-shovel", true);
+        superToolsEnabled = config.getBoolean("toggles.super-tools", true);
+        dropRateBoosterEnabled = config.getBoolean("toggles.drop-rate-booster", true);
+        spearEnabled = config.getBoolean("toggles.spear", true);
 
-        // Drop rate extras
+        // --- Drop Rate Booster ---
         tridentDropChance = config.getDouble("drop-rate-booster.trident-drop-chance", 0.35);
         breezeWindChargeMin = config.getInt("drop-rate-booster.breeze-wind-charge-min", 2);
         breezeWindChargeMax = config.getInt("drop-rate-booster.breeze-wind-charge-max", 5);
 
-        // Villager trades
+        // --- Villager Trades ---
         villagerTradesEnabled = config.getBoolean("villager-trades.enabled", true);
-        villagerPriceReduction = config.getDouble("villager-trades.price-reduction", 0.50);
+        priceReduction = config.getDouble("villager-trades.price-reduction", 0.50);
         disableTradeLocking = config.getBoolean("villager-trades.disable-trade-locking", true);
 
-        // King mob
+        // --- King Mob ---
         kingMobEnabled = config.getBoolean("king-mob.enabled", true);
         spawnsPerKing = config.getInt("king-mob.spawns-per-king", 500);
-        kingHealthMult = config.getDouble("king-mob.health-multiplier", 10.0);
-        kingDamageMult = config.getDouble("king-mob.damage-multiplier", 3.0);
-        kingDiamondMin = config.getInt("king-mob.diamond-drop-min", 3);
-        kingDiamondMax = config.getInt("king-mob.diamond-drop-max", 9);
+        kingHealthMultiplier = config.getDouble("king-mob.health-multiplier", 10.0);
+        kingDamageMultiplier = config.getDouble("king-mob.damage-multiplier", 3.0);
+        kingDiamondDropMin = config.getInt("king-mob.diamond-drop-min", 3);
+        kingDiamondDropMax = config.getInt("king-mob.diamond-drop-max", 9);
 
-        // Axe nerf
+        // --- Axe Nerf ---
         axeNerfEnabled = config.getBoolean("axe-nerf.enabled", true);
-        axeNerfAttackSpeed = config.getDouble("axe-nerf.attack-speed", 0.5);
+        axeAttackSpeed = config.getDouble("axe-nerf.attack-speed", 0.5);
 
-        // Weapon mastery (NEW v1.2.0)
+        // --- Weapon Mastery ---
         weaponMasteryEnabled = config.getBoolean("weapon-mastery.enabled", true);
         masteryMaxKills = config.getInt("weapon-mastery.max-kills", 1000);
         masteryMaxBonusPercent = config.getDouble("weapon-mastery.max-bonus-percent", 10.0);
 
-        // Blood moon (NEW v1.2.0)
+        // --- Blood Moon ---
         bloodMoonEnabled = config.getBoolean("blood-moon.enabled", true);
-        bloodMoonCheckInterval = config.getInt("blood-moon.check-interval-ticks", 100);
+        bloodMoonCheckInterval = config.getInt("blood-moon.check-interval", 100);
         bloodMoonChance = config.getDouble("blood-moon.chance", 0.15);
         bloodMoonMobHealthMult = config.getDouble("blood-moon.mob-health-multiplier", 1.5);
         bloodMoonMobDamageMult = config.getDouble("blood-moon.mob-damage-multiplier", 1.3);
@@ -212,72 +289,151 @@ public class ConfigManager {
         bloodMoonBossDiamondMax = config.getInt("blood-moon.boss-diamond-max", 15);
         bloodMoonDoubleDrops = config.getBoolean("blood-moon.double-drops", true);
 
-        // Guilds (NEW v1.2.0)
+        // --- Guilds ---
         guildsEnabled = config.getBoolean("guilds.enabled", true);
         guildsMaxMembers = config.getInt("guilds.max-members", 10);
         guildsFriendlyFire = config.getBoolean("guilds.friendly-fire", false);
 
-        plugin.getLogger().info("Configuration loaded.");
+        // --- Best Buddies (Dog Armor) ---
+        dogArmorDamageReduction = config.getDouble("best-buddies.dog-armor-damage-reduction", 0.95);
+
+        // --- Super Tools ---
+        superIronBonusDamage = config.getDouble("super-tools.iron-bonus-damage", 1.0);
+        superDiamondBonusDamage = config.getDouble("super-tools.diamond-bonus-damage", 2.0);
+        superNetheriteBonusDamage = config.getDouble("super-tools.netherite-bonus-damage", 2.0);
+        superNethPerEnchantBonus = config.getDouble("super-tools.netherite-per-enchant-bonus-percent", 2.0);
+
+        // --- Ore Detect ---
+        oreDetectRadiusDiamond = config.getInt("ore-detect.radius-diamond", 8);
+        oreDetectRadiusNetherite = config.getInt("ore-detect.radius-netherite", 12);
+        oreDetectAncientDebrisRadiusDiamond = config.getInt("ore-detect.ancient-debris-radius-diamond", 24);
+        oreDetectAncientDebrisRadiusNetherite = config.getInt("ore-detect.ancient-debris-radius-netherite", 40);
+        oreDetectDurationTicks = config.getInt("ore-detect.duration-ticks", 200);
     }
 
-    // === Existing getters (unchanged) ===
-    public FileConfiguration getConfig() { return config; }
+    // ========================
+    // GETTERS
+    // ========================
+
+    // Mob Difficulty
     public boolean isMobDifficultyEnabled() { return mobDifficultyEnabled; }
-    public double getBaselineHealth() { return baselineHealth; }
-    public double getBaselineDamage() { return baselineDamage; }
+    public double getBaselineHealthMultiplier() { return baselineHealthMultiplier; }
+    public double getBaselineDamageMultiplier() { return baselineDamageMultiplier; }
+    public double getDist350Health() { return dist350Health; }
+    public double getDist350Damage() { return dist350Damage; }
+    public double getDist700Health() { return dist700Health; }
+    public double getDist700Damage() { return dist700Damage; }
+    public double getDist1000Health() { return dist1000Health; }
+    public double getDist1000Damage() { return dist1000Damage; }
+    public double getDist2000Health() { return dist2000Health; }
+    public double getDist2000Damage() { return dist2000Damage; }
+    public double getDist3000Health() { return dist3000Health; }
+    public double getDist3000Damage() { return dist3000Damage; }
+    public double getDist5000Health() { return dist5000Health; }
+    public double getDist5000Damage() { return dist5000Damage; }
+    public double getBiomePaleGarden() { return biomePaleGarden; }
+    public double getBiomeDeepDark() { return biomeDeepDark; }
+    public double getBiomeSwamp() { return biomeSwamp; }
+    public double getBiomeNetherWastesHealth() { return biomeNetherWastesHealth; }
+    public double getBiomeNetherWastesDamage() { return biomeNetherWastesDamage; }
+    public double getBiomeSoulSandValleyHealth() { return biomeSoulSandValleyHealth; }
+    public double getBiomeSoulSandValleyDamage() { return biomeSoulSandValleyDamage; }
+    public double getBiomeCrimsonForestHealth() { return biomeCrimsonForestHealth; }
+    public double getBiomeCrimsonForestDamage() { return biomeCrimsonForestDamage; }
+    public double getBiomeWarpedForestHealth() { return biomeWarpedForestHealth; }
+    public double getBiomeWarpedForestDamage() { return biomeWarpedForestDamage; }
+    public double getBiomeBasaltDeltasHealth() { return biomeBasaltDeltasHealth; }
+    public double getBiomeBasaltDeltasDamage() { return biomeBasaltDeltasDamage; }
+    public double getBiomeEndHealth() { return biomeEndHealth; }
+    public double getBiomeEndDamage() { return biomeEndDamage; }
+
+    // Boss Enhancer
+    public double getEnderDragonHealthMult() { return enderDragonHealthMult; }
+    public double getEnderDragonDamageMult() { return enderDragonDamageMult; }
+    public double getWitherHealthMult() { return witherHealthMult; }
+    public double getWitherDamageMult() { return witherDamageMult; }
+    public double getWardenHealthMult() { return wardenHealthMult; }
+    public double getWardenDamageMult() { return wardenDamageMult; }
+    public double getElderGuardianHealthMult() { return elderGuardianHealthMult; }
+    public double getElderGuardianDamageMult() { return elderGuardianDamageMult; }
+
+    // Creeper Reduction
     public boolean isCreeperReductionEnabled() { return creeperReductionEnabled; }
     public double getCreeperCancelChance() { return creeperCancelChance; }
+
+    // Pale Garden Fog
     public boolean isPaleGardenFogEnabled() { return paleGardenFogEnabled; }
-    public int getPaleGardenFogInterval() { return paleGardenFogInterval; }
+
+    // Loot Booster
     public boolean isLootBoosterEnabled() { return lootBoosterEnabled; }
     public boolean isChestEnchantedBook() { return chestEnchantedBook; }
-    public int getGuardianPrismarineMin() { return guardianPrismarineMin; }
-    public int getGuardianPrismarineMax() { return guardianPrismarineMax; }
-    public int getElderGuardianPrismarineMin() { return elderGuardianPrismarineMin; }
-    public int getElderGuardianPrismarineMax() { return elderGuardianPrismarineMax; }
-    public int getGhastTearMin() { return ghastTearMin; }
-    public int getGhastTearMax() { return ghastTearMax; }
+    public int getGuardianShardsMin() { return guardianShardsMin; }
+    public int getGuardianShardsMax() { return guardianShardsMax; }
+    public int getElderGuardianShardsMin() { return elderGuardianShardsMin; }
+    public int getElderGuardianShardsMax() { return elderGuardianShardsMax; }
+    public int getGhastTearsMin() { return ghastTearsMin; }
+    public int getGhastTearsMax() { return ghastTearsMax; }
     public double getEchoShardChance() { return echoShardChance; }
+
+    // Mob Book Drops
     public boolean isMobBookDropsEnabled() { return mobBookDropsEnabled; }
-    public double getHostileMobBookChance() { return hostileMobBookChance; }
+    public double getHostileBookChance() { return hostileBookChance; }
     public double getBossCustomBookChance() { return bossCustomBookChance; }
     public double getLootingBonusRegular() { return lootingBonusRegular; }
     public double getLootingBonusBoss() { return lootingBonusBoss; }
+
+    // Blessings
     public int getCBlessMaxUses() { return cBlessMaxUses; }
-    public int getCBlessHeartsPerUse() { return cBlessHeartsPerUse; }
+    public int getCBlessHealPerUse() { return cBlessHealPerUse; }
     public int getAmiBlessMaxUses() { return amiBlessMaxUses; }
-    public double getAmiBlessDmgPerUse() { return amiBlessDmgPerUse; }
+    public double getAmiBlessDamagePercentPerUse() { return amiBlessDamagePercentPerUse; }
     public int getLaBlessMaxUses() { return laBlessMaxUses; }
-    public double getLaBlessDefPerUse() { return laBlessDefPerUse; }
-    public boolean isRemoveTooExpensive() { return removeTooExpensive; }
+    public double getLaBlessDefensePercentPerUse() { return laBlessDefensePercentPerUse; }
+
+    // Anvil
+    public boolean isRemoveTooExpensive() { return removeToolExpensive; }
     public double getXpCostReduction() { return xpCostReduction; }
+
+    // Toggles
     public boolean isInventorySortEnabled() { return inventorySortEnabled; }
     public boolean isEnchantTransferEnabled() { return enchantTransferEnabled; }
     public boolean isSickleEnabled() { return sickleEnabled; }
     public boolean isBattleAxeEnabled() { return battleAxeEnabled; }
     public boolean isBattleBowEnabled() { return battleBowEnabled; }
     public boolean isBattleMaceEnabled() { return battleMaceEnabled; }
+    public boolean isBattleShovelEnabled() { return battleShovelEnabled; }
     public boolean isSuperToolsEnabled() { return superToolsEnabled; }
     public boolean isDropRateBoosterEnabled() { return dropRateBoosterEnabled; }
+    public boolean isSpearEnabled() { return spearEnabled; }
+
+    // Drop Rate Booster
     public double getTridentDropChance() { return tridentDropChance; }
     public int getBreezeWindChargeMin() { return breezeWindChargeMin; }
     public int getBreezeWindChargeMax() { return breezeWindChargeMax; }
+
+    // Villager Trades
     public boolean isVillagerTradesEnabled() { return villagerTradesEnabled; }
-    public double getVillagerPriceReduction() { return villagerPriceReduction; }
+    public double getPriceReduction() { return priceReduction; }
     public boolean isDisableTradeLocking() { return disableTradeLocking; }
+
+    // King Mob
     public boolean isKingMobEnabled() { return kingMobEnabled; }
     public int getSpawnsPerKing() { return spawnsPerKing; }
-    public double getKingHealthMult() { return kingHealthMult; }
-    public double getKingDamageMult() { return kingDamageMult; }
-    public int getKingDiamondMin() { return kingDiamondMin; }
-    public int getKingDiamondMax() { return kingDiamondMax; }
-    public boolean isAxeNerfEnabled() { return axeNerfEnabled; }
-    public double getAxeNerfAttackSpeed() { return axeNerfAttackSpeed; }
+    public double getKingHealthMultiplier() { return kingHealthMultiplier; }
+    public double getKingDamageMultiplier() { return kingDamageMultiplier; }
+    public int getKingDiamondDropMin() { return kingDiamondDropMin; }
+    public int getKingDiamondDropMax() { return kingDiamondDropMax; }
 
-    // === NEW v1.2.0 getters ===
+    // Axe Nerf
+    public boolean isAxeNerfEnabled() { return axeNerfEnabled; }
+    public double getAxeAttackSpeed() { return axeAttackSpeed; }
+
+    // Weapon Mastery
     public boolean isWeaponMasteryEnabled() { return weaponMasteryEnabled; }
     public int getMasteryMaxKills() { return masteryMaxKills; }
     public double getMasteryMaxBonusPercent() { return masteryMaxBonusPercent; }
+
+    // Blood Moon
     public boolean isBloodMoonEnabled() { return bloodMoonEnabled; }
     public int getBloodMoonCheckInterval() { return bloodMoonCheckInterval; }
     public double getBloodMoonChance() { return bloodMoonChance; }
@@ -289,7 +445,64 @@ public class ConfigManager {
     public int getBloodMoonBossDiamondMin() { return bloodMoonBossDiamondMin; }
     public int getBloodMoonBossDiamondMax() { return bloodMoonBossDiamondMax; }
     public boolean isBloodMoonDoubleDrops() { return bloodMoonDoubleDrops; }
+
+    // Guilds
     public boolean isGuildsEnabled() { return guildsEnabled; }
     public int getGuildsMaxMembers() { return guildsMaxMembers; }
     public boolean isGuildsFriendlyFire() { return guildsFriendlyFire; }
+
+    // Best Buddies
+    public double getDogArmorDamageReduction() { return dogArmorDamageReduction; }
+
+    // Super Tools
+    public double getSuperIronBonusDamage() { return superIronBonusDamage; }
+    public double getSuperDiamondBonusDamage() { return superDiamondBonusDamage; }
+    public double getSuperNetheriteBonusDamage() { return superNetheriteBonusDamage; }
+    public double getSuperNethPerEnchantBonus() { return superNethPerEnchantBonus; }
+
+    // Ore Detect
+    public int getOreDetectRadiusDiamond() { return oreDetectRadiusDiamond; }
+    public int getOreDetectRadiusNetherite() { return oreDetectRadiusNetherite; }
+    public int getOreDetectAncientDebrisRadiusDiamond() { return oreDetectAncientDebrisRadiusDiamond; }
+    public int getOreDetectAncientDebrisRadiusNetherite() { return oreDetectAncientDebrisRadiusNetherite; }
+    public int getOreDetectDurationTicks() { return oreDetectDurationTicks; }
+
+    // ============================================================
+    // ALIAS METHODS — backward compatibility with existing code
+    // ============================================================
+
+    // PaleGardenFogTask uses this name
+    public int getPaleGardenFogCheckInterval() { return paleGardenFogCheckInterval; }
+
+    // BlessingManager uses these names
+    public double getAmiBlessDmgPerUse() { return amiBlessDamagePercentPerUse; }
+    public double getLaBlessDefPerUse() { return laBlessDefensePercentPerUse; }
+
+    // MobDifficultyManager uses these names
+    public double getBaselineHealth() { return baselineHealthMultiplier; }
+    public double getBaselineDamage() { return baselineDamageMultiplier; }
+
+    // KingMobManager uses these names
+    public double getKingHealthMult() { return kingHealthMultiplier; }
+    public double getKingDamageMult() { return kingDamageMultiplier; }
+    public int getKingDiamondMin() { return kingDiamondDropMin; }
+    public int getKingDiamondMax() { return kingDiamondDropMax; }
+
+    // EnchantmentEffectListener uses this name
+    public double getAxeNerfAttackSpeed() { return axeAttackSpeed; }
+
+    // DropRateListener uses these names
+    public int getGuardianPrismarineMin() { return guardianShardsMin; }
+    public int getGuardianPrismarineMax() { return guardianShardsMax; }
+    public int getElderGuardianPrismarineMin() { return elderGuardianShardsMin; }
+    public int getElderGuardianPrismarineMax() { return elderGuardianShardsMax; }
+    public int getGhastTearMin() { return ghastTearsMin; }
+    public int getGhastTearMax() { return ghastTearsMax; }
+
+    // LootBoosterListener uses this name
+    public double getHostileMobBookChance() { return hostileBookChance; }
+
+    // VillagerTradeListener uses this name
+    public double getVillagerPriceReduction() { return priceReduction; }
+
 }

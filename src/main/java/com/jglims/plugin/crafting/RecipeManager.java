@@ -247,7 +247,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // BATTLE MACE (NEW v1.2.0) — 8 Breeze Rods + Mace
+    // BATTLE MACE
     // ========================================================================
     private void registerBattleMace() {
         ItemStack battleMace = battleMaceManager.createBattleMace();
@@ -262,56 +262,111 @@ public class RecipeManager implements Listener {
 
     // ========================================================================
     // SUPER TOOL RECIPES
+    // FIXED: Only registers super versions for valid items:
+    //   - Swords, Pickaxes, Shovels, Trident, Shield, Elytra (directly)
+    //   - Sickles (via hoe material + sickle PDC check at craft time)
+    //   - Battle Axes (via axe material + battle axe PDC check at craft time)
+    //   - Battle Bow, Battle Crossbow (special recipes)
+    //   - NO regular axes, NO regular hoes, NO regular bows/crossbows
     // ========================================================================
     private void registerSuperToolRecipes() {
-        Material[] superableTools = {
+        // === STANDARD SUPER TOOLS (no conflicts) ===
+        Material[] standardSuperTools = {
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD,
             Material.GOLDEN_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD,
             Material.WOODEN_PICKAXE, Material.STONE_PICKAXE, Material.IRON_PICKAXE,
             Material.GOLDEN_PICKAXE, Material.DIAMOND_PICKAXE, Material.NETHERITE_PICKAXE,
             Material.WOODEN_SHOVEL, Material.STONE_SHOVEL, Material.IRON_SHOVEL,
             Material.GOLDEN_SHOVEL, Material.DIAMOND_SHOVEL, Material.NETHERITE_SHOVEL,
-            Material.WOODEN_HOE, Material.STONE_HOE, Material.IRON_HOE,
-            Material.GOLDEN_HOE, Material.DIAMOND_HOE, Material.NETHERITE_HOE,
             Material.TRIDENT, Material.SHIELD, Material.ELYTRA
         };
 
-        for (Material toolMat : superableTools) {
-            ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_IRON);
-            if (result == null) continue;
-            String name = toolMat.name().toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "super_iron_" + name);
-            ShapedRecipe recipe = new ShapedRecipe(key, result);
-            recipe.shape("MMM", "MTM", "MMM");
-            recipe.setIngredient('M', Material.IRON_INGOT);
-            recipe.setIngredient('T', toolMat);
-            plugin.getServer().addRecipe(recipe);
+        for (Material toolMat : standardSuperTools) {
+            registerSuperTierRecipes(toolMat);
         }
 
-        for (Material toolMat : superableTools) {
-            ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_DIAMOND);
-            if (result == null) continue;
-            String name = toolMat.name().toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "super_diamond_" + name);
-            ShapedRecipe recipe = new ShapedRecipe(key, result);
-            recipe.shape("MMM", "MTM", "MMM");
-            recipe.setIngredient('M', Material.DIAMOND);
-            recipe.setIngredient('T', toolMat);
-            plugin.getServer().addRecipe(recipe);
+        // === SICKLE SUPER TOOLS (hoe materials, but only sickles can be super) ===
+        // We register them using the sickle item as the result base
+        for (Material hoeMat : sickleManager.getSickleTiers()) {
+            ItemStack sickle = sickleManager.createSickle(hoeMat);
+            if (sickle == null) continue;
+            String name = "sickle_" + hoeMat.name().toLowerCase();
+
+            // Iron tier
+            ItemStack ironResult = superToolManager.createSuperTool(sickle.clone(), SuperToolManager.TIER_IRON);
+            if (ironResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_iron_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, ironResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.IRON_INGOT);
+                recipe.setIngredient('T', hoeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
+
+            // Diamond tier
+            ItemStack diamondResult = superToolManager.createSuperTool(sickle.clone(), SuperToolManager.TIER_DIAMOND);
+            if (diamondResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_diamond_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, diamondResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.DIAMOND);
+                recipe.setIngredient('T', hoeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
+
+            // Netherite tier
+            ItemStack netheriteResult = superToolManager.createSuperTool(sickle.clone(), SuperToolManager.TIER_NETHERITE);
+            if (netheriteResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_netherite_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, netheriteResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.NETHERITE_INGOT);
+                recipe.setIngredient('T', hoeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
         }
 
-        for (Material toolMat : superableTools) {
-            ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_NETHERITE);
-            if (result == null) continue;
-            String name = toolMat.name().toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "super_netherite_" + name);
-            ShapedRecipe recipe = new ShapedRecipe(key, result);
-            recipe.shape("MMM", "MTM", "MMM");
-            recipe.setIngredient('M', Material.NETHERITE_INGOT);
-            recipe.setIngredient('T', toolMat);
-            plugin.getServer().addRecipe(recipe);
+        // === BATTLE AXE SUPER TOOLS (axe materials, but only battle axes can be super) ===
+        for (Material axeMat : battleAxeManager.getBattleAxeTiers()) {
+            ItemStack battleAxe = battleAxeManager.createBattleAxe(axeMat);
+            if (battleAxe == null) continue;
+            String name = "battle_axe_" + axeMat.name().toLowerCase();
+
+            // Iron tier
+            ItemStack ironResult = superToolManager.createSuperTool(battleAxe.clone(), SuperToolManager.TIER_IRON);
+            if (ironResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_iron_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, ironResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.IRON_INGOT);
+                recipe.setIngredient('T', axeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
+
+            // Diamond tier
+            ItemStack diamondResult = superToolManager.createSuperTool(battleAxe.clone(), SuperToolManager.TIER_DIAMOND);
+            if (diamondResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_diamond_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, diamondResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.DIAMOND);
+                recipe.setIngredient('T', axeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
+
+            // Netherite tier
+            ItemStack netheriteResult = superToolManager.createSuperTool(battleAxe.clone(), SuperToolManager.TIER_NETHERITE);
+            if (netheriteResult != null) {
+                NamespacedKey key = new NamespacedKey(plugin, "super_netherite_" + name);
+                ShapedRecipe recipe = new ShapedRecipe(key, netheriteResult);
+                recipe.shape("MMM", "MTM", "MMM");
+                recipe.setIngredient('M', Material.NETHERITE_INGOT);
+                recipe.setIngredient('T', axeMat);
+                plugin.getServer().addRecipe(recipe);
+            }
         }
 
+        // === SUPER BATTLE BOW (Iron tier — 8 string + bow center) ===
         ItemStack superBattleBowIron = superToolManager.createSuperTool(
             battleBowManager.createBattleBow(), SuperToolManager.TIER_IRON);
         if (superBattleBowIron != null) {
@@ -323,6 +378,7 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
 
+        // === SUPER BATTLE CROSSBOW (Iron tier — 8 string + crossbow center) ===
         ItemStack superBattleCrossbowIron = superToolManager.createSuperTool(
             battleBowManager.createBattleCrossbow(), SuperToolManager.TIER_IRON);
         if (superBattleCrossbowIron != null) {
@@ -335,8 +391,53 @@ public class RecipeManager implements Listener {
         }
     }
 
+    /**
+     * Helper: registers Iron, Diamond, and Netherite super tier recipes for a standard tool.
+     */
+    private void registerSuperTierRecipes(Material toolMat) {
+        String name = toolMat.name().toLowerCase();
+
+        // Iron tier
+        ItemStack ironResult = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_IRON);
+        if (ironResult != null) {
+            NamespacedKey key = new NamespacedKey(plugin, "super_iron_" + name);
+            ShapedRecipe recipe = new ShapedRecipe(key, ironResult);
+            recipe.shape("MMM", "MTM", "MMM");
+            recipe.setIngredient('M', Material.IRON_INGOT);
+            recipe.setIngredient('T', toolMat);
+            plugin.getServer().addRecipe(recipe);
+        }
+
+        // Diamond tier
+        ItemStack diamondResult = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_DIAMOND);
+        if (diamondResult != null) {
+            NamespacedKey key = new NamespacedKey(plugin, "super_diamond_" + name);
+            ShapedRecipe recipe = new ShapedRecipe(key, diamondResult);
+            recipe.shape("MMM", "MTM", "MMM");
+            recipe.setIngredient('M', Material.DIAMOND);
+            recipe.setIngredient('T', toolMat);
+            plugin.getServer().addRecipe(recipe);
+        }
+
+        // Netherite tier
+        ItemStack netheriteResult = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_NETHERITE);
+        if (netheriteResult != null) {
+            NamespacedKey key = new NamespacedKey(plugin, "super_netherite_" + name);
+            ShapedRecipe recipe = new ShapedRecipe(key, netheriteResult);
+            recipe.shape("MMM", "MTM", "MMM");
+            recipe.setIngredient('M', Material.NETHERITE_INGOT);
+            recipe.setIngredient('T', toolMat);
+            plugin.getServer().addRecipe(recipe);
+        }
+    }
+
     // ========================================================================
     // PREPARE CRAFT EVENT
+    // Handles:
+    //  1. Blocking custom weapons from vanilla recipes
+    //  2. Ensuring only SICKLES craft from hoe+surround (not plain hoes)
+    //  3. Ensuring only BATTLE AXES craft from axe+surround (not plain axes)
+    //  4. Super tool upgrade via crafting table
     // ========================================================================
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
@@ -344,6 +445,7 @@ public class RecipeManager implements Listener {
 
         ItemStack[] matrix = event.getInventory().getMatrix();
 
+        // --- Block custom weapons from non-plugin recipes ---
         for (ItemStack ingredient : matrix) {
             if (ingredient != null) {
                 if (sickleManager.isSickle(ingredient) || battleAxeManager.isBattleAxe(ingredient)
@@ -364,6 +466,34 @@ public class RecipeManager implements Listener {
             }
         }
 
+        // --- Super Sickle/Battle Axe crafting guard ---
+        // If the recipe result is a super tool based on hoe/axe material,
+        // verify the center item is actually a sickle/battle axe
+        if (event.getRecipe() instanceof ShapedRecipe shaped) {
+            String recipeKey = shaped.getKey().getKey();
+
+            // Check if this is a super sickle recipe
+            if (recipeKey.startsWith("super_") && recipeKey.contains("sickle_")) {
+                ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
+                if (centerItem != null && !sickleManager.isSickle(centerItem)) {
+                    // Center is a plain hoe, not a sickle — block the craft
+                    event.getInventory().setResult(null);
+                    return;
+                }
+            }
+
+            // Check if this is a super battle axe recipe
+            if (recipeKey.startsWith("super_") && recipeKey.contains("battle_axe_")) {
+                ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
+                if (centerItem != null && !battleAxeManager.isBattleAxe(centerItem)) {
+                    // Center is a plain axe, not a battle axe — block the craft
+                    event.getInventory().setResult(null);
+                    return;
+                }
+            }
+        }
+
+        // --- Super tool upgrade via crafting table ---
         ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
         if (centerItem != null && superToolManager.isSuperTool(centerItem)) {
             int currentTier = superToolManager.getSuperTier(centerItem);

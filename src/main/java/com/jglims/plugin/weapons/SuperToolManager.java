@@ -300,15 +300,17 @@ public class SuperToolManager implements Listener {
      * Regular Axes, Bows, and Crossbows CANNOT — must be Battle variants.
      * Hoes CAN (for sickles which are hoe-based).
      */
-    public boolean canBeSuperTool(Material mat) {
+        public boolean canBeSuperTool(Material mat) {
         String name = mat.name();
         // Regular axes cannot be super
         if (name.endsWith("_AXE")) return false;
-        // Regular bows/crossbows cannot be super
+        // Regular bows/crossbows cannot be super (must be Battle variants)
         if (mat == Material.BOW || mat == Material.CROSSBOW) return false;
+        // Hoes cannot be super (sickles are the upgraded version)
+        if (name.endsWith("_HOE")) return false;
 
         return name.endsWith("_SWORD") || name.endsWith("_PICKAXE")
-            || name.endsWith("_SHOVEL") || name.endsWith("_HOE")
+            || name.endsWith("_SHOVEL")
             || mat == Material.ELYTRA || mat == Material.TRIDENT
             || mat == Material.SHIELD;
     }

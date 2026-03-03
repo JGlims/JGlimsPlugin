@@ -1,8 +1,7 @@
 name: JGlimsPlugin
-version: 1.2.0
+version: 1.2.1
 main: com.jglims.plugin.JGlimsPlugin
-api-version: '1.21'
-api: bukkit
+api-version: 1.21
 author: JGlims
 description: >-
   Custom enchantments, battle axes, battle bows, battle maces, super tools,
