@@ -39,7 +39,7 @@ public class AnvilRecipeListener implements Listener {
     public AnvilRecipeListener(JGlimsPlugin plugin, CustomEnchantManager enchantManager) {
         this.plugin = plugin;
         this.enchantManager = enchantManager;
-        this.superTierKey = new NamespacedKey(plugin, "super_tier");
+        this.superTierKey = new NamespacedKey(plugin, "super_tool_tier");
         registerRecipes();
     }
 
@@ -442,22 +442,15 @@ public class AnvilRecipeListener implements Listener {
     // ========================================================================
     // FEATURE 7: Check if tool is a Definitive (Netherite-tier 3) Super Tool
     // These tools ignore ALL enchantment conflicts and have no enchantment cap.
+    // v1.1.0 FIX: Now checks super_tool_tier (INTEGER) instead of is_super_tool (BYTE)
     // ========================================================================
     private boolean isDefinitiveNetheriteSuperTool(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
 
-        // Must be a super tool
-        NamespacedKey superToolKey = new NamespacedKey(plugin, "is_super_tool");
-        if (!pdc.has(superToolKey, PersistentDataType.BYTE)) return false;
-
-        // Must be tier 3 (Netherite tier)
+        // Check for super_tool_tier key (v1.1.0 tiered system)
         Integer tier = pdc.get(superTierKey, PersistentDataType.INTEGER);
-        if (tier != null && tier >= 3) return true;
-
-        // Fallback: if no tier key but it's a netherite material super tool from v1.0.0
-        // (pre-tiered system), treat as tier 1 — NOT definitive
-        return false;
+        return tier != null && tier >= 3;
     }
 
     // ========================================================================
@@ -520,9 +513,7 @@ public class AnvilRecipeListener implements Listener {
             case REAPERS_MARK -> "Marks target for +"
                 + (level == 1 ? "10%" : "15%") + " damage";
             case WITHER_TOUCH -> "Applies Wither " + toRoman(level) + " on hit";
-            case HARVESTING_MOON -> "Harvests crops in a "
-                + switch (level) { case 1 -> "3x3"; case 2 -> "5x5"; default -> "7x7"; }
-                + " area on right-click";
+            case HARVESTING_MOON -> "+" + (level * 50) + "% bonus XP from mob kills";
 
             // --- Trident ---
             case THUNDERLORD -> switch (level) {
@@ -541,7 +532,7 @@ public class AnvilRecipeListener implements Listener {
                 + switch (level) { case 1 -> "1"; case 2 -> "1.5"; default -> "2"; } + ")";
             case HOMING -> "Arrows track nearby enemies (range "
                 + (level == 1 ? "5" : "8") + ")";
-            case RAPIDFIRE -> "Increases crossbow fire rate";
+            case RAPIDFIRE -> "Reduces crossbow draw time by " + (level * 15) + "%";
             case SNIPER -> "+" + (level * 10) + "% bonus damage at 20+ blocks";
 
             // --- Helmet ---

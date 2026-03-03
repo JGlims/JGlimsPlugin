@@ -157,7 +157,8 @@ public class WeaponAbilityListener implements Listener {
 
         if (definitive) {
             // Judgment Cut: 5 block sphere, 8 base damage, brief invulnerability
-            double baseDmg = 8.0 + getEnchantDamageBonus(weapon);
+            double baseDmg = 8.0;
+            baseDmg *= getEnchantDamageMultiplier(weapon);
             player.setInvulnerable(true);
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.setInvulnerable(false), 2L);
 
@@ -171,7 +172,7 @@ public class WeaponAbilityListener implements Listener {
             world.spawnParticle(Particle.ENCHANTED_HIT, loc, 10, 2, 1, 2, 0.1);
             player.sendActionBar(Component.text("Judgment Cut!", NamedTextColor.DARK_RED));
         } else {
-            // Blade Storm: forward cone, 3-4 block range, ~90° arc
+            // Blade Storm: forward cone, 3-4 block range, ~90 arc
             double baseDmg = 4.0;
             Vector dir = player.getLocation().getDirection().normalize();
             int hitCount = 0;
@@ -179,7 +180,7 @@ public class WeaponAbilityListener implements Listener {
             for (Entity e : player.getNearbyEntities(4, 3, 4)) {
                 if (!(e instanceof LivingEntity le) || e == player) continue;
                 Vector toTarget = e.getLocation().toVector().subtract(loc.toVector()).normalize();
-                if (dir.dot(toTarget) > 0.5) { // ~60° cone (generous)
+                if (dir.dot(toTarget) > 0.5) { // ~60 cone (generous)
                     double dmg = baseDmg;
                     le.damage(dmg, player);
                     hitCount++;
@@ -219,7 +220,8 @@ public class WeaponAbilityListener implements Listener {
         World world = loc.getWorld();
 
         if (definitive) {
-            double baseDmg = 6.0 + getEnchantDamageBonus(weapon);
+            double baseDmg = 6.0;
+            baseDmg *= getEnchantDamageMultiplier(weapon);
             for (Entity e : player.getNearbyEntities(5, 5, 5)) {
                 if (!(e instanceof LivingEntity le) || e == player) continue;
                 le.damage(baseDmg, player);
@@ -279,7 +281,8 @@ public class WeaponAbilityListener implements Listener {
         World world = loc.getWorld();
 
         if (definitive) {
-            double baseDmg = 10.0 + getEnchantDamageBonus(weapon);
+            double baseDmg = 10.0;
+            baseDmg *= getEnchantDamageMultiplier(weapon);
             for (Entity e : player.getNearbyEntities(5, 5, 5)) {
                 if (!(e instanceof LivingEntity le) || e == player) continue;
                 le.damage(baseDmg, player);
@@ -364,7 +367,7 @@ public class WeaponAbilityListener implements Listener {
         final boolean extras = highlightExtras || definitive;
         final int dur = duration;
 
-        // Spawn particles at ore locations asynchronously (scan blocks synchronously)
+        // Spawn particles at ore locations
         List<Location> oreLocations = new ArrayList<>();
         int cx = center.getBlockX(), cy = center.getBlockY(), cz = center.getBlockZ();
 
@@ -452,7 +455,8 @@ public class WeaponAbilityListener implements Listener {
         World world = loc.getWorld();
 
         if (definitive) {
-            double baseDmg = 8.0 + getEnchantDamageBonus(weapon);
+            double baseDmg = 8.0;
+            baseDmg *= getEnchantDamageMultiplier(weapon);
             for (Entity e : player.getNearbyEntities(6, 6, 6)) {
                 if (!(e instanceof LivingEntity le) || e == player) continue;
                 le.damage(baseDmg, player);
@@ -513,7 +517,8 @@ public class WeaponAbilityListener implements Listener {
         Vector dir = player.getLocation().getDirection().normalize();
 
         if (definitive) {
-            double baseDmg = 5.0 + getEnchantDamageBonus(weapon);
+            double baseDmg = 5.0;
+            baseDmg *= getEnchantDamageMultiplier(weapon);
             for (int i = 0; i < 4; i++) {
                 Vector spread = dir.clone().add(new Vector(
                     (ThreadLocalRandom.current().nextDouble() - 0.5) * 0.2,
@@ -582,7 +587,8 @@ public class WeaponAbilityListener implements Listener {
         player.teleport(destination);
 
         if (definitive) {
-            double dmg = 3.0 + getEnchantDamageBonus(weapon);
+            double dmg = 3.0;
+            dmg *= getEnchantDamageMultiplier(weapon);
             for (Entity e : player.getNearbyEntities(2, 2, 2)) {
                 if (e instanceof LivingEntity le && e != player) {
                     le.damage(dmg, player);
@@ -615,13 +621,14 @@ public class WeaponAbilityListener implements Listener {
         return false;
     }
 
-    private double getEnchantDamageBonus(ItemStack weapon) {
-        // For definitive abilities: each enchantment adds +0.2% damage
+    /**
+     * Returns a damage multiplier based on total enchantments on the weapon.
+     * Each enchantment adds +2% damage to definitive abilities.
+     * Example: 5 enchantments = 1.10 multiplier (10% bonus damage).
+     */
+    private double getEnchantDamageMultiplier(ItemStack weapon) {
         int totalEnchants = enchantManager.getTotalEnchantCount(weapon);
-        return totalEnchants * 0.002; // 0.2% per enchant as a flat bonus per base damage unit
-        // Actually, per the doc: "+0.2% damage to the ability"
-        // This is multiplicative with the base, but the bonus is tiny. Let's apply it as flat for simplicity:
-        // We'll return 0 here and handle it differently — multiply base damage by (1 + totalEnchants * 0.002)
+        return 1.0 + (totalEnchants * 0.02);
     }
 
     private void healPlayer(Player player, double amount) {
@@ -674,8 +681,8 @@ public class WeaponAbilityListener implements Listener {
             // Particle between chain links
             Location from = current.getLocation().add(0, 1, 0);
             Location to = nearest.getLocation().add(0, 1, 0);
-            current.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, 
-                from.clone().add(to.toVector().subtract(from.toVector()).multiply(0.5)), 
+            current.getWorld().spawnParticle(Particle.ELECTRIC_SPARK,
+                from.clone().add(to.toVector().subtract(from.toVector()).multiply(0.5)),
                 5, 0.1, 0.1, 0.1, 0.01);
             current = nearest;
         }
