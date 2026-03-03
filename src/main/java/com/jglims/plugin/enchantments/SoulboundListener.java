@@ -18,7 +18,7 @@ import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
@@ -50,31 +50,32 @@ public class SoulboundListener implements Listener {
             ItemStack item = it.next();
             if (item != null && enchantManager.hasEnchant(item, EnchantmentType.SOULBOUND)) {
                 soulboundItems.add(item.clone());
-                it.remove(); // Don't drop it
+                it.remove();
             }
         }
 
         if (!soulboundItems.isEmpty()) {
-            // Re-give items after respawn
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 for (ItemStack item : soulboundItems) {
                     Map<Integer, ItemStack> overflow = player.getInventory().addItem(item);
-                    // If inventory somehow full, drop at feet (shouldn't happen with 1-item limit)
                     for (ItemStack leftover : overflow.values()) {
                         player.getWorld().dropItemNaturally(player.getLocation(), leftover);
                     }
                 }
-            }, 5L); // Small delay to ensure respawn is complete
+            }, 5L);
         }
     }
 
     // ========================================================================
     // LOSTSOUL CONVERSION — Rename to "lostsoul" in anvil → enchanted book
     // ONE-PER-INVENTORY — Prevent applying Soulbound if player already has one
+    // Uses AnvilView for getRenameText() and setRepairCost()
     // ========================================================================
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         AnvilInventory inv = event.getInventory();
+        AnvilView anvilView = (AnvilView) event.getView();
+
         ItemStack firstSlot = inv.getItem(0);
         ItemStack secondSlot = inv.getItem(1);
 
@@ -84,7 +85,7 @@ public class SoulboundListener implements Listener {
         if (enchantManager.hasEnchant(firstSlot, EnchantmentType.SOULBOUND)
                 && (secondSlot == null || secondSlot.getType() == Material.AIR)) {
 
-            String renameText = inv.getRenameText();
+            String renameText = anvilView.getRenameText();
             if (renameText != null && renameText.equalsIgnoreCase("lostsoul")) {
                 ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
                 EnchantmentStorageMeta bookMeta = (EnchantmentStorageMeta) book.getItemMeta();
@@ -105,7 +106,7 @@ public class SoulboundListener implements Listener {
                     book.setItemMeta(bookMeta);
                 }
                 event.setResult(book);
-                inv.setRepairCost(0);
+                anvilView.setRepairCost(0);
                 return;
             }
         }
@@ -133,13 +134,13 @@ public class SoulboundListener implements Listener {
         }
 
         if (wouldAddSoulbound && countSoulboundItems(player) >= 1) {
-            event.setResult(null); // Block the operation
+            event.setResult(null);
             player.sendActionBar(Component.text("You can only have 1 Soulbound item!", NamedTextColor.RED));
         }
     }
 
     // ========================================================================
-    // BUG 2 FIX: Also enforce soulbound limit when player TAKES the result
+    // BUG FIX: Also enforce soulbound limit when player TAKES the result
     // ========================================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
@@ -150,17 +151,13 @@ public class SoulboundListener implements Listener {
 
         ItemStack result = event.getCurrentItem();
 
-        // Check if the result has Soulbound
         if (!enchantManager.hasEnchant(result, EnchantmentType.SOULBOUND)) return;
 
-        // Check if the first slot item already has Soulbound (lostsoul conversion — allowed)
         ItemStack firstSlot = inv.getItem(0);
         if (firstSlot != null && enchantManager.hasEnchant(firstSlot, EnchantmentType.SOULBOUND)) {
-            // This is a lostsoul conversion — the original soulbound item is being consumed, so allow
             return;
         }
 
-        // Block if player already has a soulbound item
         if (countSoulboundItems(player) >= 1) {
             event.setCancelled(true);
             player.sendActionBar(Component.text("You can only have 1 Soulbound item!", NamedTextColor.RED));

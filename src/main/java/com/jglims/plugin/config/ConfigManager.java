@@ -143,9 +143,12 @@ public class ConfigManager {
     private int oreDetectAncientDebrisRadiusNetherite;
     private int oreDetectDurationTicks;
 
+    // --- Weapon Abilities ---
+    private double enderDragonAbilityDamageReduction;
+    private double netheriteEnchantBonusPercent;
+
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
-        loadConfig();
     }
 
     public void loadConfig() {
@@ -309,10 +312,14 @@ public class ConfigManager {
         oreDetectAncientDebrisRadiusDiamond = config.getInt("ore-detect.ancient-debris-radius-diamond", 24);
         oreDetectAncientDebrisRadiusNetherite = config.getInt("ore-detect.ancient-debris-radius-netherite", 40);
         oreDetectDurationTicks = config.getInt("ore-detect.duration-ticks", 200);
+
+        // --- Weapon Abilities ---
+        enderDragonAbilityDamageReduction = config.getDouble("weapon-abilities.ender-dragon-damage-reduction", 0.30);
+        netheriteEnchantBonusPercent = config.getDouble("weapon-abilities.netherite-enchant-bonus-percent", 2.0);
     }
 
     // ========================
-    // GETTERS
+    // PRIMARY GETTERS
     // ========================
 
     // Mob Difficulty
@@ -363,6 +370,7 @@ public class ConfigManager {
 
     // Pale Garden Fog
     public boolean isPaleGardenFogEnabled() { return paleGardenFogEnabled; }
+    public int getPaleGardenFogCheckInterval() { return paleGardenFogCheckInterval; }
 
     // Loot Booster
     public boolean isLootBoosterEnabled() { return lootBoosterEnabled; }
@@ -467,31 +475,35 @@ public class ConfigManager {
     public int getOreDetectAncientDebrisRadiusNetherite() { return oreDetectAncientDebrisRadiusNetherite; }
     public int getOreDetectDurationTicks() { return oreDetectDurationTicks; }
 
+    // Weapon Abilities
+    public double getEnderDragonAbilityDamageReduction() { return enderDragonAbilityDamageReduction; }
+    public double getNetheriteEnchantBonusPercent() { return netheriteEnchantBonusPercent; }
+
     // ============================================================
     // ALIAS METHODS — backward compatibility with existing code
     // ============================================================
 
-    // PaleGardenFogTask uses this name
-    public int getPaleGardenFogCheckInterval() { return paleGardenFogCheckInterval; }
+    // JGlimsPlugin.java uses this alias
+    public int getPaleGardenFogInterval() { return paleGardenFogCheckInterval; }
 
-    // BlessingManager uses these names
+    // BlessingManager aliases
     public double getAmiBlessDmgPerUse() { return amiBlessDamagePercentPerUse; }
     public double getLaBlessDefPerUse() { return laBlessDefensePercentPerUse; }
 
-    // MobDifficultyManager uses these names
+    // MobDifficultyManager aliases
     public double getBaselineHealth() { return baselineHealthMultiplier; }
     public double getBaselineDamage() { return baselineDamageMultiplier; }
 
-    // KingMobManager uses these names
+    // KingMobManager aliases
     public double getKingHealthMult() { return kingHealthMultiplier; }
     public double getKingDamageMult() { return kingDamageMultiplier; }
     public int getKingDiamondMin() { return kingDiamondDropMin; }
     public int getKingDiamondMax() { return kingDiamondDropMax; }
 
-    // EnchantmentEffectListener uses this name
+    // EnchantmentEffectListener alias
     public double getAxeNerfAttackSpeed() { return axeAttackSpeed; }
 
-    // DropRateListener uses these names
+    // DropRateListener aliases
     public int getGuardianPrismarineMin() { return guardianShardsMin; }
     public int getGuardianPrismarineMax() { return guardianShardsMax; }
     public int getElderGuardianPrismarineMin() { return elderGuardianShardsMin; }
@@ -499,10 +511,39 @@ public class ConfigManager {
     public int getGhastTearMin() { return ghastTearsMin; }
     public int getGhastTearMax() { return ghastTearsMax; }
 
-    // LootBoosterListener uses this name
+    // LootBoosterListener alias
     public double getHostileMobBookChance() { return hostileBookChance; }
 
-    // VillagerTradeListener uses this name
+    // VillagerTradeListener alias
     public double getVillagerPriceReduction() { return priceReduction; }
+
+    // Dog armor alias
+    public double getDogArmorReduction() { return dogArmorDamageReduction; }
+
+    // Super tools aliases from summary document
+    public double getSuperToolBonusDamageIron() { return superIronBonusDamage; }
+    public double getSuperToolBonusDamageDiamond() { return superDiamondBonusDamage; }
+    public double getSuperToolBonusDamageNetherite() { return superNetheriteBonusDamage; }
+    public double getSuperToolEnchantBonusPercent() { return superNethPerEnchantBonus; }
+    public double getSuperEnchantBonusPercent() { return superNethPerEnchantBonus; }
+
+    // Ore detect aliases
+    public int getAncientDebrisDetectDiamondRadius() { return oreDetectAncientDebrisRadiusDiamond; }
+    public int getAncientDebrisDetectNetheriteRadius() { return oreDetectAncientDebrisRadiusNetherite; }
+    public int getAncientDebrisDetectRadiusDiamond() { return oreDetectAncientDebrisRadiusDiamond; }
+    public int getAncientDebrisDetectRadiusNetherite() { return oreDetectAncientDebrisRadiusNetherite; }
+    public int getOreDetectDiamondRadius() { return oreDetectRadiusDiamond; }
+    public int getOreDetectNetheriteRadius() { return oreDetectRadiusNetherite; }
+
+    // Pale garden extended aliases
+    public int getPaleGardenFogDuration() { return config.getInt("pale-garden-fog.effect-duration", 80); }
+    public int getPaleGardenFogRadius() { return config.getInt("pale-garden-fog.check-radius", 48); }
+    public int getPaleGardenSlowInterval() { return config.getInt("pale-garden-fog.slowness-check-interval", 60); }
+    public int getPaleGardenSlowDuration() { return config.getInt("pale-garden-fog.slowness-effect-duration", 100); }
+    public int getPaleGardenSlowRadius() { return config.getInt("pale-garden-fog.slowness-check-radius", 32); }
+
+    // Ami bless aliases
+    public int getAmiBlessTotalUses() { return amiBlessMaxUses; }
+    public int getAmiBlessMaxUses2() { return amiBlessMaxUses; }
 
 }

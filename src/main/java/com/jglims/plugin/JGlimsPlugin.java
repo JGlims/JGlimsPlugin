@@ -38,6 +38,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private BattleAxeManager battleAxeManager;
     private BattleBowManager battleBowManager;
     private BattleMaceManager battleMaceManager;
+    private BattleShovelManager battleShovelManager;
+    private SpearManager spearManager;
     private SuperToolManager superToolManager;
     private RecipeManager recipeManager;
     private MobDifficultyManager mobDifficultyManager;
@@ -51,7 +53,7 @@ public class JGlimsPlugin extends JavaPlugin {
         instance = this;
         long start = System.currentTimeMillis();
 
-        // 1. Config
+        // 1. Config (must be first — everything depends on it)
         configManager = new ConfigManager(this);
         configManager.loadConfig();
 
@@ -61,36 +63,41 @@ public class JGlimsPlugin extends JavaPlugin {
         // 3. Blessing system
         blessingManager = new BlessingManager(this);
 
-        // 4. Weapon systems
+        // 4. Weapon systems — all managers
         sickleManager = new SickleManager(this);
         battleAxeManager = new BattleAxeManager(this);
         battleBowManager = new BattleBowManager(this);
         battleMaceManager = new BattleMaceManager(this);
         superToolManager = new SuperToolManager(this);
 
-        // 5. Crafting recipes (now 6-arg constructor)
-        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager, battleBowManager, battleMaceManager, superToolManager);
+        // 5. New weapon managers (v1.3.0) — require configManager
+        spearManager = new SpearManager(this, configManager);
+        battleShovelManager = new BattleShovelManager(this, configManager);
+
+        // 6. Crafting recipes
+        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
+                battleBowManager, battleMaceManager, superToolManager);
         recipeManager.registerAllRecipes();
 
-        // 6. Remove vanilla recipes we replace
+        // 7. Remove vanilla recipes we replace
         VanillaRecipeRemover.remove(this);
 
-        // 7. Mob difficulty
+        // 8. Mob difficulty
         mobDifficultyManager = new MobDifficultyManager(this, configManager);
 
-        // 8. King mob system
+        // 9. King mob system
         kingMobManager = new KingMobManager(this, configManager);
 
-        // 9. Weapon mastery (NEW v1.2.0)
+        // 10. Weapon mastery
         weaponMasteryManager = new WeaponMasteryManager(this, configManager);
 
-        // 10. Blood moon (NEW v1.2.0)
+        // 11. Blood moon
         bloodMoonManager = new BloodMoonManager(this, configManager);
 
-        // 11. Guild system (NEW v1.2.0)
+        // 12. Guild system
         guildManager = new GuildManager(this, configManager);
 
-        // 12. Register all event listeners
+        // 13. Register all event listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new AnvilRecipeListener(this, enchantManager), this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
@@ -106,20 +113,29 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(new VillagerTradeListener(this, configManager), this);
         pm.registerEvents(sickleManager, this);
         pm.registerEvents(battleAxeManager, this);
+        pm.registerEvents(battleShovelManager, this);
         pm.registerEvents(superToolManager, this);
         pm.registerEvents(recipeManager, this);
         pm.registerEvents(weaponMasteryManager, this);
         pm.registerEvents(bloodMoonManager, this);
         pm.registerEvents(new GuildListener(this, guildManager), this);
-        pm.registerEvents(new WeaponAbilityListener(this, enchantManager, superToolManager,
-            sickleManager, battleAxeManager, battleBowManager, battleMaceManager), this);
 
-        // 13. Pale Garden fog
+        // WeaponAbilityListener — pass ALL managers it needs
+        pm.registerEvents(new WeaponAbilityListener(
+                this,
+                configManager,
+                enchantManager,
+                superToolManager,
+                spearManager,
+                battleShovelManager
+        ), this);
+
+        // 14. Pale Garden fog — uses the alias method getPaleGardenFogInterval()
         if (configManager.isPaleGardenFogEnabled()) {
-            new PaleGardenFogTask(this).start(configManager.getPaleGardenFogInterval());
+            new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         }
 
-        // 14. Blood Moon scheduler
+        // 15. Blood Moon scheduler
         if (configManager.isBloodMoonEnabled()) {
             bloodMoonManager.startScheduler();
         }
@@ -197,6 +213,9 @@ public class JGlimsPlugin extends JavaPlugin {
         return true;
     }
 
+    // ========================
+    // ACCESSOR METHODS
+    // ========================
     public static JGlimsPlugin getInstance() { return instance; }
     public ConfigManager getConfigManager() { return configManager; }
     public CustomEnchantManager getEnchantManager() { return enchantManager; }
@@ -205,6 +224,8 @@ public class JGlimsPlugin extends JavaPlugin {
     public BattleAxeManager getBattleAxeManager() { return battleAxeManager; }
     public BattleBowManager getBattleBowManager() { return battleBowManager; }
     public BattleMaceManager getBattleMaceManager() { return battleMaceManager; }
+    public BattleShovelManager getBattleShovelManager() { return battleShovelManager; }
+    public SpearManager getSpearManager() { return spearManager; }
     public SuperToolManager getSuperToolManager() { return superToolManager; }
     public KingMobManager getKingMobManager() { return kingMobManager; }
     public WeaponMasteryManager getWeaponMasteryManager() { return weaponMasteryManager; }

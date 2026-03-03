@@ -20,7 +20,7 @@ import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -41,12 +41,15 @@ public class EnchantTransferListener implements Listener {
     // ========================================================================
     // ENCHANTMENT TRANSFER: Tool (slot 1) + Book (slot 2) in anvil
     // Result: Enchanted Book with ALL enchants from the tool. Tool consumed. 0 XP.
+    // Uses AnvilView for setRepairCost()
     // ========================================================================
     @EventHandler(priority = EventPriority.LOW)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         if (!plugin.getConfigManager().isEnchantTransferEnabled()) return;
 
         AnvilInventory inv = event.getInventory();
+        AnvilView anvilView = (AnvilView) event.getView();
+
         ItemStack firstSlot = inv.getItem(0);
         ItemStack secondSlot = inv.getItem(1);
 
@@ -102,7 +105,7 @@ public class EnchantTransferListener implements Listener {
         result.setItemMeta(resultMeta);
 
         event.setResult(result);
-        inv.setRepairCost(0);
+        anvilView.setRepairCost(0);
     }
 
     // Consume both inputs when result is taken

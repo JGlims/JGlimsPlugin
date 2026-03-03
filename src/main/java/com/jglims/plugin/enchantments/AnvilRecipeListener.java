@@ -1,7 +1,6 @@
 package com.jglims.plugin.enchantments;
 
 import com.jglims.plugin.JGlimsPlugin;
-import com.jglims.plugin.weapons.SuperToolManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -20,6 +19,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -113,42 +113,49 @@ public class AnvilRecipeListener implements Listener {
         recipes.put(EnchantmentType.BOOST,   new AnvilRecipe(Enchantment.UNBREAKING, Material.FIREWORK_ROCKET, true, 3));
         recipes.put(EnchantmentType.GLIDER,  new AnvilRecipe(Enchantment.UNBREAKING, Material.PHANTOM_MEMBRANE, false, 1));
 
-        // ===================== MACE (NEW v1.2.0) =====================
+        // ===================== MACE =====================
         recipes.put(EnchantmentType.SEISMIC_SLAM, new AnvilRecipe(Enchantment.UNBREAKING, Material.HEAVY_CORE, true, 3));
         recipes.put(EnchantmentType.MAGNETIZE,    new AnvilRecipe(Enchantment.UNBREAKING, Material.IRON_BLOCK, true, 3));
+
+        // ===================== SPEAR (NEW v1.3.0) =====================
+        recipes.put(EnchantmentType.IMPALING_THRUST, new AnvilRecipe(Enchantment.SHARPNESS, Material.PRISMARINE_SHARD, true, 3));
+        recipes.put(EnchantmentType.EXTENDED_REACH,  new AnvilRecipe(Enchantment.SHARPNESS, Material.BLAZE_ROD, true, 3));
+        recipes.put(EnchantmentType.SKEWERING,       new AnvilRecipe(Enchantment.SHARPNESS, Material.POINTED_DRIPSTONE, true, 3));
 
         plugin.getLogger().info("Registered " + recipes.size() + " anvil enchantment recipes.");
     }
 
     // ========================================================================
-    // PREPARE ANVIL EVENT
+    // PREPARE ANVIL EVENT — uses AnvilView for repair cost / rename text
     // ========================================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
         AnvilInventory inv = event.getInventory();
+        AnvilView anvilView = (AnvilView) event.getView();
+
         ItemStack firstSlot = inv.getItem(0);
         ItemStack secondSlot = inv.getItem(1);
         if (firstSlot == null || secondSlot == null) return;
 
         if (secondSlot.getType() == Material.TOTEM_OF_UNDYING) {
-            handleSoulboundPrepare(event, inv, firstSlot, secondSlot);
+            handleSoulboundPrepare(event, anvilView, firstSlot, secondSlot);
             return;
         }
         if (firstSlot.getType() == Material.ENCHANTED_BOOK
                 && !secondSlot.getType().equals(Material.ENCHANTED_BOOK)
                 && !secondSlot.getType().equals(Material.BOOK)) {
-            handleBookCreationPrepare(event, inv, firstSlot, secondSlot);
+            handleBookCreationPrepare(event, anvilView, firstSlot, secondSlot);
             return;
         }
         if (secondSlot.getType() == Material.ENCHANTED_BOOK
                 && firstSlot.getType() != Material.ENCHANTED_BOOK) {
-            handleBookApplicationPrepare(event, inv, firstSlot, secondSlot);
+            handleBookApplicationPrepare(event, anvilView, firstSlot, secondSlot);
             return;
         }
-        handleVanillaAnvilTweaks(event, inv);
+        handleVanillaAnvilTweaks(event, anvilView);
     }
 
-    private void handleSoulboundPrepare(PrepareAnvilEvent event, AnvilInventory inv,
+    private void handleSoulboundPrepare(PrepareAnvilEvent event, AnvilView anvilView,
                                         ItemStack tool, ItemStack totem) {
         if (enchantManager.hasEnchant(tool, EnchantmentType.SOULBOUND)) {
             event.setResult(null);
@@ -166,10 +173,10 @@ public class AnvilRecipeListener implements Listener {
             result.setItemMeta(meta);
         }
         event.setResult(result);
-        inv.setRepairCost(0);
+        anvilView.setRepairCost(0);
     }
 
-    private void handleBookCreationPrepare(PrepareAnvilEvent event, AnvilInventory inv,
+    private void handleBookCreationPrepare(PrepareAnvilEvent event, AnvilView anvilView,
                                            ItemStack book, ItemStack ingredient) {
         if (!(book.getItemMeta() instanceof EnchantmentStorageMeta bookMeta)) return;
         Material ingredientType = ingredient.getType();
@@ -212,12 +219,12 @@ public class AnvilRecipeListener implements Listener {
 
             result.setItemMeta(resultMeta);
             event.setResult(result);
-            inv.setRepairCost(0);
+            anvilView.setRepairCost(0);
             return;
         }
     }
 
-    private void handleBookApplicationPrepare(PrepareAnvilEvent event, AnvilInventory inv,
+    private void handleBookApplicationPrepare(PrepareAnvilEvent event, AnvilView anvilView,
                                               ItemStack tool, ItemStack book) {
         if (!(book.getItemMeta() instanceof EnchantmentStorageMeta bookMeta)) return;
         PersistentDataContainer bookPdc = bookMeta.getPersistentDataContainer();
@@ -234,7 +241,7 @@ public class AnvilRecipeListener implements Listener {
         }
 
         if (foundType == null) {
-            handleVanillaAnvilTweaks(event, inv);
+            handleVanillaAnvilTweaks(event, anvilView);
             return;
         }
 
@@ -262,20 +269,23 @@ public class AnvilRecipeListener implements Listener {
             result.setItemMeta(meta);
         }
         event.setResult(result);
-        inv.setRepairCost(0);
+        anvilView.setRepairCost(0);
     }
 
-    private void handleVanillaAnvilTweaks(PrepareAnvilEvent event, AnvilInventory inv) {
+    private void handleVanillaAnvilTweaks(PrepareAnvilEvent event, AnvilView anvilView) {
         if (!plugin.getConfigManager().isRemoveTooExpensive()) return;
-        if (inv.getRepairCost() >= 40) inv.setRepairCost(39);
+        if (anvilView.getRepairCost() >= 40) anvilView.setRepairCost(39);
         double reduction = plugin.getConfigManager().getXpCostReduction();
         if (reduction > 0) {
-            int currentCost = inv.getRepairCost();
+            int currentCost = anvilView.getRepairCost();
             int newCost = Math.max(1, (int) (currentCost * (1.0 - reduction)));
-            inv.setRepairCost(newCost);
+            anvilView.setRepairCost(newCost);
         }
     }
 
+    // ========================================================================
+    // INVENTORY CLICK — clear anvil slots after custom operation
+    // ========================================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getInventory() instanceof AnvilInventory inv)) return;
@@ -305,6 +315,10 @@ public class AnvilRecipeListener implements Listener {
             inv.setItem(1, null);
         });
     }
+
+    // ========================================================================
+    // UTILITY METHODS
+    // ========================================================================
 
     private boolean isDefinitiveNetheriteSuperTool(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -369,10 +383,13 @@ public class AnvilRecipeListener implements Listener {
             case BOOST -> "Sneak while gliding for a speed boost";
             case GLIDER -> "50% less elytra durability loss";
             case SOULBOUND -> "Item is kept on death";
-            case BEST_BUDDIES -> "Wolf takes/deals 95% less damage, gets Regen II";
-            // Mace (NEW v1.2.0)
+            case BEST_BUDDIES -> "Wolf takes 95% less damage, deals no damage";
             case SEISMIC_SLAM -> "Slams ground for " + (level * 3) + " AoE damage (radius " + switch (level) { case 1 -> "3"; case 2 -> "4"; default -> "5"; } + ")";
             case MAGNETIZE -> "Pulls enemies within " + (2 + level * 2) + " blocks toward impact";
+            // Spear enchantments (NEW v1.3.0)
+            case IMPALING_THRUST -> "Bypasses " + switch (level) { case 1 -> "15%"; case 2 -> "25%"; default -> "35%"; } + " of target's armor";
+            case EXTENDED_REACH -> "+" + switch (level) { case 1 -> "0.5"; case 2 -> "1.0"; default -> "1.5"; } + " block attack range";
+            case SKEWERING -> "Charge attack pierces through " + switch (level) { case 1 -> "2"; case 2 -> "3"; default -> "4"; } + " blocks behind target";
         };
     }
 
@@ -404,6 +421,7 @@ public class AnvilRecipeListener implements Listener {
             case CHAIN_LIGHTNING -> vanillaEnchants.containsKey(Enchantment.FIRE_ASPECT);
             case MOMENTUM -> vanillaEnchants.containsKey(Enchantment.FROST_WALKER);
             case SEISMIC_SLAM -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
+            // Spear enchantment conflicts are handled via CustomEnchantManager's conflict map
             default -> false;
         };
     }
@@ -420,6 +438,7 @@ public class AnvilRecipeListener implements Listener {
             case GRAVITY_WELL, MAGNETIZE -> NamedTextColor.DARK_AQUA;
             case MOMENTUM -> NamedTextColor.WHITE;
             case HARVESTING_MOON -> NamedTextColor.GOLD;
+            case IMPALING_THRUST, EXTENDED_REACH, SKEWERING -> NamedTextColor.DARK_AQUA;
             default -> NamedTextColor.BLUE;
         };
     }
