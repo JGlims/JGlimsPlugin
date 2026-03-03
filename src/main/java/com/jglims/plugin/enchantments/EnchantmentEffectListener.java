@@ -22,7 +22,6 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Boss;
@@ -37,6 +36,7 @@ import org.bukkit.entity.Wolf;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -63,6 +63,7 @@ import org.bukkit.util.Vector;
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.weapons.BattleAxeManager;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -72,22 +73,21 @@ public class EnchantmentEffectListener implements Listener {
     private final JGlimsPlugin plugin;
     private final CustomEnchantManager enchantManager;
 
-    // Cooldown tracking for Boost (player UUID -> cooldown end millis)
     private final Map<UUID, Long> boostCooldowns = new HashMap<>();
-
-    // Prevent recursive block breaks (Veinminer, Timber, Drill, Excavator)
+    private final Map<UUID, Long> gravityWellCooldowns = new HashMap<>();
     private final Set<UUID> processingBlockBreak = new HashSet<>();
 
-    // NamespacedKeys for Reaper's Mark tracking on targets
+    // Momentum tracking: player UUID -> consecutive sprint ticks
+    private final Map<UUID, Integer> momentumTicks = new HashMap<>();
+
     private final NamespacedKey reaperMarkKey;
     private final NamespacedKey reaperMarkTimeKey;
-
-    // NamespacedKeys for Soul Reap attacker tracking
     private final NamespacedKey soulReapAttackerKey;
     private final NamespacedKey soulReapLevelKey;
-
-    // NamespacedKey for Vitality attribute modifier
     private final NamespacedKey vitalityModKey;
+
+    // Axe nerf modifier key
+    private final NamespacedKey axeNerfSpeedKey;
 
     public EnchantmentEffectListener(JGlimsPlugin plugin, CustomEnchantManager enchantManager) {
         this.plugin = plugin;
@@ -97,6 +97,7 @@ public class EnchantmentEffectListener implements Listener {
         this.soulReapAttackerKey = new NamespacedKey(plugin, "soul_reap_attacker");
         this.soulReapLevelKey = new NamespacedKey(plugin, "soul_reap_level");
         this.vitalityModKey = new NamespacedKey(plugin, "vitality_health");
+        this.axeNerfSpeedKey = new NamespacedKey(plugin, "axe_nerf_speed");
     }
 
     // ========================================================================
@@ -117,8 +118,7 @@ public class EnchantmentEffectListener implements Listener {
                 ItemStack wolfArmor = equip.getItem(EquipmentSlot.BODY);
                 if (wolfArmor != null && enchantManager.hasEnchant(wolfArmor, EnchantmentType.BEST_BUDDIES)) {
                     event.setDamage(event.getDamage() * 0.05);
-                    wolf.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION,
-                        60, 1, true, false, false));
+                    wolf.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 1, true, false, false));
                 }
             }
         }
@@ -146,7 +146,7 @@ public class EnchantmentEffectListener implements Listener {
 
         double baseDamage = event.getDamage();
 
-        // --- Berserker: +damage based on missing HP ---
+        // --- Berserker ---
         int berserkerLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.BERSERKER);
         if (berserkerLvl > 0) {
             AttributeInstance maxHpAttr = attacker.getAttribute(Attribute.MAX_HEALTH);
@@ -157,16 +157,14 @@ public class EnchantmentEffectListener implements Listener {
             baseDamage = event.getDamage();
         }
 
-        // --- Blood Price: +bonus damage, self-damage ---
+        // --- Blood Price ---
         int bloodPriceLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.BLOOD_PRICE);
         if (bloodPriceLvl > 0) {
             double bonusDmg = 0.5 + (bloodPriceLvl * 0.5);
             event.setDamage(baseDamage + bonusDmg);
             baseDamage = event.getDamage();
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (attacker.isOnline() && attacker.getHealth() > 1.0) {
-                    attacker.damage(1.0);
-                }
+                if (attacker.isOnline() && attacker.getHealth() > 1.0) attacker.damage(1.0);
             });
         }
 
@@ -193,36 +191,22 @@ public class EnchantmentEffectListener implements Listener {
             targetPdc.set(reaperMarkTimeKey, PersistentDataType.LONG, System.currentTimeMillis() + durationMs);
         }
 
-        // --- Vampirism: Regen on hit ---
-        // BUG 4 FIX: I→Regen I, II→Regen II, III→Regen II, IV→Regen III, V→Regen IV
+        // --- Vampirism (BUG 4 FIX applied) ---
         int vampirismLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.VAMPIRISM);
         if (vampirismLvl > 0) {
             int amp = switch (vampirismLvl) {
-                case 1 -> 0;  // Regen I
-                case 2 -> 1;  // Regen II
-                case 3 -> 1;  // Regen II
-                case 4 -> 2;  // Regen III
-                default -> 3; // Regen IV (for level V)
+                case 1 -> 0; case 2 -> 1; case 3 -> 1; case 4 -> 2; default -> 3;
             };
             int dur = switch (vampirismLvl) {
-                case 1 -> 2 * 20;
-                case 2 -> 3 * 20;
-                case 3 -> 4 * 20;
-                case 4 -> 5 * 20;
-                default -> 5 * 20;
+                case 1 -> 40; case 2 -> 60; case 3 -> 80; case 4 -> 100; default -> 100;
             };
-            attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION,
-                dur, amp, true, false, false));
+            attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, dur, amp, true, false, false));
         }
 
-        // --- Lifesteal: heal % of damage dealt ---
+        // --- Lifesteal ---
         int lifestealLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.LIFESTEAL);
         if (lifestealLvl > 0) {
-            double pct = switch (lifestealLvl) {
-                case 1 -> 0.05;
-                case 2 -> 0.10;
-                default -> 0.15;
-            };
+            double pct = switch (lifestealLvl) { case 1 -> 0.05; case 2 -> 0.10; default -> 0.15; };
             double heal = baseDamage * pct;
             if (heal > 0) {
                 AttributeInstance maxHpAttr = attacker.getAttribute(Attribute.MAX_HEALTH);
@@ -231,7 +215,7 @@ public class EnchantmentEffectListener implements Listener {
             }
         }
 
-        // --- Bleed: DoT ---
+        // --- Bleed ---
         int bleedLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.BLEED);
         if (bleedLvl > 0) {
             int totalTicks = bleedLvl * 10;
@@ -248,43 +232,70 @@ public class EnchantmentEffectListener implements Listener {
             }.runTaskTimer(plugin, interval, interval);
         }
 
-        // --- Venomstrike: Poison on hit ---
+        // --- Venomstrike ---
         int venomLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.VENOMSTRIKE);
         if (venomLvl > 0) {
             int amp = venomLvl >= 3 ? 1 : 0;
-            int dur = switch (venomLvl) {
-                case 1 -> 3 * 20;
-                case 2 -> 5 * 20;
-                default -> 5 * 20;
-            };
+            int dur = venomLvl <= 1 ? 60 : 100;
             livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.POISON, dur, amp, true, true, true));
         }
 
-        // --- Frostbite: Slowness on hit ---
+        // --- Frostbite ---
         int frostLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.FROSTBITE);
         if (frostLvl > 0) {
             int dur = frostLvl * 10;
             livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, dur, 0, true, true, true));
         }
 
-        // --- Wither Touch: Wither on hit ---
+        // --- Wither Touch ---
         int witherLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.WITHER_TOUCH);
         if (witherLvl > 0) {
             int amp = witherLvl - 1;
-            int dur = witherLvl == 1 ? 3 * 20 : 5 * 20;
+            int dur = witherLvl == 1 ? 60 : 100;
             livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, dur, amp, true, true, true));
         }
 
-        // --- Lumberjack: chance to disable shield ---
+        // --- Chain Lightning (NEW v1.1.0) ---
+        int chainLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.CHAIN_LIGHTNING);
+        if (chainLvl > 0) {
+            int chains = chainLvl;
+            double dmgPct = switch (chainLvl) { case 1 -> 0.30; case 2 -> 0.40; default -> 0.50; };
+            double chainDmg = baseDamage * dmgPct;
+            Set<Entity> hit = new HashSet<>();
+            hit.add(livingTarget);
+            hit.add(attacker);
+            LivingEntity current = livingTarget;
+            for (int i = 0; i < chains; i++) {
+                LivingEntity nearest = null;
+                double nearestDist = 5.0;
+                for (Entity e : current.getNearbyEntities(5, 3, 5)) {
+                    if (e instanceof LivingEntity le && !hit.contains(e) && e != attacker) {
+                        double d = current.getLocation().distance(e.getLocation());
+                        if (d < nearestDist) { nearestDist = d; nearest = le; }
+                    }
+                }
+                if (nearest == null) break;
+                nearest.damage(chainDmg, attacker);
+                hit.add(nearest);
+                Location from = current.getLocation().add(0, 1, 0);
+                Location to = nearest.getLocation().add(0, 1, 0);
+                current.getWorld().spawnParticle(Particle.ELECTRIC_SPARK,
+                    from.clone().add(to.toVector().subtract(from.toVector()).multiply(0.5)),
+                    5, 0.1, 0.1, 0.1, 0.01);
+                current = nearest;
+            }
+        }
+
+        // --- Lumberjack ---
         int lumberjackLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.LUMBERJACK);
         if (lumberjackLvl > 0 && livingTarget instanceof Player targetPlayer && targetPlayer.isBlocking()) {
             double chance = switch (lumberjackLvl) { case 1 -> 0.10; case 2 -> 0.20; default -> 0.30; };
             if (ThreadLocalRandom.current().nextDouble() < chance) {
-                targetPlayer.setCooldown(Material.SHIELD, 5 * 20);
+                targetPlayer.setCooldown(Material.SHIELD, 100);
             }
         }
 
-        // --- Cleave: AoE damage to nearby hostiles ---
+        // --- Cleave ---
         int cleaveLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.CLEAVE);
         if (cleaveLvl > 0) {
             double dmgPct = switch (cleaveLvl) { case 1 -> 0.20; case 2 -> 0.35; default -> 0.50; };
@@ -297,7 +308,7 @@ public class EnchantmentEffectListener implements Listener {
             }
         }
 
-        // --- Guillotine: instant kill chance if target <30% HP (not bosses) ---
+        // --- Guillotine ---
         int guillotineLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.GUILLOTINE);
         if (guillotineLvl > 0 && !(livingTarget instanceof Boss)) {
             AttributeInstance tMaxHp = livingTarget.getAttribute(Attribute.MAX_HEALTH);
@@ -316,6 +327,19 @@ public class EnchantmentEffectListener implements Listener {
             targetPdc.set(soulReapAttackerKey, PersistentDataType.STRING, attacker.getUniqueId().toString());
             targetPdc.set(soulReapLevelKey, PersistentDataType.INTEGER, soulReapLvl);
         }
+
+        // --- Normal Axe Combat Nerf (NEW v1.1.0) ---
+        if (plugin.getConfigManager().isAxeNerfEnabled()) {
+            String matName = weapon.getType().name();
+            if (matName.endsWith("_AXE")) {
+                BattleAxeManager bam = plugin.getBattleAxeManager();
+                if (bam != null && !bam.isBattleAxe(weapon)) {
+                    // This is a regular axe — apply damage reduction via attack cooldown
+                    // Set the player's attack cooldown high
+                    attacker.setCooldown(weapon.getType(), 40); // 2 seconds = 40 ticks
+                }
+            }
+        }
     }
 
     // ========================================================================
@@ -329,8 +353,7 @@ public class EnchantmentEffectListener implements Listener {
                 double chance = dodgeLvl == 1 ? 0.08 : 0.15;
                 if (ThreadLocalRandom.current().nextDouble() < chance) {
                     event.setCancelled(true);
-                    victim.getWorld().spawnParticle(Particle.SMOKE,
-                        victim.getLocation().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0.01);
+                    victim.getWorld().spawnParticle(Particle.SMOKE, victim.getLocation().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0.01);
                     return true;
                 }
             }
@@ -366,28 +389,39 @@ public class EnchantmentEffectListener implements Listener {
     }
 
     // ========================================================================
-    // SOUL REAP — ON ENTITY DEATH
+    // ENTITY DEATH — Soul Reap + Harvesting Moon (NEW v1.1.0)
     // ========================================================================
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         PersistentDataContainer pdc = entity.getPersistentDataContainer();
 
-        if (!pdc.has(soulReapAttackerKey, PersistentDataType.STRING)) return;
+        // Soul Reap
+        if (pdc.has(soulReapAttackerKey, PersistentDataType.STRING)) {
+            String uuidStr = pdc.get(soulReapAttackerKey, PersistentDataType.STRING);
+            Integer level = pdc.get(soulReapLevelKey, PersistentDataType.INTEGER);
+            if (uuidStr != null && level != null) {
+                Player attacker = plugin.getServer().getPlayer(UUID.fromString(uuidStr));
+                if (attacker != null && attacker.isOnline()) {
+                    int dur = switch (level) { case 1 -> 60; case 2 -> 100; default -> 140; };
+                    PotionEffect existing = attacker.getPotionEffect(PotionEffectType.STRENGTH);
+                    int newAmp = (existing != null && existing.getAmplifier() < 1) ? 1 : 0;
+                    attacker.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, dur, newAmp, true, true, true));
+                }
+            }
+        }
 
-        String uuidStr = pdc.get(soulReapAttackerKey, PersistentDataType.STRING);
-        Integer level = pdc.get(soulReapLevelKey, PersistentDataType.INTEGER);
-        if (uuidStr == null || level == null) return;
-
-        Player attacker = plugin.getServer().getPlayer(UUID.fromString(uuidStr));
-        if (attacker == null || !attacker.isOnline()) return;
-
-        int dur = switch (level) { case 1 -> 3 * 20; case 2 -> 5 * 20; default -> 7 * 20; };
-
-        PotionEffect existing = attacker.getPotionEffect(PotionEffectType.STRENGTH);
-        int newAmp = (existing != null && existing.getAmplifier() < 1) ? 1 : 0;
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH,
-            dur, newAmp, true, true, true));
+        // Harvesting Moon (NEW v1.1.0): bonus XP
+        Player killer = entity.getKiller();
+        if (killer != null) {
+            ItemStack weapon = killer.getInventory().getItemInMainHand();
+            int harvestMoonLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.HARVESTING_MOON);
+            if (harvestMoonLvl > 0) {
+                double xpMult = harvestMoonLvl * 0.50; // 50% per level
+                int bonusXp = (int) (event.getDroppedExp() * xpMult);
+                event.setDroppedExp(event.getDroppedExp() + bonusXp);
+            }
+        }
     }
 
     // ========================================================================
@@ -506,10 +540,16 @@ public class EnchantmentEffectListener implements Listener {
 
         int timberLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.TIMBER);
         if (timberLvl > 0 && isLog(block.getType())) {
-            int max = switch (timberLvl) { case 1 -> 8; case 2 -> 16; default -> 64; };
-            breakConnectedBlocks(player, block, max, EnchantmentEffectListener::isLog);
-            decayNearbyLeaves(block.getLocation(), 6);
-            return;
+            // Block Battle Axes from using Timber
+            BattleAxeManager bam = plugin.getBattleAxeManager();
+            if (bam != null && bam.isBattleAxe(tool)) {
+                // Battle axes cannot use Timber — do nothing
+            } else {
+                int max = switch (timberLvl) { case 1 -> 8; case 2 -> 16; default -> 64; };
+                breakConnectedBlocks(player, block, max, EnchantmentEffectListener::isLog);
+                decayNearbyLeaves(block.getLocation(), 6);
+                return;
+            }
         }
 
         int veinLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.VEINMINER);
@@ -555,15 +595,41 @@ public class EnchantmentEffectListener implements Listener {
     }
 
     // ========================================================================
-    // PLAYER INTERACT — Harvester, Green Thumb, Replenish
+    // PLAYER INTERACT — Harvester, Green Thumb, Replenish, Gravity Well
     // ========================================================================
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         if (item == null) return;
+
+        // Gravity Well (NEW v1.1.0) — Right-click with pickaxe
+        int gravWellLvl = enchantManager.getEnchantLevel(item, EnchantmentType.GRAVITY_WELL);
+        if (gravWellLvl > 0 && item.getType().name().endsWith("_PICKAXE")) {
+            long now = System.currentTimeMillis();
+            Long cdEnd = gravityWellCooldowns.get(player.getUniqueId());
+            if (cdEnd != null && now < cdEnd) {
+                long remaining = (cdEnd - now) / 1000;
+                player.sendActionBar(Component.text("Gravity Well cooldown: " + remaining + "s", NamedTextColor.RED));
+                return;
+            }
+            int radius = gravWellLvl == 1 ? 8 : 12;
+            for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+                if (entity instanceof Item itemEntity) {
+                    itemEntity.teleport(player.getLocation());
+                    itemEntity.setPickupDelay(0);
+                }
+            }
+            gravityWellCooldowns.put(player.getUniqueId(), now + 3000L);
+            player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation().add(0, 1, 0), 15, 1, 0.5, 1, 0.5);
+            player.sendActionBar(Component.text("Gravity Well!", NamedTextColor.DARK_AQUA));
+            event.setCancelled(true);
+            return;
+        }
+
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
 
@@ -598,20 +664,18 @@ public class EnchantmentEffectListener implements Listener {
         if (replenishLvl > 0 && isShovel(item.getType())) {
             if (clicked.getType() == Material.SHORT_GRASS || clicked.getType() == Material.TALL_GRASS) {
                 if (ThreadLocalRandom.current().nextDouble() < 0.15) {
-                    clicked.getWorld().dropItemNaturally(clicked.getLocation(),
-                        new ItemStack(Material.WHEAT_SEEDS, 1));
+                    clicked.getWorld().dropItemNaturally(clicked.getLocation(), new ItemStack(Material.WHEAT_SEEDS, 1));
                 }
             } else if (clicked.getType() == Material.SAND && isNearWater(clicked)) {
                 if (ThreadLocalRandom.current().nextDouble() < 0.10) {
-                    clicked.getWorld().dropItemNaturally(clicked.getLocation(),
-                        new ItemStack(Material.PRISMARINE_SHARD, 1));
+                    clicked.getWorld().dropItemNaturally(clicked.getLocation(), new ItemStack(Material.PRISMARINE_SHARD, 1));
                 }
             }
         }
     }
 
     // ========================================================================
-    // ELYTRA BOOST — Sneak while gliding
+    // ELYTRA BOOST
     // ========================================================================
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -672,22 +736,20 @@ public class EnchantmentEffectListener implements Listener {
                             le.damage(aoeDmg, player);
                         }
                     }
-                    player.getWorld().spawnParticle(Particle.EXPLOSION,
-                        player.getLocation(), 3, 1, 0.5, 1, 0.01);
+                    player.getWorld().spawnParticle(Particle.EXPLOSION, player.getLocation(), 3, 1, 0.5, 1, 0.01);
                 }
             }
         }
     }
 
     // ========================================================================
-    // GLIDER + SUPER ELYTRA — Durability reduction
+    // GLIDER + SUPER ELYTRA DURABILITY
     // ========================================================================
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerItemDamage(PlayerItemDamageEvent event) {
         ItemStack item = event.getItem();
         if (item.getType() != Material.ELYTRA) return;
 
-        // Glider: 50% less durability
         if (enchantManager.getEnchantLevel(item, EnchantmentType.GLIDER) > 0) {
             if (ThreadLocalRandom.current().nextBoolean()) {
                 event.setCancelled(true);
@@ -695,9 +757,12 @@ public class EnchantmentEffectListener implements Listener {
             }
         }
 
-        // Super Elytra: doubled durability (50% chance to negate, independent of Glider)
-        if (plugin.getSuperToolManager().hasSuperElytraDurability(item)) {
-            if (ThreadLocalRandom.current().nextBoolean()) {
+        int elytraTier = plugin.getSuperToolManager().getElytraDurabilityTier(item);
+        if (elytraTier > 0) {
+            double saveChance = switch (elytraTier) {
+                case 1 -> 0.30; case 2 -> 0.50; case 3 -> 0.70; default -> 0;
+            };
+            if (ThreadLocalRandom.current().nextDouble() < saveChance) {
                 event.setCancelled(true);
             }
         }
@@ -773,6 +838,106 @@ public class EnchantmentEffectListener implements Listener {
                 }
             }
         }
+
+        // Axe nerf: apply/remove slow attack speed when holding regular axe
+        if (plugin.getConfigManager().isAxeNerfEnabled()) {
+            String matName = mainHand.getType().name();
+            boolean holdingRegularAxe = matName.endsWith("_AXE");
+            BattleAxeManager bam = plugin.getBattleAxeManager();
+            if (holdingRegularAxe && bam != null && bam.isBattleAxe(mainHand)) {
+                holdingRegularAxe = false; // It's a battle axe, not a regular axe
+            }
+
+            AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
+            if (attackSpeed != null) {
+                attackSpeed.getModifiers().stream()
+                    .filter(m -> m.getKey().equals(axeNerfSpeedKey))
+                    .forEach(attackSpeed::removeModifier);
+                if (holdingRegularAxe) {
+                    // Set attack speed to 0.5 by applying a large negative modifier
+                    // Player base = 4.0, vanilla axe modifier already in place.
+                    // We want total = 0.5, so we add (0.5 - current value)
+                    // But it's simpler: just add a big negative to push it down
+                    double currentSpeed = attackSpeed.getValue();
+                    double targetSpeed = plugin.getConfigManager().getAxeNerfAttackSpeed();
+                    double needed = targetSpeed - currentSpeed;
+                    if (needed < 0) {
+                        attackSpeed.addModifier(new AttributeModifier(
+                            axeNerfSpeedKey, needed, AttributeModifier.Operation.ADD_NUMBER));
+                    }
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // MOMENTUM (NEW v1.1.0) — Speed boost while sprinting
+    // ========================================================================
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+            && event.getFrom().getBlockY() == event.getTo().getBlockY()
+            && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
+
+        Player player = event.getPlayer();
+
+        // Tidal Wave: Dolphin's Grace in water
+        if (player.isInWater()) {
+            ItemStack mainHand = player.getInventory().getItemInMainHand();
+            if (mainHand.getType() == Material.TRIDENT) {
+                int tidalLvl = enchantManager.getEnchantLevel(mainHand, EnchantmentType.TIDAL_WAVE);
+                if (tidalLvl > 0) {
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 60, 0, true, false, false));
+                }
+            }
+        }
+
+        // Momentum enchantment
+        ItemStack boots = player.getInventory().getBoots();
+        if (boots == null) return;
+        int momentumLvl = enchantManager.getEnchantLevel(boots, EnchantmentType.MOMENTUM);
+        if (momentumLvl <= 0) {
+            momentumTicks.remove(player.getUniqueId());
+            return;
+        }
+
+        if (player.isSprinting()) {
+            int ticks = momentumTicks.getOrDefault(player.getUniqueId(), 0) + 1;
+            momentumTicks.put(player.getUniqueId(), ticks);
+
+            // Every 20 ticks (1 second), increase speed
+            double speedPerSec = switch (momentumLvl) { case 1 -> 0.05; case 2 -> 0.07; default -> 0.10; };
+            double maxSpeed = switch (momentumLvl) { case 1 -> 0.15; case 2 -> 0.21; default -> 0.30; };
+            int seconds = ticks / 20;
+            double speedBoost = Math.min(seconds * speedPerSec, maxSpeed);
+
+            if (speedBoost > 0) {
+                // Apply as speed potion — amplifier 0 = 20% speed, so we scale
+                // Speed I = +20%, Speed II = +40%. We want arbitrary %.
+                // Use attribute modifier instead
+                AttributeInstance speedAttr = player.getAttribute(Attribute.MOVEMENT_SPEED);
+                if (speedAttr != null) {
+                    NamespacedKey momentumKey = new NamespacedKey(plugin, "momentum_speed");
+                    speedAttr.getModifiers().stream()
+                        .filter(m -> m.getKey().equals(momentumKey))
+                        .forEach(speedAttr::removeModifier);
+                    speedAttr.addModifier(new AttributeModifier(
+                        momentumKey, speedBoost, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+                }
+            }
+        } else {
+            // Not sprinting — reset momentum
+            if (momentumTicks.containsKey(player.getUniqueId())) {
+                momentumTicks.remove(player.getUniqueId());
+                AttributeInstance speedAttr = player.getAttribute(Attribute.MOVEMENT_SPEED);
+                if (speedAttr != null) {
+                    NamespacedKey momentumKey = new NamespacedKey(plugin, "momentum_speed");
+                    speedAttr.getModifiers().stream()
+                        .filter(m -> m.getKey().equals(momentumKey))
+                        .forEach(speedAttr::removeModifier);
+                }
+            }
+        }
     }
 
     private void applyOrRemoveEffect(Player player, PotionEffectType type, boolean shouldHave, int amplifier) {
@@ -788,33 +953,32 @@ public class EnchantmentEffectListener implements Listener {
     }
 
     // ========================================================================
-    // MOVE EVENT — Tidal Wave: Dolphin's Grace in water
-    // ========================================================================
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerMove(PlayerMoveEvent event) {
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
-            && event.getFrom().getBlockY() == event.getTo().getBlockY()
-            && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
-
-        Player player = event.getPlayer();
-        if (!player.isInWater()) return;
-
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
-        if (mainHand.getType() != Material.TRIDENT) return;
-
-        int tidalLvl = enchantManager.getEnchantLevel(mainHand, EnchantmentType.TIDAL_WAVE);
-        if (tidalLvl > 0) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
-                60, 0, true, false, false));
-        }
-    }
-
-    // ========================================================================
     // PLAYER QUIT — Clean up
     // ========================================================================
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        boostCooldowns.remove(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        boostCooldowns.remove(uuid);
+        gravityWellCooldowns.remove(uuid);
+        momentumTicks.remove(uuid);
+
+        // Remove momentum speed modifier
+        Player player = event.getPlayer();
+        AttributeInstance speedAttr = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speedAttr != null) {
+            NamespacedKey momentumKey = new NamespacedKey(plugin, "momentum_speed");
+            speedAttr.getModifiers().stream()
+                .filter(m -> m.getKey().equals(momentumKey))
+                .forEach(speedAttr::removeModifier);
+        }
+
+        // Remove axe nerf modifier
+        AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
+        if (attackSpeed != null) {
+            attackSpeed.getModifiers().stream()
+                .filter(m -> m.getKey().equals(axeNerfSpeedKey))
+                .forEach(attackSpeed::removeModifier);
+        }
     }
 
     // ========================================================================
@@ -833,13 +997,8 @@ public class EnchantmentEffectListener implements Listener {
             || mat == Material.STRIPPED_CRIMSON_STEM || mat == Material.STRIPPED_WARPED_STEM;
     }
 
-    private static boolean isLeaf(Material mat) {
-        return mat.name().endsWith("_LEAVES");
-    }
-
     private static boolean isOre(Material mat) {
-        String name = mat.name();
-        return name.endsWith("_ORE") || mat == Material.ANCIENT_DEBRIS;
+        return mat.name().endsWith("_ORE") || mat == Material.ANCIENT_DEBRIS;
     }
 
     private static boolean isPickaxeMineable(Material mat) {
@@ -870,13 +1029,8 @@ public class EnchantmentEffectListener implements Listener {
         };
     }
 
-    private static boolean isHoe(Material mat) {
-        return mat.name().endsWith("_HOE");
-    }
-
-    private static boolean isShovel(Material mat) {
-        return mat.name().endsWith("_SHOVEL");
-    }
+    private static boolean isHoe(Material mat) { return mat.name().endsWith("_HOE"); }
+    private static boolean isShovel(Material mat) { return mat.name().endsWith("_SHOVEL"); }
 
     private Material getSmeltedDrop(Material ore) {
         return switch (ore) {
@@ -898,12 +1052,9 @@ public class EnchantmentEffectListener implements Listener {
             visited.add(origin);
             int broken = 0;
             ItemStack tool = player.getInventory().getItemInMainHand();
-
             while (!queue.isEmpty() && broken < maxBlocks) {
                 Block current = queue.poll();
-                if (broken > 0) {
-                    current.breakNaturally(tool);
-                }
+                if (broken > 0) current.breakNaturally(tool);
                 broken++;
                 for (BlockFace face : new BlockFace[]{BlockFace.UP, BlockFace.DOWN,
                     BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
@@ -924,7 +1075,6 @@ public class EnchantmentEffectListener implements Listener {
         try {
             BlockFace facing = getPlayerFacing(player);
             List<Block> toBreak = new ArrayList<>();
-
             if (level == 1) {
                 toBreak.add(origin.getRelative(BlockFace.UP));
                 toBreak.add(origin.getRelative(BlockFace.DOWN));
@@ -935,13 +1085,11 @@ public class EnchantmentEffectListener implements Listener {
                 Block behind = origin.getRelative(facing);
                 addPlaneBlocks(toBreak, behind, facing, 1);
             }
-
             ItemStack tool = player.getInventory().getItemInMainHand();
             for (Block b : toBreak) {
                 if (b.equals(origin)) continue;
                 if (b.getType() != Material.AIR && b.getType() != Material.BEDROCK
-                    && !b.getType().name().contains("COMMAND")
-                    && b.getType() != Material.BARRIER) {
+                    && !b.getType().name().contains("COMMAND") && b.getType() != Material.BARRIER) {
                     b.breakNaturally(tool);
                 }
             }
@@ -959,53 +1107,51 @@ public class EnchantmentEffectListener implements Listener {
         }
     }
 
+    private BlockFace[] getPerpendicular(BlockFace face) {
+        return switch (face) {
+            case NORTH, SOUTH -> new BlockFace[]{BlockFace.EAST, BlockFace.UP};
+            case EAST, WEST -> new BlockFace[]{BlockFace.NORTH, BlockFace.UP};
+            case UP, DOWN -> new BlockFace[]{BlockFace.EAST, BlockFace.NORTH};
+            default -> new BlockFace[]{BlockFace.EAST, BlockFace.UP};
+        };
+    }
+
     private BlockFace getPlayerFacing(Player player) {
         float pitch = player.getLocation().getPitch();
         if (pitch < -45) return BlockFace.UP;
         if (pitch > 45) return BlockFace.DOWN;
-        return player.getFacing();
-    }
-
-    private BlockFace[] getPerpendicular(BlockFace facing) {
-        return switch (facing) {
-            case UP, DOWN -> new BlockFace[]{BlockFace.NORTH, BlockFace.EAST};
-            case NORTH, SOUTH -> new BlockFace[]{BlockFace.EAST, BlockFace.UP};
-            case EAST, WEST -> new BlockFace[]{BlockFace.NORTH, BlockFace.UP};
-            default -> new BlockFace[]{BlockFace.NORTH, BlockFace.EAST};
-        };
-    }
-
-    private void decayNearbyLeaves(Location center, int radius) {
-        World world = center.getWorld();
-        if (world == null) return;
-        for (int x = -radius; x <= radius; x++) {
-            for (int y = -radius; y <= radius; y++) {
-                for (int z = -radius; z <= radius; z++) {
-                    Block block = world.getBlockAt(
-                        center.getBlockX() + x, center.getBlockY() + y, center.getBlockZ() + z);
-                    if (isLeaf(block.getType())) {
-                        block.breakNaturally();
-                    }
-                }
-            }
-        }
+        float yaw = player.getLocation().getYaw();
+        if (yaw < 0) yaw += 360;
+        if (yaw < 45 || yaw >= 315) return BlockFace.SOUTH;
+        if (yaw < 135) return BlockFace.WEST;
+        if (yaw < 225) return BlockFace.NORTH;
+        return BlockFace.EAST;
     }
 
     private void harvestArea(Player player, Block center, int radius) {
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 Block block = center.getRelative(x, 0, z);
-                BlockData data = block.getBlockData();
-                if (data instanceof Ageable ageable) {
+                if (block.getBlockData() instanceof Ageable ageable) {
                     if (ageable.getAge() >= ageable.getMaximumAge()) {
-                        block.breakNaturally();
-                        // Replant
-                        plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            Block soil = block.getRelative(BlockFace.DOWN);
-                            if (soil.getType() == Material.FARMLAND) {
-                                block.setType(data.getMaterial());
-                            }
-                        });
+                        block.breakNaturally(player.getInventory().getItemInMainHand());
+                        block.setType(block.getType()); // replant
+                    }
+                }
+            }
+        }
+    }
+
+    private void decayNearbyLeaves(Location loc, int radius) {
+        World world = loc.getWorld();
+        if (world == null) return;
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Block b = world.getBlockAt(loc.getBlockX() + x, loc.getBlockY() + y, loc.getBlockZ() + z);
+                    if (b.getType().name().endsWith("_LEAVES")) {
+                        // Trigger leaf decay by updating the block
+                        b.getState().update(true);
                     }
                 }
             }
@@ -1013,8 +1159,8 @@ public class EnchantmentEffectListener implements Listener {
     }
 
     private boolean isNearWater(Block block) {
-        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH,
-            BlockFace.EAST, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST,
+            BlockFace.WEST, BlockFace.UP, BlockFace.DOWN}) {
             if (block.getRelative(face).getType() == Material.WATER) return true;
         }
         return false;

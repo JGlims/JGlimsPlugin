@@ -13,21 +13,21 @@ public class BiomeMultipliers {
         OVERWORLD.clear();
         NETHER.clear();
 
-        // Overworld: [healthMult, damageMult]
-        OVERWORLD.put(Biome.PALE_GARDEN, new double[]{1.8, 1.8});
-        OVERWORLD.put(Biome.DEEP_DARK, new double[]{2.0, 1.8});
-        OVERWORLD.put(Biome.SWAMP, new double[]{1.3, 1.2});
-        OVERWORLD.put(Biome.MANGROVE_SWAMP, new double[]{1.3, 1.2});
-        OVERWORLD.put(Biome.DARK_FOREST, new double[]{1.4, 1.3});
-        OVERWORLD.put(Biome.DRIPSTONE_CAVES, new double[]{1.5, 1.3});
+        // Overworld: [healthMult, damageMult] — INCREASED in v1.1.0
+        OVERWORLD.put(Biome.PALE_GARDEN, new double[]{2.0, 2.0});
+        OVERWORLD.put(Biome.DEEP_DARK, new double[]{2.5, 2.0});
+        OVERWORLD.put(Biome.SWAMP, new double[]{1.4, 1.3});
+        OVERWORLD.put(Biome.MANGROVE_SWAMP, new double[]{1.4, 1.3});
+        OVERWORLD.put(Biome.DARK_FOREST, new double[]{1.5, 1.4});
+        OVERWORLD.put(Biome.DRIPSTONE_CAVES, new double[]{1.6, 1.4});
         OVERWORLD.put(Biome.LUSH_CAVES, new double[]{0.8, 0.9});
 
-        // Nether: [healthMult, damageMult]
-        NETHER.put(Biome.NETHER_WASTES, new double[]{1.5, 1.4});
-        NETHER.put(Biome.SOUL_SAND_VALLEY, new double[]{1.8, 1.6});
-        NETHER.put(Biome.CRIMSON_FOREST, new double[]{1.6, 1.5});
-        NETHER.put(Biome.WARPED_FOREST, new double[]{1.6, 1.5});
-        NETHER.put(Biome.BASALT_DELTAS, new double[]{2.0, 1.8});
+        // Nether: [healthMult, damageMult] — INCREASED in v1.1.0
+        NETHER.put(Biome.NETHER_WASTES, new double[]{1.7, 1.5});
+        NETHER.put(Biome.SOUL_SAND_VALLEY, new double[]{2.0, 1.8});
+        NETHER.put(Biome.CRIMSON_FOREST, new double[]{1.8, 1.6});
+        NETHER.put(Biome.WARPED_FOREST, new double[]{1.8, 1.6});
+        NETHER.put(Biome.BASALT_DELTAS, new double[]{2.3, 2.0});
     }
 
     public static double[] getOverworldMultiplier(Biome biome) {

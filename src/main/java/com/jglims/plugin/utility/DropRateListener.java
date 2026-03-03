@@ -5,9 +5,12 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Breeze;
+import org.bukkit.entity.Drowned;
 import org.bukkit.entity.ElderGuardian;
 import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Guardian;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -31,31 +34,49 @@ public class DropRateListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         if (!config.isDropRateBoosterEnabled()) return;
 
-        // --- Guardian: boosted Prismarine Shard drops ---
-        if (event.getEntity() instanceof Guardian && !(event.getEntity() instanceof ElderGuardian)) {
-            boostDrop(event.getDrops(), Material.PRISMARINE_SHARD,
+        LivingEntity entity = event.getEntity();
+        List<ItemStack> drops = event.getDrops();
+
+        // Guardian: boosted Prismarine Shard drops
+        if (entity instanceof Guardian && !(entity instanceof ElderGuardian)) {
+            boostDrop(drops, Material.PRISMARINE_SHARD,
                 config.getGuardianPrismarineMin(), config.getGuardianPrismarineMax());
         }
 
-        // --- Elder Guardian: boosted Prismarine Shard drops ---
-        if (event.getEntity() instanceof ElderGuardian) {
-            boostDrop(event.getDrops(), Material.PRISMARINE_SHARD,
+        // Elder Guardian: boosted Prismarine Shard drops
+        if (entity instanceof ElderGuardian) {
+            boostDrop(drops, Material.PRISMARINE_SHARD,
                 config.getElderGuardianPrismarineMin(), config.getElderGuardianPrismarineMax());
         }
 
-        // --- Ghast: boosted Ghast Tear drops ---
-        if (event.getEntity() instanceof Ghast) {
-            boostDrop(event.getDrops(), Material.GHAST_TEAR,
+        // Ghast: boosted Ghast Tear drops
+        if (entity instanceof Ghast) {
+            boostDrop(drops, Material.GHAST_TEAR,
                 config.getGhastTearMin(), config.getGhastTearMax());
+        }
+
+        // Drowned: 35% chance to drop trident (NEW v1.1.0)
+        if (entity instanceof Drowned) {
+            boolean hasTrident = false;
+            for (ItemStack item : drops) {
+                if (item != null && item.getType() == Material.TRIDENT) {
+                    hasTrident = true;
+                    break;
+                }
+            }
+            if (!hasTrident && ThreadLocalRandom.current().nextDouble() < config.getTridentDropChance()) {
+                drops.add(new ItemStack(Material.TRIDENT, 1));
+            }
+        }
+
+        // Breeze: boosted Wind Charge drops (NEW v1.1.0)
+        if (entity instanceof Breeze) {
+            boostDrop(drops, Material.WIND_CHARGE,
+                config.getBreezeWindChargeMin(), config.getBreezeWindChargeMax());
         }
     }
 
-    /**
-     * Ensures the drop list contains at least min and at most max of the specified material.
-     * Removes existing drops of that material and replaces with the boosted amount.
-     */
     private void boostDrop(List<ItemStack> drops, Material material, int min, int max) {
-        // Remove existing drops of this material
         Iterator<ItemStack> it = drops.iterator();
         while (it.hasNext()) {
             ItemStack item = it.next();
@@ -64,7 +85,6 @@ public class DropRateListener implements Listener {
             }
         }
 
-        // Add boosted amount
         int amount = ThreadLocalRandom.current().nextInt(min, max + 1);
         if (amount > 0) {
             drops.add(new ItemStack(material, amount));

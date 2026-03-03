@@ -1,6 +1,10 @@
 package com.jglims.plugin.enchantments;
 
-import com.jglims.plugin.JGlimsPlugin;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
@@ -8,10 +12,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import com.jglims.plugin.JGlimsPlugin;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-
-import java.util.*;
 
 public class CustomEnchantManager {
 
@@ -29,29 +33,12 @@ public class CustomEnchantManager {
             keys.put(type, new NamespacedKey(plugin, type.name().toLowerCase()));
         }
 
-        // Register conflicts
-        addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.BERSERKER);
-        addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.LIFESTEAL);
-        addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.BLOOD_PRICE);
-        addConflict(EnchantmentType.BERSERKER, EnchantmentType.LIFESTEAL);
-        addConflict(EnchantmentType.BLEED, EnchantmentType.FROSTBITE);
-        addConflict(EnchantmentType.BLEED, EnchantmentType.VENOMSTRIKE);
-        addConflict(EnchantmentType.BLEED, EnchantmentType.WITHER_TOUCH);
-        addConflict(EnchantmentType.VENOMSTRIKE, EnchantmentType.WITHER_TOUCH);
-        addConflict(EnchantmentType.FROSTBITE, EnchantmentType.BLEED);
-        addConflict(EnchantmentType.CLEAVE, EnchantmentType.LIFESTEAL); // Not in doc - removing
-        addConflict(EnchantmentType.THUNDERLORD, EnchantmentType.TIDAL_WAVE); // Not in doc - removing
-        addConflict(EnchantmentType.EXPLOSIVE_ARROW, EnchantmentType.HOMING); // Not in doc - removing
-        addConflict(EnchantmentType.BLOOD_PRICE, EnchantmentType.LIFESTEAL);
-
-        // Correct conflicts per document
-        addConflict(EnchantmentType.THUNDERLORD, EnchantmentType.THUNDERLORD); // placeholder removed below
-        // Let me redo this properly:
-        conflicts.clear();
+        // Initialize conflict sets
         for (EnchantmentType type : EnchantmentType.values()) {
             conflicts.put(type, EnumSet.noneOf(EnchantmentType.class));
         }
 
+        // Register custom↔custom conflicts
         addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.BERSERKER);
         addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.LIFESTEAL);
         addConflict(EnchantmentType.VAMPIRISM, EnchantmentType.BLOOD_PRICE);
@@ -63,12 +50,9 @@ public class CustomEnchantManager {
         addConflict(EnchantmentType.EXPLOSIVE_ARROW, EnchantmentType.HOMING);
         addConflict(EnchantmentType.BLOOD_PRICE, EnchantmentType.LIFESTEAL);
         addConflict(EnchantmentType.VEINMINER, EnchantmentType.DRILL);
-        // Note: Drill III vs Silk Touch, Auto-Smelt vs Silk Touch/Fortune,
-        // Frostbite vs Fire Aspect, Thunderlord vs Channeling, Tidal Wave vs Riptide,
-        // Homing vs Multishot, Rapidfire vs Quick Charge, Aqua Lungs vs Respiration,
-        // Deflection vs Projectile Protection, Stomp vs Feather Falling,
-        // Soulbound vs Curse of Vanishing, Cleave vs Sweeping Edge
-        // These are handled in the anvil listener since they involve vanilla enchants.
+        addConflict(EnchantmentType.MOMENTUM, EnchantmentType.SWIFTFOOT);
+
+        // Note: Custom↔Vanilla conflicts are handled in AnvilRecipeListener.hasVanillaConflict()
 
         plugin.getLogger().info("Registered " + EnchantmentType.values().length + " custom enchantments.");
     }
@@ -131,6 +115,16 @@ public class CustomEnchantManager {
             }
         }
         return result;
+    }
+
+    /**
+     * Counts total number of enchantments (custom + vanilla) on an item.
+     */
+    public int getTotalEnchantCount(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return 0;
+        int count = item.getEnchantments().size();
+        count += getAllCustomEnchants(item).size();
+        return count;
     }
 
     public void listEnchantments(CommandSender sender) {

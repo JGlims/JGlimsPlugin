@@ -6,7 +6,10 @@ import com.jglims.plugin.enchantments.AnvilRecipeListener;
 import com.jglims.plugin.enchantments.EnchantmentEffectListener;
 import com.jglims.plugin.enchantments.SoulboundListener;
 import com.jglims.plugin.weapons.SickleManager;
+import com.jglims.plugin.weapons.BattleAxeManager;
+import com.jglims.plugin.weapons.BattleBowManager;
 import com.jglims.plugin.weapons.SuperToolManager;
+import com.jglims.plugin.weapons.WeaponAbilityListener;
 import com.jglims.plugin.crafting.RecipeManager;
 import com.jglims.plugin.crafting.VanillaRecipeRemover;
 import com.jglims.plugin.blessings.BlessingManager;
@@ -14,10 +17,12 @@ import com.jglims.plugin.blessings.BlessingListener;
 import com.jglims.plugin.mobs.MobDifficultyManager;
 import com.jglims.plugin.mobs.BiomeMultipliers;
 import com.jglims.plugin.mobs.BossEnhancer;
+import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.utility.InventorySortListener;
 import com.jglims.plugin.utility.EnchantTransferListener;
 import com.jglims.plugin.utility.LootBoosterListener;
 import com.jglims.plugin.utility.DropRateListener;
+import com.jglims.plugin.utility.VillagerTradeListener;
 import com.jglims.plugin.utility.PaleGardenFogTask;
 
 import org.bukkit.command.Command;
@@ -36,9 +41,12 @@ public class JGlimsPlugin extends JavaPlugin {
     private CustomEnchantManager enchantManager;
     private BlessingManager blessingManager;
     private SickleManager sickleManager;
+    private BattleAxeManager battleAxeManager;
+    private BattleBowManager battleBowManager;
     private SuperToolManager superToolManager;
     private RecipeManager recipeManager;
     private MobDifficultyManager mobDifficultyManager;
+    private KingMobManager kingMobManager;
 
     @Override
     public void onEnable() {
@@ -57,10 +65,12 @@ public class JGlimsPlugin extends JavaPlugin {
 
         // 4. Weapon systems
         sickleManager = new SickleManager(this);
+        battleAxeManager = new BattleAxeManager(this);
+        battleBowManager = new BattleBowManager(this);
         superToolManager = new SuperToolManager(this);
 
         // 5. Crafting recipes
-        recipeManager = new RecipeManager(this, sickleManager, superToolManager);
+        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager, battleBowManager, superToolManager);
         recipeManager.registerAllRecipes();
 
         // 6. Remove vanilla recipes we replace
@@ -69,7 +79,10 @@ public class JGlimsPlugin extends JavaPlugin {
         // 7. Mob difficulty
         mobDifficultyManager = new MobDifficultyManager(this, configManager);
 
-        // 8. Register all event listeners
+        // 8. King mob system
+        kingMobManager = new KingMobManager(this, configManager);
+
+        // 9. Register all event listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new AnvilRecipeListener(this, enchantManager), this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
@@ -77,15 +90,20 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(new BlessingListener(this, blessingManager), this);
         pm.registerEvents(mobDifficultyManager, this);
         pm.registerEvents(new BossEnhancer(this, configManager), this);
+        pm.registerEvents(kingMobManager, this);
         pm.registerEvents(new InventorySortListener(this), this);
         pm.registerEvents(new EnchantTransferListener(this, enchantManager), this);
         pm.registerEvents(new LootBoosterListener(this, configManager), this);
         pm.registerEvents(new DropRateListener(this, configManager), this);
+        pm.registerEvents(new VillagerTradeListener(this, configManager), this);
         pm.registerEvents(sickleManager, this);
+        pm.registerEvents(battleAxeManager, this);
         pm.registerEvents(superToolManager, this);
         pm.registerEvents(recipeManager, this);
+        pm.registerEvents(new WeaponAbilityListener(this, enchantManager, superToolManager,
+            sickleManager, battleAxeManager, battleBowManager), this);
 
-        // 9. Pale Garden fog scheduled task
+        // 10. Pale Garden fog scheduled task
         if (configManager.isPaleGardenFogEnabled()) {
             new PaleGardenFogTask(this).start(configManager.getPaleGardenFogInterval());
         }
@@ -130,11 +148,7 @@ public class JGlimsPlugin extends JavaPlugin {
                 enchantManager.listEnchantments(sender);
             }
             case "sort" -> {
-                if (sender instanceof Player player) {
-                    sender.sendMessage(Component.text("Inventory sorting is always active. Shift-click an empty slot in any container to sort!", NamedTextColor.GREEN));
-                } else {
-                    sender.sendMessage(Component.text("This command can only be used by players.", NamedTextColor.RED));
-                }
+                sender.sendMessage(Component.text("Inventory sorting is always active. Shift-click an empty slot in any container to sort!", NamedTextColor.GREEN));
             }
             default -> {
                 sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort", NamedTextColor.RED));
@@ -143,27 +157,13 @@ public class JGlimsPlugin extends JavaPlugin {
         return true;
     }
 
-    public static JGlimsPlugin getInstance() {
-        return instance;
-    }
-
-    public ConfigManager getConfigManager() {
-        return configManager;
-    }
-
-    public CustomEnchantManager getEnchantManager() {
-        return enchantManager;
-    }
-
-    public BlessingManager getBlessingManager() {
-        return blessingManager;
-    }
-
-    public SickleManager getSickleManager() {
-        return sickleManager;
-    }
-
-    public SuperToolManager getSuperToolManager() {
-        return superToolManager;
-    }
+    public static JGlimsPlugin getInstance() { return instance; }
+    public ConfigManager getConfigManager() { return configManager; }
+    public CustomEnchantManager getEnchantManager() { return enchantManager; }
+    public BlessingManager getBlessingManager() { return blessingManager; }
+    public SickleManager getSickleManager() { return sickleManager; }
+    public BattleAxeManager getBattleAxeManager() { return battleAxeManager; }
+    public BattleBowManager getBattleBowManager() { return battleBowManager; }
+    public SuperToolManager getSuperToolManager() { return superToolManager; }
+    public KingMobManager getKingMobManager() { return kingMobManager; }
 }

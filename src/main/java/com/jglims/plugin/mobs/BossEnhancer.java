@@ -29,22 +29,21 @@ public class BossEnhancer implements Listener {
         double damageMult = 1.0;
 
         if (entity instanceof EnderDragon) {
-            healthMult = config.getBaselineHealth() * 3.0;
-            damageMult = config.getBaselineDamage() * 2.5;
+            healthMult = config.getBaselineHealth() * 3.5;
+            damageMult = config.getBaselineDamage() * 3.0;
         } else if (entity instanceof Wither) {
-            healthMult = config.getBaselineHealth() * 2.0;
-            damageMult = config.getBaselineDamage() * 1.8;
+            healthMult = config.getBaselineHealth() * 2.5;
+            damageMult = config.getBaselineDamage() * 2.2;
         } else if (entity instanceof Warden) {
-            healthMult = config.getBaselineHealth() * 1.5;
-            damageMult = config.getBaselineDamage() * 2.0;
-        } else if (entity instanceof ElderGuardian) {
             healthMult = config.getBaselineHealth() * 2.0;
-            damageMult = config.getBaselineDamage() * 1.5;
+            damageMult = config.getBaselineDamage() * 2.5;
+        } else if (entity instanceof ElderGuardian) {
+            healthMult = config.getBaselineHealth() * 2.5;
+            damageMult = config.getBaselineDamage() * 1.8;
         } else {
-            return; // Not a boss
+            return;
         }
 
-        // Apply health
         AttributeInstance maxHealth = entity.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
             double newHealth = maxHealth.getBaseValue() * healthMult;
@@ -52,7 +51,6 @@ public class BossEnhancer implements Listener {
             entity.setHealth(newHealth);
         }
 
-        // Apply damage
         AttributeInstance attackDamage = entity.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attackDamage != null) {
             attackDamage.setBaseValue(attackDamage.getBaseValue() * damageMult);

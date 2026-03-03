@@ -82,8 +82,8 @@ public class MobDifficultyManager implements Listener {
             damageMult *= biomeMults[1];
 
         } else if (env == World.Environment.THE_END) {
-            healthMult *= 2.0;
-            damageMult *= 1.8;
+            healthMult *= 2.5;
+            damageMult *= 2.0;
         }
 
         // Apply health
@@ -110,11 +110,11 @@ public class MobDifficultyManager implements Listener {
     }
 
     private double[] getDistanceMultipliers(double distance) {
-        if (distance <= 200) return new double[]{1.0, 1.0, 1.0};
-        if (distance <= 350) return new double[]{1.3, 1.2, 1.0};
-        if (distance <= 600) return new double[]{1.6, 1.4, 1.05};
-        if (distance <= 800) return new double[]{2.0, 1.7, 1.1};
-        if (distance <= 1000) return new double[]{2.5, 2.0, 1.15};
-        return new double[]{3.0, 2.3, 1.2};
+        if (distance <= 200)  return new double[]{1.0, 1.0, 1.0};
+        if (distance <= 350)  return new double[]{1.5, 1.3, 1.0};
+        if (distance <= 600)  return new double[]{1.8, 1.6, 1.05};
+        if (distance <= 800)  return new double[]{2.3, 1.9, 1.1};
+        if (distance <= 1000) return new double[]{3.0, 2.3, 1.15};
+        return new double[]{3.5, 2.8, 1.25};
     }
 }

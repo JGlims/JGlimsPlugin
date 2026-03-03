@@ -1,11 +1,11 @@
 name: JGlimsPlugin
-version: '1.0.0'
+version: '1.1.0'
 api: bukkit
 main: com.jglims.plugin.JGlimsPlugin
 api-version: '1.21'
 authors:
   - JGlims
-description: Custom mega plugin for JGlims Minecraft Server - enchantments, sickles, super tools, blessings, mob difficulty, and more.
+description: Custom mega plugin for JGlims Minecraft Server - enchantments, sickles, battle axes, battle bows, super tools, blessings, mob difficulty, king mobs, and more.
 commands:
   jglims:
     description: Main command for JGlimsPlugin

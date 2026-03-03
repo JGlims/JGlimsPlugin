@@ -2,15 +2,17 @@ package com.jglims.plugin.enchantments;
 
 public enum EnchantmentType {
     // Sword
-    VAMPIRISM, BLEED, VENOMSTRIKE, LIFESTEAL,
+    VAMPIRISM, BLEED, VENOMSTRIKE, LIFESTEAL, CHAIN_LIGHTNING,
     // Axe
     BERSERKER, LUMBERJACK, CLEAVE, TIMBER, GUILLOTINE,
     // Pickaxe
-    VEINMINER, DRILL, AUTO_SMELT, MAGNETISM,
+    VEINMINER, DRILL, AUTO_SMELT, MAGNETISM, GRAVITY_WELL,
     // Shovel
     EXCAVATOR, REPLENISH,
     // Hoe
     HARVESTER, GREEN_THUMB,
+    // Sickle
+    SOUL_REAP, BLOOD_PRICE, REAPERS_MARK, WITHER_TOUCH, HARVESTING_MOON,
     // Trident
     THUNDERLORD, SWIFTNESS, VITALITY, TIDAL_WAVE,
     // Universal melee
@@ -28,15 +30,13 @@ public enum EnchantmentType {
     // Leggings
     SWIFTFOOT, DODGE,
     // Boots
-    LEAPING, STOMP,
+    LEAPING, STOMP, MOMENTUM,
     // Elytra
     CUSHION, BOOST, GLIDER,
     // Universal
     SOULBOUND,
     // Dog armor
-    BEST_BUDDIES,
-    // Sickle
-    SOUL_REAP, BLOOD_PRICE, REAPERS_MARK, WITHER_TOUCH;
+    BEST_BUDDIES;
 
     public int getMaxLevel() {
         return switch (this) {
@@ -47,7 +47,8 @@ public enum EnchantmentType {
                  EXPLOSIVE_ARROW, HOMING, RAPIDFIRE, SNIPER,
                  AQUA_LUNGS, FORTIFICATION, DEFLECTION, SWIFTFOOT,
                  DODGE, LEAPING, STOMP, BOOST,
-                 SOUL_REAP, BLOOD_PRICE, REAPERS_MARK, WITHER_TOUCH -> 3;
+                 SOUL_REAP, BLOOD_PRICE, REAPERS_MARK, WITHER_TOUCH,
+                 CHAIN_LIGHTNING, MOMENTUM, HARVESTING_MOON, GRAVITY_WELL -> 3;
             case AUTO_SMELT, MAGNETISM, REPLENISH, GREEN_THUMB,
                  NIGHT_VISION, CUSHION, GLIDER, SOULBOUND, BEST_BUDDIES -> 1;
         };
