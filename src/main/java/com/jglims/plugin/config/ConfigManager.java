@@ -58,6 +58,7 @@ public class ConfigManager {
     private boolean sickleEnabled;
     private boolean battleAxeEnabled;
     private boolean battleBowEnabled;
+    private boolean battleMaceEnabled;
     private boolean superToolsEnabled;
     private boolean dropRateBoosterEnabled;
 
@@ -82,6 +83,29 @@ public class ConfigManager {
     // Axe nerf (NEW v1.1.0)
     private boolean axeNerfEnabled;
     private double axeNerfAttackSpeed;
+
+    // Weapon mastery (NEW v1.2.0)
+    private boolean weaponMasteryEnabled;
+    private int masteryMaxKills;
+    private double masteryMaxBonusPercent;
+
+    // Blood moon (NEW v1.2.0)
+    private boolean bloodMoonEnabled;
+    private int bloodMoonCheckInterval;
+    private double bloodMoonChance;
+    private double bloodMoonMobHealthMult;
+    private double bloodMoonMobDamageMult;
+    private int bloodMoonBossEveryNth;
+    private double bloodMoonBossHealthMult;
+    private double bloodMoonBossDamageMult;
+    private int bloodMoonBossDiamondMin;
+    private int bloodMoonBossDiamondMax;
+    private boolean bloodMoonDoubleDrops;
+
+    // Guilds (NEW v1.2.0)
+    private boolean guildsEnabled;
+    private int guildsMaxMembers;
+    private boolean guildsFriendlyFire;
 
     public ConfigManager(JGlimsPlugin plugin) {
         this.plugin = plugin;
@@ -144,6 +168,7 @@ public class ConfigManager {
         sickleEnabled = config.getBoolean("sickle.enabled", true);
         battleAxeEnabled = config.getBoolean("battle-axe.enabled", true);
         battleBowEnabled = config.getBoolean("battle-bow.enabled", true);
+        battleMaceEnabled = config.getBoolean("battle-mace.enabled", true);
         superToolsEnabled = config.getBoolean("super-tools.enabled", true);
         dropRateBoosterEnabled = config.getBoolean("drop-rate-booster.enabled", true);
 
@@ -169,9 +194,33 @@ public class ConfigManager {
         axeNerfEnabled = config.getBoolean("axe-nerf.enabled", true);
         axeNerfAttackSpeed = config.getDouble("axe-nerf.attack-speed", 0.5);
 
+        // Weapon mastery (NEW v1.2.0)
+        weaponMasteryEnabled = config.getBoolean("weapon-mastery.enabled", true);
+        masteryMaxKills = config.getInt("weapon-mastery.max-kills", 1000);
+        masteryMaxBonusPercent = config.getDouble("weapon-mastery.max-bonus-percent", 10.0);
+
+        // Blood moon (NEW v1.2.0)
+        bloodMoonEnabled = config.getBoolean("blood-moon.enabled", true);
+        bloodMoonCheckInterval = config.getInt("blood-moon.check-interval-ticks", 100);
+        bloodMoonChance = config.getDouble("blood-moon.chance", 0.15);
+        bloodMoonMobHealthMult = config.getDouble("blood-moon.mob-health-multiplier", 1.5);
+        bloodMoonMobDamageMult = config.getDouble("blood-moon.mob-damage-multiplier", 1.3);
+        bloodMoonBossEveryNth = config.getInt("blood-moon.boss-every-nth", 10);
+        bloodMoonBossHealthMult = config.getDouble("blood-moon.boss-health-multiplier", 20.0);
+        bloodMoonBossDamageMult = config.getDouble("blood-moon.boss-damage-multiplier", 5.0);
+        bloodMoonBossDiamondMin = config.getInt("blood-moon.boss-diamond-min", 5);
+        bloodMoonBossDiamondMax = config.getInt("blood-moon.boss-diamond-max", 15);
+        bloodMoonDoubleDrops = config.getBoolean("blood-moon.double-drops", true);
+
+        // Guilds (NEW v1.2.0)
+        guildsEnabled = config.getBoolean("guilds.enabled", true);
+        guildsMaxMembers = config.getInt("guilds.max-members", 10);
+        guildsFriendlyFire = config.getBoolean("guilds.friendly-fire", false);
+
         plugin.getLogger().info("Configuration loaded.");
     }
 
+    // === Existing getters (unchanged) ===
     public FileConfiguration getConfig() { return config; }
     public boolean isMobDifficultyEnabled() { return mobDifficultyEnabled; }
     public double getBaselineHealth() { return baselineHealth; }
@@ -207,6 +256,7 @@ public class ConfigManager {
     public boolean isSickleEnabled() { return sickleEnabled; }
     public boolean isBattleAxeEnabled() { return battleAxeEnabled; }
     public boolean isBattleBowEnabled() { return battleBowEnabled; }
+    public boolean isBattleMaceEnabled() { return battleMaceEnabled; }
     public boolean isSuperToolsEnabled() { return superToolsEnabled; }
     public boolean isDropRateBoosterEnabled() { return dropRateBoosterEnabled; }
     public double getTridentDropChance() { return tridentDropChance; }
@@ -223,4 +273,23 @@ public class ConfigManager {
     public int getKingDiamondMax() { return kingDiamondMax; }
     public boolean isAxeNerfEnabled() { return axeNerfEnabled; }
     public double getAxeNerfAttackSpeed() { return axeNerfAttackSpeed; }
+
+    // === NEW v1.2.0 getters ===
+    public boolean isWeaponMasteryEnabled() { return weaponMasteryEnabled; }
+    public int getMasteryMaxKills() { return masteryMaxKills; }
+    public double getMasteryMaxBonusPercent() { return masteryMaxBonusPercent; }
+    public boolean isBloodMoonEnabled() { return bloodMoonEnabled; }
+    public int getBloodMoonCheckInterval() { return bloodMoonCheckInterval; }
+    public double getBloodMoonChance() { return bloodMoonChance; }
+    public double getBloodMoonMobHealthMult() { return bloodMoonMobHealthMult; }
+    public double getBloodMoonMobDamageMult() { return bloodMoonMobDamageMult; }
+    public int getBloodMoonBossEveryNth() { return bloodMoonBossEveryNth; }
+    public double getBloodMoonBossHealthMult() { return bloodMoonBossHealthMult; }
+    public double getBloodMoonBossDamageMult() { return bloodMoonBossDamageMult; }
+    public int getBloodMoonBossDiamondMin() { return bloodMoonBossDiamondMin; }
+    public int getBloodMoonBossDiamondMax() { return bloodMoonBossDiamondMax; }
+    public boolean isBloodMoonDoubleDrops() { return bloodMoonDoubleDrops; }
+    public boolean isGuildsEnabled() { return guildsEnabled; }
+    public int getGuildsMaxMembers() { return guildsMaxMembers; }
+    public boolean isGuildsFriendlyFire() { return guildsFriendlyFire; }
 }

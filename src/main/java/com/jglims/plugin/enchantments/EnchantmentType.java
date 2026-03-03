@@ -36,7 +36,9 @@ public enum EnchantmentType {
     // Universal
     SOULBOUND,
     // Dog armor
-    BEST_BUDDIES;
+    BEST_BUDDIES,
+    // Mace (NEW v1.2.0)
+    SEISMIC_SLAM, MAGNETIZE;
 
     public int getMaxLevel() {
         return switch (this) {
@@ -48,7 +50,8 @@ public enum EnchantmentType {
                  AQUA_LUNGS, FORTIFICATION, DEFLECTION, SWIFTFOOT,
                  DODGE, LEAPING, STOMP, BOOST,
                  SOUL_REAP, BLOOD_PRICE, REAPERS_MARK, WITHER_TOUCH,
-                 CHAIN_LIGHTNING, MOMENTUM, HARVESTING_MOON, GRAVITY_WELL -> 3;
+                 CHAIN_LIGHTNING, MOMENTUM, HARVESTING_MOON, GRAVITY_WELL,
+                 SEISMIC_SLAM, MAGNETIZE -> 3;
             case AUTO_SMELT, MAGNETISM, REPLENISH, GREEN_THUMB,
                  NIGHT_VISION, CUSHION, GLIDER, SOULBOUND, BEST_BUDDIES -> 1;
         };

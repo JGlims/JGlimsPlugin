@@ -52,7 +52,8 @@ public class CustomEnchantManager {
         addConflict(EnchantmentType.VEINMINER, EnchantmentType.DRILL);
         addConflict(EnchantmentType.MOMENTUM, EnchantmentType.SWIFTFOOT);
 
-        // Note: Custom↔Vanilla conflicts are handled in AnvilRecipeListener.hasVanillaConflict()
+        // Mace conflicts (NEW v1.2.0)
+        addConflict(EnchantmentType.SEISMIC_SLAM, EnchantmentType.MAGNETIZE);
 
         plugin.getLogger().info("Registered " + EnchantmentType.values().length + " custom enchantments.");
     }

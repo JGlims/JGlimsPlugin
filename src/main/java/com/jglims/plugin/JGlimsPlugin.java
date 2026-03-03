@@ -5,11 +5,7 @@ import com.jglims.plugin.enchantments.CustomEnchantManager;
 import com.jglims.plugin.enchantments.AnvilRecipeListener;
 import com.jglims.plugin.enchantments.EnchantmentEffectListener;
 import com.jglims.plugin.enchantments.SoulboundListener;
-import com.jglims.plugin.weapons.SickleManager;
-import com.jglims.plugin.weapons.BattleAxeManager;
-import com.jglims.plugin.weapons.BattleBowManager;
-import com.jglims.plugin.weapons.SuperToolManager;
-import com.jglims.plugin.weapons.WeaponAbilityListener;
+import com.jglims.plugin.weapons.*;
 import com.jglims.plugin.crafting.RecipeManager;
 import com.jglims.plugin.crafting.VanillaRecipeRemover;
 import com.jglims.plugin.blessings.BlessingManager;
@@ -18,12 +14,10 @@ import com.jglims.plugin.mobs.MobDifficultyManager;
 import com.jglims.plugin.mobs.BiomeMultipliers;
 import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
-import com.jglims.plugin.utility.InventorySortListener;
-import com.jglims.plugin.utility.EnchantTransferListener;
-import com.jglims.plugin.utility.LootBoosterListener;
-import com.jglims.plugin.utility.DropRateListener;
-import com.jglims.plugin.utility.VillagerTradeListener;
-import com.jglims.plugin.utility.PaleGardenFogTask;
+import com.jglims.plugin.mobs.BloodMoonManager;
+import com.jglims.plugin.guilds.GuildManager;
+import com.jglims.plugin.guilds.GuildListener;
+import com.jglims.plugin.utility.*;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -43,10 +37,14 @@ public class JGlimsPlugin extends JavaPlugin {
     private SickleManager sickleManager;
     private BattleAxeManager battleAxeManager;
     private BattleBowManager battleBowManager;
+    private BattleMaceManager battleMaceManager;
     private SuperToolManager superToolManager;
     private RecipeManager recipeManager;
     private MobDifficultyManager mobDifficultyManager;
     private KingMobManager kingMobManager;
+    private WeaponMasteryManager weaponMasteryManager;
+    private BloodMoonManager bloodMoonManager;
+    private GuildManager guildManager;
 
     @Override
     public void onEnable() {
@@ -67,10 +65,11 @@ public class JGlimsPlugin extends JavaPlugin {
         sickleManager = new SickleManager(this);
         battleAxeManager = new BattleAxeManager(this);
         battleBowManager = new BattleBowManager(this);
+        battleMaceManager = new BattleMaceManager(this);
         superToolManager = new SuperToolManager(this);
 
-        // 5. Crafting recipes
-        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager, battleBowManager, superToolManager);
+        // 5. Crafting recipes (now 6-arg constructor)
+        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager, battleBowManager, battleMaceManager, superToolManager);
         recipeManager.registerAllRecipes();
 
         // 6. Remove vanilla recipes we replace
@@ -82,7 +81,16 @@ public class JGlimsPlugin extends JavaPlugin {
         // 8. King mob system
         kingMobManager = new KingMobManager(this, configManager);
 
-        // 9. Register all event listeners
+        // 9. Weapon mastery (NEW v1.2.0)
+        weaponMasteryManager = new WeaponMasteryManager(this, configManager);
+
+        // 10. Blood moon (NEW v1.2.0)
+        bloodMoonManager = new BloodMoonManager(this, configManager);
+
+        // 11. Guild system (NEW v1.2.0)
+        guildManager = new GuildManager(this, configManager);
+
+        // 12. Register all event listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new AnvilRecipeListener(this, enchantManager), this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
@@ -100,12 +108,20 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(battleAxeManager, this);
         pm.registerEvents(superToolManager, this);
         pm.registerEvents(recipeManager, this);
+        pm.registerEvents(weaponMasteryManager, this);
+        pm.registerEvents(bloodMoonManager, this);
+        pm.registerEvents(new GuildListener(this, guildManager), this);
         pm.registerEvents(new WeaponAbilityListener(this, enchantManager, superToolManager,
-            sickleManager, battleAxeManager, battleBowManager), this);
+            sickleManager, battleAxeManager, battleBowManager, battleMaceManager), this);
 
-        // 10. Pale Garden fog scheduled task
+        // 13. Pale Garden fog
         if (configManager.isPaleGardenFogEnabled()) {
             new PaleGardenFogTask(this).start(configManager.getPaleGardenFogInterval());
+        }
+
+        // 14. Blood Moon scheduler
+        if (configManager.isBloodMoonEnabled()) {
+            bloodMoonManager.startScheduler();
         }
 
         long elapsed = System.currentTimeMillis() - start;
@@ -119,40 +135,64 @@ public class JGlimsPlugin extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("jglims")) return false;
-
-        if (args.length == 0) {
-            sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort>", NamedTextColor.YELLOW));
+        // /guild command
+        if (command.getName().equalsIgnoreCase("guild")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(Component.text("Only players can use guild commands.", NamedTextColor.RED));
+                return true;
+            }
+            if (args.length == 0) {
+                player.sendMessage(Component.text("Usage: /guild <create|invite|join|leave|kick|disband|info|list>", NamedTextColor.YELLOW));
+                return true;
+            }
+            switch (args[0].toLowerCase()) {
+                case "create" -> {
+                    if (args.length < 2) { player.sendMessage(Component.text("Usage: /guild create <name>", NamedTextColor.RED)); return true; }
+                    guildManager.createGuild(player, args[1]);
+                }
+                case "invite" -> {
+                    if (args.length < 2) { player.sendMessage(Component.text("Usage: /guild invite <player>", NamedTextColor.RED)); return true; }
+                    guildManager.invitePlayer(player, args[1]);
+                }
+                case "join" -> guildManager.joinGuild(player);
+                case "leave" -> guildManager.leaveGuild(player);
+                case "kick" -> {
+                    if (args.length < 2) { player.sendMessage(Component.text("Usage: /guild kick <player>", NamedTextColor.RED)); return true; }
+                    guildManager.kickPlayer(player, args[1]);
+                }
+                case "disband" -> guildManager.disbandGuild(player);
+                case "info" -> guildManager.showGuildInfo(player);
+                case "list" -> guildManager.listGuilds(player);
+                default -> player.sendMessage(Component.text("Unknown subcommand.", NamedTextColor.RED));
+            }
             return true;
         }
 
+        // /jglims command
+        if (!command.getName().equalsIgnoreCase("jglims")) return false;
+        if (args.length == 0) {
+            sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery>", NamedTextColor.YELLOW));
+            return true;
+        }
         switch (args[0].toLowerCase()) {
             case "reload" -> {
                 configManager.loadConfig();
                 sender.sendMessage(Component.text("Config reloaded!", NamedTextColor.GREEN));
             }
             case "stats" -> {
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /jglims stats <player>", NamedTextColor.RED));
-                    return true;
-                }
+                if (args.length < 2) { sender.sendMessage(Component.text("Usage: /jglims stats <player>", NamedTextColor.RED)); return true; }
                 Player target = getServer().getPlayer(args[1]);
-                if (target == null) {
-                    sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED));
-                    return true;
-                }
+                if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return true; }
                 blessingManager.showStats(sender, target);
             }
-            case "enchants" -> {
-                enchantManager.listEnchantments(sender);
+            case "enchants" -> enchantManager.listEnchantments(sender);
+            case "sort" -> sender.sendMessage(Component.text("Inventory sorting is always active. Shift-click an empty slot in any container to sort!", NamedTextColor.GREEN));
+            case "mastery" -> {
+                if (sender instanceof Player player) weaponMasteryManager.showMastery(player);
+                else sender.sendMessage(Component.text("Only players can view mastery.", NamedTextColor.RED));
             }
-            case "sort" -> {
-                sender.sendMessage(Component.text("Inventory sorting is always active. Shift-click an empty slot in any container to sort!", NamedTextColor.GREEN));
-            }
-            default -> {
-                sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort", NamedTextColor.RED));
-            }
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery", NamedTextColor.RED));
         }
         return true;
     }
@@ -164,6 +204,10 @@ public class JGlimsPlugin extends JavaPlugin {
     public SickleManager getSickleManager() { return sickleManager; }
     public BattleAxeManager getBattleAxeManager() { return battleAxeManager; }
     public BattleBowManager getBattleBowManager() { return battleBowManager; }
+    public BattleMaceManager getBattleMaceManager() { return battleMaceManager; }
     public SuperToolManager getSuperToolManager() { return superToolManager; }
     public KingMobManager getKingMobManager() { return kingMobManager; }
+    public WeaponMasteryManager getWeaponMasteryManager() { return weaponMasteryManager; }
+    public BloodMoonManager getBloodMoonManager() { return bloodMoonManager; }
+    public GuildManager getGuildManager() { return guildManager; }
 }

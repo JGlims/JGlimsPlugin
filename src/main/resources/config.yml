@@ -1,4 +1,4 @@
-# JGlimsPlugin v1.1.0 Configuration
+# JGlimsPlugin v1.2.0 Configuration
 # All multipliers stack multiplicatively unless noted otherwise.
 
 # ==========================================
@@ -6,14 +6,9 @@
 # ==========================================
 mob-difficulty:
   enabled: true
-
-  # Global baseline multiplier applied to ALL hostile mobs everywhere
   baseline:
     health: 2.0
     damage: 2.0
-
-  # Overworld distance scaling (from world spawn)
-  # Format: max-distance: [health-mult, damage-mult, speed-mult]
   overworld-distance:
     200:   [1.0, 1.0, 1.0]
     350:   [1.5, 1.3, 1.0]
@@ -21,8 +16,6 @@ mob-difficulty:
     800:   [2.3, 1.9, 1.1]
     1000:  [3.0, 2.3, 1.15]
     99999: [3.5, 2.8, 1.25]
-
-  # Biome-specific multipliers (Overworld) - stacks with distance + baseline
   overworld-biomes:
     PALE_GARDEN:       [2.0, 2.0]
     DEEP_DARK:         [2.5, 2.0]
@@ -31,21 +24,15 @@ mob-difficulty:
     DARK_FOREST:       [1.5, 1.4]
     DRIPSTONE_CAVES:   [1.6, 1.4]
     LUSH_CAVES:        [0.8, 0.9]
-
-  # Nether biome multipliers (NO distance scaling, stacks with baseline only)
   nether-biomes:
     NETHER_WASTES:     [1.7, 1.5]
     SOUL_SAND_VALLEY:  [2.0, 1.8]
     CRIMSON_FOREST:    [1.8, 1.6]
     WARPED_FOREST:     [1.8, 1.6]
     BASALT_DELTAS:     [2.3, 2.0]
-
-  # End multiplier (flat, no distance scaling)
   end:
     health: 2.5
     damage: 2.0
-
-  # Boss stat multipliers (stacks with everything above)
   bosses:
     ENDER_DRAGON:
       health: 3.5
@@ -90,11 +77,8 @@ loot-booster:
 # ==========================================
 mob-book-drops:
   enabled: true
-  # Chance for any hostile mob to drop a random vanilla enchanted book
   hostile-mob-chance: 0.05
-  # Chance for bosses/special mobs to drop a random CUSTOM enchantment book
   boss-custom-chance: 0.15
-  # Extra chance per Looting level
   looting-bonus-regular: 0.02
   looting-bonus-boss: 0.05
 
@@ -150,6 +134,12 @@ battle-bow:
   enabled: true
 
 # ==========================================
+# BATTLE MACE SYSTEM (NEW v1.2.0)
+# ==========================================
+battle-mace:
+  enabled: true
+
+# ==========================================
 # SUPER TOOLS SYSTEM (OVERHAULED v1.1.0)
 # ==========================================
 super-tools:
@@ -160,9 +150,7 @@ super-tools:
 # ==========================================
 drop-rate-booster:
   enabled: true
-  # Trident drop chance from Drowned (vanilla ~6.25%)
   trident-drop-chance: 0.35
-  # Wind charge drops from Breeze
   breeze-wind-charge-min: 2
   breeze-wind-charge-max: 5
 
@@ -191,3 +179,42 @@ king-mob:
 axe-nerf:
   enabled: true
   attack-speed: 0.5
+
+# ==========================================
+# WEAPON MASTERY SYSTEM (NEW v1.2.0)
+# Tracks kills per weapon class, grants up to
+# max-bonus-percent damage bonus at max-kills.
+# ==========================================
+weapon-mastery:
+  enabled: true
+  max-kills: 1000
+  max-bonus-percent: 10.0
+
+# ==========================================
+# BLOOD MOON EVENT (NEW v1.2.0)
+# Triggers every check-interval-ticks at nightfall.
+# chance = probability per eligible night.
+# Every boss-every-nth Blood Moon spawns a boss.
+# ==========================================
+blood-moon:
+  enabled: true
+  check-interval-ticks: 100
+  chance: 0.15
+  mob-health-multiplier: 1.5
+  mob-damage-multiplier: 1.3
+  boss-every-nth: 10
+  boss-health-multiplier: 20.0
+  boss-damage-multiplier: 5.0
+  boss-diamond-min: 5
+  boss-diamond-max: 15
+  double-drops: true
+
+# ==========================================
+# GUILD SYSTEM (NEW v1.2.0)
+# max-members: max players per guild
+# friendly-fire: whether guild members can hurt each other
+# ==========================================
+guilds:
+  enabled: true
+  max-members: 10
+  friendly-fire: false

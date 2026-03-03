@@ -19,6 +19,7 @@ import com.jglims.plugin.enchantments.CustomEnchantManager;
 import com.jglims.plugin.enchantments.EnchantmentType;
 import com.jglims.plugin.weapons.BattleAxeManager;
 import com.jglims.plugin.weapons.BattleBowManager;
+import com.jglims.plugin.weapons.BattleMaceManager;
 import com.jglims.plugin.weapons.SickleManager;
 import com.jglims.plugin.weapons.SuperToolManager;
 
@@ -32,15 +33,17 @@ public class RecipeManager implements Listener {
     private final SickleManager sickleManager;
     private final BattleAxeManager battleAxeManager;
     private final BattleBowManager battleBowManager;
+    private final BattleMaceManager battleMaceManager;
     private final SuperToolManager superToolManager;
 
     public RecipeManager(JGlimsPlugin plugin, SickleManager sickleManager,
                          BattleAxeManager battleAxeManager, BattleBowManager battleBowManager,
-                         SuperToolManager superToolManager) {
+                         BattleMaceManager battleMaceManager, SuperToolManager superToolManager) {
         this.plugin = plugin;
         this.sickleManager = sickleManager;
         this.battleAxeManager = battleAxeManager;
         this.battleBowManager = battleBowManager;
+        this.battleMaceManager = battleMaceManager;
         this.superToolManager = superToolManager;
     }
 
@@ -54,6 +57,7 @@ public class RecipeManager implements Listener {
         registerBattleAxes();
         registerBattleBow();
         registerBattleCrossbow();
+        registerBattleMace();
         registerSuperToolRecipes();
         plugin.getLogger().info("All custom crafting recipes registered.");
     }
@@ -140,7 +144,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // SICKLES — 6 tiers
+    // SICKLES
     // ========================================================================
     private void registerSickles() {
         for (Material hoeMat : sickleManager.getSickleTiers()) {
@@ -185,9 +189,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // BATTLE AXES — 6 tiers (NEW v1.1.0)
-    // Non-netherite: MBM / MAM / MMM (M=ingot, B=block, A=axe)
-    // Netherite: NNN / NAN / NNN (N=netherite ingot, A=netherite axe)
+    // BATTLE AXES
     // ========================================================================
     private void registerBattleAxes() {
         for (Material axeMat : battleAxeManager.getBattleAxeTiers()) {
@@ -197,7 +199,6 @@ public class RecipeManager implements Listener {
             NamespacedKey key = new NamespacedKey(plugin, "battle_axe_" + tierName);
 
             if (axeMat == Material.NETHERITE_AXE) {
-                // Netherite: NNN / NAN / NNN
                 ShapedRecipe recipe = new ShapedRecipe(key, battleAxe);
                 recipe.shape("NNN", "NAN", "NNN");
                 recipe.setIngredient('N', Material.NETHERITE_INGOT);
@@ -218,7 +219,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // BATTLE BOW — 8 Iron Ingots + Bow (NEW v1.1.0)
+    // BATTLE BOW
     // ========================================================================
     private void registerBattleBow() {
         ItemStack battleBow = battleBowManager.createBattleBow();
@@ -232,7 +233,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // BATTLE CROSSBOW — 8 Iron Ingots + Crossbow (NEW v1.1.0)
+    // BATTLE CROSSBOW
     // ========================================================================
     private void registerBattleCrossbow() {
         ItemStack battleCrossbow = battleBowManager.createBattleCrossbow();
@@ -246,14 +247,23 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // SUPER TOOL RECIPES — Tiered system (OVERHAULED v1.1.0)
-    // (Iron) Super: 8x Iron Ingots around tool
-    // (Diamond) Super: 8x Diamonds around tool (or Iron Super)
-    // (Netherite) Super: 8x Netherite Ingots around tool (or any Super)
-    // Battle Bow/Crossbow Iron Super uses 8x String instead of Iron Ingots
+    // BATTLE MACE (NEW v1.2.0) — 8 Breeze Rods + Mace
+    // ========================================================================
+    private void registerBattleMace() {
+        ItemStack battleMace = battleMaceManager.createBattleMace();
+        if (battleMace == null) return;
+        NamespacedKey key = new NamespacedKey(plugin, "battle_mace");
+        ShapedRecipe recipe = new ShapedRecipe(key, battleMace);
+        recipe.shape("BBB", "BMB", "BBB");
+        recipe.setIngredient('B', Material.BREEZE_ROD);
+        recipe.setIngredient('M', Material.MACE);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    // ========================================================================
+    // SUPER TOOL RECIPES
     // ========================================================================
     private void registerSuperToolRecipes() {
-        // Tools that can become Super (NOT regular axes, bows, crossbows)
         Material[] superableTools = {
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD,
             Material.GOLDEN_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD,
@@ -266,7 +276,6 @@ public class RecipeManager implements Listener {
             Material.TRIDENT, Material.SHIELD, Material.ELYTRA
         };
 
-        // Register (Iron) Super recipes: tool + 8 iron ingots
         for (Material toolMat : superableTools) {
             ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_IRON);
             if (result == null) continue;
@@ -279,7 +288,6 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
 
-        // Register (Diamond) Super recipes: tool + 8 diamonds
         for (Material toolMat : superableTools) {
             ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_DIAMOND);
             if (result == null) continue;
@@ -292,7 +300,6 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
 
-        // Register (Netherite) Super recipes: tool + 8 netherite ingots
         for (Material toolMat : superableTools) {
             ItemStack result = superToolManager.createSuperTool(new ItemStack(toolMat), SuperToolManager.TIER_NETHERITE);
             if (result == null) continue;
@@ -305,8 +312,6 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
 
-        // Battle Bow/Crossbow (Iron) Super uses String
-        // Battle Bow
         ItemStack superBattleBowIron = superToolManager.createSuperTool(
             battleBowManager.createBattleBow(), SuperToolManager.TIER_IRON);
         if (superBattleBowIron != null) {
@@ -318,7 +323,6 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
 
-        // Battle Crossbow
         ItemStack superBattleCrossbowIron = superToolManager.createSuperTool(
             battleBowManager.createBattleCrossbow(), SuperToolManager.TIER_IRON);
         if (superBattleCrossbowIron != null) {
@@ -332,7 +336,7 @@ public class RecipeManager implements Listener {
     }
 
     // ========================================================================
-    // PREPARE CRAFT EVENT — handle sickle/battle axe protection + super upgrades
+    // PREPARE CRAFT EVENT
     // ========================================================================
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
@@ -340,13 +344,13 @@ public class RecipeManager implements Listener {
 
         ItemStack[] matrix = event.getInventory().getMatrix();
 
-        // Block sickles and battle axes from vanilla recipes
         for (ItemStack ingredient : matrix) {
             if (ingredient != null) {
-                if (sickleManager.isSickle(ingredient) || battleAxeManager.isBattleAxe(ingredient)) {
+                if (sickleManager.isSickle(ingredient) || battleAxeManager.isBattleAxe(ingredient)
+                    || battleMaceManager.isBattleMace(ingredient)) {
                     if (event.getRecipe() instanceof ShapedRecipe shaped) {
                         if (shaped.getKey().getNamespace().equals(plugin.getName().toLowerCase())) {
-                            continue; // Our recipe, allow it
+                            continue;
                         }
                     }
                     if (event.getRecipe() instanceof ShapelessRecipe shapeless) {
@@ -360,16 +364,13 @@ public class RecipeManager implements Listener {
             }
         }
 
-        // Handle super tool tier upgrades (preserve enchantments)
-        // Detect if center slot is already a super tool being upgraded
         ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
         if (centerItem != null && superToolManager.isSuperTool(centerItem)) {
             int currentTier = superToolManager.getSuperTier(centerItem);
 
-            // Determine what tier this upgrade targets by checking surrounding material
             Material surroundMat = null;
             for (int i = 0; i < matrix.length; i++) {
-                if (i == 4) continue; // skip center
+                if (i == 4) continue;
                 if (matrix[i] != null && matrix[i].getType() != Material.AIR) {
                     surroundMat = matrix[i].getType();
                     break;
@@ -382,7 +383,6 @@ public class RecipeManager implements Listener {
             else if (surroundMat == Material.IRON_INGOT) targetTier = SuperToolManager.TIER_IRON;
 
             if (targetTier > currentTier) {
-                // This is a tier upgrade — create upgraded result preserving enchantments
                 ItemStack upgraded = superToolManager.upgradeSuperTool(centerItem, targetTier);
                 if (upgraded != null) {
                     event.getInventory().setResult(upgraded);
