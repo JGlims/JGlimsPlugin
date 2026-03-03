@@ -1,7 +1,8 @@
 package com.jglims.plugin.config;
 
-import com.jglims.plugin.JGlimsPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import com.jglims.plugin.JGlimsPlugin;
 
 public class ConfigManager {
 
@@ -93,7 +94,8 @@ public class ConfigManager {
         amiBlessMaxUses = config.getInt("blessings.ami-bless.max-uses", 10);
         amiBlessDmgPerUse = config.getDouble("blessings.ami-bless.damage-percent-per-use", 2.0);
         laBlessMaxUses = config.getInt("blessings.la-bless.max-uses", 10);
-        laBlessDefPerUse = config.getDouble("blessings.la-bless.defense-percent-per-use", 1.0);
+        // BUG 5 FIX: Changed key from defense-percent-per-use to defense-per-use, default 2.0
+        laBlessDefPerUse = config.getDouble("blessings.la-bless.defense-per-use", 2.0);
 
         // Anvil
         removeTooExpensive = config.getBoolean("anvil.remove-too-expensive", true);

@@ -103,7 +103,9 @@ public class BlessingManager {
     }
 
     // ========================================================================
-    // LA'S BLESS: +1% damage reduction per use, max 10 uses (+10% total)
+    // LA'S BLESS: +2 armor points per use, max 10 uses (+20 total)
+    // BUG 5 FIX: Changed from +1.0 to using config value (default 2.0)
+    // This maximizes visible armor icons in the HUD
     // ========================================================================
     public boolean applyLaBless(Player player) {
         ConfigManager cfg = plugin.getConfigManager();
@@ -122,9 +124,9 @@ public class BlessingManager {
         // Apply armor modifier
         applyArmorModifier(player, newUses);
 
-        double totalPercent = newUses * cfg.getLaBlessDefPerUse();
-        player.sendMessage(Component.text("La's Bless applied! +" + String.format("%.0f", totalPercent)
-            + "% damage reduction (" + newUses + "/" + cfg.getLaBlessMaxUses() + ")", NamedTextColor.BLUE));
+        double totalArmor = newUses * cfg.getLaBlessDefPerUse();
+        player.sendMessage(Component.text("La's Bless applied! +" + String.format("%.0f", totalArmor)
+            + " armor points (" + newUses + "/" + cfg.getLaBlessMaxUses() + ")", NamedTextColor.BLUE));
         return true;
     }
 
@@ -161,7 +163,7 @@ public class BlessingManager {
         sender.sendMessage(Component.text("Ami's Bless: " + amiUses + "/" + cfg.getAmiBlessMaxUses()
             + " (+" + String.format("%.0f", amiUses * cfg.getAmiBlessDmgPerUse()) + "% damage)", NamedTextColor.RED));
         sender.sendMessage(Component.text("La's Bless: " + laUses + "/" + cfg.getLaBlessMaxUses()
-            + " (+" + String.format("%.0f", laUses * cfg.getLaBlessDefPerUse()) + "% defense)", NamedTextColor.BLUE));
+            + " (+" + String.format("%.0f", laUses * cfg.getLaBlessDefPerUse()) + " armor)", NamedTextColor.BLUE));
     }
 
     // ========================================================================
@@ -197,6 +199,7 @@ public class BlessingManager {
             amiBlessModKey, bonusPercent, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
+    // BUG 5 FIX: Uses config value (default 2.0) instead of hardcoded 1.0
     private void applyArmorModifier(Player player, int uses) {
         AttributeInstance armor = player.getAttribute(Attribute.ARMOR);
         if (armor == null) return;
@@ -206,8 +209,8 @@ public class BlessingManager {
             .filter(m -> m.getKey().equals(laBlessModKey))
             .forEach(armor::removeModifier);
 
-        // Add new: +1 armor point per use (approximates % reduction)
-        double bonusArmor = uses * 1.0;
+        // Add new: uses * config value armor points per use (default 2.0)
+        double bonusArmor = uses * plugin.getConfigManager().getLaBlessDefPerUse();
         armor.addModifier(new AttributeModifier(
             laBlessModKey, bonusArmor, AttributeModifier.Operation.ADD_NUMBER));
     }

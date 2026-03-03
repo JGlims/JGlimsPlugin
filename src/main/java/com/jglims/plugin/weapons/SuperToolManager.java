@@ -24,11 +24,13 @@ public class SuperToolManager implements Listener {
     private final JGlimsPlugin plugin;
     private final NamespacedKey superToolKey;
     private final NamespacedKey superDamageKey;
+    private final NamespacedKey superSpeedKey;
 
     public SuperToolManager(JGlimsPlugin plugin) {
         this.plugin = plugin;
         this.superToolKey = new NamespacedKey(plugin, "is_super_tool");
         this.superDamageKey = new NamespacedKey(plugin, "super_damage");
+        this.superSpeedKey = new NamespacedKey(plugin, "super_speed");
     }
 
     public NamespacedKey getSuperToolKey() {
@@ -47,7 +49,12 @@ public class SuperToolManager implements Listener {
      * Netherite: +1 attack damage, "Super" prefix in dark red.
      * Super Elytra: doubled durability, "Super Elytra" in gold.
      *
-     * Preserves all existing enchantments and custom enchantments.
+     * BUG 1 FIX: When adding an ATTACK_DAMAGE attribute modifier, we must
+     * also include the base weapon damage explicitly, because Bukkit replaces
+     * the implicit vanilla damage when any modifier is added.
+     * The modifier value = (vanillaBaseDamage + bonusDmg - 1.0)
+     * because the player has a base attack damage of 1.0.
+     * We also need to preserve the vanilla attack speed.
      */
     public ItemStack createSuperTool(ItemStack baseTool) {
         if (baseTool == null || baseTool.getType() == Material.AIR) return null;
@@ -78,30 +85,126 @@ public class SuperToolManager implements Listener {
         List<Component> existingLore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
 
         if (isElytra) {
-            existingLore.add(0, Component.text("Doubled Durability", NamedTextColor.GOLD)
+            existingLore.add(0, Component.text("Super Elytra", NamedTextColor.GOLD)
                 .decoration(TextDecoration.ITALIC, false));
-            // Double the max durability by setting the damage to negative (repair)
-            // Actually, we can't change max durability directly in Bukkit API.
-            // Instead, we'll use Unbreaking-like logic or just mark it in PDC
-            // and handle durability reduction in an event listener.
+            existingLore.add(1, Component.text("50% chance to negate durability loss", NamedTextColor.GRAY)
+                .decoration(TextDecoration.ITALIC, false));
             meta.getPersistentDataContainer().set(
                 new NamespacedKey(plugin, "super_elytra_durability"), PersistentDataType.BYTE, (byte) 1);
         } else {
             double bonusDmg = isNetherite ? 1.0 : 2.0;
+            double vanillaBaseDamage = getVanillaBaseDamage(mat);
+            double vanillaAttackSpeed = getVanillaAttackSpeed(mat);
+
             existingLore.add(0, Component.text("Super Tool", NamedTextColor.AQUA)
                 .decoration(TextDecoration.ITALIC, false));
             existingLore.add(1, Component.text("+" + (int) bonusDmg + " Bonus Attack Damage", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
 
-            // Add damage modifier
-            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(superDamageKey, bonusDmg,
-                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            // BUG 1 FIX: Include base weapon damage + bonus in the modifier.
+            // Player base attack = 1.0, so modifier = vanillaBaseDamage + bonusDmg - 1.0
+            // This makes the total = 1.0 (player) + modifier = vanillaBaseDamage + bonusDmg
+            if (vanillaBaseDamage > 0) {
+                double totalModifier = vanillaBaseDamage + bonusDmg - 1.0;
+                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
+                    new AttributeModifier(superDamageKey, totalModifier,
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+
+                // Also preserve the vanilla attack speed
+                // Player base attack speed = 4.0, so modifier = vanillaAttackSpeed - 4.0
+                double speedModifier = vanillaAttackSpeed - 4.0;
+                meta.addAttributeModifier(Attribute.ATTACK_SPEED,
+                    new AttributeModifier(superSpeedKey, speedModifier,
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+            }
+            // For items without vanilla damage (bow, crossbow, shield), skip the modifier
         }
 
         meta.lore(existingLore);
         superTool.setItemMeta(meta);
         return superTool;
+    }
+
+    /**
+     * Returns the vanilla base attack damage for a tool/weapon material.
+     * These are the values shown in-game (total damage dealt = this value).
+     * Returns 0 for items that don't have attack damage (bow, crossbow, etc).
+     */
+    private double getVanillaBaseDamage(Material mat) {
+        return switch (mat) {
+            // Swords
+            case WOODEN_SWORD -> 4.0;
+            case STONE_SWORD -> 5.0;
+            case IRON_SWORD -> 6.0;
+            case GOLDEN_SWORD -> 4.0;
+            case DIAMOND_SWORD -> 7.0;
+            case NETHERITE_SWORD -> 8.0;
+            // Axes
+            case WOODEN_AXE -> 7.0;
+            case STONE_AXE -> 9.0;
+            case IRON_AXE -> 9.0;
+            case GOLDEN_AXE -> 7.0;
+            case DIAMOND_AXE -> 9.0;
+            case NETHERITE_AXE -> 10.0;
+            // Pickaxes
+            case WOODEN_PICKAXE -> 2.0;
+            case STONE_PICKAXE -> 3.0;
+            case IRON_PICKAXE -> 4.0;
+            case GOLDEN_PICKAXE -> 2.0;
+            case DIAMOND_PICKAXE -> 5.0;
+            case NETHERITE_PICKAXE -> 6.0;
+            // Shovels
+            case WOODEN_SHOVEL -> 2.5;
+            case STONE_SHOVEL -> 3.5;
+            case IRON_SHOVEL -> 4.5;
+            case GOLDEN_SHOVEL -> 2.5;
+            case DIAMOND_SHOVEL -> 5.5;
+            case NETHERITE_SHOVEL -> 6.5;
+            // Hoes
+            case WOODEN_HOE -> 1.0;
+            case STONE_HOE -> 1.0;
+            case IRON_HOE -> 1.0;
+            case GOLDEN_HOE -> 1.0;
+            case DIAMOND_HOE -> 1.0;
+            case NETHERITE_HOE -> 1.0;
+            // Trident
+            case TRIDENT -> 9.0;
+            // Non-melee items: no base attack damage modifier needed
+            default -> 0;
+        };
+    }
+
+    /**
+     * Returns the vanilla attack speed for a tool/weapon material.
+     * Player base attack speed is 4.0.
+     */
+    private double getVanillaAttackSpeed(Material mat) {
+        return switch (mat) {
+            // Swords: 1.6
+            case WOODEN_SWORD, STONE_SWORD, IRON_SWORD, GOLDEN_SWORD,
+                 DIAMOND_SWORD, NETHERITE_SWORD -> 1.6;
+            // Axes: varies
+            case WOODEN_AXE, STONE_AXE -> 0.8;
+            case IRON_AXE -> 0.9;
+            case GOLDEN_AXE -> 1.0;
+            case DIAMOND_AXE -> 1.0;
+            case NETHERITE_AXE -> 1.0;
+            // Pickaxes: 1.2
+            case WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE,
+                 DIAMOND_PICKAXE, NETHERITE_PICKAXE -> 1.2;
+            // Shovels: 1.0
+            case WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLDEN_SHOVEL,
+                 DIAMOND_SHOVEL, NETHERITE_SHOVEL -> 1.0;
+            // Hoes: varies
+            case WOODEN_HOE, GOLDEN_HOE -> 1.0;
+            case STONE_HOE -> 2.0;
+            case IRON_HOE -> 3.0;
+            case DIAMOND_HOE, NETHERITE_HOE -> 4.0;
+            // Trident: 1.1
+            case TRIDENT -> 1.1;
+            // Default
+            default -> 4.0;
+        };
     }
 
     /**

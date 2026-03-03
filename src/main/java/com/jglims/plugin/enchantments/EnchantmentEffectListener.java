@@ -194,13 +194,21 @@ public class EnchantmentEffectListener implements Listener {
         }
 
         // --- Vampirism: Regen on hit ---
+        // BUG 4 FIX: I→Regen I, II→Regen II, III→Regen II, IV→Regen III, V→Regen IV
         int vampirismLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.VAMPIRISM);
         if (vampirismLvl > 0) {
-            int amp = vampirismLvl >= 5 ? 1 : 0;
+            int amp = switch (vampirismLvl) {
+                case 1 -> 0;  // Regen I
+                case 2 -> 1;  // Regen II
+                case 3 -> 1;  // Regen II
+                case 4 -> 2;  // Regen III
+                default -> 3; // Regen IV (for level V)
+            };
             int dur = switch (vampirismLvl) {
                 case 1 -> 2 * 20;
                 case 2 -> 3 * 20;
                 case 3 -> 4 * 20;
+                case 4 -> 5 * 20;
                 default -> 5 * 20;
             };
             attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION,
@@ -969,35 +977,36 @@ public class EnchantmentEffectListener implements Listener {
 
     private void decayNearbyLeaves(Location center, int radius) {
         World world = center.getWorld();
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            for (int x = -radius; x <= radius; x++) {
-                for (int y = -radius; y <= radius; y++) {
-                    for (int z = -radius; z <= radius; z++) {
-                        Block b = world.getBlockAt(center.getBlockX() + x,
-                            center.getBlockY() + y, center.getBlockZ() + z);
-                        if (isLeaf(b.getType())) b.breakNaturally();
+        if (world == null) return;
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Block block = world.getBlockAt(
+                        center.getBlockX() + x, center.getBlockY() + y, center.getBlockZ() + z);
+                    if (isLeaf(block.getType())) {
+                        block.breakNaturally();
                     }
                 }
             }
-        }, 10L);
+        }
     }
 
     private void harvestArea(Player player, Block center, int radius) {
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
-                Block target = center.getRelative(x, 0, z);
-                BlockData data = target.getBlockData();
-                if (data instanceof Ageable ageable && ageable.getAge() == ageable.getMaximumAge()) {
-                    Material cropType = target.getType();
-                    target.breakNaturally();
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        target.setType(cropType);
-                        BlockData newData = target.getBlockData();
-                        if (newData instanceof Ageable newAgeable) {
-                            newAgeable.setAge(0);
-                            target.setBlockData(newAgeable);
-                        }
-                    });
+                Block block = center.getRelative(x, 0, z);
+                BlockData data = block.getBlockData();
+                if (data instanceof Ageable ageable) {
+                    if (ageable.getAge() >= ageable.getMaximumAge()) {
+                        block.breakNaturally();
+                        // Replant
+                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            Block soil = block.getRelative(BlockFace.DOWN);
+                            if (soil.getType() == Material.FARMLAND) {
+                                block.setType(data.getMaterial());
+                            }
+                        });
+                    }
                 }
             }
         }

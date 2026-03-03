@@ -105,7 +105,8 @@ blessings:
     damage-percent-per-use: 2.0
   la-bless:
     max-uses: 10
-    defense-percent-per-use: 1.0
+    # BUG 5 FIX: Changed from 1.0 to 2.0 for +2 armor per use (+20 total = 10 visible icons)
+    defense-per-use: 2.0
 
 # ==========================================
 # INVENTORY SORTING

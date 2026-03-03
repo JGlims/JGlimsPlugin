@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -38,117 +39,73 @@ public class AnvilRecipeListener implements Listener {
 
     private void registerRecipes() {
         // === SWORD ===
-        // Vampirism: Sharpness book + Netherite Scrap -> Vampirism (level matches Sharpness, max V)
         recipes.put(EnchantmentType.VAMPIRISM, new AnvilRecipe(Enchantment.SHARPNESS, Material.NETHERITE_SCRAP, true, 5));
-        // Bleed: Sharpness book + Redstone Block -> Bleed (level matches, max III)
         recipes.put(EnchantmentType.BLEED, new AnvilRecipe(Enchantment.SHARPNESS, Material.REDSTONE_BLOCK, true, 3));
-        // Venomstrike: Sharpness book + Spider Eye -> Venomstrike (level matches, max III)
         recipes.put(EnchantmentType.VENOMSTRIKE, new AnvilRecipe(Enchantment.SHARPNESS, Material.SPIDER_EYE, true, 3));
-        // Lifesteal: Sharpness book + Ghast Tear -> Lifesteal (level matches, max III)
         recipes.put(EnchantmentType.LIFESTEAL, new AnvilRecipe(Enchantment.SHARPNESS, Material.GHAST_TEAR, true, 3));
 
         // === AXE ===
-        // Berserker: Sharpness book + Bone -> Berserker (level matches, max V)
         recipes.put(EnchantmentType.BERSERKER, new AnvilRecipe(Enchantment.SHARPNESS, Material.BONE, true, 5));
-        // Lumberjack: Efficiency book + Iron Ingot -> Lumberjack (level matches, max III)
         recipes.put(EnchantmentType.LUMBERJACK, new AnvilRecipe(Enchantment.EFFICIENCY, Material.IRON_INGOT, true, 3));
-        // Cleave: Sharpness book + Iron Block -> Cleave (level matches, max III)
         recipes.put(EnchantmentType.CLEAVE, new AnvilRecipe(Enchantment.SHARPNESS, Material.IRON_BLOCK, true, 3));
-        // Timber: Efficiency book + Oak Log -> Timber (level matches, max III)
         recipes.put(EnchantmentType.TIMBER, new AnvilRecipe(Enchantment.EFFICIENCY, Material.OAK_LOG, true, 3));
-        // Guillotine: Sharpness book + Wither Skeleton Skull -> Guillotine (level matches, max III)
         recipes.put(EnchantmentType.GUILLOTINE, new AnvilRecipe(Enchantment.SHARPNESS, Material.WITHER_SKELETON_SKULL, true, 3));
 
         // === PICKAXE ===
-        // Veinminer: Efficiency book + Diamond -> Veinminer (level matches, max III)
         recipes.put(EnchantmentType.VEINMINER, new AnvilRecipe(Enchantment.EFFICIENCY, Material.DIAMOND, true, 3));
-        // Drill: Efficiency book + Iron Block -> Drill (level matches, max III)
         recipes.put(EnchantmentType.DRILL, new AnvilRecipe(Enchantment.EFFICIENCY, Material.IRON_BLOCK, true, 3));
-        // Auto-Smelt: Efficiency book + Furnace -> Auto-Smelt (always I)
         recipes.put(EnchantmentType.AUTO_SMELT, new AnvilRecipe(Enchantment.EFFICIENCY, Material.FURNACE, false, 1));
-        // Magnetism: Efficiency book + Lapis Block -> Magnetism (always I)
         recipes.put(EnchantmentType.MAGNETISM, new AnvilRecipe(Enchantment.EFFICIENCY, Material.LAPIS_BLOCK, false, 1));
 
         // === SHOVEL ===
-        // Excavator: Efficiency book + Gold Ingot -> Excavator (level matches, max III)
         recipes.put(EnchantmentType.EXCAVATOR, new AnvilRecipe(Enchantment.EFFICIENCY, Material.GOLD_INGOT, true, 3));
-        // Replenish: Efficiency book + Wheat Seeds -> Replenish (always I)
         recipes.put(EnchantmentType.REPLENISH, new AnvilRecipe(Enchantment.EFFICIENCY, Material.WHEAT_SEEDS, false, 1));
 
         // === HOE ===
-        // Harvester: Efficiency book + Wheat -> Harvester (level matches, max III)
         recipes.put(EnchantmentType.HARVESTER, new AnvilRecipe(Enchantment.EFFICIENCY, Material.WHEAT, true, 3));
-        // Green Thumb: Efficiency book + Bone Meal -> Green Thumb (always I)
         recipes.put(EnchantmentType.GREEN_THUMB, new AnvilRecipe(Enchantment.EFFICIENCY, Material.BONE_MEAL, false, 1));
 
         // === TRIDENT ===
-        // Thunderlord: Unbreaking book + Blaze Rod -> Thunderlord (level matches, max V)
         recipes.put(EnchantmentType.THUNDERLORD, new AnvilRecipe(Enchantment.UNBREAKING, Material.BLAZE_ROD, true, 5));
-        // Swiftness: Unbreaking book + Sugar -> Swiftness (level matches, max III)
         recipes.put(EnchantmentType.SWIFTNESS, new AnvilRecipe(Enchantment.UNBREAKING, Material.SUGAR, true, 3));
-        // Vitality: Unbreaking book + Glistering Melon Slice -> Vitality (level matches, max III)
         recipes.put(EnchantmentType.VITALITY, new AnvilRecipe(Enchantment.UNBREAKING, Material.GLISTERING_MELON_SLICE, true, 3));
-        // Tidal Wave: Unbreaking book + Heart of the Sea -> Tidal Wave (level matches, max III)
         recipes.put(EnchantmentType.TIDAL_WAVE, new AnvilRecipe(Enchantment.UNBREAKING, Material.HEART_OF_THE_SEA, true, 3));
 
         // === UNIVERSAL MELEE ===
-        // Frostbite: Sharpness book + Packed Ice -> Frostbite (level matches, max III)
         recipes.put(EnchantmentType.FROSTBITE, new AnvilRecipe(Enchantment.SHARPNESS, Material.PACKED_ICE, true, 3));
 
         // === BOW & CROSSBOW ===
-        // Explosive Arrow: Power book + TNT -> Explosive Arrow (level matches, max III)
         recipes.put(EnchantmentType.EXPLOSIVE_ARROW, new AnvilRecipe(Enchantment.POWER, Material.TNT, true, 3));
-        // Homing: Power book + Ender Eye -> Homing (level matches, max II)
         recipes.put(EnchantmentType.HOMING, new AnvilRecipe(Enchantment.POWER, Material.ENDER_EYE, true, 2));
-        // Rapidfire: Unbreaking book + String -> Rapidfire (level matches, max III)
         recipes.put(EnchantmentType.RAPIDFIRE, new AnvilRecipe(Enchantment.UNBREAKING, Material.STRING, true, 3));
-        // Sniper: Power book + Spyglass -> Sniper (level matches, max III)
         recipes.put(EnchantmentType.SNIPER, new AnvilRecipe(Enchantment.POWER, Material.SPYGLASS, true, 3));
 
         // === HELMET ===
-        // Night Vision: Protection book + Golden Carrot -> Night Vision (always I)
         recipes.put(EnchantmentType.NIGHT_VISION, new AnvilRecipe(Enchantment.PROTECTION, Material.GOLDEN_CARROT, false, 1));
-        // Aqua Lungs: Protection book + Pufferfish -> Aqua Lungs (level matches, max II)
         recipes.put(EnchantmentType.AQUA_LUNGS, new AnvilRecipe(Enchantment.PROTECTION, Material.PUFFERFISH, true, 2));
 
         // === CHESTPLATE ===
-        // Fortification: Protection book + Diamond -> Fortification (level matches, max III)
         recipes.put(EnchantmentType.FORTIFICATION, new AnvilRecipe(Enchantment.PROTECTION, Material.DIAMOND, true, 3));
-        // Deflection: Protection book + Shield -> Deflection (level matches, max II)
         recipes.put(EnchantmentType.DEFLECTION, new AnvilRecipe(Enchantment.PROTECTION, Material.SHIELD, true, 2));
 
         // === LEGGINGS ===
-        // Swiftfoot: Protection book + Sugar -> Swiftfoot (level matches, max III)
         recipes.put(EnchantmentType.SWIFTFOOT, new AnvilRecipe(Enchantment.PROTECTION, Material.SUGAR, true, 3));
-        // Dodge: Protection book + Feather -> Dodge (level matches, max II)
         recipes.put(EnchantmentType.DODGE, new AnvilRecipe(Enchantment.PROTECTION, Material.FEATHER, true, 2));
 
         // === BOOTS ===
-        // Leaping: Protection book + Rabbit Foot -> Leaping (level matches, max III)
         recipes.put(EnchantmentType.LEAPING, new AnvilRecipe(Enchantment.PROTECTION, Material.RABBIT_FOOT, true, 3));
-        // Stomp: Protection book + Anvil -> Stomp (level matches, max III)
         recipes.put(EnchantmentType.STOMP, new AnvilRecipe(Enchantment.PROTECTION, Material.ANVIL, true, 3));
 
         // === ELYTRA ===
-        // Cushion: Unbreaking book + Feather -> Cushion (always I)
         recipes.put(EnchantmentType.CUSHION, new AnvilRecipe(Enchantment.UNBREAKING, Material.FEATHER, false, 1));
-        // Boost: Unbreaking book + Firework Rocket -> Boost (level matches, max III)
         recipes.put(EnchantmentType.BOOST, new AnvilRecipe(Enchantment.UNBREAKING, Material.FIREWORK_ROCKET, true, 3));
-        // Glider: Unbreaking book + Phantom Membrane -> Glider (always I)
         recipes.put(EnchantmentType.GLIDER, new AnvilRecipe(Enchantment.UNBREAKING, Material.PHANTOM_MEMBRANE, false, 1));
 
         // === SICKLE ===
-        // Soul Reap: Sharpness book + Soul Sand -> Soul Reap (level matches, max III)
         recipes.put(EnchantmentType.SOUL_REAP, new AnvilRecipe(Enchantment.SHARPNESS, Material.SOUL_SAND, true, 3));
-        // Blood Price: Sharpness book + Nether Wart -> Blood Price (level matches, max III)
         recipes.put(EnchantmentType.BLOOD_PRICE, new AnvilRecipe(Enchantment.SHARPNESS, Material.NETHER_WART, true, 3));
-        // Reaper's Mark: Sharpness book + Ender Eye -> Reaper's Mark (level matches, max II)
         recipes.put(EnchantmentType.REAPERS_MARK, new AnvilRecipe(Enchantment.SHARPNESS, Material.ENDER_EYE, true, 2));
-        // Wither Touch: Sharpness book + Wither Rose -> Wither Touch (level matches, max II)
         recipes.put(EnchantmentType.WITHER_TOUCH, new AnvilRecipe(Enchantment.SHARPNESS, Material.WITHER_ROSE, true, 2));
-
-        // NOTE: Soulbound is handled separately (any item + Totem of Undying)
-        // NOTE: BestBuddies is a crafting recipe (Bone + Diamond), not anvil
 
         plugin.getLogger().info("Registered " + recipes.size() + " anvil enchantment recipes.");
     }
@@ -200,12 +157,17 @@ public class AnvilRecipeListener implements Listener {
         ItemStack result = tool.clone();
         enchantManager.setEnchant(result, EnchantmentType.SOULBOUND, 1);
 
-        // Add Soulbound to lore
+        // Add Soulbound to lore + glint
         ItemMeta meta = result.getItemMeta();
         if (meta != null) {
             List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
             lore.add(Component.text("Soulbound", NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("Item is kept on death", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
+
+            // BUG 3 FIX: Add enchantment glint
+            addEnchantGlint(meta);
+
             result.setItemMeta(meta);
         }
 
@@ -258,10 +220,15 @@ public class AnvilRecipeListener implements Listener {
                     .decoration(TextDecoration.ITALIC, false)
             );
 
-            // Add lore describing the enchantment
+            // BUG 6 FIX: Add description lore for the enchantment
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("Custom Enchantment", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
+            String desc = getEnchantDescription(enchType, resultLevel);
+            if (desc != null) {
+                lore.add(Component.text(desc, NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            }
             lore.add(Component.text("Apply to item in anvil", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
             resultMeta.lore(lore);
@@ -316,7 +283,7 @@ public class AnvilRecipeListener implements Listener {
         ItemStack result = tool.clone();
         enchantManager.setEnchant(result, foundType, foundLevel);
 
-        // Update lore to show the enchantment
+        // Update lore to show the enchantment + description
         ItemMeta meta = result.getItemMeta();
         if (meta != null) {
             List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
@@ -324,7 +291,17 @@ public class AnvilRecipeListener implements Listener {
             String levelStr = toRoman(foundLevel);
             lore.add(Component.text(formatEnchantName(foundType) + " " + levelStr, color)
                 .decoration(TextDecoration.ITALIC, false));
+            // BUG 6 FIX: Add description to the applied item
+            String desc = getEnchantDescription(foundType, foundLevel);
+            if (desc != null) {
+                lore.add(Component.text("  " + desc, NamedTextColor.DARK_GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            }
             meta.lore(lore);
+
+            // BUG 3 FIX: Add enchantment glint
+            addEnchantGlint(meta);
+
             result.setItemMeta(meta);
         }
 
@@ -383,12 +360,86 @@ public class AnvilRecipeListener implements Listener {
         if (!isCustomOperation) return;
 
         // For custom operations: consume both input slots, give result
-        // The event will handle giving the result item to the cursor
-        // We just need to clear the input slots after
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             inv.setItem(0, null);
             inv.setItem(1, null);
         });
+    }
+
+    // ========================================================================
+    // BUG 3 FIX: Add a hidden vanilla enchantment for glint effect
+    // ========================================================================
+    private void addEnchantGlint(ItemMeta meta) {
+        // Only add if item doesn't already have vanilla enchantments
+        if (!meta.hasEnchants()) {
+            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        }
+    }
+
+    // ========================================================================
+    // BUG 6 FIX: Enchantment descriptions
+    // ========================================================================
+    private String getEnchantDescription(EnchantmentType type, int level) {
+        return switch (type) {
+            case VAMPIRISM -> "Grants Regeneration " + toRoman(getVampirismRegenLevel(level)) + " on hit";
+            case BLEED -> "Inflicts bleeding damage over " + (level) + "s";
+            case VENOMSTRIKE -> "Poisons target on hit for " + (level <= 1 ? "3s" : "5s");
+            case LIFESTEAL -> "Heals " + (level * 5) + "% of damage dealt";
+            case BERSERKER -> "Bonus damage based on missing health";
+            case LUMBERJACK -> (level * 10) + "% chance to disable shields";
+            case CLEAVE -> "Deals " + switch (level) { case 1 -> "20%"; case 2 -> "35%"; default -> "50%"; } + " AoE damage";
+            case TIMBER -> "Chops connected logs (max " + switch (level) { case 1 -> "8"; case 2 -> "16"; default -> "64"; } + ")";
+            case GUILLOTINE -> switch (level) { case 1 -> "3%"; case 2 -> "6%"; default -> "10%"; } + " instant kill below 30% HP";
+            case VEINMINER -> "Mines connected ores (max " + switch (level) { case 1 -> "8"; case 2 -> "16"; default -> "32"; } + ")";
+            case DRILL -> "Mines a " + switch (level) { case 1 -> "1x3"; case 2 -> "3x3"; default -> "3x3x2"; } + " area";
+            case AUTO_SMELT -> "Automatically smelts mined ores";
+            case MAGNETISM -> "Pulls nearby items to you";
+            case EXCAVATOR -> "Digs a " + switch (level) { case 1 -> "1x3"; case 2 -> "3x3"; default -> "3x3x2"; } + " area";
+            case REPLENISH -> "Chance to find seeds and shards";
+            case HARVESTER -> "Harvests crops in a " + level + " block radius";
+            case GREEN_THUMB -> "Tills soil and applies bonemeal in area";
+            case THUNDERLORD -> switch (level) { case 1 -> "15%"; case 2 -> "25%"; case 3 -> "35%"; case 4 -> "45%"; default -> "55%"; } + " chance to summon lightning";
+            case SWIFTNESS -> "Grants Speed" + (level >= 3 ? " II" : " I") + " while holding trident";
+            case VITALITY -> "Grants +" + (level * 2) + " max HP while holding trident";
+            case TIDAL_WAVE -> "Knocks back targets and grants Dolphin's Grace";
+            case FROSTBITE -> "Applies Slowness on hit for " + (level * 0.5) + "s";
+            case EXPLOSIVE_ARROW -> "Arrows explode on impact (radius " + switch (level) { case 1 -> "1"; case 2 -> "1.5"; default -> "2"; } + ")";
+            case HOMING -> "Arrows track nearby enemies (range " + (level == 1 ? "5" : "8") + ")";
+            case RAPIDFIRE -> "Increases crossbow fire rate";
+            case SNIPER -> "+" + (level * 10) + "% bonus damage at 20+ blocks";
+            case NIGHT_VISION -> "Permanent Night Vision effect";
+            case AQUA_LUNGS -> "Water Breathing" + (level >= 2 ? " + Conduit Power" : "");
+            case FORTIFICATION -> switch (level) { case 1 -> "5%"; case 2 -> "8%"; default -> "12%"; } + " damage reduction";
+            case DEFLECTION -> (level == 1 ? "10%" : "20%") + " chance to reflect projectiles";
+            case SWIFTFOOT -> "Grants Speed" + (level >= 3 ? " II" : " I");
+            case DODGE -> (level == 1 ? "8%" : "15%") + " chance to dodge melee attacks";
+            case LEAPING -> "Grants Jump Boost " + toRoman(level);
+            case STOMP -> "Converts fall damage to AoE (" + (level * 2) + " dmg)";
+            case CUSHION -> "Negates elytra crash and fall damage";
+            case BOOST -> "Sneak while gliding for a speed boost";
+            case GLIDER -> "50% less elytra durability loss";
+            case SOULBOUND -> "Item is kept on death";
+            case BEST_BUDDIES -> "Wolf takes/deals 95% less damage, gets Regen II";
+            case SOUL_REAP -> "Gain Strength on kill (duration " + switch (level) { case 1 -> "3s"; case 2 -> "5s"; default -> "7s"; } + ")";
+            case BLOOD_PRICE -> "+" + (0.5 + level * 0.5) + " bonus damage, costs 1 HP";
+            case REAPERS_MARK -> "Marks target for +" + (level == 1 ? "10%" : "15%") + " damage";
+            case WITHER_TOUCH -> "Applies Wither " + toRoman(level) + " on hit";
+        };
+    }
+
+    /**
+     * Returns the Regeneration level for the given Vampirism level.
+     * Maps: I→I, II→II, III→II, IV→III, V→IV
+     */
+    private int getVampirismRegenLevel(int vampirismLevel) {
+        return switch (vampirismLevel) {
+            case 1 -> 1;
+            case 2 -> 2;
+            case 3 -> 2;
+            case 4 -> 3;
+            default -> 4;
+        };
     }
 
     // ========================================================================
@@ -413,10 +464,6 @@ public class AnvilRecipeListener implements Listener {
             case AUTO_SMELT -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH)
                 || vanillaEnchants.containsKey(Enchantment.FORTUNE);
             case DRILL -> {
-                // Only Drill III conflicts with Silk Touch
-                int drillLevel = enchantManager.getEnchantLevel(tool, EnchantmentType.DRILL);
-                // If tool already has Drill and we're adding more, check existing level
-                // If the book is Drill III, check Silk Touch
                 yield false; // Conflict checked at a higher level
             }
             case VEINMINER -> enchantManager.hasEnchant(tool, EnchantmentType.DRILL);
