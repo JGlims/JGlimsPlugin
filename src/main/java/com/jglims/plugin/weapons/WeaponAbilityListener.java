@@ -772,108 +772,122 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
+            // Phantom Lunge — 8-block piercing dash
             Vector direction = player.getLocation().getDirection().normalize();
-            player.setVelocity(direction.clone().multiply(2.5));
-            player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 1.5f, 1.2f);
-            player.playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.5f);
+            player.setVelocity(direction.multiply(2.5));
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.5f, 1.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 1.4f);
 
             new BukkitRunnable() {
-                int tick = 0;
-                final Set<UUID> hit = new HashSet<>();
+                int ticks = 0;
+                Set<UUID> hitEntities = new HashSet<>();
                 @Override public void run() {
-                    if (tick >= 10) { cancel(); return; }
+                    if (ticks >= 8) { cancel(); return; }
                     Location loc = player.getLocation();
-                    player.getWorld().spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.02);
-                    player.getWorld().spawnParticle(Particle.CRIT, loc.clone().add(0, 1, 0), 5, 0.4, 0.3, 0.4, 0.15);
-                    player.getWorld().spawnParticle(Particle.DUST, loc.clone().add(0, 1, 0), 10, 0.2, 0.6, 0.2, 0,
-                            new Particle.DustOptions(Color.fromRGB(180, 240, 255), 1.8f));
+                    player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc.clone().add(0, 1, 0), 2, 0.3, 0.3, 0.3, 0);
+                    player.getWorld().spawnParticle(Particle.CRIT, loc, 6, 0.5, 0.5, 0.5, 0.1);
+                    player.getWorld().spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 3, 0.2, 0.5, 0.2, 0.02);
                     for (LivingEntity enemy : getNearbyEnemies(loc, 2.0, player)) {
-                        if (hit.add(enemy.getUniqueId())) {
+                        if (!hitEntities.contains(enemy.getUniqueId())) {
+                            hitEntities.add(enemy.getUniqueId());
                             dealAbilityDamage(player, enemy, 8.0, false);
-                            enemy.setVelocity(direction.clone().multiply(0.4).setY(0.3));
-                            player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, enemy.getLocation().add(0, 1, 0), 3, 0.2, 0.2, 0.2, 0);
+                            enemy.setVelocity(direction.clone().multiply(0.3).setY(0.3));
                         }
                     }
-                    tick++;
+                    ticks++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("\u00a7b Phantom Lunge!");
+            player.sendActionBar("\u00a7b\u2694 Phantom Lunge!");
 
         } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 2.0f);
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 2.0f, 0.5f);
+            // Spear of the Void — 30-block void projectile
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 2.0f);
 
-            Vector direction = player.getLocation().getDirection().normalize();
-            Location start = player.getEyeLocation().clone();
+            Location startLoc = player.getEyeLocation().clone();
+            Vector direction = startLoc.getDirection().normalize();
 
             new BukkitRunnable() {
-                int tick = 0;
-                Location current = start.clone();
-                final Set<UUID> hit = new HashSet<>();
-                boolean detonated = false;
+                Location currentLoc = startLoc.clone();
+                int ticks = 0;
+                Set<UUID> hitEntities = new HashSet<>();
 
                 @Override public void run() {
-                    if (tick >= 30 || detonated) {
-                        if (!detonated) detonate(current);
+                    if (ticks >= 30) {
+                        detonate(currentLoc);
                         cancel();
                         return;
                     }
-                    current.add(direction.clone().multiply(1.0));
-                    if (current.getBlock().getType().isSolid()) {
-                        detonate(current);
-                        detonated = true;
-                        cancel();
-                        return;
-                    }
-                    // FIX: replaced DRAGON_BREATH with SOUL
-                    player.getWorld().spawnParticle(Particle.SOUL, current, 8, 0.1, 0.1, 0.1, 0.02);
-                    player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, current, 5, 0.2, 0.2, 0.2, 0.1);
-                    player.getWorld().spawnParticle(Particle.DUST, current, 5, 0.15, 0.15, 0.15, 0,
-                            new Particle.DustOptions(Color.fromRGB(80, 0, 120), 2.0f));
-                    for (Entity e : current.getWorld().getNearbyEntities(current, 1.5, 1.5, 1.5)) {
-                        if (e instanceof LivingEntity le && !(e instanceof Player) && !(e instanceof ArmorStand)) {
-                            if (hit.add(e.getUniqueId())) {
-                                dealAbilityDamage(player, le, 18.0, true);
-                                le.getWorld().spawnParticle(Particle.EXPLOSION, le.getLocation().add(0, 1, 0), 3, 0.2, 0.2, 0.2, 0);
-                            }
+                    currentLoc.add(direction.clone().multiply(1.0));
+                    World world = currentLoc.getWorld();
+
+                    // Projectile trail particles - FIXED: replaced DRAGON_BREATH with SOUL
+                    world.spawnParticle(Particle.SOUL, currentLoc, 5, 0.1, 0.1, 0.1, 0.02);
+                    world.spawnParticle(Particle.REVERSE_PORTAL, currentLoc, 8, 0.15, 0.15, 0.15, 0.05);
+                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, currentLoc, 3, 0.05, 0.05, 0.05, 0.01);
+                    world.spawnParticle(Particle.END_ROD, currentLoc, 2, 0.1, 0.1, 0.1, 0.01);
+                    world.spawnParticle(Particle.DUST, currentLoc, 3, 0.2, 0.2, 0.2, 0,
+                            new Particle.DustOptions(Color.fromRGB(20, 0, 40), 2.0f));
+
+                    // Check for hits
+                    for (LivingEntity enemy : getNearbyEnemies(currentLoc, 1.5, player)) {
+                        if (!hitEntities.contains(enemy.getUniqueId())) {
+                            hitEntities.add(enemy.getUniqueId());
+                            dealAbilityDamage(player, enemy, 18.0, true);
+                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+                            world.spawnParticle(Particle.SOUL_FIRE_FLAME, enemy.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
+                            world.spawnParticle(Particle.DAMAGE_INDICATOR, enemy.getLocation().add(0, 1.5, 0), 5, 0.3, 0.3, 0.3, 0.1);
                         }
                     }
-                    tick++;
+
+                    // Check for block collision
+                    if (currentLoc.getBlock().getType().isSolid()) {
+                        detonate(currentLoc);
+                        cancel();
+                        return;
+                    }
+
+                    ticks++;
                 }
 
-                private void detonate(Location impactLoc) {
-                    World world = impactLoc.getWorld();
-                    world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 5, 0, 0, 0, 0);
-                    world.spawnParticle(Particle.REVERSE_PORTAL, impactLoc, 150, 3, 3, 3, 0.5);
-                    // FIX: replaced DRAGON_BREATH with SOUL
-                    world.spawnParticle(Particle.SOUL, impactLoc, 80, 4, 2, 4, 0.1);
-                    world.spawnParticle(Particle.TOTEM_OF_UNDYING, impactLoc, 60, 2, 2, 2, 0.3);
-                    world.playSound(impactLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.5f);
-                    world.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
-                    for (LivingEntity enemy : getNearbyEnemies(impactLoc, 5.0, player)) {
-                        Vector pull = impactLoc.toVector().subtract(enemy.getLocation().toVector()).normalize().multiply(1.5);
-                        pull.setY(0.4);
-                        enemy.setVelocity(pull);
-                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1));
-                        if (!hit.contains(enemy.getUniqueId())) {
-                            dealAbilityDamage(player, enemy, 10.0, true);
-                        }
+                private void detonate(Location loc) {
+                    World world = loc.getWorld();
+                    // FIXED: replaced DRAGON_BREATH with SOUL everywhere
+                    world.spawnParticle(Particle.SOUL, loc, 60, 2, 2, 2, 0.1);
+                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 80, 3, 3, 3, 0.1);
+                    world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 0, 0, 0, 0);
+                    world.spawnParticle(Particle.REVERSE_PORTAL, loc, 50, 2, 2, 2, 0.3);
+                    world.spawnParticle(Particle.END_ROD, loc, 30, 2, 2, 2, 0.1);
+                    world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
+                    world.playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.8f);
+
+                    for (LivingEntity enemy : getNearbyEnemies(loc, 5.0, player)) {
+                        dealAbilityDamage(player, enemy, 10.0, true);
+                        Vector knockback = enemy.getLocation().toVector().subtract(loc.toVector()).normalize().multiply(1.5);
+                        knockback.setY(0.8);
+                        enemy.setVelocity(knockback);
+                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1));
+                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
                     }
+
+                    // Lingering rift effect - FIXED: replaced DRAGON_BREATH with SOUL
                     new BukkitRunnable() {
-                        int t = 0;
+                        int lingerTick = 0;
                         @Override public void run() {
-                            if (t >= 40) { cancel(); return; }
-                            world.spawnParticle(Particle.REVERSE_PORTAL, impactLoc, 15, 2, 0.5, 2, 0.1);
-                            // FIX: replaced DRAGON_BREATH with SOUL
-                            world.spawnParticle(Particle.SOUL, impactLoc, 5, 1.5, 0.3, 1.5, 0.02);
-                            t++;
+                            if (lingerTick >= 40) { cancel(); return; }
+                            double fade = 1.0 - (lingerTick / 40.0);
+                            int count = (int)(10 * fade);
+                            world.spawnParticle(Particle.SOUL, loc, count, 1.5, 1.5, 1.5, 0.02);
+                            world.spawnParticle(Particle.REVERSE_PORTAL, loc, count, 1, 1, 1, 0.05);
+                            world.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, (int)(5 * fade), 1, 1, 1, 0.01);
+                            lingerTick++;
                         }
                     }.runTaskTimer(plugin, 0L, 2L);
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("\u00a75\u00a7l SPEAR OF THE VOID ");
+            player.sendActionBar("\u00a75\u00a7l\u2620 SPEAR OF THE VOID \u2620");
         }
     }
 
@@ -889,73 +903,104 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.5f, 1.3f);
+            // Arrow Storm — 5 rapid-fire arrows
+            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 2.0f, 1.5f);
+
             new BukkitRunnable() {
-                int arrows = 0;
+                int shots = 0;
                 @Override public void run() {
-                    if (arrows >= 5 || !player.isOnline()) { cancel(); return; }
+                    if (shots >= 5 || !player.isOnline()) { cancel(); return; }
                     Arrow arrow = player.launchProjectile(Arrow.class);
-                    arrow.setVelocity(player.getLocation().getDirection().multiply(2.5));
+                    arrow.setVelocity(player.getLocation().getDirection().multiply(3.0));
                     arrow.setDamage(6.0);
                     arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                    arrow.setLifetimeTicks(1100);
-                    arrow.setCritical(true);
-                    player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 5, 0.2, 0.2, 0.2, 0.1);
-                    player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 0.8f, 1.5f + (arrows * 0.1f));
-                    arrows++;
+                    arrow.setLifetimeTicks(100);
+                    player.getWorld().spawnParticle(Particle.CRIT, arrow.getLocation(), 5, 0.1, 0.1, 0.1, 0.05);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 0.8f, 1.2f + shots * 0.1f);
+                    shots++;
                 }
             }.runTaskTimer(plugin, 0L, 3L);
-            player.sendActionBar("\u00a7e Arrow Storm!");
+
+            player.sendActionBar("\u00a7e\u2694 Arrow Storm!");
 
         } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
-            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 2.0f, 0.5f);
+            // Celestial Volley — 12 arrows from the sky
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 2.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.8f);
 
-            Location target = player.getLocation().add(player.getLocation().getDirection().multiply(10));
-            target.setY(player.getLocation().getY());
+            Location targetCenter = player.getTargetBlockExact(40) != null
+                    ? player.getTargetBlockExact(40).getLocation().add(0.5, 1, 0.5)
+                    : player.getLocation().add(player.getLocation().getDirection().multiply(15));
 
-            player.getWorld().spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 2, 0), 30, 0.5, 1, 0.5, 0.2);
-
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.5f);
-                for (int i = 0; i < 12; i++) {
-                    final int index = i;
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        double offsetX = (Math.random() - 0.5) * 8;
-                        double offsetZ = (Math.random() - 0.5) * 8;
-                        Location spawnLoc = target.clone().add(offsetX, 25, offsetZ);
-                        Arrow arrow = player.getWorld().spawnArrow(spawnLoc, new Vector(0, -3, 0), 2.0f, 0);
-                        arrow.setShooter(player);
-                        arrow.setDamage(10.0);
-                        arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                        arrow.setLifetimeTicks(1100);
-                        arrow.setCritical(true);
-                        arrow.setFireTicks(100);
-
-                        new BukkitRunnable() {
-                            int t = 0;
-                            @Override public void run() {
-                                if (t >= 30 || arrow.isDead() || arrow.isOnGround()) {
-                                    if (arrow.isOnGround() || arrow.isDead()) {
-                                        Location impactLoc = arrow.getLocation();
-                                        player.getWorld().spawnParticle(Particle.EXPLOSION, impactLoc, 2, 0, 0, 0, 0);
-                                        player.getWorld().spawnParticle(Particle.FLAME, impactLoc, 15, 1, 0.5, 1, 0.05);
-                                        for (LivingEntity enemy : getNearbyEnemies(impactLoc, 3.0, player)) {
-                                            dealAbilityDamage(player, enemy, 8.0, true);
-                                        }
-                                    }
-                                    cancel(); return;
-                                }
-                                player.getWorld().spawnParticle(Particle.END_ROD, arrow.getLocation(), 3, 0.1, 0.1, 0.1, 0.02);
-                                player.getWorld().spawnParticle(Particle.FIREWORK, arrow.getLocation(), 2, 0.05, 0.05, 0.05, 0.01);
-                                t++;
-                            }
-                        }.runTaskTimer(plugin, 0L, 1L);
-                    }, index * 2L);
+            // Sky visual effect - FIXED: replaced DRAGON_BREATH with SOUL
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 20) { cancel(); return; }
+                    Location skyLoc = targetCenter.clone().add(0, 20, 0);
+                    World world = skyLoc.getWorld();
+                    // FIXED: was DRAGON_BREATH, now SOUL
+                    world.spawnParticle(Particle.SOUL, skyLoc, 10, 3, 1, 3, 0.05);
+                    world.spawnParticle(Particle.END_ROD, skyLoc, 5, 2, 0.5, 2, 0.02);
+                    world.spawnParticle(Particle.SOUL_FIRE_FLAME, skyLoc, 8, 2.5, 0.5, 2.5, 0.03);
+                    // Rain ring
+                    for (int i = 0; i < 12; i++) {
+                        double angle = (2 * Math.PI / 12) * i + ticks * 0.2;
+                        double r = 3.0 + ticks * 0.15;
+                        Location ringLoc = skyLoc.clone().add(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+                        world.spawnParticle(Particle.SOUL_FIRE_FLAME, ringLoc, 1, 0, 0, 0, 0.005);
+                    }
+                    ticks++;
                 }
-            }, 15L);
+            }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("\u00a76\u00a7l CELESTIAL VOLLEY ");
+            // Fire arrows down with delays
+            for (int i = 0; i < 12; i++) {
+                final int arrowIndex = i;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    double offsetX = (Math.random() - 0.5) * 6.0;
+                    double offsetZ = (Math.random() - 0.5) * 6.0;
+                    Location spawnLoc = targetCenter.clone().add(offsetX, 20, offsetZ);
+                    Arrow arrow = player.getWorld().spawnArrow(spawnLoc, new Vector(0, -3, 0), 3.0f, 0);
+                    arrow.setShooter(player);
+                    arrow.setDamage(10.0);
+                    arrow.setFireTicks(100);
+                    arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                    arrow.setLifetimeTicks(200);
+
+                    // Arrow trail
+                    new BukkitRunnable() {
+                        int trailTick = 0;
+                        @Override public void run() {
+                            if (trailTick >= 40 || arrow.isDead() || arrow.isOnGround()) {
+                                if (!arrow.isDead()) {
+                                    // Impact effect - FIXED: replaced DRAGON_BREATH with SOUL
+                                    Location impactLoc = arrow.getLocation();
+                                    World world = impactLoc.getWorld();
+                                    world.spawnParticle(Particle.SOUL, impactLoc, 15, 1, 0.5, 1, 0.05);
+                                    world.spawnParticle(Particle.FLAME, impactLoc, 20, 1.5, 0.5, 1.5, 0.05);
+                                    world.spawnParticle(Particle.LAVA, impactLoc, 5, 0.5, 0, 0.5, 0);
+                                    world.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 0.6f, 1.2f);
+                                    for (LivingEntity enemy : getNearbyEnemies(impactLoc, 3.0, player)) {
+                                        dealAbilityDamage(player, enemy, 8.0, true);
+                                        enemy.setFireTicks(60);
+                                    }
+                                }
+                                cancel();
+                                return;
+                            }
+                            Location arrowLoc = arrow.getLocation();
+                            // FIXED: was DRAGON_BREATH, now SOUL_FIRE_FLAME
+                            arrow.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, arrowLoc, 3, 0.05, 0.05, 0.05, 0.01);
+                            arrow.getWorld().spawnParticle(Particle.END_ROD, arrowLoc, 1, 0.02, 0.02, 0.02, 0.005);
+                            trailTick++;
+                        }
+                    }.runTaskTimer(plugin, 0L, 1L);
+                }, 5L + arrowIndex * 2L);
+            }
+
+            player.sendActionBar("\u00a7d\u00a7l\u2604 CELESTIAL VOLLEY \u2604");
         }
     }
 
@@ -971,91 +1016,103 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.5f, 1.0f);
-            Vector baseDir = player.getLocation().getDirection().normalize();
-            for (int bolt = 0; bolt < 3; bolt++) {
-                final int boltIndex = bolt;
+            // Chain Shot — 3 piercing bolts
+            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 2.0f, 1.2f);
+            Vector dir = player.getLocation().getDirection().normalize();
+
+            for (int i = 0; i < 3; i++) {
+                final int boltIndex = i;
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    double spread = (boltIndex - 1) * 0.1;
-                    Vector dir = baseDir.clone().rotateAroundY(spread);
-                    Arrow arrow = player.launchProjectile(Arrow.class);
-                    arrow.setVelocity(dir.multiply(3.0));
-                    arrow.setDamage(8.0);
-                    arrow.setPierceLevel(3);
-                    arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                    arrow.setLifetimeTicks(1100);
-                    arrow.setCritical(true);
-                    player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 5, 0.1, 0.1, 0.1, 0.2);
-                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 0.7f, 1.2f + (boltIndex * 0.15f));
+                    if (!player.isOnline()) return;
+                    double spread = (boltIndex - 1) * 0.15;
+                    Vector boltDir = dir.clone().add(new Vector(spread, 0, spread)).normalize();
+                    Arrow bolt = player.launchProjectile(Arrow.class);
+                    bolt.setVelocity(boltDir.multiply(3.5));
+                    bolt.setDamage(8.0);
+                    bolt.setPierceLevel(3);
+                    bolt.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                    bolt.setLifetimeTicks(80);
+                    player.getWorld().spawnParticle(Particle.CRIT, bolt.getLocation(), 3, 0.1, 0.1, 0.1, 0.05);
+                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 0.6f, 1.4f);
+
                     new BukkitRunnable() {
-                        int t = 0; boolean chained = false;
+                        int t = 0;
                         @Override public void run() {
-                            if (t >= 40 || arrow.isDead() || chained) {
-                                if ((arrow.isDead() || arrow.isOnGround()) && !chained) {
-                                    chained = true;
-                                    Location impactLoc = arrow.getLocation();
-                                    for (LivingEntity enemy : getNearbyEnemies(impactLoc, 3.0, player)) {
-                                        dealAbilityDamage(player, enemy, 4.0, false);
-                                        enemy.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, enemy.getLocation().add(0, 1, 0), 8, 0.3, 0.3, 0.3, 0.1);
-                                    }
+                            if (t >= 20 || bolt.isDead() || bolt.isOnGround()) {
+                                // Chain lightning on hit
+                                Location hitLoc = bolt.getLocation();
+                                for (LivingEntity enemy : getNearbyEnemies(hitLoc, 3.0, player)) {
+                                    dealAbilityDamage(player, enemy, 4.0, false);
+                                    enemy.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, enemy.getLocation().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.1);
                                 }
-                                cancel(); return;
+                                cancel();
+                                return;
                             }
-                            player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, arrow.getLocation(), 2, 0.05, 0.05, 0.05, 0.01);
+                            bolt.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, bolt.getLocation(), 2, 0.05, 0.05, 0.05, 0.02);
                             t++;
                         }
                     }.runTaskTimer(plugin, 0L, 1L);
-                }, bolt * 4L);
+                }, i * 3L);
             }
-            player.sendActionBar("\u00a7b Chain Shot!");
+
+            player.sendActionBar("\u00a7e\u26A1 Chain Shot!");
 
         } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.8f);
-            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 2.0f, 0.5f);
+            // Thunder Barrage — 6 explosive bolts
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.7f);
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 1.5f);
+
             Vector baseDir = player.getLocation().getDirection().normalize();
-            for (int bolt = 0; bolt < 6; bolt++) {
-                final int boltIndex = bolt;
+
+            for (int i = 0; i < 6; i++) {
+                final int boltIndex = i;
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    double spread = (boltIndex - 2.5) * 0.12;
-                    Vector dir = baseDir.clone().rotateAroundY(spread);
-                    Arrow arrow = player.launchProjectile(Arrow.class);
-                    arrow.setVelocity(dir.multiply(3.5));
-                    arrow.setDamage(12.0);
-                    arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                    arrow.setLifetimeTicks(1100);
-                    arrow.setCritical(true);
-                    arrow.setFireTicks(60);
-                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 0.6f, 0.8f + (boltIndex * 0.1f));
+                    if (!player.isOnline()) return;
+                    double spreadX = (Math.random() - 0.5) * 0.3;
+                    double spreadY = (Math.random() - 0.5) * 0.15;
+                    double spreadZ = (Math.random() - 0.5) * 0.3;
+                    Vector boltDir = baseDir.clone().add(new Vector(spreadX, spreadY, spreadZ)).normalize();
+                    Arrow bolt = player.launchProjectile(Arrow.class);
+                    bolt.setVelocity(boltDir.multiply(3.0));
+                    bolt.setDamage(12.0);
+                    bolt.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                    bolt.setLifetimeTicks(100);
+                    bolt.setGlowing(true);
+                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.0f, 0.8f);
+
                     new BukkitRunnable() {
-                        int t = 0; boolean exploded = false;
+                        int t = 0;
                         @Override public void run() {
-                            if (t >= 60 || arrow.isDead() || exploded) {
-                                if (!exploded) { exploded = true; explodeBolt(arrow.getLocation()); }
-                                cancel(); return;
+                            if (t >= 30 || bolt.isDead() || bolt.isOnGround()) {
+                                // Explosive impact - FIXED: no DRAGON_BREATH
+                                Location impactLoc = bolt.getLocation();
+                                World world = impactLoc.getWorld();
+                                world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 1, 0, 0, 0, 0);
+                                world.spawnParticle(Particle.ELECTRIC_SPARK, impactLoc, 30, 2, 2, 2, 0.1);
+                                world.spawnParticle(Particle.SOUL_FIRE_FLAME, impactLoc, 20, 1.5, 1, 1.5, 0.05);
+                                world.spawnParticle(Particle.FLAME, impactLoc, 15, 1, 0.5, 1, 0.05);
+                                world.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.8f);
+                                world.playSound(impactLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.0f);
+                                for (LivingEntity enemy : getNearbyEnemies(impactLoc, 4.0, player)) {
+                                    dealAbilityDamage(player, enemy, 14.0, true);
+                                    Vector kb = enemy.getLocation().toVector().subtract(impactLoc.toVector()).normalize().multiply(1.2);
+                                    kb.setY(0.6);
+                                    enemy.setVelocity(kb);
+                                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1));
+                                }
+                                cancel();
+                                return;
                             }
-                            if (arrow.isOnGround()) { exploded = true; explodeBolt(arrow.getLocation()); cancel(); return; }
-                            player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, arrow.getLocation(), 4, 0.1, 0.1, 0.1, 0.05);
-                            player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, arrow.getLocation(), 2, 0.05, 0.05, 0.05, 0.01);
+                            // Trail - FIXED: no DRAGON_BREATH
+                            bolt.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, bolt.getLocation(), 3, 0.05, 0.05, 0.05, 0.02);
+                            bolt.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, bolt.getLocation(), 1, 0.02, 0.02, 0.02, 0.005);
                             t++;
                         }
-                        private void explodeBolt(Location impactLoc) {
-                            World world = impactLoc.getWorld();
-                            world.spawnParticle(Particle.EXPLOSION, impactLoc, 3, 0.5, 0.5, 0.5, 0);
-                            world.spawnParticle(Particle.ELECTRIC_SPARK, impactLoc, 30, 2, 1, 2, 0.2);
-                            world.spawnParticle(Particle.FLAME, impactLoc, 20, 1.5, 0.5, 1.5, 0.05);
-                            world.playSound(impactLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.0f);
-                            for (LivingEntity enemy : getNearbyEnemies(impactLoc, 4.0, player)) {
-                                dealAbilityDamage(player, enemy, 14.0, true);
-                                Vector kb = enemy.getLocation().toVector().subtract(impactLoc.toVector()).normalize().multiply(0.8);
-                                kb.setY(0.5); enemy.setVelocity(kb);
-                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 2));
-                            }
-                            arrow.remove();
-                        }
                     }.runTaskTimer(plugin, 0L, 1L);
-                }, bolt * 3L);
+                }, i * 3L);
             }
-            player.sendActionBar("\u00a7e\u00a7l THUNDER BARRAGE ");
+
+            player.sendActionBar("\u00a74\u00a7l\u26A1 THUNDER BARRAGE \u26A1");
         }
     }
 
@@ -1071,73 +1128,102 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.5f, 1.0f);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.0f, 0.8f);
+            // Tidal Surge — water burst + knockback
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 2.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 1.2f);
             Location center = player.getLocation();
-            Vector forward = center.getDirection().normalize();
-            for (LivingEntity enemy : getNearbyEnemies(center, 8.0, player)) {
-                Vector toEnemy = enemy.getLocation().toVector().subtract(center.toVector()).normalize();
-                if (forward.dot(toEnemy) > 0.3) {
-                    dealAbilityDamage(player, enemy, 8.0, false);
-                    Vector knockback = toEnemy.multiply(1.5); knockback.setY(0.5);
-                    enemy.setVelocity(knockback);
-                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 0));
-                    enemy.getWorld().spawnParticle(Particle.SPLASH, enemy.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.1);
+            World world = center.getWorld();
+
+            world.spawnParticle(Particle.SPLASH, center.clone().add(0, 1, 0), 80, 3, 1, 3, 0.5);
+            world.spawnParticle(Particle.BUBBLE, center.clone().add(0, 1, 0), 40, 2, 1, 2, 0.3);
+            world.spawnParticle(Particle.DOLPHIN, center.clone().add(0, 1, 0), 20, 2, 1, 2, 0.1);
+
+            for (LivingEntity enemy : getNearbyEnemies(center, 6.0, player)) {
+                dealAbilityDamage(player, enemy, 8.0, false);
+                Vector kb = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(2.0);
+                kb.setY(0.8);
+                enemy.setVelocity(kb);
+                enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 0));
+                world.spawnParticle(Particle.SPLASH, enemy.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.2);
+            }
+
+            // Expanding water ring
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 10) { cancel(); return; }
+                    double radius = ticks * 0.8;
+                    for (int i = 0; i < 20; i++) {
+                        double angle = (2 * Math.PI / 20) * i;
+                        Location pLoc = center.clone().add(Math.cos(angle) * radius, 0.3, Math.sin(angle) * radius);
+                        world.spawnParticle(Particle.SPLASH, pLoc, 2, 0.1, 0.2, 0.1, 0.1);
+                        world.spawnParticle(Particle.DOLPHIN, pLoc, 1, 0.05, 0.1, 0.05, 0.02);
+                    }
+                    ticks++;
                 }
-            }
-            for (int i = 0; i < 30; i++) {
-                double dist = 1 + Math.random() * 7;
-                double sp = (Math.random() - 0.5) * 1.2;
-                Vector offset = forward.clone().multiply(dist).add(new Vector(sp, Math.random() * 1.5, sp));
-                player.getWorld().spawnParticle(Particle.SPLASH, center.clone().add(offset), 3, 0.2, 0.3, 0.2, 0.05);
-                player.getWorld().spawnParticle(Particle.DRIPPING_WATER, center.clone().add(offset), 2, 0.1, 0.2, 0.1, 0);
-            }
-            player.sendActionBar("\u00a7b Tidal Surge!");
+            }.runTaskTimer(plugin, 0L, 1L);
+
+            player.sendActionBar("\u00a7b\u00a7l\u2248 Tidal Surge! \u2248");
 
         } else {
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 0.5f);
-            player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.5f, 1.5f);
+            // Poseidon's Wrath — 3 water waves + lightning
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.2f);
+            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 2.0f, 0.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.5f, 0.8f);
+
             Location center = player.getLocation();
-            Vector forward = center.getDirection().normalize();
+
             for (int wave = 0; wave < 3; wave++) {
-                final int waveNum = wave;
-                final double waveDamage = 16.0 - (wave * 3.0);
-                final double waveRadius = 4.0 + (wave * 3.0);
+                final double waveDamage = 16.0 - (wave * 3.0); // 16, 13, 10
+                final int waveIndex = wave;
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    Location waveCenter = center.clone().add(forward.clone().multiply(waveNum * 3));
-                    for (int i = 0; i < 40; i++) {
-                        double angle = (2 * Math.PI / 40) * i;
+                    World world = center.getWorld();
+                    double waveRadius = 4.0 + waveIndex * 3.0;
+
+                    // Wave ring
+                    for (int i = 0; i < 30 + waveIndex * 10; i++) {
+                        double angle = (2 * Math.PI / (30 + waveIndex * 10)) * i;
                         double r = waveRadius * (0.5 + Math.random() * 0.5);
-                        Location pLoc = waveCenter.clone().add(Math.cos(angle) * r, 0.3 + Math.random() * 1.5, Math.sin(angle) * r);
-                        player.getWorld().spawnParticle(Particle.SPLASH, pLoc, 5, 0.2, 0.3, 0.2, 0.05);
-                        player.getWorld().spawnParticle(Particle.DRIPPING_WATER, pLoc, 3, 0.1, 0.5, 0.1, 0);
+                        Location pLoc = center.clone().add(Math.cos(angle) * r, 0.5 + Math.random(), Math.sin(angle) * r);
+                        world.spawnParticle(Particle.SPLASH, pLoc, 5, 0.2, 0.3, 0.2, 0.2);
+                        world.spawnParticle(Particle.BUBBLE, pLoc, 2, 0.1, 0.2, 0.1, 0.1);
+                        world.spawnParticle(Particle.DOLPHIN, pLoc, 1, 0.05, 0.1, 0.05, 0.02);
                     }
-                    player.getWorld().spawnParticle(Particle.EXPLOSION, waveCenter, 2, 1, 0.5, 1, 0);
-                    player.getWorld().playSound(waveCenter, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.5f, 0.7f + (waveNum * 0.15f));
-                    for (LivingEntity enemy : getNearbyEnemies(waveCenter, waveRadius, player)) {
+
+                    world.playSound(center, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 2.0f, 0.6f + waveIndex * 0.2f);
+
+                    for (LivingEntity enemy : getNearbyEnemies(center, waveRadius, player)) {
                         dealAbilityDamage(player, enemy, waveDamage, true);
-                        Vector kb = enemy.getLocation().toVector().subtract(waveCenter.toVector()).normalize().multiply(1.0 + waveNum * 0.3);
-                        kb.setY(0.6); enemy.setVelocity(kb);
+                        Vector kb = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.5);
+                        kb.setY(0.6 + waveIndex * 0.2);
+                        enemy.setVelocity(kb);
                         enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 1));
+                        world.spawnParticle(Particle.SPLASH, enemy.getLocation().add(0, 1, 0), 20, 0.3, 0.5, 0.3, 0.3);
                     }
                 }, wave * 10L);
             }
+
+            // Lightning strike at center after waves
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                Location strikeTarget = center.clone().add(forward.clone().multiply(8));
-                player.getWorld().strikeLightningEffect(strikeTarget);
-                player.getWorld().playSound(strikeTarget, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.8f);
-                for (LivingEntity enemy : getNearbyEnemies(strikeTarget, 4.0, player)) {
+                World world = center.getWorld();
+                world.strikeLightningEffect(center);
+                world.spawnParticle(Particle.ELECTRIC_SPARK, center.clone().add(0, 1, 0), 50, 3, 3, 3, 0.2);
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 2, 0, 0, 0, 0);
+                world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.5f);
+
+                for (LivingEntity enemy : getNearbyEnemies(center, 8.0, player)) {
                     dealAbilityDamage(player, enemy, 10.0, true);
-                    enemy.setFireTicks(60);
+                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+                    enemy.setFireTicks(40);
                 }
-                player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, strikeTarget, 50, 2, 2, 2, 0.3);
-            }, 35L);
-            player.sendActionBar("\u00a71\u00a7l POSEIDON'S WRATH ");
+            }, 30L);
+
+            player.sendActionBar("\u00a71\u00a7l\u2648 POSEIDON'S WRATH \u2648");
         }
     }
 
     // ================================================================
-    // MACE — "Ground Slam" / "Meteor Strike" (FIXED — invulnerability)
+    // MACE — "Ground Slam" / "Meteor Strike" (FIXED)
     // ================================================================
 
     private void handleMaceAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -1148,130 +1234,161 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND, 2.0f, 1.0f);
+            // Ground Slam — 10 dmg + stun
+            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
+            player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.5f);
             Location center = player.getLocation();
-            for (LivingEntity enemy : getNearbyEnemies(center, 6.0, player)) {
+            World world = center.getWorld();
+
+            world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
+            for (int i = 0; i < 40; i++) {
+                double angle = Math.random() * 2 * Math.PI;
+                double r = Math.random() * 4;
+                Location pLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
+                world.spawnParticle(Particle.BLOCK, pLoc, 3, 0.2, 0.5, 0.2, 0.2, Material.STONE.createBlockData());
+                world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, pLoc, 1, 0, 0.5, 0, 0.05);
+            }
+
+            for (LivingEntity enemy : getNearbyEnemies(center, 5.0, player)) {
                 dealAbilityDamage(player, enemy, 10.0, false);
                 enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
                 enemy.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 60, 1));
+                enemy.setVelocity(new Vector(0, 0.5, 0));
             }
-            for (int i = 0; i < 60; i++) {
-                double angle = Math.random() * 2 * Math.PI;
-                double r = Math.random() * 5;
-                Location pLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
-                player.getWorld().spawnParticle(Particle.BLOCK, pLoc, 3, 0.2, 0.3, 0.2, 0.1, Material.STONE.createBlockData());
-                player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, pLoc, 1, 0, 0.3, 0, 0.02);
-            }
-            player.getWorld().spawnParticle(Particle.EXPLOSION, center, 3, 1, 0.5, 1, 0);
-            player.sendActionBar("\u00a76 Ground Slam!");
 
-        } else {
-            // METEOR STRIKE — Player gets full invulnerability before launch
-            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
-            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
-
-            // Resistance 255 = complete immunity
-            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 200, 255, false, false, true));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, 0, false, false, false));
-            player.setVelocity(new Vector(0, 3.5, 0));
-
-            // Ascent trail
+            // Expanding shockwave ring
             new BukkitRunnable() {
-                int ascendTick = 0;
+                int ticks = 0;
                 @Override public void run() {
-                    if (ascendTick >= 20 || !player.isOnline()) { cancel(); return; }
-                    Location loc = player.getLocation();
-                    player.getWorld().spawnParticle(Particle.FLAME, loc, 10, 0.3, 0.5, 0.3, 0.05);
-                    player.getWorld().spawnParticle(Particle.LAVA, loc, 3, 0.2, 0.2, 0.2, 0);
-                    player.getWorld().spawnParticle(Particle.DUST, loc, 8, 0.4, 0.6, 0.4, 0,
-                            new Particle.DustOptions(Color.fromRGB(255, 100, 0), 2.0f));
-                    ascendTick++;
+                    if (ticks >= 8) { cancel(); return; }
+                    double radius = ticks * 0.8;
+                    for (int i = 0; i < 20; i++) {
+                        double angle = (2 * Math.PI / 20) * i;
+                        Location pLoc = center.clone().add(Math.cos(angle) * radius, 0.1, Math.sin(angle) * radius);
+                        world.spawnParticle(Particle.BLOCK, pLoc, 2, 0.1, 0.3, 0.1, 0.1, Material.STONE.createBlockData());
+                    }
+                    ticks++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            // After ascent, slam down
+            player.sendActionBar("\u00a76\u00a7l\u2693 Ground Slam!");
+
+        } else {
+            // Meteor Strike — launch + slam (FIXED with invulnerability)
+            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.6f);
+
+            // Phase 1: Protection BEFORE launch
+            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 200, 255)); // Complete immunity
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 60, 0)); // Controlled ascent
+
+            final Location launchLoc = player.getLocation().clone();
+            final double launchY = launchLoc.getY();
+
+            // Phase 2: Launch upward
+            player.setVelocity(new Vector(0, 3.5, 0));
+
+            // Ascending fire trail
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 20) { cancel(); return; }
+                    Location loc = player.getLocation();
+                    World world = loc.getWorld();
+                    world.spawnParticle(Particle.FLAME, loc, 15, 0.3, 0.3, 0.3, 0.05);
+                    world.spawnParticle(Particle.LAVA, loc, 5, 0.2, 0.2, 0.2, 0);
+                    world.spawnParticle(Particle.LARGE_SMOKE, loc, 8, 0.4, 0.4, 0.4, 0.03);
+                    world.spawnParticle(Particle.DUST, loc, 10, 0.5, 0.5, 0.5, 0,
+                            new Particle.DustOptions(Color.fromRGB(255, 120, 0), 2.0f));
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 1L);
+
+            // Phase 3: Slam down after delay
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!player.isOnline()) return;
+                // Remove slow falling so player slams
                 player.removePotionEffect(PotionEffectType.SLOW_FALLING);
                 player.setVelocity(new Vector(0, -4.0, 0));
-                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.7f, 2.0f);
+                player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.5f);
 
+                // Meteor trail during fall
                 new BukkitRunnable() {
-                    int descendTick = 0;
-                    Location launchLoc = player.getLocation().clone();
-                    boolean landed = false;
-
+                    int trailTicks = 0;
                     @Override public void run() {
-                        if (descendTick >= 60 || landed || !player.isOnline()) {
-                            if (!landed) performImpact(player.getLocation());
-                            cancel(); return;
-                        }
+                        if (trailTicks >= 40 || !player.isOnline()) { cancel(); return; }
                         Location loc = player.getLocation();
-                        player.getWorld().spawnParticle(Particle.FLAME, loc, 15, 0.4, 0.8, 0.4, 0.08);
-                        player.getWorld().spawnParticle(Particle.LAVA, loc, 5, 0.3, 0.3, 0.3, 0);
-                        player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, loc, 8, 0.3, 1.0, 0.3, 0.05);
-                        player.getWorld().spawnParticle(Particle.DUST, loc, 10, 0.5, 0.8, 0.5, 0,
-                                new Particle.DustOptions(Color.fromRGB(255, 60, 0), 2.5f));
-                        if (player.isOnGround() || (descendTick > 3 && player.getVelocity().getY() > -0.1)) {
-                            landed = true;
-                            performImpact(loc);
-                            cancel(); return;
-                        }
-                        descendTick++;
-                    }
+                        World world = loc.getWorld();
+                        world.spawnParticle(Particle.FLAME, loc, 15, 0.3, 0.5, 0.3, 0.05);
+                        world.spawnParticle(Particle.LAVA, loc, 5, 0.2, 0.2, 0.2, 0);
+                        world.spawnParticle(Particle.LARGE_SMOKE, loc, 8, 0.5, 0.5, 0.5, 0.03);
+                        world.spawnParticle(Particle.DUST, loc, 10, 0.5, 0.5, 0.5, 0,
+                                new Particle.DustOptions(Color.fromRGB(255, 80, 0), 2.5f));
 
-                    private void performImpact(Location impactLoc) {
-                        World world = impactLoc.getWorld();
-                        double fallDist = Math.max(0, launchLoc.getY() - impactLoc.getY());
-                        double baseDamage = Math.min(35.0, 15.0 + fallDist * 0.5);
+                        // Check if player landed
+                        if (player.isOnGround() || (loc.getY() <= launchY + 1 && trailTicks > 5)) {
+                            // IMPACT
+                            double fallDistance = Math.max(0, launchLoc.getY() + 25 - loc.getY()); // estimate
+                            double damage = Math.min(35, 15 + fallDistance * 0.5);
+                            double radius = 12.0;
 
-                        world.playSound(impactLoc, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
-                        world.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.6f);
-                        world.playSound(impactLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.7f);
-                        world.playSound(impactLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.8f);
+                            // Particles
+                            world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 5, 1, 1, 1, 0);
+                            world.spawnParticle(Particle.LAVA, loc, 80, 4, 1, 4, 0.2);
+                            world.spawnParticle(Particle.FLAME, loc, 100, 5, 2, 5, 0.15);
+                            world.spawnParticle(Particle.LARGE_SMOKE, loc, 50, 3, 2, 3, 0.1);
+                            world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 60, 4, 2, 4, 0.3);
 
-                        world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 5, 1, 0.5, 1, 0);
-                        world.spawnParticle(Particle.LAVA, impactLoc, 80, 5, 1, 5, 0.3);
-                        world.spawnParticle(Particle.FLAME, impactLoc, 100, 6, 2, 6, 0.15);
-                        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, impactLoc, 50, 4, 3, 4, 0.1);
-                        world.spawnParticle(Particle.TOTEM_OF_UNDYING, impactLoc, 60, 3, 2, 3, 0.3);
+                            // Sounds
+                            world.playSound(loc, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
+                            world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
+                            world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.7f);
+                            world.playSound(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.4f);
 
-                        // Shockwave rings
-                        new BukkitRunnable() {
-                            int ringTick = 0;
-                            @Override public void run() {
-                                if (ringTick >= 15) { cancel(); return; }
-                                double ringR = ringTick * 0.8;
-                                for (int i = 0; i < 30; i++) {
-                                    double angle = (2 * Math.PI / 30) * i;
-                                    Location ringLoc = impactLoc.clone().add(Math.cos(angle) * ringR, 0.2, Math.sin(angle) * ringR);
-                                    world.spawnParticle(Particle.FLAME, ringLoc, 1, 0, 0.1, 0, 0.01);
-                                    world.spawnParticle(Particle.BLOCK, ringLoc, 2, 0.1, 0.2, 0.1, 0.05, Material.STONE.createBlockData());
-                                }
-                                ringTick++;
+                            // Damage enemies
+                            for (LivingEntity enemy : getNearbyEnemies(loc, radius, player)) {
+                                double dist = enemy.getLocation().distance(loc);
+                                double dmgScale = 1.0 - (dist / radius) * 0.4; // 60-100% based on distance
+                                dealAbilityDamage(player, enemy, damage * dmgScale, true);
+                                Vector kb = enemy.getLocation().toVector().subtract(loc.toVector()).normalize().multiply(2.0);
+                                kb.setY(1.0);
+                                enemy.setVelocity(kb);
+                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 2));
+                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 80, 1));
+                                enemy.setFireTicks(60);
                             }
-                        }.runTaskTimer(plugin, 0L, 1L);
 
-                        for (LivingEntity enemy : getNearbyEnemies(impactLoc, 12.0, player)) {
-                            double dist = enemy.getLocation().distance(impactLoc);
-                            double distanceFactor = 1.0 - (dist / 12.0) * 0.4;
-                            dealAbilityDamage(player, enemy, baseDamage * distanceFactor, true);
-                            Vector kb = enemy.getLocation().toVector().subtract(impactLoc.toVector()).normalize().multiply(2.0);
-                            kb.setY(1.0); enemy.setVelocity(kb);
-                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 3));
-                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 80, 2));
-                            enemy.setFireTicks(60);
-                            world.spawnParticle(Particle.EXPLOSION, enemy.getLocation().add(0, 1, 0), 2, 0.3, 0.3, 0.3, 0);
+                            // Expanding shockwave rings
+                            final Location impactLoc = loc.clone();
+                            new BukkitRunnable() {
+                                int ringTick = 0;
+                                @Override public void run() {
+                                    if (ringTick >= 15) { cancel(); return; }
+                                    double ringR = ringTick * 0.8;
+                                    for (int i = 0; i < 30; i++) {
+                                        double angle = (2 * Math.PI / 30) * i;
+                                        Location ringLoc = impactLoc.clone().add(Math.cos(angle) * ringR, 0.2, Math.sin(angle) * ringR);
+                                        world.spawnParticle(Particle.FLAME, ringLoc, 1, 0, 0.1, 0, 0.01);
+                                    }
+                                    ringTick++;
+                                }
+                            }.runTaskTimer(plugin, 0L, 1L);
+
+                            // Remove resistance after 1 second buffer
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                player.removePotionEffect(PotionEffectType.RESISTANCE);
+                            }, 20L);
+
+                            cancel();
+                            return;
                         }
-
-                        // Remove invulnerability 1 second after landing
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            player.removePotionEffect(PotionEffectType.RESISTANCE);
-                        }, 20L);
+                        trailTicks++;
                     }
                 }.runTaskTimer(plugin, 0L, 1L);
             }, 25L);
 
-            player.sendActionBar("\u00a76\u00a7l METEOR STRIKE ");
+            player.sendActionBar("\u00a74\u00a7l\u2604 METEOR STRIKE \u2604");
         }
     }
 }
+
