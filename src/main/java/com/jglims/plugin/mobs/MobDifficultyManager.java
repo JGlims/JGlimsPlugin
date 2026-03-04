@@ -109,12 +109,14 @@ public class MobDifficultyManager implements Listener {
         }
     }
 
-    private double[] getDistanceMultipliers(double distance) {
-        if (distance <= 200)  return new double[]{1.0, 1.0, 1.0};
-        if (distance <= 350)  return new double[]{1.5, 1.3, 1.0};
-        if (distance <= 600)  return new double[]{1.8, 1.6, 1.05};
-        if (distance <= 800)  return new double[]{2.3, 1.9, 1.1};
-        if (distance <= 1000) return new double[]{3.0, 2.3, 1.15};
-        return new double[]{3.5, 2.8, 1.25};
+        private double[] getDistanceMultipliers(double distance) {
+        if (distance < 350)  return new double[]{1.0, 1.0, 1.0};
+        if (distance < 700)  return new double[]{config.getDist350Health(), config.getDist350Damage(), 1.0};
+        if (distance < 1000) return new double[]{config.getDist700Health(), config.getDist700Damage(), 1.05};
+        if (distance < 2000) return new double[]{config.getDist1000Health(), config.getDist1000Damage(), 1.1};
+        if (distance < 3000) return new double[]{config.getDist2000Health(), config.getDist2000Damage(), 1.15};
+        if (distance < 5000) return new double[]{config.getDist3000Health(), config.getDist3000Damage(), 1.2};
+        return new double[]{config.getDist5000Health(), config.getDist5000Damage(), 1.25};
     }
+
 }
