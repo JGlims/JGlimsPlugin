@@ -90,9 +90,11 @@ public class InventorySortListener implements Listener {
     private int getCategoryIndex(Material mat) {
         String name = mat.name();
 
-        // Weapons
-        if (name.endsWith("_SWORD") || mat == Material.BOW || mat == Material.CROSSBOW
-            || mat == Material.TRIDENT || name.endsWith("_AXE")) return 0;
+        // Weapons (including spears and mace)
+        if (name.endsWith("_SWORD") || name.endsWith("_SPEAR")
+            || mat == Material.BOW || mat == Material.CROSSBOW
+            || mat == Material.TRIDENT || mat == Material.MACE
+            || name.endsWith("_AXE")) return 0;
 
         // Tools
         if (name.endsWith("_PICKAXE") || name.endsWith("_SHOVEL") || name.endsWith("_HOE")

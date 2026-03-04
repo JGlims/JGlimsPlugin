@@ -19,6 +19,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EnderDragon;
@@ -106,7 +107,7 @@ public class WeaponAbilityListener implements Listener {
     private void sendCooldownMessage(Player player, String abilityName) {
         long remaining = getRemainingCooldown(player, abilityName);
         double secondsLeft = remaining / 1000.0;
-        player.sendActionBar("§c" + abilityName + " on cooldown: §e" + String.format("%.1f", secondsLeft) + "s");
+        player.sendActionBar("\u00a7c" + abilityName + " on cooldown: \u00a7e" + String.format("%.1f", secondsLeft) + "s");
     }
 
     // ============================================================
@@ -147,9 +148,9 @@ public class WeaponAbilityListener implements Listener {
     // ============================================================
 
     private void dealAbilityDamage(Player player, LivingEntity target, double damage, boolean isDefinitive) {
-        // Ender Dragon exception: definitive abilities deal normal damage only
         if (isDefinitive && target instanceof EnderDragon) {
-            target.damage(damage * 0.3, player); // Drastically reduced
+            double reduction = config.getEnderDragonAbilityDamageReduction();
+            target.damage(damage * reduction, player);
             return;
         }
         target.damage(damage, player);
@@ -184,7 +185,6 @@ public class WeaponAbilityListener implements Listener {
         if (item == null || item.getType() == Material.AIR) return;
 
         int superTier = getSuperTier(item);
-        // Abilities only on Diamond (2) and Netherite (3) super weapons
         if (superTier < 2) return;
 
         boolean isDefinitive = superTier >= 3;
@@ -219,7 +219,6 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Dash Strike — Dash forward 6 blocks, deal damage to all in path
             player.setVelocity(player.getLocation().getDirection().multiply(1.8));
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.2f);
 
@@ -229,12 +228,8 @@ public class WeaponAbilityListener implements Listener {
                 public void run() {
                     if (ticks >= 8) { cancel(); return; }
                     Location loc = player.getLocation();
-
-                    // Sweep particles
                     player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc.add(0, 1, 0), 3, 0.5, 0.3, 0.5, 0);
                     player.getWorld().spawnParticle(Particle.CRIT, loc, 8, 0.6, 0.4, 0.6, 0.1);
-
-                    // Damage nearby enemies
                     for (LivingEntity enemy : getNearbyEnemies(loc, 2.5, player)) {
                         dealAbilityDamage(player, enemy, 8.0, false);
                         enemy.setVelocity(player.getLocation().getDirection().multiply(0.5));
@@ -244,52 +239,40 @@ public class WeaponAbilityListener implements Listener {
             }.runTaskTimer(plugin, 0L, 2L);
 
         } else {
-            // NETHERITE DEFINITIVE: Dimensional Cleave
-            // Slash creates a 12-block wide rift in front of player dealing massive damage
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 0.5f);
 
             Location center = player.getLocation().add(player.getLocation().getDirection().multiply(4));
             center.setY(player.getLocation().getY());
 
-            // Create dimensional rift visual
             new BukkitRunnable() {
                 int ticks = 0;
                 @Override
                 public void run() {
                     if (ticks >= 15) { cancel(); return; }
-
-                    // Expanding ring of particles
                     double radius = 2.0 + (ticks * 0.6);
                     for (int i = 0; i < 40; i++) {
                         double angle = (2 * Math.PI / 40) * i;
                         double x = Math.cos(angle) * radius;
                         double z = Math.sin(angle) * radius;
                         Location particleLoc = center.clone().add(x, 0.5, z);
-
                         player.getWorld().spawnParticle(Particle.DRAGON_BREATH, particleLoc, 1, 0, 0, 0, 0);
                         if (ticks % 3 == 0) {
                             player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, particleLoc, 2, 0.1, 0.5, 0.1, 0.05);
                         }
                     }
-
-                    // Damage enemies within radius
                     if (ticks % 3 == 0) {
                         for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
                             dealAbilityDamage(player, enemy, 15.0, true);
                             enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
                         }
                     }
-
-                    // Central column effect
                     player.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
                     player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 15, 1.5, 2, 1.5, 0.02);
-
                     ticks++;
                 }
             }.runTaskTimer(plugin, 0L, 2L);
 
-            // Final explosion at end
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 3, 0, 0, 0, 0);
                 player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 100, 3, 2, 3, 0.5);
@@ -319,13 +302,10 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Bloodthirst — 5 seconds of lifesteal (heal 30% of damage dealt)
-            // + attack speed boost + rage particles
             player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1));
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 0));
             player.playSound(player.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 0.8f, 1.2f);
 
-            // Store bloodthirst state in PDC
             ItemMeta meta = item.getItemMeta();
             meta.getPersistentDataContainer().set(
                     new NamespacedKey(plugin, "bloodthirst_active"),
@@ -334,7 +314,6 @@ public class WeaponAbilityListener implements Listener {
             );
             item.setItemMeta(meta);
 
-            // Rage aura particles for duration
             new BukkitRunnable() {
                 int ticks = 0;
                 @Override
@@ -349,18 +328,14 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 2L);
 
-            player.sendActionBar("§c§l⚔ BLOODTHIRST ACTIVE §c§l⚔");
+            player.sendActionBar("\u00a7c\u00a7l BLOODTHIRST ACTIVE \u00a7c\u00a7l");
 
         } else {
-            // NETHERITE DEFINITIVE: Ragnarok Cleave
-            // Slam axe into ground creating a massive shockwave (10-block radius)
-            // All enemies take damage, are launched upward, and receive Weakness
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.7f);
             player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
 
             Location center = player.getLocation();
 
-            // Ground crack visual
             new BukkitRunnable() {
                 int ticks = 0;
                 @Override
@@ -371,7 +346,6 @@ public class WeaponAbilityListener implements Listener {
                         double angle = Math.random() * 2 * Math.PI;
                         double r = Math.random() * radius;
                         Location particleLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
-
                         player.getWorld().spawnParticle(Particle.LAVA, particleLoc, 1, 0, 0, 0, 0);
                         player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, particleLoc, 1, 0, 0.5, 0, 0.02);
                         if (ticks > 5) {
@@ -382,7 +356,6 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            // Damage waves at intervals
             for (int wave = 0; wave < 3; wave++) {
                 final double waveRadius = 4.0 + (wave * 3.0);
                 final double waveDamage = 20.0 - (wave * 4.0);
@@ -399,7 +372,7 @@ public class WeaponAbilityListener implements Listener {
                 }, wave * 8L);
             }
 
-            player.sendActionBar("§4§l✦ RAGNAROK CLEAVE ✦");
+            player.sendActionBar("\u00a74\u00a7l RAGNAROK CLEAVE ");
         }
     }
 
@@ -417,11 +390,10 @@ public class WeaponAbilityListener implements Listener {
         }
         setCooldown(player, abilityName, cooldownSec);
 
-        // Both tiers detect ores — Netherite has larger radius and finds Ancient Debris easily
         int oreRadius = isDefinitive ? config.getOreDetectRadiusNetherite() : config.getOreDetectRadiusDiamond();
         int debrisRadius = isDefinitive
-                ? config.getOreDetectAncientDebrisRadiusNetherite()   // 40 blocks!
-                : config.getOreDetectAncientDebrisRadiusDiamond();    // 24 blocks
+                ? config.getOreDetectAncientDebrisRadiusNetherite()
+                : config.getOreDetectAncientDebrisRadiusDiamond();
         int durationTicks = config.getOreDetectDurationTicks();
 
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.0f, isDefinitive ? 0.5f : 1.0f);
@@ -429,12 +401,10 @@ public class WeaponAbilityListener implements Listener {
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.5f, 0.6f);
         }
 
-        // Scan for ores
         Location playerLoc = player.getLocation();
         World world = player.getWorld();
         Map<Location, OreType> foundOres = new LinkedHashMap<>();
 
-        // Determine max scan radius (debris might be bigger)
         int maxRadius = Math.max(oreRadius, debrisRadius);
 
         for (int x = -maxRadius; x <= maxRadius; x++) {
@@ -450,7 +420,6 @@ public class WeaponAbilityListener implements Listener {
 
                     if (oreType == null) continue;
 
-                    // Ancient Debris uses the larger radius
                     if (oreType == OreType.ANCIENT_DEBRIS) {
                         if (distSq <= debrisRadius * debrisRadius) {
                             foundOres.put(block.getLocation(), oreType);
@@ -464,26 +433,24 @@ public class WeaponAbilityListener implements Listener {
             }
         }
 
-        // Send results to player
         int totalOres = foundOres.size();
         long debrisCount = foundOres.values().stream().filter(o -> o == OreType.ANCIENT_DEBRIS).count();
 
         if (totalOres == 0) {
-            player.sendActionBar("§7Ore Pulse: §fNo ores detected nearby.");
+            player.sendActionBar("\u00a77Ore Pulse: \u00a7fNo ores detected nearby.");
         } else {
             String msg = isDefinitive
-                    ? "§5§l✦ SEISMIC RESONANCE: §f" + totalOres + " ores detected"
-                    : "§e✦ Ore Pulse: §f" + totalOres + " ores detected";
+                    ? "\u00a75\u00a7l SEISMIC RESONANCE: \u00a7f" + totalOres + " ores detected"
+                    : "\u00a7e Ore Pulse: \u00a7f" + totalOres + " ores detected";
             if (debrisCount > 0) {
-                msg += " §7| §4§l" + debrisCount + " Ancient Debris!";
+                msg += " \u00a77| \u00a74\u00a7l" + debrisCount + " Ancient Debris!";
             }
             player.sendActionBar(msg);
             if (debrisCount > 0) {
-                player.sendMessage("§4§l⚠ " + debrisCount + " Ancient Debris detected within " + debrisRadius + " blocks!");
+                player.sendMessage("\u00a74\u00a7l " + debrisCount + " Ancient Debris detected within " + debrisRadius + " blocks!");
             }
         }
 
-        // Visual pulse outward
         new BukkitRunnable() {
             int tick = 0;
             @Override
@@ -502,7 +469,6 @@ public class WeaponAbilityListener implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 3L);
 
-        // Highlight ore locations with particles for duration
         new BukkitRunnable() {
             int ticks = 0;
             @Override
@@ -513,12 +479,8 @@ public class WeaponAbilityListener implements Listener {
                     OreType type = entry.getValue();
                     Particle.DustOptions dust = type.getDustOptions();
 
-                    // Only show every few ticks to reduce particle load
                     if (ticks % 5 == 0) {
-                        // Show to the specific player only
                         player.spawnParticle(Particle.DUST, oreLoc, 3, 0.2, 0.2, 0.2, 0, dust);
-
-                        // Ancient Debris gets extra flashy particles
                         if (type == OreType.ANCIENT_DEBRIS) {
                             player.spawnParticle(Particle.FLAME, oreLoc, 1, 0.1, 0.1, 0.1, 0.01);
                             if (ticks % 20 == 0) {
@@ -526,13 +488,12 @@ public class WeaponAbilityListener implements Listener {
                             }
                         }
                     }
-                    ticks++;
                 }
+                ticks++;
             }
         }.runTaskTimer(plugin, 5L, 1L);
     }
 
-    // Ore classification for particle colors
     private enum OreType {
         COAL(Color.fromRGB(50, 50, 50)),
         IRON(Color.fromRGB(210, 150, 100)),
@@ -583,8 +544,6 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Earthen Wall — Launch all enemies within 6 blocks into the air
-            // and give the player Resistance II for 4 seconds
             player.playSound(player.getLocation(), Sound.BLOCK_GRAVEL_BREAK, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
             player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 80, 1));
@@ -595,7 +554,6 @@ public class WeaponAbilityListener implements Listener {
                 dealAbilityDamage(player, enemy, 6.0, false);
             }
 
-            // Ground eruption particles
             for (int i = 0; i < 50; i++) {
                 double angle = Math.random() * 2 * Math.PI;
                 double r = Math.random() * 5;
@@ -604,12 +562,9 @@ public class WeaponAbilityListener implements Listener {
                         Material.DIRT.createBlockData());
             }
 
-            player.sendActionBar("§e✦ Earthen Wall — Enemies launched!");
+            player.sendActionBar("\u00a7e Earthen Wall \u2014 Enemies launched!");
 
         } else {
-            // NETHERITE DEFINITIVE: Tectonic Upheaval
-            // Massive ground eruption in a 12-block radius. Three waves of damage.
-            // Enemies are launched high, take fall damage, and are buried in slowness.
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_EMERGE, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.3f);
 
@@ -621,10 +576,7 @@ public class WeaponAbilityListener implements Listener {
                 @Override
                 public void run() {
                     if (ticks >= 30) { cancel(); return; }
-
                     double radius = ticks * 0.4;
-
-                    // Ground crack particles
                     for (int i = 0; i < 25 + ticks; i++) {
                         double angle = Math.random() * 2 * Math.PI;
                         double r = Math.random() * radius;
@@ -633,8 +585,6 @@ public class WeaponAbilityListener implements Listener {
                                 Material.NETHERRACK.createBlockData());
                         player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, pLoc, 1, 0, 1, 0, 0.05);
                     }
-
-                    // Damage and launch at wave intervals
                     if (ticks % 10 == 5) {
                         for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
                             dealAbilityDamage(player, enemy, 14.0, true);
@@ -646,12 +596,11 @@ public class WeaponAbilityListener implements Listener {
                         player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center.clone().add(0, 1, 0), 2, 2, 0, 2, 0);
                         player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
                     }
-
                     ticks++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§4§l✦ TECTONIC UPHEAVAL ✦");
+            player.sendActionBar("\u00a74\u00a7l TECTONIC UPHEAVAL ");
         }
     }
 
@@ -670,15 +619,12 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Harvest Storm — Spin attack hitting all enemies in 5-block radius
-            // Applies bleeding DoT for 4 seconds
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 0.8f);
 
             Location center = player.getLocation().add(0, 1, 0);
             for (LivingEntity enemy : getNearbyEnemies(center, 5.0, player)) {
                 dealAbilityDamage(player, enemy, 7.0, false);
 
-                // Bleed DoT — damage every second for 4 seconds
                 new BukkitRunnable() {
                     int bleedTicks = 0;
                     @Override
@@ -691,7 +637,6 @@ public class WeaponAbilityListener implements Listener {
                 }.runTaskTimer(plugin, 20L, 20L);
             }
 
-            // Spinning sweep visual
             new BukkitRunnable() {
                 int tick = 0;
                 @Override
@@ -707,12 +652,9 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§a✦ Harvest Storm!");
+            player.sendActionBar("\u00a7a Harvest Storm!");
 
         } else {
-            // NETHERITE DEFINITIVE: Reaper's Scythe
-            // Creates a spectral scythe arc that sweeps 360 degrees twice
-            // Dealing damage, life-stealing, and applying Wither II
             player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.7f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 0.3f);
 
@@ -726,12 +668,11 @@ public class WeaponAbilityListener implements Listener {
                     if (tick >= 40) {
                         cancel();
                         if (totalHealed > 0) {
-                            player.sendMessage("§5✦ Reaper's Scythe healed §c" + String.format("%.1f", totalHealed) + " HP §5from enemies.");
+                            player.sendMessage("\u00a75 Reaper's Scythe healed \u00a7c" + String.format("%.1f", totalHealed) + " HP \u00a75from enemies.");
                         }
                         return;
                     }
 
-                    // Dual spinning arcs
                     double angle1 = tick * 0.35;
                     double angle2 = angle1 + Math.PI;
                     double radius = 7.0;
@@ -746,13 +687,11 @@ public class WeaponAbilityListener implements Listener {
                         }
                     }
 
-                    // Damage on every 4th tick
                     if (tick % 4 == 0) {
                         for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
                             dealAbilityDamage(player, enemy, 10.0, true);
                             enemy.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1));
 
-                            // Life steal 15% of damage dealt
                             double heal = 1.5;
                             double newHealth = Math.min(player.getHealth() + heal,
                                     player.getAttribute(Attribute.MAX_HEALTH).getValue());
@@ -765,7 +704,7 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§5§l✦ REAPER'S SCYTHE ✦");
+            player.sendActionBar("\u00a75\u00a7l REAPER'S SCYTHE ");
         }
     }
 
@@ -784,7 +723,6 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Phantom Lunge — Dash 8 blocks in look direction, damage all in path
             Vector direction = player.getLocation().getDirection().normalize();
             player.setVelocity(direction.clone().multiply(2.5));
             player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 1.5f, 1.2f);
@@ -798,20 +736,15 @@ public class WeaponAbilityListener implements Listener {
                     if (tick >= 10) { cancel(); return; }
                     Location loc = player.getLocation();
 
-                    // Trail particles
                     player.getWorld().spawnParticle(Particle.END_ROD, loc.clone().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.02);
                     player.getWorld().spawnParticle(Particle.CRIT, loc.clone().add(0, 1, 0), 5, 0.4, 0.3, 0.4, 0.15);
-
-                    // White/cyan afterimage trail
                     player.getWorld().spawnParticle(Particle.DUST, loc.clone().add(0, 1, 0), 10,
                             0.2, 0.6, 0.2, 0,
                             new Particle.DustOptions(Color.fromRGB(180, 240, 255), 1.8f));
 
-                    // Damage enemies in path (each only once)
                     for (LivingEntity enemy : getNearbyEnemies(loc, 2.0, player)) {
                         if (hit.add(enemy.getUniqueId())) {
-                            double spearDamage = 8.0; // base spear damage × 1.5
-                            dealAbilityDamage(player, enemy, spearDamage, false);
+                            dealAbilityDamage(player, enemy, 8.0, false);
                             enemy.setVelocity(direction.clone().multiply(0.4).setY(0.3));
                             player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, enemy.getLocation().add(0, 1, 0), 3, 0.2, 0.2, 0.2, 0);
                         }
@@ -820,13 +753,9 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§b✦ Phantom Lunge!");
+            player.sendActionBar("\u00a7b Phantom Lunge!");
 
         } else {
-            // NETHERITE DEFINITIVE: Spear of the Void
-            // Throw a spectral spear 30 blocks forward. Pierces all enemies.
-            // On reaching max distance or hitting a block, DETONATES:
-            // 5-block AoE pull + Slowness II for 3 seconds.
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 2.0f);
             player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 2.0f, 0.5f);
 
@@ -847,10 +776,8 @@ public class WeaponAbilityListener implements Listener {
                         return;
                     }
 
-                    // Move projectile 1 block per tick
                     current.add(direction.clone().multiply(1.0));
 
-                    // Check if hit a solid block
                     if (current.getBlock().getType().isSolid()) {
                         detonate(current);
                         detonated = true;
@@ -858,19 +785,16 @@ public class WeaponAbilityListener implements Listener {
                         return;
                     }
 
-                    // Trail particles — dramatic dragon breath trail
                     player.getWorld().spawnParticle(Particle.DRAGON_BREATH, current, 8, 0.1, 0.1, 0.1, 0.02);
                     player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, current, 5, 0.2, 0.2, 0.2, 0.1);
                     player.getWorld().spawnParticle(Particle.DUST, current, 5,
                             0.15, 0.15, 0.15, 0,
                             new Particle.DustOptions(Color.fromRGB(80, 0, 120), 2.0f));
 
-                    // Pierce enemies in path
                     for (Entity e : current.getWorld().getNearbyEntities(current, 1.5, 1.5, 1.5)) {
                         if (e instanceof LivingEntity le && !(e instanceof Player) && !(e instanceof ArmorStand)) {
                             if (hit.add(e.getUniqueId())) {
-                                double pierceDamage = 18.0; // base × 3
-                                dealAbilityDamage(player, le, pierceDamage, true);
+                                dealAbilityDamage(player, le, 18.0, true);
                                 le.getWorld().spawnParticle(Particle.EXPLOSION, le.getLocation().add(0, 1, 0), 3, 0.2, 0.2, 0.2, 0);
                             }
                         }
@@ -879,7 +803,6 @@ public class WeaponAbilityListener implements Listener {
                 }
 
                 private void detonate(Location impactLoc) {
-                    // Massive detonation
                     World world = impactLoc.getWorld();
                     world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 5, 0, 0, 0, 0);
                     world.spawnParticle(Particle.REVERSE_PORTAL, impactLoc, 150, 3, 3, 3, 0.5);
@@ -888,7 +811,6 @@ public class WeaponAbilityListener implements Listener {
                     world.playSound(impactLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.5f);
                     world.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
 
-                    // Pull all enemies in 5-block radius toward impact and apply Slowness
                     for (LivingEntity enemy : getNearbyEnemies(impactLoc, 5.0, player)) {
                         Vector pull = impactLoc.toVector().subtract(enemy.getLocation().toVector()).normalize().multiply(1.5);
                         pull.setY(0.4);
@@ -899,7 +821,6 @@ public class WeaponAbilityListener implements Listener {
                         }
                     }
 
-                    // Lingering void portal at impact
                     new BukkitRunnable() {
                         int t = 0;
                         @Override
@@ -913,17 +834,17 @@ public class WeaponAbilityListener implements Listener {
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§5§l✦ SPEAR OF THE VOID ✦");
+            player.sendActionBar("\u00a75\u00a7l SPEAR OF THE VOID ");
         }
     }
 
     // ================================================================
-    // BOW — "Arrow Storm" (Diamond) / "Celestial Barrage" (Netherite)
+    // BOW — "Arrow Storm" (Diamond) / "Celestial Volley" (Netherite)
     // ================================================================
 
     private void handleBowAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "Celestial Barrage" : "Arrow Storm";
-        int cooldownSec = isDefinitive ? 25 : 12;
+        String abilityName = isDefinitive ? "Celestial Volley" : "Arrow Storm";
+        int cooldownSec = isDefinitive ? 20 : 12;
 
         if (isOnCooldown(player, abilityName)) {
             sendCooldownMessage(player, abilityName);
@@ -932,111 +853,87 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Arrow Storm — Fire 8 arrows in a spread pattern
-            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 2.0f, 1.5f);
+            // DIAMOND: Arrow Storm — Rapid-fire 5 arrows in quick succession
+            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.5f, 1.3f);
 
-            Vector baseDir = player.getLocation().getDirection().normalize();
-            for (int i = 0; i < 8; i++) {
-                double spread = (i - 3.5) * 0.08;
-                Vector arrowDir = baseDir.clone().add(new Vector(
-                        Math.random() * 0.1 - 0.05 + spread,
-                        Math.random() * 0.06 - 0.03,
-                        Math.random() * 0.1 - 0.05
-                )).normalize().multiply(2.5);
-
-                Arrow arrow = player.launchProjectile(Arrow.class, arrowDir);
-                arrow.setDamage(6.0);
-                arrow.setPickupStatus(Arrow.PickupStatus.DISALLOWED);
-                arrow.setCritical(true);
-
-                // Schedule arrow removal after 5 seconds
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (arrow.isValid() && !arrow.isDead()) arrow.remove();
-                }, 100L);
-            }
-
-            // Particle burst at launch
-            player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation().add(baseDir), 20, 0.5, 0.3, 0.5, 0.2);
-
-            player.sendActionBar("§e✦ Arrow Storm — 8 arrows fired!");
-
-        } else {
-            // NETHERITE DEFINITIVE: Celestial Barrage
-            // Rain 25 glowing arrows from the sky in a target area (15-block radius at cursor)
-            // Each arrow explodes with particles on impact
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 2.0f);
-            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.5f);
-
-            // Target location: where player is looking, up to 30 blocks away
-            Location target = player.getTargetBlockExact(30) != null
-                    ? player.getTargetBlockExact(30).getLocation().add(0, 1, 0)
-                    : player.getLocation().add(player.getLocation().getDirection().multiply(15));
-
-            // Beacon of light marking target area
-            player.getWorld().spawnParticle(Particle.END_ROD, target, 50, 0, 10, 0, 0.05);
-
-            // Rain arrows over 2 seconds
             new BukkitRunnable() {
-                int arrowsFired = 0;
+                int arrows = 0;
                 @Override
                 public void run() {
-                    if (arrowsFired >= 25) { cancel(); return; }
+                    if (arrows >= 5 || !player.isOnline()) { cancel(); return; }
 
-                    // Random position within 6-block radius of target, high up
-                    double angle = Math.random() * 2 * Math.PI;
-                    double r = Math.random() * 6;
-                    Location spawnLoc = target.clone().add(Math.cos(angle) * r, 25 + Math.random() * 10, Math.sin(angle) * r);
-
-                    Arrow arrow = player.getWorld().spawnArrow(spawnLoc, new Vector(0, -3, 0), 2.0f, 0.5f);
-                    arrow.setShooter(player);
-                    arrow.setDamage(8.0);
+                    Arrow arrow = player.launchProjectile(Arrow.class);
+                    arrow.setVelocity(player.getLocation().getDirection().multiply(2.5));
+                    arrow.setDamage(6.0);
+                    arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                    // Set high lifetime so it despawns quickly after hitting
+                    arrow.setLifetimeTicks(1100);
                     arrow.setCritical(true);
-                    arrow.setPickupStatus(Arrow.PickupStatus.DISALLOWED);
-                    arrow.setGlowing(true);
-                    arrow.setFireTicks(100);
 
-                    // Particle trail on arrow
-                    new BukkitRunnable() {
-                        int t = 0;
-                        @Override
-                        public void run() {
-                            if (t >= 60 || arrow.isDead() || !arrow.isValid() || arrow.isOnGround()) {
-                                if (!arrow.isDead() && arrow.isValid()) {
-                                    // Impact explosion particles
-                                    arrow.getWorld().spawnParticle(Particle.EXPLOSION, arrow.getLocation(), 1, 0, 0, 0, 0);
-                                    arrow.getWorld().spawnParticle(Particle.FLAME, arrow.getLocation(), 10, 0.5, 0.3, 0.5, 0.05);
-                                    arrow.remove();
-                                }
-                                cancel();
-                                return;
-                            }
-                            arrow.getWorld().spawnParticle(Particle.FIREWORK, arrow.getLocation(), 2, 0, 0, 0, 0.05);
-                            t++;
-                        }
-                    }.runTaskTimer(plugin, 1L, 1L);
+                    player.getWorld().spawnParticle(Particle.CRIT, player.getEyeLocation(), 5, 0.2, 0.2, 0.2, 0.1);
+                    player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 0.8f, 1.5f + (arrows * 0.1f));
 
-                    arrowsFired++;
+                    arrows++;
                 }
-            }.runTaskTimer(plugin, 5L, 2L);
+            }.runTaskTimer(plugin, 0L, 3L);
 
-            // Final impact after arrows land
+            player.sendActionBar("\u00a7e Arrow Storm!");
+
+        } else {
+            // NETHERITE DEFINITIVE: Celestial Volley — Launch 12 arrows skyward that rain down on enemies
+            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 2.0f, 0.5f);
+
+            Location target = player.getLocation().add(player.getLocation().getDirection().multiply(10));
+            target.setY(player.getLocation().getY());
+
+            // Visual launch effect
+            player.getWorld().spawnParticle(Particle.FIREWORK, player.getLocation().add(0, 2, 0), 30, 0.5, 1, 0.5, 0.2);
+
+            // Delayed rain of arrows from the sky
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, target, 3, 3, 0, 3, 0);
-                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, target, 80, 5, 3, 5, 0.3);
-                player.getWorld().playSound(target, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.8f);
-            }, 60L);
+                player.playSound(target, Sound.ENTITY_ARROW_HIT, 2.0f, 0.7f);
+                player.getWorld().spawnParticle(Particle.CLOUD, target.clone().add(0, 15, 0), 50, 3, 1, 3, 0.1);
 
-            player.sendActionBar("§6§l✦ CELESTIAL BARRAGE ✦");
+                for (int i = 0; i < 12; i++) {
+                    final int index = i;
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        double offsetX = (Math.random() - 0.5) * 6;
+                        double offsetZ = (Math.random() - 0.5) * 6;
+                        Location spawnLoc = target.clone().add(offsetX, 15, offsetZ);
+
+                        Arrow arrow = player.getWorld().spawnArrow(spawnLoc, new Vector(0, -2, 0), 2.0f, 1.0f);
+                        arrow.setShooter(player);
+                        arrow.setDamage(10.0);
+                        arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+                        arrow.setCritical(true);
+                        arrow.setLifetimeTicks(1100);
+
+                        player.getWorld().spawnParticle(Particle.END_ROD, spawnLoc, 5, 0.1, 0.1, 0.1, 0.05);
+                        player.getWorld().spawnParticle(Particle.DUST, spawnLoc, 3,
+                                0.2, 0.2, 0.2, 0,
+                                new Particle.DustOptions(Color.fromRGB(255, 200, 50), 1.5f));
+                    }, index * 2L);
+                }
+
+                // Impact particles after all arrows land
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    player.getWorld().spawnParticle(Particle.EXPLOSION, target, 5, 3, 0.5, 3, 0);
+                    player.getWorld().playSound(target, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
+                }, 30L);
+            }, 15L);
+
+            player.sendActionBar("\u00a76\u00a7l CELESTIAL VOLLEY ");
         }
     }
 
     // ================================================================
-    // CROSSBOW — "Grapple Shot" (Diamond) / "Annihilation Volley" (Netherite)
+    // CROSSBOW — "Chain Shot" (Diamond) / "Thunder Barrage" (Netherite)
     // ================================================================
 
     private void handleCrossbowAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "Annihilation Volley" : "Grapple Shot";
-        int cooldownSec = isDefinitive ? 22 : 10;
+        String abilityName = isDefinitive ? "Thunder Barrage" : "Chain Shot";
+        int cooldownSec = isDefinitive ? 22 : 14;
 
         if (isOnCooldown(player, abilityName)) {
             sendCooldownMessage(player, abilityName);
@@ -1045,112 +942,163 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Grapple Shot — Fire a grapple projectile that pulls you to the impact point
-            // Also damages and stuns enemies near the impact
-            player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_THROW, 2.0f, 0.5f);
+            // DIAMOND: Chain Shot — Fire a bolt that chains to 3 nearby enemies
+            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.5f, 1.0f);
 
-            Vector direction = player.getLocation().getDirection().normalize();
-            Location projectileLoc = player.getEyeLocation().clone();
+            Arrow bolt = player.launchProjectile(Arrow.class);
+            bolt.setVelocity(player.getLocation().getDirection().multiply(3.0));
+            bolt.setDamage(8.0);
+            bolt.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+            bolt.setCritical(true);
+            bolt.setLifetimeTicks(1100);
 
+            // Track the bolt for chain effect
             new BukkitRunnable() {
                 int tick = 0;
-                Location current = projectileLoc.clone();
+                boolean chained = false;
                 @Override
                 public void run() {
-                    if (tick >= 25) { cancel(); return; }
-
-                    current.add(direction.clone().multiply(1.5));
-
-                    // Trail
-                    player.getWorld().spawnParticle(Particle.CRIT, current, 3, 0.05, 0.05, 0.05, 0);
-                    player.getWorld().spawnParticle(Particle.DUST, current, 3,
-                            0.05, 0.05, 0.05, 0,
-                            new Particle.DustOptions(Color.fromRGB(150, 150, 150), 1.0f));
-
-                    // Check for solid block hit
-                    if (current.getBlock().getType().isSolid()) {
-                        // Pull player to impact point
-                        Vector pull = current.toVector().subtract(player.getLocation().toVector()).normalize().multiply(2.0);
-                        pull.setY(Math.max(pull.getY(), 0.5));
-                        player.setVelocity(pull);
-                        player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_LAND, 1.5f, 1.0f);
-
-                        // Damage and stun nearby enemies
-                        for (LivingEntity enemy : getNearbyEnemies(current, 3.0, player)) {
-                            dealAbilityDamage(player, enemy, 5.0, false);
-                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 3));
-                        }
-                        player.getWorld().spawnParticle(Particle.EXPLOSION, current, 1, 0, 0, 0, 0);
+                    if (tick >= 60 || !bolt.isValid() || bolt.isDead()) {
                         cancel();
                         return;
+                    }
+
+                    // Trail particles
+                    if (bolt.isValid()) {
+                        bolt.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, bolt.getLocation(), 3, 0.1, 0.1, 0.1, 0);
+                    }
+
+                    // Check if bolt hit something (is in block or has low velocity after initial frames)
+                    if (tick > 5 && bolt.isInBlock() && !chained) {
+                        chained = true;
+                        Location hitLoc = bolt.getLocation();
+                        List<LivingEntity> nearby = getNearbyEnemies(hitLoc, 6.0, player);
+                        int chains = 0;
+                        Location lastLoc = hitLoc.clone();
+
+                        for (LivingEntity target : nearby) {
+                            if (chains >= 3) break;
+                            final Location fromLoc = lastLoc.clone();
+                            final LivingEntity chainTarget = target;
+                            final int chainDelay = chains;
+
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                dealAbilityDamage(player, chainTarget, 6.0 - chainDelay, false);
+                                chainTarget.getWorld().spawnParticle(Particle.ELECTRIC_SPARK,
+                                        chainTarget.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.1);
+                                chainTarget.playEffect(org.bukkit.EntityEffect.HURT);
+
+                                // Draw chain line between targets
+                                Vector dir = chainTarget.getLocation().add(0, 1, 0).toVector()
+                                        .subtract(fromLoc.toVector());
+                                double dist = dir.length();
+                                dir.normalize();
+                                for (double d = 0; d < dist; d += 0.5) {
+                                    Location pLoc = fromLoc.clone().add(dir.clone().multiply(d));
+                                    chainTarget.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, pLoc, 1, 0, 0, 0, 0);
+                                }
+                            }, chainDelay * 5L);
+
+                            lastLoc = target.getLocation().add(0, 1, 0);
+                            chains++;
+                        }
+
+                        player.playSound(hitLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.5f, 1.2f);
+                        cancel();
                     }
                     tick++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            player.sendActionBar("§7✦ Grapple Shot!");
+            player.sendActionBar("\u00a7b Chain Shot!");
 
         } else {
-            // NETHERITE DEFINITIVE: Annihilation Volley
-            // Fire 5 explosive bolts in a tight spread. Each bolt explodes on impact dealing
-            // AoE damage, leaving fire, and applying Weakness.
-            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.8f, 2.0f);
-            player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_BLAST, 2.0f, 0.5f);
+            // NETHERITE DEFINITIVE: Thunder Barrage — 3 explosive lightning bolts
+            player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.2f);
+            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 2.0f, 0.5f);
 
-            Vector baseDir = player.getLocation().getDirection().normalize();
+            Vector direction = player.getLocation().getDirection().normalize();
 
-            for (int i = 0; i < 5; i++) {
-                final int index = i;
+            for (int bolt_i = 0; bolt_i < 3; bolt_i++) {
+                final int boltIndex = bolt_i;
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    double spread = (index - 2) * 0.06;
-                    Vector boltDir = baseDir.clone().add(new Vector(spread, 0, spread * 0.5)).normalize().multiply(2.0);
+                    // Slight spread for each bolt
+                    double spread = (boltIndex - 1) * 0.15;
+                    Vector boltDir = direction.clone().add(new Vector(
+                            spread * Math.cos(Math.PI / 2), 0, spread * Math.sin(Math.PI / 2)
+                    )).normalize();
 
-                    Arrow bolt = player.launchProjectile(Arrow.class, boltDir);
-                    bolt.setDamage(4.0);
-                    bolt.setCritical(true);
-                    bolt.setFireTicks(100);
-                    bolt.setGlowing(true);
-                    bolt.setPickupStatus(Arrow.PickupStatus.DISALLOWED);
+                    Location boltStart = player.getEyeLocation().clone();
 
                     new BukkitRunnable() {
-                        int t = 0;
+                        int tick = 0;
+                        Location current = boltStart.clone();
+
                         @Override
                         public void run() {
-                            if (t >= 60 || bolt.isDead() || !bolt.isValid() || bolt.isOnGround()) {
-                                Location impact = bolt.getLocation();
-                                // Explosion on impact
-                                bolt.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, impact, 1, 0, 0, 0, 0);
-                                bolt.getWorld().spawnParticle(Particle.FLAME, impact, 30, 2, 1, 2, 0.1);
-                                bolt.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, impact, 15, 1.5, 1, 1.5, 0.05);
-                                bolt.getWorld().playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.0f);
-
-                                for (LivingEntity enemy : getNearbyEnemies(impact, 4.0, player)) {
-                                    dealAbilityDamage(player, enemy, 12.0, true);
-                                    enemy.setFireTicks(60);
-                                    enemy.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 60, 1));
-                                }
-                                if (bolt.isValid()) bolt.remove();
+                            if (tick >= 20) {
+                                explodeAt(current);
                                 cancel();
                                 return;
                             }
-                            // Trail
-                            bolt.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, bolt.getLocation(), 3, 0.05, 0.05, 0.05, 0);
-                            t++;
+
+                            current.add(boltDir.clone().multiply(1.5));
+
+                            if (current.getBlock().getType().isSolid()) {
+                                explodeAt(current);
+                                cancel();
+                                return;
+                            }
+
+                            // Lightning trail
+                            player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, current, 8, 0.2, 0.2, 0.2, 0.05);
+                            player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, current, 3, 0.1, 0.1, 0.1, 0.02);
+
+                            // Check for entity hit
+                            for (Entity e : current.getWorld().getNearbyEntities(current, 1.5, 1.5, 1.5)) {
+                                if (e instanceof LivingEntity le && !(e instanceof Player) && !(e instanceof ArmorStand)) {
+                                    explodeAt(current);
+                                    cancel();
+                                    return;
+                                }
+                            }
+                            tick++;
                         }
-                    }.runTaskTimer(plugin, 1L, 1L);
-                }, i * 4L); // Staggered fire
+
+                        private void explodeAt(Location loc) {
+                            World world = loc.getWorld();
+                            world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 1, 0, 0, 0, 0);
+                            world.spawnParticle(Particle.ELECTRIC_SPARK, loc, 40, 2, 2, 2, 0.2);
+                            world.spawnParticle(Particle.FLASH, loc, 2, 0, 0, 0, 0);
+                            world.playSound(loc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.5f, 1.0f);
+
+                            // Strike lightning visually (no fire)
+                            world.strikeLightningEffect(loc);
+
+                            for (LivingEntity enemy : getNearbyEnemies(loc, 4.0, player)) {
+                                dealAbilityDamage(player, enemy, 14.0, true);
+                                Vector kb = enemy.getLocation().toVector().subtract(loc.toVector()).normalize().multiply(0.8);
+                                kb.setY(0.5);
+                                enemy.setVelocity(kb);
+                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1));
+                            }
+                        }
+                    }.runTaskTimer(plugin, 0L, 1L);
+
+                    player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.0f, 0.8f + (boltIndex * 0.2f));
+                }, boltIndex * 8L);
             }
 
-            player.sendActionBar("§5§l✦ ANNIHILATION VOLLEY ✦");
+            player.sendActionBar("\u00a7e\u00a7l THUNDER BARRAGE ");
         }
     }
 
     // ================================================================
-    // TRIDENT — "Riptide Surge" (Diamond) / "Poseidon's Wrath" (Netherite)
+    // TRIDENT — "Tidal Strike" (Diamond) / "Poseidon's Wrath" (Netherite)
     // ================================================================
 
     private void handleTridentAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "Poseidon's Wrath" : "Riptide Surge";
+        String abilityName = isDefinitive ? "Poseidon's Wrath" : "Tidal Strike";
         int cooldownSec = isDefinitive ? 22 : 12;
 
         if (isOnCooldown(player, abilityName)) {
@@ -1160,109 +1108,124 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Riptide Surge — Launch forward (works without rain!) leaving a water trail
-            // Enemies in path take damage and get knocked aside
-            Vector direction = player.getLocation().getDirection().normalize();
-            player.setVelocity(direction.clone().multiply(2.5).setY(0.5));
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.5f, 1.2f);
+            // DIAMOND: Tidal Strike — Summon a water burst that pushes enemies away
+            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 1.0f);
+            player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.8f);
 
+            Location center = player.getLocation();
+
+            // Water burst visual
             new BukkitRunnable() {
                 int tick = 0;
                 @Override
                 public void run() {
-                    if (tick >= 12) { cancel(); return; }
-                    Location loc = player.getLocation();
-                    player.getWorld().spawnParticle(Particle.SPLASH, loc, 15, 0.4, 0.4, 0.4, 0.1);
-                    player.getWorld().spawnParticle(Particle.DRIPPING_WATER, loc, 8, 0.3, 0.5, 0.3, 0);
-                    player.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, loc, 5, 0.2, 0.2, 0.2, 0);
+                    if (tick >= 10) { cancel(); return; }
+                    double radius = 1.0 + tick * 0.8;
+                    for (int i = 0; i < 25; i++) {
+                        double angle = Math.random() * 2 * Math.PI;
+                        double r = Math.random() * radius;
+                        Location pLoc = center.clone().add(Math.cos(angle) * r, 0.3, Math.sin(angle) * r);
+                        player.getWorld().spawnParticle(Particle.SPLASH, pLoc, 3, 0.2, 0.3, 0.2, 0.1);
+                        player.getWorld().spawnParticle(Particle.BUBBLE, pLoc, 2, 0.2, 0.2, 0.2, 0.05);
+                        player.getWorld().spawnParticle(Particle.DUST, pLoc, 2,
+                                0.3, 0.3, 0.3, 0,
+                                new Particle.DustOptions(Color.fromRGB(30, 100, 200), 1.3f));
+                    }
 
-                    for (LivingEntity enemy : getNearbyEnemies(loc, 2.5, player)) {
-                        dealAbilityDamage(player, enemy, 7.0, false);
-                        Vector knockback = loc.getDirection().getCrossProduct(new Vector(0, 1, 0)).normalize().multiply(1.0);
-                        knockback.setY(0.5);
-                        enemy.setVelocity(knockback);
+                    // Push enemies at peak
+                    if (tick == 5) {
+                        for (LivingEntity enemy : getNearbyEnemies(center, 7.0, player)) {
+                            dealAbilityDamage(player, enemy, 8.0, false);
+                            Vector push = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.8);
+                            push.setY(0.6);
+                            enemy.setVelocity(push);
+                        }
                     }
                     tick++;
                 }
-            }.runTaskTimer(plugin, 0L, 1L);
+            }.runTaskTimer(plugin, 0L, 2L);
 
-            player.sendActionBar("§b✦ Riptide Surge!");
+            player.sendActionBar("\u00a73 Tidal Strike!");
 
         } else {
-            // NETHERITE DEFINITIVE: Poseidon's Wrath
-            // Summon a tidal wave that crashes outward from the player (15-block range)
-            // Enemies are dragged inward, struck by lightning, and drowned with water particles
-            player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.0f, 0.5f);
-            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 0.7f);
-            player.playSound(player.getLocation(), Sound.WEATHER_RAIN_ABOVE, 2.0f, 0.5f);
+            // NETHERITE DEFINITIVE: Poseidon's Wrath — Large vortex + lightning strike
+            player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 0.6f);
+            player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.5f, 1.5f);
 
-            Location center = player.getLocation();
+            Location center = player.getLocation().add(player.getLocation().getDirection().multiply(6));
+            center.setY(player.getLocation().getY());
 
+            // Vortex visual
             new BukkitRunnable() {
                 int tick = 0;
                 @Override
                 public void run() {
                     if (tick >= 40) { cancel(); return; }
+                    double radius = 3.0 + Math.sin(tick * 0.3) * 2.0;
+                    double height = tick * 0.15;
 
-                    double radius = tick * 0.4;
-
-                    // Tidal wave ring
                     for (int i = 0; i < 30; i++) {
-                        double angle = (2 * Math.PI / 30) * i + (tick * 0.2);
-                        Location pLoc = center.clone().add(Math.cos(angle) * radius, 0.5, Math.sin(angle) * radius);
-                        player.getWorld().spawnParticle(Particle.SPLASH, pLoc, 5, 0.2, 0.8, 0.2, 0.1);
-                        player.getWorld().spawnParticle(Particle.DRIPPING_WATER, pLoc, 3, 0.1, 0.5, 0.1, 0);
-                        if (tick > 10) {
-                            player.getWorld().spawnParticle(Particle.BUBBLE_COLUMN_UP, pLoc, 2, 0.1, 1, 0.1, 0);
-                        }
+                        double angle = (2 * Math.PI / 30) * i + (tick * 0.4);
+                        Location pLoc = center.clone().add(
+                                Math.cos(angle) * radius,
+                                height * (i / 30.0),
+                                Math.sin(angle) * radius
+                        );
+                        player.getWorld().spawnParticle(Particle.SPLASH, pLoc, 2, 0.1, 0.1, 0.1, 0.05);
+                        player.getWorld().spawnParticle(Particle.DUST, pLoc, 1,
+                                0.1, 0.1, 0.1, 0,
+                                new Particle.DustOptions(Color.fromRGB(20, 80, 180), 1.5f));
                     }
 
-                    // Lightning strikes on random enemies every 8 ticks
-                    if (tick % 8 == 0 && tick > 5) {
-                        List<LivingEntity> enemies = getNearbyEnemies(center, radius, player);
-                        if (!enemies.isEmpty()) {
-                            LivingEntity target = enemies.get((int) (Math.random() * enemies.size()));
-                            player.getWorld().strikeLightningEffect(target.getLocation());
-                            dealAbilityDamage(player, target, 15.0, true);
-                            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
-                        }
-                    }
-
-                    // Pull enemies inward every 5 ticks
+                    // Pull enemies toward center
                     if (tick % 5 == 0) {
-                        for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
-                            Vector pull = center.toVector().subtract(enemy.getLocation().toVector()).normalize().multiply(0.6);
+                        for (LivingEntity enemy : getNearbyEnemies(center, 8.0, player)) {
+                            Vector pull = center.toVector().subtract(enemy.getLocation().toVector()).normalize().multiply(0.5);
                             pull.setY(0.2);
-                            enemy.setVelocity(pull);
-                            dealAbilityDamage(player, enemy, 3.0, true);
+                            enemy.setVelocity(enemy.getVelocity().add(pull));
+                            if (tick % 10 == 0) {
+                                dealAbilityDamage(player, enemy, 8.0, true);
+                            }
+                        }
+                    }
+
+                    // Periodic lightning
+                    if (tick == 15 || tick == 30) {
+                        player.getWorld().strikeLightningEffect(center);
+                        player.getWorld().playSound(center, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.8f);
+                        for (LivingEntity enemy : getNearbyEnemies(center, 5.0, player)) {
+                            dealAbilityDamage(player, enemy, 12.0, true);
+                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
                         }
                     }
                     tick++;
                 }
             }.runTaskTimer(plugin, 0L, 1L);
 
-            // Final lightning storm
+            // Final slam
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                for (int i = 0; i < 5; i++) {
-                    double a = Math.random() * 2 * Math.PI;
-                    double r = Math.random() * 8;
-                    Location strike = center.clone().add(Math.cos(a) * r, 0, Math.sin(a) * r);
-                    player.getWorld().strikeLightningEffect(strike);
+                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 3, 0, 0, 0, 0);
+                player.getWorld().spawnParticle(Particle.SPLASH, center, 200, 5, 3, 5, 0.5);
+                player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
+                for (LivingEntity enemy : getNearbyEnemies(center, 6.0, player)) {
+                    dealAbilityDamage(player, enemy, 15.0, true);
+                    Vector kb = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(2.0);
+                    kb.setY(1.0);
+                    enemy.setVelocity(kb);
                 }
-                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 2, 0, 0, 0, 0);
             }, 42L);
 
-            player.sendActionBar("§1§l✦ POSEIDON'S WRATH ✦");
+            player.sendActionBar("\u00a71\u00a7l POSEIDON'S WRATH ");
         }
     }
 
     // ================================================================
-    // MACE — "Ground Slam" (Diamond) / "World Breaker" (Netherite)
+    // MACE — "Ground Pound" (Diamond) / "Cataclysm" (Netherite)
     // ================================================================
 
     private void handleMaceAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "World Breaker" : "Ground Slam";
-        int cooldownSec = isDefinitive ? 25 : 12;
+        String abilityName = isDefinitive ? "Cataclysm" : "Ground Pound";
+        int cooldownSec = isDefinitive ? 25 : 14;
 
         if (isOnCooldown(player, abilityName)) {
             sendCooldownMessage(player, abilityName);
@@ -1271,137 +1234,131 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // DIAMOND: Ground Slam — Jump up and slam down, AoE damage in 6 blocks
-            player.setVelocity(new Vector(0, 1.5, 0));
-            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND, 2.0f, 0.8f);
+            // DIAMOND: Ground Pound — Single powerful shockwave centered on player
+            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
+            player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.6f);
 
-            // Slam after brief delay
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.setVelocity(new Vector(0, -2.0, 0));
+            Location center = player.getLocation();
 
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    Location impactLoc = player.getLocation();
-                    player.getWorld().spawnParticle(Particle.EXPLOSION, impactLoc, 3, 1, 0, 1, 0);
-                    player.getWorld().spawnParticle(Particle.BLOCK, impactLoc, 40, 3, 0.5, 3, 0.1,
-                            Material.STONE.createBlockData());
-                    player.playSound(impactLoc, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.7f);
-
-                    for (LivingEntity enemy : getNearbyEnemies(impactLoc, 6.0, player)) {
-                        dealAbilityDamage(player, enemy, 12.0, false);
-                        Vector kb = enemy.getLocation().toVector().subtract(impactLoc.toVector()).normalize().multiply(1.0);
-                        kb.setY(0.7);
-                        enemy.setVelocity(kb);
-                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 2));
+            // Shockwave ring
+            new BukkitRunnable() {
+                int tick = 0;
+                @Override
+                public void run() {
+                    if (tick >= 8) { cancel(); return; }
+                    double radius = 1.0 + tick * 1.0;
+                    for (int i = 0; i < 30; i++) {
+                        double angle = (2 * Math.PI / 30) * i;
+                        Location pLoc = center.clone().add(Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius);
+                        player.getWorld().spawnParticle(Particle.BLOCK, pLoc, 3, 0.2, 0.3, 0.2, 0.1,
+                                Material.STONE.createBlockData());
+                        player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, pLoc, 1, 0, 0.5, 0, 0.02);
                     }
-                }, 8L);
-            }, 10L);
 
-            player.sendActionBar("§e✦ Ground Slam!");
+                    // Damage at expanding ring
+                    if (tick == 3 || tick == 6) {
+                        for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
+                            dealAbilityDamage(player, enemy, 10.0, false);
+                            Vector kb = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.0);
+                            kb.setY(0.5);
+                            enemy.setVelocity(kb);
+                        }
+                    }
+                    tick++;
+                }
+            }.runTaskTimer(plugin, 0L, 2L);
+
+            player.sendActionBar("\u00a76 Ground Pound!");
 
         } else {
-            // NETHERITE DEFINITIVE: World Breaker
-            // Launch player very high, then slam with apocalyptic force
-            // 15-block AoE, multiple damage waves, ground fissure effect
-            player.setVelocity(new Vector(0, 3.0, 0));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 10, 0)); // Brief float
-            player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.5f);
+            // NETHERITE DEFINITIVE: Cataclysm — Three expanding ground slams with increasing radius
+            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.3f);
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.5f);
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.removePotionEffect(PotionEffectType.SLOW_FALLING);
-                player.setVelocity(new Vector(0, -4.0, 0));
+            Location center = player.getLocation();
+
+            // Give player resistance during the animation
+            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 2));
+
+            for (int slam = 0; slam < 3; slam++) {
+                final int slamIndex = slam;
+                final double slamRadius = 4.0 + (slam * 3.0);
+                final double slamDamage = 18.0 - (slam * 3.0);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    Location impact = player.getLocation();
-                    player.playSound(impact, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
-                    player.playSound(impact, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.3f);
-                    player.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
+                    // Slam visual
+                    player.getWorld().playSound(center, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.6f + (slamIndex * 0.2f));
 
-                    // Massive visual explosion
-                    player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, impact, 5, 2, 0, 2, 0);
-                    player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, impact, 150, 5, 5, 5, 0.5);
-                    player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, impact, 50, 6, 1, 6, 0.05);
-
-                    // Prevent player fall damage
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 20, 255));
-
-                    // Three expanding damage waves
-                    for (int wave = 0; wave < 3; wave++) {
-                        final double waveRadius = 5.0 + (wave * 5.0);
-                        final double waveDmg = 25.0 - (wave * 6.0);
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            // Ring particles
-                            for (int i = 0; i < 50; i++) {
-                                double angle = (2 * Math.PI / 50) * i;
-                                Location ringLoc = impact.clone().add(Math.cos(angle) * waveRadius, 0.3, Math.sin(angle) * waveRadius);
-                                player.getWorld().spawnParticle(Particle.FLAME, ringLoc, 3, 0, 0.5, 0, 0.01);
-                                player.getWorld().spawnParticle(Particle.BLOCK, ringLoc, 5, 0.5, 0.5, 0.5, 0,
-                                        Material.NETHERRACK.createBlockData());
+                    new BukkitRunnable() {
+                        int tick = 0;
+                        @Override
+                        public void run() {
+                            if (tick >= 6) { cancel(); return; }
+                            double r = (tick / 6.0) * slamRadius;
+                            for (int i = 0; i < 40; i++) {
+                                double angle = (2 * Math.PI / 40) * i;
+                                Location pLoc = center.clone().add(Math.cos(angle) * r, 0.15, Math.sin(angle) * r);
+                                player.getWorld().spawnParticle(Particle.BLOCK, pLoc, 2, 0.1, 0.2, 0.1, 0.1,
+                                        Material.DEEPSLATE.createBlockData());
+                                if (tick % 2 == 0) {
+                                    player.getWorld().spawnParticle(Particle.LAVA, pLoc, 1, 0, 0, 0, 0);
+                                }
                             }
+                            tick++;
+                        }
+                    }.runTaskTimer(plugin, 0L, 1L);
 
-                            for (LivingEntity enemy : getNearbyEnemies(impact, waveRadius, player)) {
-                                dealAbilityDamage(player, enemy, waveDmg, true);
-                                Vector launch = enemy.getLocation().toVector().subtract(impact.toVector()).normalize().multiply(2.0);
-                                launch.setY(1.2);
-                                enemy.setVelocity(launch);
-                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 2));
-                                enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 3));
-                            }
-                            player.getWorld().playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.7f + (float)(waveRadius * 0.02));
-                        }, wave * 5L);
+                    // Damage all enemies in radius
+                    for (LivingEntity enemy : getNearbyEnemies(center, slamRadius, player)) {
+                        dealAbilityDamage(player, enemy, slamDamage, true);
+                        Vector kb = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.5);
+                        kb.setY(0.7 + (slamIndex * 0.2));
+                        enemy.setVelocity(kb);
+                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1 + slamIndex));
                     }
-                }, 10L);
-            }, 15L);
 
-            player.sendActionBar("§4§l✦ WORLD BREAKER ✦");
+                    player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
+                }, slamIndex * 12L);
+            }
+
+            // Final explosion
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 80, 3, 2, 3, 0.5);
+                player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.4f);
+            }, 38L);
+
+            player.sendActionBar("\u00a74\u00a7l CATACLYSM ");
         }
     }
 
     // ================================================================
-    // ON-HIT: Bloodthirst lifesteal check (Axe Diamond ability)
+    // BLOODTHIRST Lifesteal Handler (for Axe diamond ability)
     // ================================================================
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (event.isCancelled()) return;
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBloodthirstHit(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player)) return;
         if (!(event.getEntity() instanceof LivingEntity)) return;
 
-        ItemStack weapon = player.getInventory().getItemInMainHand();
-        if (weapon == null || !weapon.hasItemMeta()) return;
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null || !item.hasItemMeta()) return;
 
-        // Check for active Bloodthirst (Axe Diamond ability)
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         NamespacedKey bloodthirstKey = new NamespacedKey(plugin, "bloodthirst_active");
-        PersistentDataContainer pdc = weapon.getItemMeta().getPersistentDataContainer();
-        if (pdc.has(bloodthirstKey, PersistentDataType.LONG)) {
-            long expiry = pdc.getOrDefault(bloodthirstKey, PersistentDataType.LONG, 0L);
-            if (System.currentTimeMillis() < expiry) {
-                // Heal 30% of damage dealt
-                double heal = event.getFinalDamage() * 0.3;
-                double newHealth = Math.min(player.getHealth() + heal,
-                        player.getAttribute(Attribute.MAX_HEALTH).getValue());
-                player.setHealth(newHealth);
-                player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 2, 0), 2, 0.3, 0.2, 0.3, 0);
-            } else {
-                // Expired — remove the key
-                ItemMeta meta = weapon.getItemMeta();
-                meta.getPersistentDataContainer().remove(bloodthirstKey);
-                weapon.setItemMeta(meta);
-            }
-        }
+        Long expiry = pdc.getOrDefault(bloodthirstKey, PersistentDataType.LONG, 0L);
 
-        // Netherite +2% per enchantment damage bonus
-        int superTier = getSuperTier(weapon);
-        if (superTier >= 3) {
-            int totalEnchants = enchantManager.countEnchantments(weapon);
-            // Also count vanilla enchantments
-            if (weapon.hasItemMeta() && weapon.getItemMeta().hasEnchants()) {
-                totalEnchants += weapon.getItemMeta().getEnchants().size();
-            }
-            if (totalEnchants > 0) {
-                double bonusPercent = totalEnchants * config.getSuperNethPerEnchantBonus();
-                double bonusDamage = event.getDamage() * (bonusPercent / 100.0);
-                event.setDamage(event.getDamage() + bonusDamage);
-            }
+        if (expiry > 0 && System.currentTimeMillis() < expiry) {
+            // Heal 30% of damage dealt
+            double heal = event.getFinalDamage() * 0.30;
+            double maxHealth = player.getAttribute(Attribute.MAX_HEALTH).getValue();
+            double newHealth = Math.min(player.getHealth() + heal, maxHealth);
+            player.setHealth(newHealth);
+
+            // Visual feedback
+            player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 2, 0), 2, 0.3, 0.3, 0.3, 0);
+            player.getWorld().spawnParticle(Particle.DUST, player.getLocation().add(0, 1.5, 0), 4,
+                    0.3, 0.3, 0.3, 0,
+                    new Particle.DustOptions(Color.fromRGB(200, 0, 0), 1.2f));
         }
     }
 }
