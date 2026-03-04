@@ -88,7 +88,7 @@ public class RecipeManager implements Listener {
 
         registerSuperToolRecipes();
 
-        plugin.getLogger().info("All custom crafting recipes registered (v1.3.0 — 1-on-top for Battle, 3-on-top for Super).");
+        plugin.getLogger().info("All custom crafting recipes registered (v1.3.1 — fixed Sword/Pickaxe/Shovel Super recipes).");
     }
 
     private void registerEyeOfEnder() {
@@ -316,31 +316,64 @@ public class RecipeManager implements Listener {
         plugin.getServer().addRecipe(recipe);
     }
 
+    // =====================================================================
+    // FIX v1.3.1: Swords, Pickaxes, and Shovels now use
+    // registerSuperTiersForBattleItem() instead of registerAllSuperTiers().
+    //
+    // ROOT CAUSE: registerAllSuperTiers() creates a plain "new ItemStack(mat)"
+    // with NO battle PDC key, then passes it to createSuperTool() which checks
+    // isBattleItem() — returns false — returns null — recipe never registered.
+    //
+    // registerSuperTiersForBattleItem() receives an actual battle item with
+    // the PDC marker, so isBattleItem() returns true and the recipe registers.
+    //
+    // registerAllSuperTiers() is kept ONLY for Elytra and Shield which bypass
+    // the battle step (isBattleItem returns true for them by material check).
+    // =====================================================================
     private void registerSuperToolRecipes() {
+        // FIX: Swords — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
         for (Material swordMat : battleSwordManager.getBattleSwordTiers()) {
-            registerAllSuperTiers(swordMat, "battle_sword_" + swordMat.name().toLowerCase());
+            ItemStack battleSword = battleSwordManager.createBattleSword(swordMat);
+            if (battleSword == null) continue;
+            registerSuperTiersForBattleItem(battleSword, swordMat, "battle_sword_" + swordMat.name().toLowerCase());
         }
+
+        // FIX: Pickaxes — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
         for (Material pickMat : battlePickaxeManager.getBattlePickaxeTiers()) {
-            registerAllSuperTiers(pickMat, "battle_pickaxe_" + pickMat.name().toLowerCase());
+            ItemStack battlePick = battlePickaxeManager.createBattlePickaxe(pickMat);
+            if (battlePick == null) continue;
+            registerSuperTiersForBattleItem(battlePick, pickMat, "battle_pickaxe_" + pickMat.name().toLowerCase());
         }
+
+        // FIX: Shovels — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
         for (BattleShovelManager.ShovelTier tier : BattleShovelManager.ShovelTier.values()) {
-            registerAllSuperTiers(tier.getShovelMaterial(), "battle_shovel_" + tier.name().toLowerCase());
+            ItemStack battleShovel = battleShovelManager.createBattleShovel(tier);
+            if (battleShovel == null) continue;
+            registerSuperTiersForBattleItem(battleShovel, tier.getShovelMaterial(), "battle_shovel_" + tier.name().toLowerCase());
         }
+
+        // Sickles — already correct (uses registerSuperTiersForBattleItem)
         for (Material hoeMat : sickleManager.getSickleTiers()) {
             ItemStack sickle = sickleManager.createSickle(hoeMat);
             if (sickle == null) continue;
             registerSuperTiersForBattleItem(sickle, hoeMat, "sickle_" + hoeMat.name().toLowerCase());
         }
+
+        // Battle Axes — already correct
         for (Material axeMat : battleAxeManager.getBattleAxeTiers()) {
             ItemStack battleAxe = battleAxeManager.createBattleAxe(axeMat);
             if (battleAxe == null) continue;
             registerSuperTiersForBattleItem(battleAxe, axeMat, "battle_axe_" + axeMat.name().toLowerCase());
         }
+
+        // Battle Spears — already correct
         for (Material spearMat : battleSpearManager.getBattleSpearTiers()) {
             ItemStack battleSpear = battleSpearManager.createBattleSpear(spearMat);
             if (battleSpear == null) continue;
             registerSuperTiersForBattleItem(battleSpear, spearMat, "battle_spear_" + spearMat.name().toLowerCase());
         }
+
+        // Single-material battle items — already correct
         ItemStack battleTrident = battleTridentManager.createBattleTrident();
         if (battleTrident != null) registerSuperTiersForBattleItem(battleTrident, Material.TRIDENT, "battle_trident");
         ItemStack battleBow = battleBowManager.createBattleBow();
@@ -349,10 +382,18 @@ public class RecipeManager implements Listener {
         if (battleCrossbow != null) registerSuperTiersForBattleItem(battleCrossbow, Material.CROSSBOW, "battle_crossbow");
         ItemStack battleMace = battleMaceManager.createBattleMace();
         if (battleMace != null) registerSuperTiersForBattleItem(battleMace, Material.MACE, "battle_mace");
+
+        // Elytra and Shield — these bypass battle, so registerAllSuperTiers is correct for them
         registerAllSuperTiers(Material.ELYTRA, "elytra");
         registerAllSuperTiers(Material.SHIELD, "shield");
     }
 
+    /**
+     * Registers super tiers for items that bypass the battle step (Elytra, Shield).
+     * Creates a plain ItemStack — works because isBattleItem() returns true for
+     * Elytra/Shield by material check.
+     * DO NOT use this for weapons that require battle PDC markers.
+     */
     private void registerAllSuperTiers(Material baseMat, String namePrefix) {
         Material[] upgradeMats = { Material.IRON_INGOT, Material.DIAMOND, Material.NETHERITE_INGOT };
         int[] tiers = { SuperToolManager.TIER_IRON, SuperToolManager.TIER_DIAMOND, SuperToolManager.TIER_NETHERITE };
@@ -370,6 +411,11 @@ public class RecipeManager implements Listener {
         }
     }
 
+    /**
+     * Registers super tiers for battle items that have PDC markers.
+     * Receives an actual battle item (with PDC) so createSuperTool's
+     * isBattleItem() check passes correctly.
+     */
     private void registerSuperTiersForBattleItem(ItemStack battleItem, Material baseMat, String namePrefix) {
         Material[] upgradeMats = { Material.IRON_INGOT, Material.DIAMOND, Material.NETHERITE_INGOT };
         int[] tiers = { SuperToolManager.TIER_IRON, SuperToolManager.TIER_DIAMOND, SuperToolManager.TIER_NETHERITE };
@@ -426,11 +472,12 @@ public class RecipeManager implements Listener {
                 ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
                 if (centerItem != null) {
                     if (superToolManager.isSuperTool(centerItem)) {
-                        // allow upgrade
+                        // allow upgrade — fall through to section 4
                     } else if (!superToolManager.isBattleItem(centerItem)) {
                         event.getInventory().setResult(null);
                         return;
                     }
+                    // Verify the specific battle type matches the recipe
                     if (recipeKey.contains("sickle_") && !sickleManager.isSickle(centerItem)) { event.getInventory().setResult(null); return; }
                     if (recipeKey.contains("battle_axe_") && !battleAxeManager.isBattleAxe(centerItem)) { event.getInventory().setResult(null); return; }
                     if (recipeKey.contains("battle_sword_") && !battleSwordManager.isBattleSword(centerItem)) { event.getInventory().setResult(null); return; }

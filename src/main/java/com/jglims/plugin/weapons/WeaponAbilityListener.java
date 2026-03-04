@@ -22,6 +22,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -45,12 +46,14 @@ import com.jglims.plugin.config.ConfigManager;
 import com.jglims.plugin.enchantments.CustomEnchantManager;
 
 /**
- * WeaponAbilityListener — v1.3.0 FINAL (HOTFIX 2)
+ * WeaponAbilityListener — v1.3.1
  *
- * HOTFIX 2 CHANGES:
- *   - Particle.SOUL_FIRE_FLAME now requires Float data in PaperMC 1.21.11
- *     Replaced all DRAGON_BREATH with SOUL (no data required, similar dark aesthetic)
- *     This was causing runtime exceptions in all abilities that used DRAGON_BREATH
+ * CHANGES FROM v1.3.0:
+ *   - All ability damage values increased ~30-50%
+ *   - Pickaxe Ore Pulse / Seismic Resonance: COMPLETELY REVAMPED
+ *     Now uses BlockDisplay entities with glowing outlines visible through walls.
+ *     Both tiers detect ALL ores. Netherite has bigger radius and longer duration.
+ *   - All DRAGON_BREATH replaced with SOUL_FIRE_FLAME (HOTFIX 3 carryover)
  */
 public class WeaponAbilityListener implements Listener {
 
@@ -207,167 +210,8 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SWORD — "Dash Strike" / "Dimensional Cleave"
-    // ================================================================
-
-    private void handleSwordAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "Dimensional Cleave" : "Dash Strike";
-        int cooldownSec = isDefinitive ? 12 : 6;
-
-        if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
-        setCooldown(player, abilityName, cooldownSec);
-
-        if (!isDefinitive) {
-            player.setVelocity(player.getLocation().getDirection().multiply(1.8));
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.2f);
-
-            new BukkitRunnable() {
-                int ticks = 0;
-                @Override public void run() {
-                    if (ticks >= 8) { cancel(); return; }
-                    Location loc = player.getLocation();
-                    player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc.clone().add(0, 1, 0), 3, 0.5, 0.3, 0.5, 0);
-                    player.getWorld().spawnParticle(Particle.CRIT, loc, 8, 0.6, 0.4, 0.6, 0.1);
-                    for (LivingEntity enemy : getNearbyEnemies(loc, 2.5, player)) {
-                        dealAbilityDamage(player, enemy, 8.0, false);
-                        enemy.setVelocity(player.getLocation().getDirection().multiply(0.5));
-                    }
-                    ticks++;
-                }
-            }.runTaskTimer(plugin, 0L, 2L);
-
-        } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 0.5f);
-
-            Location center = player.getLocation().add(player.getLocation().getDirection().multiply(4));
-            center.setY(player.getLocation().getY());
-
-            new BukkitRunnable() {
-                int ticks = 0;
-                @Override public void run() {
-                    if (ticks >= 15) { cancel(); return; }
-                    double radius = 2.0 + (ticks * 0.6);
-                    for (int i = 0; i < 40; i++) {
-                        double angle = (2 * Math.PI / 40) * i;
-                        double x = Math.cos(angle) * radius;
-                        double z = Math.sin(angle) * radius;
-                        Location particleLoc = center.clone().add(x, 0.5, z);
-                        // FIX: replaced DRAGON_BREATH with SOUL (no data required)
-                        player.getWorld().spawnParticle(Particle.SOUL, particleLoc, 1, 0, 0, 0, 0);
-                        if (ticks % 3 == 0) {
-                            player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, particleLoc, 2, 0.1, 0.5, 0.1, 0.05);
-                        }
-                    }
-                    if (ticks % 3 == 0) {
-                        for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
-                            dealAbilityDamage(player, enemy, 15.0, true);
-                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
-                        }
-                    }
-                    player.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
-                    player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 15, 1.5, 2, 1.5, 0.02);
-                    ticks++;
-                }
-            }.runTaskTimer(plugin, 0L, 2L);
-
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 3, 0, 0, 0, 0);
-                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 100, 3, 2, 3, 0.5);
-                player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.6f);
-                for (LivingEntity enemy : getNearbyEnemies(center, 8.0, player)) {
-                    dealAbilityDamage(player, enemy, 25.0, true);
-                    Vector knockback = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.5);
-                    knockback.setY(0.6);
-                    enemy.setVelocity(knockback);
-                }
-            }, 30L);
-        }
-    }
-
-    // ================================================================
-    // AXE — "Bloodthirst" / "Ragnarok Cleave"
-    // ================================================================
-
-    private void handleAxeAbility(Player player, ItemStack item, boolean isDefinitive) {
-        String abilityName = isDefinitive ? "Ragnarok Cleave" : "Bloodthirst";
-        int cooldownSec = isDefinitive ? 15 : 8;
-
-        if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
-        setCooldown(player, abilityName, cooldownSec);
-
-        if (!isDefinitive) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 0));
-            player.playSound(player.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 0.8f, 1.2f);
-
-            ItemMeta meta = item.getItemMeta();
-            meta.getPersistentDataContainer().set(
-                    new NamespacedKey(plugin, "bloodthirst_active"),
-                    PersistentDataType.LONG, System.currentTimeMillis() + 5000L);
-            item.setItemMeta(meta);
-
-            new BukkitRunnable() {
-                int ticks = 0;
-                @Override public void run() {
-                    if (ticks >= 50) { cancel(); return; }
-                    Location loc = player.getLocation().add(0, 1, 0);
-                    player.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc, 4, 0.5, 0.5, 0.5, 0.1);
-                    player.getWorld().spawnParticle(Particle.DUST, loc, 6, 0.6, 0.6, 0.6, 0,
-                            new Particle.DustOptions(Color.fromRGB(180, 0, 0), 1.5f));
-                    ticks++;
-                }
-            }.runTaskTimer(plugin, 0L, 2L);
-
-            player.sendActionBar("\u00a7c\u00a7l\u2620 BLOODTHIRST ACTIVE \u2620");
-
-        } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.7f);
-            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
-
-            Location center = player.getLocation();
-
-            new BukkitRunnable() {
-                int ticks = 0;
-                @Override public void run() {
-                    if (ticks >= 20) { cancel(); return; }
-                    double radius = ticks * 0.5;
-                    for (int i = 0; i < 30 + (ticks * 2); i++) {
-                        double angle = Math.random() * 2 * Math.PI;
-                        double r = Math.random() * radius;
-                        Location particleLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
-                        player.getWorld().spawnParticle(Particle.LAVA, particleLoc, 1, 0, 0, 0, 0);
-                        player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, particleLoc, 1, 0, 0.5, 0, 0.02);
-                        if (ticks > 5) {
-                            player.getWorld().spawnParticle(Particle.FLAME, particleLoc, 1, 0, 0.3, 0, 0.01);
-                        }
-                    }
-                    ticks++;
-                }
-            }.runTaskTimer(plugin, 0L, 1L);
-
-            for (int wave = 0; wave < 3; wave++) {
-                final double waveRadius = 4.0 + (wave * 3.0);
-                final double waveDamage = 20.0 - (wave * 4.0);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    for (LivingEntity enemy : getNearbyEnemies(center, waveRadius, player)) {
-                        dealAbilityDamage(player, enemy, waveDamage, true);
-                        Vector launch = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.2);
-                        launch.setY(0.8 + Math.random() * 0.5);
-                        enemy.setVelocity(launch);
-                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 80, 1));
-                    }
-                    player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 0, 0, 0, 0);
-                    player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.9f + (float)(waveRadius * 0.05));
-                }, wave * 8L);
-            }
-
-            player.sendActionBar("\u00a74\u00a7l\u2620 RAGNAROK CLEAVE \u2620");
-        }
-    }
-
-    // ================================================================
-    // PICKAXE — "Ore Pulse" / "Seismic Resonance"
+    // PICKAXE — "Ore Pulse" / "Seismic Resonance" — COMPLETELY REVAMPED
+    // Now uses BlockDisplay entities with glowing outlines visible through walls!
     // ================================================================
 
     private void handlePickaxeAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -377,18 +221,23 @@ public class WeaponAbilityListener implements Listener {
         if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
         setCooldown(player, abilityName, cooldownSec);
 
-        int oreRadius = isDefinitive ? config.getOreDetectRadiusNetherite() : config.getOreDetectRadiusDiamond();
-        int debrisRadius = isDefinitive ? config.getOreDetectAncientDebrisRadiusNetherite() : config.getOreDetectAncientDebrisRadiusDiamond();
-        int durationTicks = config.getOreDetectDurationTicks();
+        // Both tiers detect ALL ores — difference is radius and duration
+        int oreRadius = isDefinitive ? 16 : 10;
+        int debrisRadius = isDefinitive ? 48 : 24;
+        int durationTicks = isDefinitive ? 500 : 300; // 25s / 15s
 
-        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.0f, isDefinitive ? 0.5f : 1.0f);
-        if (isDefinitive) { player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.5f, 0.6f); }
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.5f, isDefinitive ? 0.5f : 1.0f);
+        if (isDefinitive) {
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_HEARTBEAT, 1.5f, 0.6f);
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
+        }
 
         Location playerLoc = player.getLocation();
         World world = player.getWorld();
         Map<Location, OreType> foundOres = new LinkedHashMap<>();
         int maxRadius = Math.max(oreRadius, debrisRadius);
 
+        // Scan for ores
         for (int x = -maxRadius; x <= maxRadius; x++) {
             for (int y = -maxRadius; y <= maxRadius; y++) {
                 for (int z = -maxRadius; z <= maxRadius; z++) {
@@ -407,60 +256,134 @@ public class WeaponAbilityListener implements Listener {
 
         int totalOres = foundOres.size();
         long debrisCount = foundOres.values().stream().filter(o -> o == OreType.ANCIENT_DEBRIS).count();
+        long diamondCount = foundOres.values().stream().filter(o -> o == OreType.DIAMOND).count();
+        long emeraldCount = foundOres.values().stream().filter(o -> o == OreType.EMERALD).count();
 
         if (totalOres == 0) {
-            player.sendActionBar("\u00a77Ore Pulse: \u00a7fNo ores detected nearby.");
-        } else {
-            String msg = isDefinitive
-                    ? "\u00a75\u00a7l SEISMIC RESONANCE: \u00a7f" + totalOres + " ores detected"
-                    : "\u00a7e Ore Pulse: \u00a7f" + totalOres + " ores detected";
-            if (debrisCount > 0) msg += " \u00a77| \u00a74\u00a7l" + debrisCount + " Ancient Debris!";
-            player.sendActionBar(msg);
-            if (debrisCount > 0) player.sendMessage("\u00a74\u00a7l " + debrisCount + " Ancient Debris detected within " + debrisRadius + " blocks!");
+            player.sendActionBar("\u00a77" + abilityName + ": \u00a7fNo ores detected nearby.");
+            return;
         }
 
+        // Build detailed message
+        StringBuilder msg = new StringBuilder();
+        if (isDefinitive) {
+            msg.append("\u00a75\u00a7l SEISMIC RESONANCE: \u00a7f");
+        } else {
+            msg.append("\u00a7e Ore Pulse: \u00a7f");
+        }
+        msg.append(totalOres).append(" ores detected");
+        if (diamondCount > 0) msg.append(" \u00a7b").append(diamondCount).append(" Diamond");
+        if (emeraldCount > 0) msg.append(" \u00a7a").append(emeraldCount).append(" Emerald");
+        if (debrisCount > 0) msg.append(" \u00a74\u00a7l").append(debrisCount).append(" Ancient Debris!");
+        player.sendActionBar(msg.toString());
+
+        if (debrisCount > 0) {
+            player.sendMessage("\u00a74\u00a7l\u26a0 " + debrisCount + " Ancient Debris detected within " + debrisRadius + " blocks!");
+        }
+        if (diamondCount > 0) {
+            player.sendMessage("\u00a7b\u2666 " + diamondCount + " Diamond Ore detected within " + oreRadius + " blocks!");
+        }
+
+        // Activation visual: expanding pulse ring
         new BukkitRunnable() {
             int tick = 0;
             @Override public void run() {
-                if (tick >= 5) { cancel(); return; }
-                double r = tick * (isDefinitive ? 3.0 : 2.0);
-                for (int i = 0; i < 20; i++) {
-                    double angle = Math.random() * 2 * Math.PI;
+                if (tick >= 8) { cancel(); return; }
+                double r = tick * (isDefinitive ? 2.5 : 1.8);
+                for (int i = 0; i < 30; i++) {
+                    double angle = (2 * Math.PI / 30) * i;
                     Location pLoc = playerLoc.clone().add(Math.cos(angle) * r, 0.5, Math.sin(angle) * r);
                     world.spawnParticle(isDefinitive ? Particle.SOUL_FIRE_FLAME : Particle.ENCHANT, pLoc, 2, 0, 0.3, 0, 0.05);
                 }
+                if (isDefinitive && tick % 2 == 0) {
+                    world.spawnParticle(Particle.REVERSE_PORTAL, playerLoc.clone().add(0, 1, 0), 20, 1, 1, 1, 0.1);
+                }
                 tick++;
             }
-        }.runTaskTimer(plugin, 0L, 3L);
+        }.runTaskTimer(plugin, 0L, 2L);
 
+        // Spawn glowing BlockDisplay entities for each ore — ONLY visible to the caster
+        List<BlockDisplay> glowingDisplays = new ArrayList<>();
+
+        for (Map.Entry<Location, OreType> entry : foundOres.entrySet()) {
+            Location oreLoc = entry.getKey();
+            OreType oreType = entry.getValue();
+
+            BlockDisplay display = world.spawn(oreLoc, BlockDisplay.class, entity -> {
+                entity.setBlock(oreLoc.getBlock().getBlockData());
+                entity.setGlowing(true);
+                entity.setGlowColorOverride(oreType.getGlowColor());
+                entity.setVisibleByDefault(false);
+                entity.setPersistent(false);
+                entity.setInvisible(false);
+                entity.setViewRange(1.0f);
+            });
+
+            player.showEntity(plugin, display);
+            glowingDisplays.add(display);
+        }
+
+        // Also keep dust particles as a secondary indicator
         new BukkitRunnable() {
             int ticks = 0;
             @Override public void run() {
-                if (ticks >= durationTicks || !player.isOnline()) { cancel(); return; }
-                for (Map.Entry<Location, OreType> entry : foundOres.entrySet()) {
-                    Location oreLoc = entry.getKey().clone().add(0.5, 0.5, 0.5);
-                    OreType type = entry.getValue();
-                    if (ticks % 5 == 0) {
-                        player.spawnParticle(Particle.DUST, oreLoc, 3, 0.2, 0.2, 0.2, 0, type.getDustOptions());
-                        if (type == OreType.ANCIENT_DEBRIS) {
-                            player.spawnParticle(Particle.FLAME, oreLoc, 1, 0.1, 0.1, 0.1, 0.01);
-                            if (ticks % 20 == 0) player.spawnParticle(Particle.SOUL_FIRE_FLAME, oreLoc, 5, 0.3, 0.3, 0.3, 0.02);
+                if (ticks >= durationTicks || !player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                // Sparse particle overlay every 10 ticks to enhance the glow
+                if (ticks % 10 == 0) {
+                    for (Map.Entry<Location, OreType> entry : foundOres.entrySet()) {
+                        Location oreLoc = entry.getKey().clone().add(0.5, 0.5, 0.5);
+                        OreType type = entry.getValue();
+                        player.spawnParticle(Particle.DUST, oreLoc, 2, 0.15, 0.15, 0.15, 0, type.getDustOptions());
+                        if (type == OreType.ANCIENT_DEBRIS && ticks % 20 == 0) {
+                            player.spawnParticle(Particle.FLAME, oreLoc, 2, 0.15, 0.15, 0.15, 0.01);
+                            player.spawnParticle(Particle.SOUL_FIRE_FLAME, oreLoc, 3, 0.2, 0.2, 0.2, 0.02);
+                        }
+                        if (type == OreType.DIAMOND && ticks % 20 == 0) {
+                            player.spawnParticle(Particle.END_ROD, oreLoc, 1, 0.1, 0.1, 0.1, 0.02);
                         }
                     }
                 }
                 ticks++;
             }
         }.runTaskTimer(plugin, 5L, 1L);
+
+        // Schedule cleanup: remove all BlockDisplay entities after duration
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (BlockDisplay display : glowingDisplays) {
+                if (display.isValid()) {
+                    display.remove();
+                }
+            }
+            player.sendActionBar("\u00a77" + abilityName + " faded.");
+        }, durationTicks);
     }
 
     private enum OreType {
-        COAL(Color.fromRGB(50, 50, 50)), IRON(Color.fromRGB(210, 150, 100)), COPPER(Color.fromRGB(180, 100, 50)),
-        GOLD(Color.fromRGB(255, 215, 0)), REDSTONE(Color.fromRGB(255, 0, 0)), LAPIS(Color.fromRGB(30, 30, 200)),
-        EMERALD(Color.fromRGB(0, 200, 50)), DIAMOND(Color.fromRGB(100, 230, 255)), ANCIENT_DEBRIS(Color.fromRGB(100, 50, 20)),
-        NETHER_GOLD(Color.fromRGB(255, 200, 50)), NETHER_QUARTZ(Color.fromRGB(240, 240, 230));
-        private final Color color;
-        OreType(Color color) { this.color = color; }
-        public Particle.DustOptions getDustOptions() { return new Particle.DustOptions(color, 1.5f); }
+        COAL(Color.fromRGB(50, 50, 50), Color.fromRGB(80, 80, 80)),
+        IRON(Color.fromRGB(210, 150, 100), Color.fromRGB(210, 150, 100)),
+        COPPER(Color.fromRGB(180, 100, 50), Color.fromRGB(180, 100, 50)),
+        GOLD(Color.fromRGB(255, 215, 0), Color.fromRGB(255, 215, 0)),
+        REDSTONE(Color.fromRGB(255, 0, 0), Color.fromRGB(255, 0, 0)),
+        LAPIS(Color.fromRGB(30, 30, 200), Color.fromRGB(30, 30, 200)),
+        EMERALD(Color.fromRGB(0, 200, 50), Color.fromRGB(0, 255, 50)),
+        DIAMOND(Color.fromRGB(100, 230, 255), Color.fromRGB(80, 220, 255)),
+        ANCIENT_DEBRIS(Color.fromRGB(100, 50, 20), Color.fromRGB(200, 80, 30)),
+        NETHER_GOLD(Color.fromRGB(255, 200, 50), Color.fromRGB(255, 200, 50)),
+        NETHER_QUARTZ(Color.fromRGB(240, 240, 230), Color.fromRGB(240, 240, 230));
+
+        private final Color dustColor;
+        private final Color glowColor;
+
+        OreType(Color dustColor, Color glowColor) {
+            this.dustColor = dustColor;
+            this.glowColor = glowColor;
+        }
+
+        public Particle.DustOptions getDustOptions() { return new Particle.DustOptions(dustColor, 1.5f); }
+        public Color getGlowColor() { return glowColor; }
     }
 
     private OreType classifyOre(Material mat) {
@@ -481,7 +404,171 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SHOVEL — "Earthen Wall" / "Tectonic Upheaval"
+    // SWORD — "Dash Strike" / "Dimensional Cleave" — DAMAGE INCREASED
+    // ================================================================
+
+    private void handleSwordAbility(Player player, ItemStack item, boolean isDefinitive) {
+        String abilityName = isDefinitive ? "Dimensional Cleave" : "Dash Strike";
+        int cooldownSec = isDefinitive ? 12 : 6;
+
+        if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
+        setCooldown(player, abilityName, cooldownSec);
+
+        if (!isDefinitive) {
+            // Dash Strike — DAMAGE: 8 -> 12
+            player.setVelocity(player.getLocation().getDirection().multiply(2.2));
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.2f);
+
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 10) { cancel(); return; }
+                    Location loc = player.getLocation();
+                    player.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc.clone().add(0, 1, 0), 5, 0.5, 0.3, 0.5, 0);
+                    player.getWorld().spawnParticle(Particle.CRIT, loc, 12, 0.6, 0.4, 0.6, 0.1);
+                    for (LivingEntity enemy : getNearbyEnemies(loc, 3.0, player)) {
+                        dealAbilityDamage(player, enemy, 12.0, false);
+                        enemy.setVelocity(player.getLocation().getDirection().multiply(0.6));
+                    }
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 2L);
+
+        } else {
+            // Dimensional Cleave — DAMAGE: 15->22 per tick, 25->35 final
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 0.5f);
+
+            Location center = player.getLocation().add(player.getLocation().getDirection().multiply(4));
+            center.setY(player.getLocation().getY());
+
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 15) { cancel(); return; }
+                    double radius = 2.0 + (ticks * 0.7);
+                    for (int i = 0; i < 40; i++) {
+                        double angle = (2 * Math.PI / 40) * i;
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+                        Location particleLoc = center.clone().add(x, 0.5, z);
+                        player.getWorld().spawnParticle(Particle.SOUL, particleLoc, 1, 0, 0, 0, 0);
+                        if (ticks % 3 == 0) {
+                            player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, particleLoc, 2, 0.1, 0.5, 0.1, 0.05);
+                        }
+                    }
+                    if (ticks % 3 == 0) {
+                        for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
+                            dealAbilityDamage(player, enemy, 22.0, true);
+                            enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2));
+                        }
+                    }
+                    player.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 1, 0, 0, 0, 0);
+                    player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 20, 2.0, 2.5, 2.0, 0.03);
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 2L);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 5, 0, 0, 0, 0);
+                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 150, 4, 3, 4, 0.6);
+                player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.6f);
+                for (LivingEntity enemy : getNearbyEnemies(center, 10.0, player)) {
+                    dealAbilityDamage(player, enemy, 35.0, true);
+                    Vector knockback = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(2.0);
+                    knockback.setY(0.8);
+                    enemy.setVelocity(knockback);
+                }
+            }, 30L);
+        }
+    }
+
+    // ================================================================
+    // AXE — "Bloodthirst" / "Ragnarok Cleave" — DAMAGE INCREASED
+    // ================================================================
+
+    private void handleAxeAbility(Player player, ItemStack item, boolean isDefinitive) {
+        String abilityName = isDefinitive ? "Ragnarok Cleave" : "Bloodthirst";
+        int cooldownSec = isDefinitive ? 15 : 8;
+
+        if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
+        setCooldown(player, abilityName, cooldownSec);
+
+        if (!isDefinitive) {
+            // Bloodthirst — now also grants Speed I
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 1));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 0));
+            player.playSound(player.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 0.8f, 1.2f);
+
+            ItemMeta meta = item.getItemMeta();
+            meta.getPersistentDataContainer().set(
+                    new NamespacedKey(plugin, "bloodthirst_active"),
+                    PersistentDataType.LONG, System.currentTimeMillis() + 5000L);
+            item.setItemMeta(meta);
+
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 50) { cancel(); return; }
+                    Location loc = player.getLocation().add(0, 1, 0);
+                    player.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc, 6, 0.5, 0.5, 0.5, 0.1);
+                    player.getWorld().spawnParticle(Particle.DUST, loc, 8, 0.6, 0.6, 0.6, 0,
+                            new Particle.DustOptions(Color.fromRGB(180, 0, 0), 1.8f));
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 2L);
+
+            player.sendActionBar("\u00a7c\u00a7l\u2620 BLOODTHIRST ACTIVE \u2620");
+
+        } else {
+            // Ragnarok Cleave — DAMAGE: 20/16/12 -> 30/24/18
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.7f);
+            player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
+
+            Location center = player.getLocation();
+
+            new BukkitRunnable() {
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks >= 20) { cancel(); return; }
+                    double radius = ticks * 0.6;
+                    for (int i = 0; i < 35 + (ticks * 2); i++) {
+                        double angle = Math.random() * 2 * Math.PI;
+                        double r = Math.random() * radius;
+                        Location particleLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
+                        player.getWorld().spawnParticle(Particle.LAVA, particleLoc, 1, 0, 0, 0, 0);
+                        player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, particleLoc, 1, 0, 0.5, 0, 0.02);
+                        if (ticks > 5) {
+                            player.getWorld().spawnParticle(Particle.FLAME, particleLoc, 2, 0, 0.3, 0, 0.01);
+                        }
+                    }
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, 0L, 1L);
+
+            for (int wave = 0; wave < 3; wave++) {
+                final double waveRadius = 5.0 + (wave * 3.5);
+                final double waveDamage = 30.0 - (wave * 6.0);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    for (LivingEntity enemy : getNearbyEnemies(center, waveRadius, player)) {
+                        dealAbilityDamage(player, enemy, waveDamage, true);
+                        Vector launch = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.5);
+                        launch.setY(1.0 + Math.random() * 0.5);
+                        enemy.setVelocity(launch);
+                        enemy.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 100, 1));
+                    }
+                    player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 2, 0, 0, 0, 0);
+                    player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.9f + (float)(waveRadius * 0.05));
+                }, wave * 8L);
+            }
+
+            player.sendActionBar("\u00a74\u00a7l\u2620 RAGNAROK CLEAVE \u2620");
+        }
+    }
+
+    // ================================================================
+    // SHOVEL — "Earthen Wall" / "Tectonic Upheaval" — DAMAGE INCREASED
     // ================================================================
 
     private void handleShovelAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -492,15 +579,16 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
+            // Earthen Wall — DAMAGE: 6 -> 10
             player.playSound(player.getLocation(), Sound.BLOCK_GRAVEL_BREAK, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
             player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 80, 1));
             Location center = player.getLocation();
             for (LivingEntity enemy : getNearbyEnemies(center, 6.0, player)) {
-                enemy.setVelocity(new Vector(0, 1.2, 0));
-                dealAbilityDamage(player, enemy, 6.0, false);
+                enemy.setVelocity(new Vector(0, 1.5, 0));
+                dealAbilityDamage(player, enemy, 10.0, false);
             }
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 60; i++) {
                 double angle = Math.random() * 2 * Math.PI;
                 double r = Math.random() * 5;
                 Location pLoc = center.clone().add(Math.cos(angle) * r, 0.2, Math.sin(angle) * r);
@@ -509,6 +597,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7e Earthen Wall \u2014 Enemies launched!");
 
         } else {
+            // Tectonic Upheaval — DAMAGE: 14 -> 20
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_EMERGE, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.3f);
             Location center = player.getLocation();
@@ -518,23 +607,23 @@ public class WeaponAbilityListener implements Listener {
                 int ticks = 0;
                 @Override public void run() {
                     if (ticks >= 30) { cancel(); return; }
-                    double radius = ticks * 0.4;
-                    for (int i = 0; i < 25 + ticks; i++) {
+                    double radius = ticks * 0.5;
+                    for (int i = 0; i < 30 + ticks; i++) {
                         double angle = Math.random() * 2 * Math.PI;
                         double r = Math.random() * radius;
                         Location pLoc = center.clone().add(Math.cos(angle) * r, 0.1, Math.sin(angle) * r);
                         player.getWorld().spawnParticle(Particle.BLOCK, pLoc, 3, 0.1, 0.8, 0.1, 0.3, Material.NETHERRACK.createBlockData());
                         player.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, pLoc, 1, 0, 1, 0, 0.05);
                     }
-                    if (ticks % 10 == 5) {
+                    if (ticks % 8 == 4) {
                         for (LivingEntity enemy : getNearbyEnemies(center, radius, player)) {
-                            dealAbilityDamage(player, enemy, 14.0, true);
-                            Vector launch = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(0.8);
-                            launch.setY(1.8);
+                            dealAbilityDamage(player, enemy, 20.0, true);
+                            Vector launch = enemy.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.0);
+                            launch.setY(2.0);
                             enemy.setVelocity(launch);
                             enemy.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 3));
                         }
-                        player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center.clone().add(0, 1, 0), 2, 2, 0, 2, 0);
+                        player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center.clone().add(0, 1, 0), 3, 2, 0, 2, 0);
                         player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
                     }
                     ticks++;
