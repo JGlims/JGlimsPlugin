@@ -1,28 +1,46 @@
 package com.jglims.plugin;
 
-import com.jglims.plugin.config.ConfigManager;
-import com.jglims.plugin.enchantments.CustomEnchantManager;
-import com.jglims.plugin.enchantments.AnvilRecipeListener;
-import com.jglims.plugin.enchantments.EnchantmentEffectListener;
-import com.jglims.plugin.enchantments.SoulboundListener;
-import com.jglims.plugin.weapons.*;
-import com.jglims.plugin.crafting.RecipeManager;
-import com.jglims.plugin.crafting.VanillaRecipeRemover;
-import com.jglims.plugin.blessings.BlessingManager;
-import com.jglims.plugin.blessings.BlessingListener;
-import com.jglims.plugin.mobs.MobDifficultyManager;
-import com.jglims.plugin.mobs.BossEnhancer;
-import com.jglims.plugin.mobs.KingMobManager;
-import com.jglims.plugin.mobs.BloodMoonManager;
-import com.jglims.plugin.guilds.GuildManager;
-import com.jglims.plugin.guilds.GuildListener;
-import com.jglims.plugin.utility.*;
-
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.jglims.plugin.blessings.BlessingListener;
+import com.jglims.plugin.blessings.BlessingManager;
+import com.jglims.plugin.config.ConfigManager;
+import com.jglims.plugin.crafting.RecipeManager;
+import com.jglims.plugin.crafting.VanillaRecipeRemover;
+import com.jglims.plugin.enchantments.AnvilRecipeListener;
+import com.jglims.plugin.enchantments.CustomEnchantManager;
+import com.jglims.plugin.enchantments.EnchantmentEffectListener;
+import com.jglims.plugin.enchantments.SoulboundListener;
+import com.jglims.plugin.guilds.GuildListener;
+import com.jglims.plugin.guilds.GuildManager;
+import com.jglims.plugin.mobs.BloodMoonManager;
+import com.jglims.plugin.mobs.BossEnhancer;
+import com.jglims.plugin.mobs.KingMobManager;
+import com.jglims.plugin.mobs.MobDifficultyManager;
+import com.jglims.plugin.utility.BestBuddiesListener;
+import com.jglims.plugin.utility.DropRateListener;
+import com.jglims.plugin.utility.EnchantTransferListener;
+import com.jglims.plugin.utility.InventorySortListener;
+import com.jglims.plugin.utility.LootBoosterListener;
+import com.jglims.plugin.utility.PaleGardenFogTask;
+import com.jglims.plugin.utility.VillagerTradeListener;
+import com.jglims.plugin.weapons.BattleAxeManager;
+import com.jglims.plugin.weapons.BattleBowManager;
+import com.jglims.plugin.weapons.BattleMaceManager;
+import com.jglims.plugin.weapons.BattlePickaxeManager;
+import com.jglims.plugin.weapons.BattleShovelManager;
+import com.jglims.plugin.weapons.BattleSpearManager;
+import com.jglims.plugin.weapons.BattleSwordManager;
+import com.jglims.plugin.weapons.BattleTridentManager;
+import com.jglims.plugin.weapons.SickleManager;
+import com.jglims.plugin.weapons.SpearManager;
+import com.jglims.plugin.weapons.SuperToolManager;
+import com.jglims.plugin.weapons.WeaponAbilityListener;
+import com.jglims.plugin.weapons.WeaponMasteryManager;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -138,6 +156,9 @@ public class JGlimsPlugin extends JavaPlugin {
                 spearManager,
                 battleShovelManager
         ), this);
+
+        // FIX #3: Register BestBuddiesListener (was missing — wolf 95% DR, pacifist, Regen II)
+        pm.registerEvents(new BestBuddiesListener(this, configManager), this);
 
         // 10. Scheduled tasks
         if (configManager.isPaleGardenFogEnabled()) {
