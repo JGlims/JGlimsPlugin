@@ -48,7 +48,7 @@ import com.jglims.plugin.enchantments.CustomEnchantManager;
  * WeaponAbilityListener — v1.3.0 FINAL (HOTFIX 2)
  *
  * HOTFIX 2 CHANGES:
- *   - Particle.DRAGON_BREATH now requires Float data in PaperMC 1.21.11
+ *   - Particle.SOUL_FIRE_FLAME now requires Float data in PaperMC 1.21.11
  *     Replaced all DRAGON_BREATH with SOUL (no data required, similar dark aesthetic)
  *     This was causing runtime exceptions in all abilities that used DRAGON_BREATH
  */
