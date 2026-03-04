@@ -1,443 +1,551 @@
-JGlimsPlugin — Comprehensive Project Summary Document
-Version: 1.2.0 → planned 1.3.0 Author: JGlims Repository: https://github.com/JGlims/JGlimsPlugin Server: OCI VM (4 OCPU, 24 GB RAM, Ubuntu), Docker container mc-crossplay, PaperMC 1.21.11 Date: March 3, 2026
+JGlimsPlugin — DEFINITIVE PROJECT SUMMARY & REFERENCE DOCUMENT
+Version: 1.3.0 (in development) Author: JGlims Repository: https://github.com/JGlims/JGlimsPlugin Date: March 4, 2026 Build Status: ✅ BUILD SUCCESSFUL — Phase 1 complete, Battle-for-All refactor complete, ready for Phase 2
+
+TABLE OF CONTENTS
+Server Infrastructure
+Build & Deploy Workflow
+Docker Commands
+Complete File Inventory & Package Structure
+Uniform Weapon Progression System
+All 52 Custom Enchantments (+ Planned Expansions)
+Weapon Abilities
+Mob Difficulty, Bosses, Events
+Additional Systems (Guilds, Blessings, Loot, Mastery, etc.)
+Configuration Defaults
+Commands
+All PDC Keys
+What Was Done in the Previous Chat
+FUTURE: New Enchantments, Items & Ideas (Phase 9+)
+FUTURE: Custom Textures via GeyserMC + Rainbow (Final Phase)
+Key Links
+Step-by-Step Phase Plan
+Instructions for the Next Chat
+1. SERVER INFRASTRUCTURE
+Hardware: OCI VM — 4 OCPUs, 24 GB system RAM, 47 GB boot disk, Ubuntu.
+
+Docker container: mc-crossplay running itzg/minecraft-server:latest.
+
+Key environment variables: EULA=TRUE, TYPE=PAPER, VERSION=1.21.11, MEMORY=8G, ONLINE_MODE=false, RCON_PASSWORD=JGlims2026Rcon, PLUGINS pointing to Geyser-Spigot and Floodgate-Spigot auto-downloads from download.geysermc.org.
+
+Ports: 25565/TCP (Java), 19132/UDP (Bedrock), 25575/TCP (RCON).
+
+Installed plugins: JGlimsPlugin v1.3.0 (our plugin), Geyser-Spigot v2.9.4, Floodgate v2.2.5, Chunky v1.4.40. SkinsRestorer v15.10.1 pending installation.
+
+World data: ~/minecraft-server/data/ with world, world_nether, world_the_end.
+
+Performance target: TPS 20 (≥100 FPS equivalent), stay under 6 GB of the 8 GB heap. Never break farms; only alter health/damage/speed on mobs; use lightweight listeners.
+
+2. BUILD & DEPLOY WORKFLOW
+Build (Windows):
+
+.\gradlew.bat clean jar
+Output JAR: build/libs/JGlimsPlugin-1.3.0.jar
+
+Deploy:
+
+Copyscp build/libs/JGlimsPlugin-1.3.0.jar MinecraftServer:~/
+ssh MinecraftServer
+cp ~/JGlimsPlugin-1.3.0.jar ~/minecraft-server/data/plugins/
+rm ~/minecraft-server/data/plugins/JGlimsPlugin-1.2.0.jar
+docker restart mc-crossplay
+docker logs mc-crossplay 2>&1 | grep -i jglims
+Build configuration (build.gradle): Java 21 toolchain, io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT as compileOnly, Maven Central + PaperMC repo (https://repo.papermc.io/repository/maven-public/), reproducible build, base name JGlimsPlugin.
+
+3. DOCKER COMMANDS
+Creative test server:
 
-1. Project Overview
-JGlimsPlugin is a custom Paper/Spigot plugin for Minecraft 1.21.11 that adds an extensive layer of custom mechanics on top of vanilla gameplay. The plugin is designed for a crossplay server (Java + Bedrock via Geyser/Floodgate) and emphasizes custom enchantments, a tiered weapon progression system, mob difficulty scaling, economy-adjacent features (loot boosters, blessings), a guild system, and periodic events (Blood Moon). The design philosophy prioritizes performance: never break farms, only alter health/damage/speed on mobs, use lightweight listeners, target TPS 20, and stay under 6 GB of the 8 GB heap.
-
-The plugin is built with Gradle, targets JDK 21, depends on io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT, and uses Mojang mappings. The compiled JAR is deployed via SCP to the server's ~/minecraft-server/data/plugins/ directory.
-
-2. Server Infrastructure
-Hardware: OCI VM with 4 OCPUs, 24 GB system RAM, 47 GB boot disk, running Ubuntu.
-
-Docker container mc-crossplay runs itzg/minecraft-server:latest with the following key environment variables: EULA=TRUE, TYPE=PAPER, VERSION=1.21.11, MEMORY=8G, ONLINE_MODE=false, RCON_PASSWORD=JGlims2026Rcon, and PLUGINS pointing to the latest Geyser-Spigot and Floodgate-Spigot downloads from download.geysermc.org. Ports exposed are 25565/TCP (Java), 19132/UDP (Bedrock), and 25575/TCP (RCON).
-
-Installed plugins (as of current status): JGlimsPlugin v1.2.0, Geyser-Spigot v2.9.4, Floodgate v2.2.5, Chunky v1.4.40. SkinsRestorer 15.10.1 is pending installation.
-
-World data resides in ~/minecraft-server/data/ with directories for world, world_nether, and world_the_end.
-
-Deploy workflow: Build on Windows with .\gradlew.bat clean jar, SCP the output JAR from build\libs\JGlimsPlugin-1.2.0.jar to MinecraftServer:~/, SSH in, copy to ~/minecraft-server/data/plugins/, remove any old JAR (e.g., VampirismPlugin-1.0.0.jar), then docker restart mc-crossplay and verify with docker logs mc-crossplay 2>&1 | grep -i jglims.
-
-3. Current Plugin Status — What Is DONE
-The following systems are fully implemented and loaded on the server:
-
-Core scaffold: JGlimsPlugin.java (main class), ConfigManager.java (loads all config with defaults), plugin.yml (declares commands /guild and /jglims), config.yml.
-
-Custom Enchantment System: CustomEnchantManager.java registers NamespacedKeys for all 49 custom enchantments, maintains a bidirectional conflict map (VAMPIRISM↔LIFESTEAL, BERSERKER↔BLOOD_PRICE, BLEED↔VENOMSTRIKE, WITHER_TOUCH↔CHAIN_LIGHTNING, EXPLOSIVE_ARROW↔HOMING, VEINMINER↔DRILL, MOMENTUM↔SWIFTFOOT, SEISMIC_SLAM↔MAGNETIZE), and provides utility methods for getting/setting/removing enchants, counting total enchants, listing enchantments, and checking conflicts. EnchantmentType.java is an enum of all 49 enchantments with getMaxLevel() returning 5 for VAMPIRISM/BERSERKER/THUNDERLORD, 1 for AUTO_SMELT/MAGNETISM/REPLENISH/GREEN_THUMB/NIGHT_VISION/CUSHION/GLIDER/SOULBOUND/BEST_BUDDIES, and 3 for everything else.
-
-Anvil Recipes: AnvilRecipeListener.java registers 47 anvil recipes (one per enchantment minus SOULBOUND and BEST_BUDDIES which have special handling). Each recipe maps an EnchantmentType to a required vanilla enchantment, an ingredient material, a level-matching rule, and a max level. The listener handles PrepareAnvilEvent to support creating custom enchanted books, applying those books to tools, soulbound operations, removing the "Too Expensive" cap, reducing XP costs by 50%, checking conflicts (both custom-custom and custom-vanilla), and adding enchantment glint. It also handles InventoryClickEvent to clear anvil slots after custom operations.
-
-Enchantment Effects: EnchantmentEffectListener.java is a large listener implementing all enchantment behaviors. Damage-event enchantments include Berserker (bonus damage at low health), Blood Price (damage costs health), Reaper's Mark (marks target for bonus damage), Vampirism (heals on hit), Lifesteal (percentage heal), Bleed (damage-over-time), Venomstrike (poison), Frostbite (slowness), Wither Touch (wither effect), Chain Lightning (arcs to nearby mobs), Lumberjack (bonus damage to undead), Cleave (AoE damage), Guillotine (bonus headshot damage), and Soul Reap (strength on kill). Defender enchantments include Dodge (chance to negate damage), Deflection (reflect damage), Fortification (damage reduction), Night Vision, Aqua Lungs, Swiftfoot (speed), Leaping (jump boost), and Vitality (health boost). Projectile enchantments: Explosive Arrow, Sniper (distance damage bonus), Thunderlord (lightning on third hit), Tidal Wave (knockback wave), Homing (arrows track entities). Block-break enchantments: Timber (fell entire tree), Veinminer (mine entire vein), Drill (3×3 mining), Excavator (3×3 digging), Auto-Smelt, Magnetism (items to inventory). Interact enchantments: Gravity Well (pull mobs), Harvester (harvest crop area), Green Thumb (bonemeal area), Replenish (replant crops). Movement/passive: Elytra boost, Cushion (fall damage reduction), Stomp (landing damage), Glider (slow fall), Momentum (speed while sprinting), and passive armor effect updates.
-
-Soulbound: SoulboundListener.java keeps Soulbound-enchanted items on death (removes from drops, re-adds on respawn with 5-tick delay). Supports converting a Soulbound item to a book by renaming to "lostsoul" in an anvil. Enforces a one-per-inventory limit with action-bar warnings.
-
-Mob Difficulty: MobDifficultyManager.java scales mob health and damage based on distance from spawn and biome. Baseline multipliers are 2.0 health and 2.0 damage (note: user wants baseline changed to vanilla, i.e., 1.0). Overworld distance multipliers increase incrementally (e.g., at 350 blocks: 1.5× health, 1.3× damage). Biome multipliers: Pale Garden 2.0, Deep Dark 2.5, Swamp 1.4, Nether biomes 1.7–2.3, End 2.5 health / 2.0 damage.
-
-Boss Enhancer: BossEnhancer.java applies multipliers to bosses. Current values: Ender Dragon 3.5× health / 3.0× damage, Wither 2.5× / 2.2×, Warden 2.0× / 2.5×, Elder Guardian 2.5× / 1.8×. (Note: user wants Warden and Wither reverted to vanilla; Ender Dragon should remain the strongest.)
-
-King Mob: KingMobManager.java tracks mob spawns per type per world. After a configurable number of spawns (default 500), transforms the next mob of that type into a "King" with 10× health, 3× damage, gold glowing name, no despawn. On death drops 3–9 diamonds. Only one King per world at a time. Identifies special mobs for enchanted book drops.
-
-Blood Moon: BloodMoonManager.java checks every 100 ticks during night (time 13000–23000) with a 15% chance to trigger. During Blood Moon: hostile mobs (except creepers and the King) get 1.5× health and 1.3× damage; players receive Darkness effect and red dust particles (reapplied every 60 ticks); double drops and double XP enabled. Every 10th Blood Moon spawns a "Blood Moon King" — a glowing Zombie with diamond armor and a Netherite sword, health = 20 × 20.0 = 400 HP, damage multiplied by 5.0×, all equipment drop chances 0. On death: 5–15 diamonds, 1 Netherite ingot, 500 XP, server announcement. King despawns at dawn. Blood Moon ends at dawn with player notification and Darkness removal.
-
-Pale Garden Fog: PaleGardenFogTask.java runs every 40 ticks, applying atmospheric fog effects to players in the Pale Garden biome.
-
-Vanilla Recipe Remover: VanillaRecipeRemover.java removes specified vanilla recipes to prevent conflicts with custom recipes.
-
-Loot Booster: LootBoosterListener.java adds enchanted books to chest loot, Echo Shards to ancient city loot (40% chance, 1–3 shards), and enchanted book mob drops — boss mobs: 15% + 5% per Looting level for custom enchantment books; hostile mobs: 5% + 2% per Looting level for vanilla enchantment books. Defines pools of valid vanilla and custom enchantments (excluding SOULBOUND and BEST_BUDDIES).
-
-Weapon Managers (existing, needing fixes):
-
-BattleAxeManager.java: Creates battle axes with PDC markers. Damage: Wooden 6, Stone 7, Iron 8, Golden 6, Diamond 9, Netherite 10. Attack speed 0.9 (modifier −3.1). Cancels right-click on strippable blocks. Provides tier-to-ingredient and tier-to-block mappings.
-BattleBowManager.java: Creates Battle Bows and Battle Crossbows with PDC markers, custom names, and lore. No attribute modifiers (bows don't have melee stats).
-BattleMaceManager.java: Creates Battle Maces with PDC markers, custom names, lore, and attribute modifiers.
-SickleManager.java: Converts hoe materials to Sickles. Damage = sword damage + 1 (Wooden 5, Stone 6, Iron 7, Gold 5, Diamond 8, Netherite 9). Attack speed 1.1 (modifier −2.9). Cancels right-click on soil blocks.
-SuperToolManager.java: Three-tier system (Iron=1, Diamond=2, Netherite=3). Creates and upgrades super tools with bonus damage (Iron +1, Diamond +2, Netherite +3; reduced for netherite-base items). Trident special case: Diamond +3, Netherite +5. Elytra durability-save: 30%/50%/70%. Handles shields, bows, crossbows with ability lore instead of damage modifiers. Preserves enchantments on upgrade.
-Weapon Abilities: WeaponAbilityListener.java handles right-click and left-click abilities for super weapons, weapon mastery tracking, cooldown management, enchant-based damage multipliers, particle effects, status effects, bleed DoT, chain lightning, healing, and per-weapon-class ability implementations (sword, sickle, battle axe, battle mace, pickaxe, shovel, trident, bow, crossbow).
-
-Weapon Mastery: WeaponMasteryManager.java tracks kills per weapon class using PDC, applies a configurable damage bonus (max 10% at 1000 kills), handles join/respawn re-application.
-
-Guilds: GuildManager.java provides full guild CRUD — create, invite, join, leave, kick, disband, info, list. Persists to guilds.yml. Max 10 members, friendly fire disabled by default. GuildListener.java cancels damage between same-guild members with action-bar feedback.
-
-Crafting Recipes: RecipeManager.java registers shaped recipes for battle weapons, sickles, and super tool upgrades.
-
-4. Remaining / Incomplete Modules
-The following items are either not yet implemented, partially implemented, or need rework:
-
-BattleShovelManager.java — Not yet created. Specification: battle upgrade converts a shovel to a "Battle Shovel" that loses its normal right-click (path-making) ability. When upgraded to super, gains Efficiency 1 (Iron Super), Efficiency 2 (Diamond Super), Efficiency 3 (Netherite Super). Recipe: shovel in center + 3 matching-material ingots on top row.
-
-SpearManager.java — Not yet created. Spears are a new vanilla weapon in 1.21.11 (crafted with 2 sticks + 1 material). They are NOT trident variants; they are their own item type with tiers (Wooden through Netherite). Stats from wiki: Gold 4 dmg / 0.8 speed, Stone 5 / 0.9, Iron 6 / 1.0, Diamond 7 / 1.0, Netherite presumably 8 / 1.0. Spears skip the "Battle" step entirely and go directly from vanilla → Super Iron → Super Diamond → Super Netherite. The super spear gains a special ability at Diamond tier and a definitive ability at Netherite tier. Spears should have exclusive enchantments (Lunge is vanilla for spear; custom enchantments TBD).
-
-RecipeManager.java — Needs full rewrite. Current issues: recipe pattern conflicts due to identical 3×3 layouts; super-tool upgrade recipes don't properly handle the progression chain; material-matching logic causes enchantment loss on tier upgrades. New design should use PrepareItemCraftEvent for dynamic result generation rather than pre-registering many shaped recipes, and must encode distinct recipes for each weapon path.
-
-SuperToolManager.java — Needs rewrite. Issues: Iron→Diamond upgrades lose enchantments; cross-material super weapons were possible (should not be); lore does not show "base damage + buff" breakdown; Netherite super items don't properly implement the "+2% damage per enchantment" and "no enchantment limit" rules.
-
-Weapon ability system — Super abilities should only activate on Super Diamond and Super Netherite weapons (not Iron). Definitive (Netherite) abilities should be "extremely powerful" with enhanced particle effects. All abilities except the Ender Dragon fight should apply fully. The super pickaxe's ore-detect ability should be very strong (e.g., easily locating Ancient Debris in a large radius).
-
-Blessings system — Partially specified in config (c-bless: 10 uses, 1 heart heal per use; ami-bless: 10 uses, 2% damage per use; la-bless: 10 uses, 2% defense per use). Needs implementation of right-click consumption, PDC persistence for remaining uses, and integration with the main class. A BlessingManager.java and BlessingListener.java are needed.
-
-InventorySorting — Enabled in config but implementation status unclear. Needs a listener or command handler that sorts a player's inventory by material type/category.
-
-EnchantTransfer — Enabled in config. Needs implementation allowing players to transfer enchantments between items (likely via anvil or custom UI).
-
-DropRateBooster — Partially configured (trident drop chance 35%, breeze wind charge 2–5). Needs a listener on EntityDeathEvent that modifies drop tables for specific mobs.
-
-Villager Trade Improvements — Configured (price reduction 50%, trade locking disabled). Needs listeners on villager trade events.
-
-Axe Nerf — Configured (attack speed 0.5). Partially handled in EnchantmentEffectListener. May need a dedicated handler to apply the speed modifier to all axes globally.
-
-5. Identified Problems and Required Fixes
-Problem 1 — Super-tool enchantment loss: When upgrading Iron Super → Diamond Super, the upgradeSuperTool method clones and rebuilds the item. If CustomEnchantManager data is not properly transferred during the rebuild (attribute modifiers are removed and re-added), enchantments stored in PDC can be lost. Fix: The upgrade method must explicitly copy all PDC keys (both vanilla enchant storage and custom enchant NamespacedKeys) from the old item to the new item before any modifications.
-
-Problem 2 — Cross-material super weapons: The current createSuperTool(baseTool, tier) method accepts any base tool + any tier, meaning a wooden sword could theoretically become a Netherite Super. Fix: Enforce that the base tool's material must match the super tier being applied: Iron tier requires an iron-material item (or iron+ for sequential upgrade), Diamond requires diamond-material, Netherite requires netherite-material. Exception: tierless weapons (bow, crossbow, mace, trident, spear) follow sequential Iron→Diamond→Netherite regardless of base material.
-
-Problem 3 — Abilities triggering incorrectly: Weapon abilities currently trigger based on both the battle-weapon manager and super-tool manager agreeing. This means abilities only work when both flags are present, which breaks for weapons that skip the battle step (sword, pickaxe, trident, spear). Fix: Abilities should check only the super-tool tier. Diamond Super = standard ability; Netherite Super = definitive ability. Battle status is irrelevant to ability activation.
-
-Problem 4 — Recipe conflicts: Multiple recipes sharing the same 3×3 grid pattern causes the server to reject duplicates or match the wrong recipe. Fix: Use PrepareItemCraftEvent to intercept crafting dynamically — check the center item's type, PDC markers, and surrounding materials to determine the correct output. This eliminates pattern conflicts entirely.
-
-Problem 5 — Mob difficulty baseline: Current baseline is 2.0× health / 2.0× damage, but user wants baseline = vanilla (1.0×) with only distance/biome/event scaling adding difficulty. Fix: Change baselineHealthMultiplier and baselineDamageMultiplier defaults to 1.0 in ConfigManager.
-
-Problem 6 — Boss stats: User wants Warden and Wither at vanilla stats; only Ender Dragon should be enhanced (remains strongest). Fix: Remove or set to 1.0 the multipliers for Warden and Wither in BossEnhancer. Keep Ender Dragon at 3.5× health / 3.0× damage.
-
-Problem 7 — Lore clarity: Super weapons don't show the damage breakdown (base + bonus). Players see a single damage number and can't tell what's from the super upgrade vs. enchantments. Fix: Lore format should be: "⚔ Attack Damage: <base> + <bonus> = <total>" with color-coded components.
-
-Problem 8 — Particle effects: Definitive (Netherite Super) abilities need more dramatic visual effects. Current abilities have basic particles. Fix: Add larger particle bursts, screen effects, and sound effects for definitive abilities. Use EXPLOSION_EMITTER, DRAGON_BREATH, TOTEM_OF_UNDYING, etc.
-
-6. Weapon Progression System — Full Specification
-6.1 Progression Chain
-The weapon system has two tracks:
-
-Track A — Weapons with Battle step: Axe, Shovel, Hoe (→ Sickle), Bow, Crossbow, Mace.
-
-Path: Vanilla Tool → Battle Tool → Super Iron Battle Tool → Super Diamond Battle Tool → Super Netherite Battle Tool (Definitive).
-
-Track B — Weapons without Battle step: Sword, Pickaxe, Trident, Spear.
-
-Path: Vanilla Tool → Super Iron Tool → Super Diamond Tool → Super Netherite Tool (Definitive).
-
-6.2 Battle Conversion Recipes
-Battle Axe, Battle Shovel, Battle Sickle (from Hoe): Tool in center slot, 3× matching material on top row (e.g., Iron Axe center + 3 Iron Ingots on top = Iron Battle Axe).
-
-Battle Bow, Battle Crossbow, Battle Mace: Weapon in center slot, 3× Sticks on top row.
-
-6.3 Super Upgrade Recipes
-All super upgrades use: Center item (current weapon) surrounded by 8× upgrade material.
-
-For tiered weapons (those with material tiers — swords, axes, shovels, sickles, pickaxes, spears, hoes):
-
-Iron Sword + 8 Iron Ingots → Super Iron Sword
-Diamond Sword + 8 Diamonds → Super Diamond Sword
-Netherite Sword + 8 Netherite Ingots → Super Netherite Sword (Definitive)
-Sequential upgrade also works: Super Iron Sword + 8 Diamonds → Super Diamond Sword, etc.
-For tierless weapons (bow, crossbow, mace, trident):
-
-Weapon + 8 Iron Ingots → Super Iron Weapon
-Super Iron Weapon + 8 Diamonds → Super Diamond Weapon
-Super Diamond Weapon + 8 Netherite Ingots → Super Netherite Weapon (Definitive)
-6.4 Super Tier Bonuses
-Iron Super: +1 base damage. No special ability. Lore shows damage breakdown.
-
-Diamond Super: +2 base damage. Gains a right-click (or left-click for some) special ability with cooldown. Ability differs per weapon type.
-
-Netherite Super (Definitive): +2 base damage (over Diamond, so +4 over vanilla when sequentially upgraded, or +2 over Netherite vanilla when directly upgraded). Gains an enhanced "definitive" ability with stronger effects, larger AoE, more particles. Additionally: no enchantment limit, no enchantment conflicts, and +2% damage per enchantment on the weapon.
-
-6.5 Damage Lore Format
-Example for a Super Diamond Iron Sword:
-
-§6⚔ Super Diamond Sword
-§7Custom Weapon
-§f⚔ Attack Damage: §a6.0 §7+ §e2.0 §7= §c8.0
-§f⚡ Attack Speed: §b1.6
-§d✦ Right-click: Dash Strike
-§7Diamond Super Weapon
-6.6 Battle Shovel Specifics
-Battle Shovel loses normal right-click (path creation) — event cancelled on dirt/grass. When upgraded to Super:
-
-Iron Super Battle Shovel: Efficiency I applied automatically.
-Diamond Super Battle Shovel: Efficiency II + ability.
-Netherite Super Battle Shovel: Efficiency III + definitive ability.
-6.7 Spear Specifics
-Spears are a vanilla 1.21.11 weapon (2 sticks + material). Material tiers: Wooden (4 dmg, 0.8 speed), Stone (5, 0.9), Iron (6, 1.0), Diamond (7, 1.0), Netherite (8, 1.0). They have jab and charge attack modes (vanilla mechanic). No battle step. Super upgrade follows sword rules (same-material upgrade: Iron Spear + 8 Iron Ingots → Super Iron Spear). Should receive exclusive enchantments (at minimum Lunge, which is a vanilla spear enchantment, plus potential custom enchantments like IMPALE, REACH, or PIERCING_THRUST — TBD).
-
-7. Custom Enchantments — Full List (49 Enchantments)
-Sword Enchantments
-VAMPIRISM (max 5) — Heals on hit, scaling with level. Conflicts with LIFESTEAL. BLEED (max 3) — Applies damage-over-time. Conflicts with VENOMSTRIKE. VENOMSTRIKE (max 3) — Applies poison. Conflicts with BLEED. LIFESTEAL (max 3) — Percentage-based heal on hit. Conflicts with VAMPIRISM. CHAIN_LIGHTNING (max 3) — Arcs damage to nearby mobs. Conflicts with WITHER_TOUCH.
-
-Axe Enchantments
-BERSERKER (max 5) — Bonus damage at low health. Conflicts with BLOOD_PRICE. LUMBERJACK (max 3) — Bonus damage to wooden mobs/structures. CLEAVE (max 3) — AoE damage on hit. TIMBER (max 3) — Fell entire trees. GUILLOTINE (max 3) — Bonus headshot/critical damage.
-
-Pickaxe Enchantments
-VEINMINER (max 3) — Mine entire ore veins. Conflicts with DRILL. DRILL (max 3) — 3×3 mining. Conflicts with VEINMINER. AUTO_SMELT (max 1) — Automatically smelt mined blocks. MAGNETISM (max 1) — Items go directly to inventory. EXCAVATOR (max 3) — 3×3 digging (for pickaxe on stone).
-
-Shovel Enchantments
-HARVESTER (max 3) — Harvest crops in area.
-
-Hoe/Sickle Enchantments
-GREEN_THUMB (max 1) — Bonemeal area on right-click. REPLENISH (max 1) — Replant crops after harvesting. HARVESTING_MOON (max 3) — Bonus XP from crop harvesting.
-
-Bow Enchantments
-EXPLOSIVE_ARROW (max 3) — Arrows explode on impact. Conflicts with HOMING. HOMING (max 3) — Arrows track nearest entity. Conflicts with EXPLOSIVE_ARROW. RAPIDFIRE (max 3) — Increased draw speed. SNIPER (max 3) — Bonus damage at distance.
-
-Crossbow Enchantments
-THUNDERLORD (max 5) — Lightning on third consecutive hit. TIDAL_WAVE (max 3) — Knockback wave on hit.
-
-Trident Enchantments
-FROSTBITE (max 3) — Applies slowness/freezing. SOUL_REAP (max 3) — Grants Strength on kill. BLOOD_PRICE (max 3) — Bonus damage costs health. Conflicts with BERSERKER. REAPERS_MARK (max 3) — Marks target for bonus damage. WITHER_TOUCH (max 3) — Applies Wither effect. Conflicts with CHAIN_LIGHTNING.
-
-Armor Enchantments
-SWIFTNESS (max 3) — Speed boost (boots). VITALITY (max 3) — Health boost (chestplate). AQUA_LUNGS (max 3) — Extended underwater breathing (helmet). NIGHT_VISION (max 1) — Permanent night vision (helmet). FORTIFICATION (max 3) — Damage reduction (chestplate). DEFLECTION (max 3) — Reflect damage to attacker. SWIFTFOOT (max 3) — Speed boost (boots). Conflicts with MOMENTUM. DODGE (max 3) — Chance to negate damage entirely. LEAPING (max 3) — Jump boost (boots).
-
-Elytra Enchantments
-BOOST (max 3) — Speed boost while flying. CUSHION (max 1) — Reduced fall damage on landing. GLIDER (max 1) — Slow fall effect. STOMP (max 3) — Deals damage on landing.
-
-Mace Enchantments
-SEISMIC_SLAM (max 3) — AoE ground slam. Conflicts with MAGNETIZE. MAGNETIZE (max 3) — Pull nearby mobs. Conflicts with SEISMIC_SLAM. GRAVITY_WELL (max 3) — Pull mobs on right-click. MOMENTUM (max 3) — Speed boost while sprinting. Conflicts with SWIFTFOOT.
-
-Universal Enchantments
-SOULBOUND (max 1) — Keep item on death. Special anvil handling; one per inventory. BEST_BUDDIES (max 1) — (Specification TBD — likely pet/companion related).
-
-8. Mob Difficulty System
-8.1 Baseline
-Should be vanilla (1.0× health, 1.0× damage) — current config has 2.0× which needs correction.
-
-8.2 Distance Scaling (Overworld)
-Mobs become progressively harder the farther from spawn. Example thresholds (configurable):
-
-0–349 blocks: no bonus
-350 blocks: 1.5× health, 1.3× damage
-Further distances increase incrementally
-8.3 Biome Multipliers
-Applied on top of distance scaling:
-
-Pale Garden: 2.0×
-Deep Dark: 2.5×
-Swamp: 1.4×
-Nether biomes: 1.7–2.3×
-End: 2.5× health, 2.0× damage
-8.4 Boss Handling
-Ender Dragon: 3.5× health, 3.0× damage — must remain the strongest mob in the game. Super weapon definitive abilities do NOT apply full effect against it (treated as normal attack).
-Wither: Vanilla stats (1.0× / 1.0×).
-Warden: Vanilla stats (1.0× / 1.0×).
-Elder Guardian: 2.5× health, 1.8× damage (or revert to vanilla — confirm with user).
-8.5 Creeper Spawn Reduction
-50% chance to cancel creeper spawns server-wide.
-
-9. Blood Moon Event
-Trigger: Every 100 ticks during night (time 13000–23000), 15% chance. Fires once per night per world.
-
-Effects during Blood Moon: All hostile mobs (except Creepers and the King Mob) receive 1.5× health and 1.3× damage. Players receive Darkness effect (200 ticks, reapplied every 60 ticks) and red dust particles. All mob drops are doubled; XP from mob kills is doubled.
-
-Blood Moon King (every 10th Blood Moon): Spawns near a random online player (±20 blocks horizontally). It is a Zombie with diamond armor and a Netherite sword, glowing, named "Blood Moon King" in dark red. Health = 20 HP × 20.0 multiplier = 400 HP. Damage multiplied by 5.0×. Equipment drop chances: 0%. On death: drops 5–15 diamonds, 1 Netherite ingot, 500 XP, server-wide announcement. Despawns at dawn if alive.
-
-Dawn: Blood Moon ends, Darkness removed, players notified.
-
-10. King Mob System
-Tracks spawn counts per entity type per world. After 500 spawns of one type, the next spawn becomes a "King" — glowing, gold-named "King [EntityType]", cannot despawn, 10× health, 3× damage. Drops 3–9 diamonds on death. Only one King per world at a time. King mobs are flagged as "special" for enhanced enchanted book drop chances.
-
-11. Blessings System (Needs Implementation)
-Three blessing types, consumed via right-click:
-
-C-Bless (Celestial Blessing): 10 uses, heals 1 heart (2 HP) per use. Ami-Bless (Amicable Blessing): 10 uses, grants +2% damage per use (stacking, persistent via PDC). La-Bless (Lambent Blessing): 10 uses, grants +2% defense per use (stacking, persistent via PDC).
-
-Implementation needs: BlessingManager.java (creates blessing items with PDC tracking remaining uses), BlessingListener.java (handles right-click consumption, decrements uses, applies effects, stores accumulated bonuses in player PDC).
-
-12. Additional Systems
-12.1 Loot Booster
-Enchanted books added to chest loot. Guardian drops 1–3 prismarine shards, Elder Guardian 3–5. Ghast drops 1–2 tears. Echo Shards: 40% chance in ancient city loot, 1–3 shards. Mob enchanted book drops as described in §3.
-
-12.2 Drop Rate Booster
-Trident drop chance from Drowned: 35% (vanilla is 8.5% in Java). Breeze drops 2–5 wind charges.
-
-12.3 Villager Trade Improvements
-Price reduction: 50%. Trade locking: disabled (villagers don't lock trades when unemployed/angered).
-
-12.4 Axe Nerf
-All axes have attack speed set to 0.5 (very slow) to prevent axe dominance over swords.
-
-12.5 Weapon Mastery
-Tracks kills per weapon class (sword, axe, bow, etc.) using PDC. Max 1000 kills per class. At max kills, grants +10% damage bonus with that weapon class. Linear scaling: kills/maxKills × maxBonusPercent.
-
-12.6 Inventory Sorting
-Enabled in config. Needs implementation — likely triggered by /jglims sort or a keybind, sorting inventory contents by category (blocks, tools, food, etc.).
-
-12.7 Enchant Transfer
-Enabled in config. Needs implementation — mechanism to move enchantments between items.
-
-12.8 Pale Garden Fog
-Atmospheric effect applied to players in the Pale Garden biome. Check interval: 40 ticks.
-
-13. Commands
-/guild (Player-only)
-Subcommands: create <name>, invite <player>, join, leave, kick <player>, disband, info, list.
-
-/jglims
-Subcommands:
-
-reload — Reloads plugin configuration.
-stats <player> — Shows blessing stats for a player.
-enchants — Lists all custom enchantments with max levels.
-sort — Shows inventory sorting tip/triggers sort.
-mastery — Shows weapon mastery stats for the executing player.
-14. Configuration Reference (config.yml)
-All values loaded with defaults by ConfigManager.java:
-
-mob-difficulty: enabled=true, baseline-health-multiplier=2.0 (→ change to 1.0), baseline-damage-multiplier=2.0 (→ change to 1.0). Distance multipliers and biome multipliers as defined in §8.
-
-creeper-reduction: enabled=true, cancel-chance=0.5.
-
-pale-garden-fog: enabled=true, check-interval=40.
-
-loot-booster: enabled=true, chest-enchanted-book=true, guardian shards 1–3, elder guardian 3–5, ghast tears 1–2, echo-shard-chance=0.40.
-
-mob-book-drops: enabled=true, hostile-chance=0.05, boss-custom-chance=0.15, looting-bonus-regular=0.02, looting-bonus-boss=0.05.
-
-blessings: c-bless (max-uses=10, heal-per-use=1), ami-bless (max-uses=10, damage-percent-per-use=2), la-bless (max-uses=10, defense-percent-per-use=2).
-
-anvil: remove-too-expensive=true, xp-cost-reduction=0.5.
-
-toggles: inventory-sort=true, enchant-transfer=true, sickle=true, battle-axe=true, battle-bow=true, battle-mace=true, super-tools=true, drop-rate-booster=true.
-
-drop-rate-booster: trident-drop-chance=0.35, breeze-wind-charge-min=2, breeze-wind-charge-max=5.
-
-villager-trades: enabled=true, price-reduction=0.50, disable-trade-locking=true.
-
-king-mob: enabled=true, spawns-per-king=500, health-multiplier=10.0, damage-multiplier=3.0, diamond-drop-min=3, diamond-drop-max=9.
-
-axe-nerf: enabled=true, attack-speed=0.5.
-
-weapon-mastery: enabled=true, max-kills=1000, max-bonus-percent=10.0.
-
-blood-moon: enabled=true, check-interval=100, chance=0.15, mob-health-multiplier=1.5, mob-damage-multiplier=1.3, boss-every-nth=10, boss-health-multiplier=20.0, boss-damage-multiplier=5.0, boss-diamond-min=5, boss-diamond-max=15, double-drops=true.
-
-guilds: enabled=true, max-members=10, friendly-fire=false.
-
-15. Class & File Inventory
-Package: com.jglims.plugin
-JGlimsPlugin.java — Main class, onEnable/onDisable, manager initialization, command registration.
-ConfigManager.java — Loads and provides access to all configuration values.
-Package: com.jglims.plugin.enchantments
-EnchantmentType.java — Enum of all 49 enchantments with max levels.
-CustomEnchantManager.java — Registry, conflict map, get/set/remove/list enchantments.
-EnchantmentEffectListener.java — All enchantment effect implementations.
-AnvilRecipeListener.java — Custom anvil recipes for applying enchantments.
-SoulboundListener.java — Keep-on-death, lostsoul conversion, one-per-inventory.
-Package: com.jglims.plugin.weapons
-BattleAxeManager.java — Battle axe creation and event handling.
-BattleBowManager.java — Battle bow and battle crossbow creation.
-BattleMaceManager.java — Battle mace creation.
-SickleManager.java — Sickle creation from hoes.
-BattleShovelManager.java — NEW, needs creation. Battle shovel with blocked right-click.
-SpearManager.java — NEW, needs creation. Super spear system.
-SuperToolManager.java — Super-tool tier system (needs rewrite).
-WeaponAbilityListener.java — Weapon abilities and mastery (needs rewrite for new progression).
-WeaponMasteryManager.java — Kill tracking and damage bonus.
-Package: com.jglims.plugin.crafting
-RecipeManager.java — All crafting recipes (needs rewrite).
-VanillaRecipeRemover.java — Removes conflicting vanilla recipes.
-Package: com.jglims.plugin.mobs
-MobDifficultyManager.java — Distance and biome mob scaling.
-BossEnhancer.java — Boss stat multipliers.
-KingMobManager.java — King mob spawning and rewards.
-BloodMoonManager.java — Blood Moon event system.
-Package: com.jglims.plugin.guilds
-GuildManager.java — Guild CRUD and persistence.
-GuildListener.java — Friendly fire prevention.
-Package: com.jglims.plugin.effects
-PaleGardenFogTask.java — Atmospheric fog in Pale Garden.
-Package: com.jglims.plugin.loot
-LootBoosterListener.java — Chest and mob loot enhancements.
-Package: com.jglims.plugin.blessings (needs creation)
-BlessingManager.java — NEW.
-BlessingListener.java — NEW.
-Build Files
-build.gradle — Java 21, Paper API dependency, Mojang mappings.
-src/main/resources/plugin.yml — Plugin metadata, commands, version.
-src/main/resources/config.yml — Default configuration.
-16. Step-by-Step Implementation Plan
-Phase 1 — Config & Mob Fixes (Low risk, immediate)
-
-Update ConfigManager.java: baseline multipliers default to 1.0.
-Update BossEnhancer.java: Warden and Wither multipliers to 1.0. Ender Dragon stays at 3.5/3.0.
-Add battle-shovel and spear toggles to config.
-Phase 2 — New Weapon Managers (Medium risk) 4. Create BattleShovelManager.java with right-click blocking and PDC markers. 5. Create SpearManager.java with super-spear creation, upgrade logic, and PDC markers. 6. Update SickleManager.java if needed for consistency.
-
-Phase 3 — Recipe System Rewrite (High risk, core change) 7. Rewrite RecipeManager.java to use PrepareItemCraftEvent for dynamic recipe matching. 8. Define distinct recipe patterns: battle upgrades (tool center + 3× material on top) and super upgrades (weapon center + 8× material surrounding). 9. Remove old pre-registered shaped recipes that conflict.
-
-Phase 4 — Super Tool Rewrite (High risk, core change) 10. Rewrite SuperToolManager.java: enforce material-matching rules, preserve all enchantments on upgrade, implement "+2% per enchantment" for Netherite, implement "no enchantment limit" for Netherite, update lore format to show "base + bonus = total". 11. Add Efficiency auto-application for Battle Shovels.
-
-Phase 5 — Ability System Rewrite (Medium risk) 12. Rewrite WeaponAbilityListener.java: abilities keyed only on super-tool tier (Diamond = ability, Netherite = definitive ability). Remove battle-weapon checks from ability activation. Add enhanced particles for definitive abilities. Add Ender Dragon exception (definitive abilities → normal attack only). 13. Implement super pickaxe ore-detect ability (large-radius Ancient Debris/ore finder via particle highlights). 14. Implement super spear abilities. 15. Implement super battle shovel abilities.
-
-Phase 6 — Missing Systems (Medium risk) 16. Implement BlessingManager.java and BlessingListener.java. 17. Implement DropRateBoosterListener.java (trident drop chance, breeze wind charges). 18. Implement inventory sorting (command or automatic). 19. Implement enchant transfer mechanism. 20. Implement villager trade listener.
-
-Phase 7 — Integration & Main Class (Low risk) 21. Update JGlimsPlugin.java to instantiate new managers and register new listeners. 22. Update plugin.yml with version bump to 1.3.0. 23. Update build.gradle version to 1.3.0.
-
-Phase 8 — Testing & Deployment 24. Build with .\gradlew.bat clean jar. 25. Deploy to creative test server, verify all systems. 26. Test all battle and super weapon recipes. 27. Test all enchantment effects. 28. Test Blood Moon, King Mob, mob difficulty scaling. 29. Test blessings, guilds, loot drops. 30. Once verified, recreate server in survival mode (delete creative world, re-run docker with GAMEMODE=survival). 31. Install SkinsRestorer 15.10.1. 32. Pre-generate world chunks with Chunky. 33. Final verification and go-live.
-
-17. Docker Commands Reference
-Creative Test Server
 Copydocker run -d --name mc-crossplay \
-  -p 25565:25565 \
-  -p 19132:19132/udp \
-  -p 25575:25575 \
-  -e EULA=TRUE \
-  -e TYPE=PAPER \
-  -e VERSION=1.21.11 \
-  -e MEMORY=8G \
-  -e ONLINE_MODE=false \
-  -e GAMEMODE=creative \
-  -e DIFFICULTY=hard \
+  -p 25565:25565 -p 19132:19132/udp -p 25575:25575 \
+  -e EULA=TRUE -e TYPE=PAPER -e VERSION=1.21.11 \
+  -e MEMORY=8G -e ONLINE_MODE=false -e GAMEMODE=creative -e DIFFICULTY=hard \
   -e RCON_PASSWORD=JGlims2026Rcon \
   -e PLUGINS="https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot,https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot" \
   -v ~/minecraft-server/data:/data \
   itzg/minecraft-server:latest
-Switch to Survival
+Switch to survival:
+
 Copydocker rm -f mc-crossplay
-# Optionally delete creative world: rm -rf ~/minecraft-server/data/world ~/minecraft-server/data/world_nether ~/minecraft-server/data/world_the_end
+# Optionally delete creative world:
+# rm -rf ~/minecraft-server/data/world ~/minecraft-server/data/world_nether ~/minecraft-server/data/world_the_end
 docker run -d --name mc-crossplay \
-  -p 25565:25565 \
-  -p 19132:19132/udp \
-  -p 25575:25575 \
-  -e EULA=TRUE \
-  -e TYPE=PAPER \
-  -e VERSION=1.21.11 \
-  -e MEMORY=8G \
-  -e ONLINE_MODE=false \
-  -e GAMEMODE=survival \
-  -e DIFFICULTY=hard \
+  -p 25565:25565 -p 19132:19132/udp -p 25575:25575 \
+  -e EULA=TRUE -e TYPE=PAPER -e VERSION=1.21.11 \
+  -e MEMORY=8G -e ONLINE_MODE=false -e GAMEMODE=survival -e DIFFICULTY=hard \
   -e RCON_PASSWORD=JGlims2026Rcon \
   -e PLUGINS="https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/spigot,https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot" \
   -v ~/minecraft-server/data:/data \
   itzg/minecraft-server:latest
-18. External Plugin Versions
-Plugin	Version	Source
-Geyser-Spigot	v2.9.4 (auto-downloaded)	download.geysermc.org
-Floodgate	v2.2.5 (auto-downloaded)	download.geysermc.org
-Chunky	v1.4.40 (installed)	hangar.papermc.io/pop4959/Chunky
-SkinsRestorer	v15.10.1 (pending)	hangar.papermc.io/SRTeam/SkinsRestorer
-19. Key Links
-GitHub Repository: https://github.com/JGlims/JGlimsPlugin
-PaperMC Downloads: https://papermc.io/downloads/paper
-Docker Image: https://hub.docker.com/r/itzg/minecraft-server
-Docker Minecraft Docs: https://docker-minecraft-server.readthedocs.io/
-Geyser Downloads: https://download.geysermc.org/
-Chunky (Hangar): https://hangar.papermc.io/pop4959/Chunky/versions/1.4.40
-SkinsRestorer (Hangar): https://hangar.papermc.io/SRTeam/SkinsRestorer
-Minecraft Spear Wiki: https://minecraft.wiki/w/Spear
-20. Open Questions / Decisions Needed
-Spear exclusive enchantments: Beyond vanilla Lunge, what custom enchantments should spears receive? Suggestions: IMPALE (bonus damage to armored targets), PIERCING_THRUST (bypasses shields), EXTENDED_REACH (increased attack range).
+4. COMPLETE FILE INVENTORY & PACKAGE STRUCTURE
+All source: src/main/java/com/jglims/plugin/. Resources: src/main/resources/.
 
-BEST_BUDDIES enchantment: The specification is unclear. Is this a pet/companion enchantment? What should it do?
+Package: com.jglims.plugin (root)
+File	Description
+JGlimsPlugin.java	Main class. onEnable initializes ALL managers in dependency order, registers ALL listeners, starts scheduled tasks. onCommand handles /guild and /jglims. Accessor methods for every manager.
+Package: com.jglims.plugin.config
+File	Description
+ConfigManager.java	Loads config.yml with defaults for every system. Provides getters for all settings. Backward-compatibility alias methods. loadConfig() called once from JGlimsPlugin.onEnable().
+Package: com.jglims.plugin.enchantments
+File	Description
+EnchantmentType.java	Enum of all 52 custom enchantments with getMaxLevel().
+CustomEnchantManager.java	Registry of NamespacedKeys, conflict map, get/set/remove/list/copy enchantments via PersistentDataContainer.
+AnvilRecipeListener.java	52 anvil recipes. Uses AnvilView API (not deprecated AnvilInventory). Handles soulbound, book creation, book application, conflict checks, XP cost reduction, "Too Expensive" removal. Includes v1.3.0 spear enchantments.
+EnchantmentEffectListener.java	ALL enchantment behaviors: damage-event, defender, projectile, block-break, interact, movement/passive.
+SoulboundListener.java	Keep-on-death, lostsoul conversion, one-per-inventory enforcement. Uses AnvilView API.
+Package: com.jglims.plugin.weapons
+File	Status	Description
+BattleSwordManager.java	NEW v1.3.0	Battle Swords (+1 dmg, 1.6 speed). PDC: is_battle_sword.
+BattlePickaxeManager.java	NEW v1.3.0	Battle Pickaxes (+1 dmg, retains mining). PDC: is_battle_pickaxe.
+BattleTridentManager.java	NEW v1.3.0	Battle Trident (10 dmg, 1.1 speed). PDC: is_battle_trident.
+BattleSpearManager.java	NEW v1.3.0	Battle Spears (+1 dmg per tier). PDC: is_battle_spear.
+BattleAxeManager.java	Existing	Battle Axes (sickle dmg + 1, 0.9 speed). PDC: is_battle_axe. Blocks stripping.
+BattleBowManager.java	Existing	Battle Bow/Crossbow. PDC: is_battle_bow, is_battle_crossbow.
+BattleMaceManager.java	Existing	Battle Mace (12 dmg, 0.7 speed). PDC: is_battle_mace.
+BattleShovelManager.java	Existing v1.3.0	Battle Shovels (+1.5 dmg, 1.2 speed). PDC: battle_shovel (BOOLEAN). Blocks path-making.
+SickleManager.java	Existing	Sickles from hoes (sword dmg + 1, 1.1 speed). PDC: is_sickle. Blocks tilling.
+SpearManager.java	Existing v1.3.0	Super spear tiers via PDC super_spear_tier. SpearTier enum.
+SuperToolManager.java	MODIFIED v1.3.0	3-tier super system. isBattleItem() checks all 10 PDC keys. createSuperTool() requires battle item. Lore: base + battle(+1) + super = total. Preserves enchantments.
+WeaponAbilityListener.java	Existing	Right-click abilities for Diamond/Netherite super. Per-weapon-class with cooldowns/particles/sounds. Dragon exception.
+WeaponMasteryManager.java	MODIFIED v1.3.0	10 weapon classes (including spear). Kills/1000 × 10% max bonus.
+Package: com.jglims.plugin.crafting
+File	Description
+RecipeManager.java	MODIFIED v1.3.0 — 12-arg constructor. Registers ALL battle + super recipes. PDC guard blocks vanilla→Super.
+VanillaRecipeRemover.java	Removes conflicting vanilla recipes.
+Package: com.jglims.plugin.mobs
+File	Description
+MobDifficultyManager.java	Distance + biome mob scaling. Baseline 1.0/1.0.
+BossEnhancer.java	Dragon 3.5×/3.0×, Elder Guardian 2.5×/1.8×, Wither/Warden vanilla.
+KingMobManager.java	500 spawns → King (10×hp, 3×dmg, 3-9 diamonds). One per world.
+BloodMoonManager.java	15%/night. 1.5×/1.3× mobs, Darkness, double drops. Every 10th: Blood Moon King.
+Package: com.jglims.plugin.guilds
+File	Description
+GuildManager.java	CRUD, persists guilds.yml, max 10 members.
+GuildListener.java	Friendly fire prevention.
+Package: com.jglims.plugin.blessings
+File	Description
+BlessingManager.java	3 blessings: C's (health), Ami's (damage%), La's (armor).
+BlessingListener.java	Right-click consumption, PDC persistence, join/respawn reapply.
+Package: com.jglims.plugin.effects
+File	Description
+PaleGardenFogTask.java	Every 40 ticks, fog in Pale Garden biome.
+Package: com.jglims.plugin.utility
+File	Description
+InventorySortListener.java	Mouse Tweaks-style shift-click sorting.
+EnchantTransferListener.java	Enchanted item + book in anvil = enchantment book, 0 XP. Uses AnvilView.
+LootBoosterListener.java	Books in chest loot, mob book drops, guardian shards, echo shards.
+DropRateListener.java	Trident drop 35%, Breeze wind charges 2-5.
+VillagerTradeListener.java	50% price reduction, trade locking disabled.
+Resources
+File	Description
+plugin.yml	Commands /guild, /jglims, version 1.3.0.
+config.yml	Default configuration.
+5. UNIFORM WEAPON PROGRESSION SYSTEM (v1.3.0)
+The Rule: ALL weapons must become Battle before they can become Super.
+Vanilla → Battle (+1 dmg) → Super Iron Battle (+1) → Super Diamond Battle (+2) → Super Netherite Battle (Definitive, +3)
+Exceptions: Elytra and Shield — no Battle step, go directly to Super.
 
-Elder Guardian: Keep at 2.5× health / 1.8× damage, or revert to vanilla like Warden/Wither?
+Battle Conversion Details
+Weapon	Vanilla → Battle	Speed	Recipe Pattern
+Sword	4-8 → 5-9	1.6	8 matching material + sword center
+Pickaxe	2-6 → 3-7	1.2	8 matching material + pickaxe center
+Axe	special formula	0.9	ingredient + block + axe (special pattern)
+Shovel	2.5-6.5 → 4-8	1.2	8 matching material + shovel center
+Hoe→Sickle	1 → 5-9	1.1	8 matching material + hoe center
+Bow	N/A melee	N/A	8 iron ingots + bow center
+Crossbow	N/A melee	N/A	8 iron ingots + crossbow center
+Mace	11 → 12	0.7	8 breeze rods + mace center
+Trident	9 → 10	1.1	8 prismarine shards + trident center
+Spear	1-5 → 2-6	0.87-1.54	8 matching material + spear center
+Super Tier Bonuses
+Tier	Bonus	Ability	Special Rules
+Iron	+1	None	—
+Diamond	+2 (non-neth) / +1 (neth base)	Right-click ability	—
+Netherite	+3 (non-neth) / +2 (neth base)	Definitive ability	No enchant conflicts, +2% dmg/enchant, no limit
+Trident exception: Diamond +3, Netherite +5.
 
-Enchant Transfer mechanism: What UI/method? Anvil-based (combine two items to move enchantments)? Command-based? Custom GUI?
+Lore format: Attack Damage: [vanilla base] +[battle +1] +[super bonus] = [total]
 
-Inventory Sorting: Trigger method — command only (/jglims sort), or also on shift-click of a specific block (e.g., chest)?
+6. ALL 52 CUSTOM ENCHANTMENTS + PLANNED EXPANSIONS
+Current Enchantments (52)
+Sword (5): VAMPIRISM(5)↔LIFESTEAL(3), BLEED(3)↔VENOMSTRIKE(3), CHAIN_LIGHTNING(3)↔WITHER_TOUCH
 
-Super Pickaxe ore-detect: Exact radius for Ancient Debris detection? Suggestion: 16-block radius with particle highlights showing ore locations through walls for 10 seconds.
+Axe (5): BERSERKER(5)↔BLOOD_PRICE, LUMBERJACK(3), CLEAVE(3), TIMBER(3), GUILLOTINE(3)
 
-SkinsRestorer installation: Still pending — run the wget command provided and share logs.
+Pickaxe (5): VEINMINER(3)↔DRILL(3), AUTO_SMELT(1), MAGNETISM(1), EXCAVATOR(3)
 
-Full rewrite vs. incremental fixes: Given the scope (15+ files), recommendation is phased full rewrite starting with Phase 1–3, delivering complete file contents for each phase before moving to the next.
+Shovel (1): HARVESTER(3)
 
-This document captures the complete state of the JGlimsPlugin project as of March 3, 2026, including all implemented systems, pending work, identified bugs, design specifications, configuration values, class inventories, and the step-by-step plan to reach a fully functional v1.3.0 release. Each subsequent development phase should be checked against this document to ensure nothing is missed
+Hoe/Sickle (3): GREEN_THUMB(1), REPLENISH(1), HARVESTING_MOON(3)
 
-about exclusive spear enchantments and special ability I want you to take your choices and create., about bestbuddies, it is the combination of a totem of undying and a bone in the anvil, it needs to create a dog armor that reduces 95% of the damage the the dog takes, but make him have 0 damage as a condition, you trade dog damage per making him always alive. elder guardians can remain strong. The enchantment transfer base in putting a enchanteditem combined with a normal book in the anvil, it gives you a book with the enchantments you just remove from the weapon, and it costs zero xp. about inventory sorting, I believe it already works, but just in case, is basically an addaptation of the "Mouse Tweaks" mod, a famous mod, for plugins, better use of the mouse, like clicking holding shift in an empty slot of the inventory to sort the inventory, or in an empty spot of the chest to sort the chest or hotbar to sort the hotbar. about ancient debris being easier todetect by the super pickaxe ability, its this, I want this to be the case, be optimal for ancient debris mining ( even the super diamond pickaxe can use its ability to detect ores, and the ancient debris need to have a very very big radius)
+Bow (4): EXPLOSIVE_ARROW(3)↔HOMING(3), RAPIDFIRE(3), SNIPER(3)
+
+Crossbow (2): THUNDERLORD(5), TIDAL_WAVE(3)
+
+Trident (5): FROSTBITE(3), SOUL_REAP(3), BLOOD_PRICE(3)↔BERSERKER, REAPERS_MARK(3), WITHER_TOUCH(3)↔CHAIN_LIGHTNING
+
+Armor (9): SWIFTNESS(3), VITALITY(3), AQUA_LUNGS(3), NIGHT_VISION(1), FORTIFICATION(3), DEFLECTION(3), SWIFTFOOT(3)↔MOMENTUM, DODGE(3), LEAPING(3)
+
+Elytra (4): BOOST(3), CUSHION(1), GLIDER(1), STOMP(3)
+
+Mace (4): SEISMIC_SLAM(3)↔MAGNETIZE(3), GRAVITY_WELL(3), MOMENTUM(3)↔SWIFTFOOT
+
+Spear (3) — v1.3.0: IMPALING_THRUST(3), EXTENDED_REACH(3), SKEWERING(3) — conflict triangle
+
+Universal (2): SOULBOUND(1), BEST_BUDDIES(1)
+
+PLANNED NEW ENCHANTMENTS (Phase 9+)
+These are ideas for expanding the enchantment system to make every weapon feel unique and give players more build diversity:
+
+Sickle — New Enchantments (3 planned):
+
+Name	Max	Mechanic	Conflict
+SOUL_HARVEST	3	Applies Wither I-III to hit mob; player receives Regeneration I-III while the Wither is active. A dark counterpart to Vampirism — you drain their life force via decay.	GREEN_THUMB
+REAPING_CURSE	3	On kill, spawns a lingering Instant Damage cloud at the corpse location (radius scales with level). Turns the sickle into an AoE denial weapon.	REPLENISH
+CROP_REAPER	1	Killing a mob has a chance (15%+5%/Looting) to drop seeds, wheat, carrots, or potatoes. Thematic: the sickle "harvests" living things.	—
+Shovel — New Enchantments (2 planned):
+
+Name	Max	Mechanic	Conflict
+BURIAL	3	On hit, buries the target in Slowness III + Blindness I for 1-3 seconds (scales with level). Shovels bury things.	HARVESTER
+EARTHSHATTER	3	Breaking a block with a shovel sends a shockwave that breaks all identical blocks in a 1-3 block radius (like a shovel version of Veinminer but for soft blocks: dirt, sand, gravel, clay, soul sand).	—
+Sword — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+FROSTBITE_BLADE	3	Applies Slowness I-III and a freezing visual effect on hit. Equivalent to Trident's FROSTBITE but for swords. Allows sword users to access crowd control.	VENOMSTRIKE
+Axe — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+WRATH	3	Each consecutive hit within 3 seconds on the same target increases damage by 10%/20%/30%. Resets if you switch targets or wait too long. Rewards commitment.	CLEAVE
+Pickaxe — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+PROSPECTOR	3	Mining ores has a 5%/10%/15% chance to drop double the normal yield (stacks with Fortune). A passive mining economy booster.	AUTO_SMELT
+Trident — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+TSUNAMI	3	On thrown trident hit, creates a water burst that pushes all mobs in a 3/5/7 block radius away from impact and applies Slowness I for 2s. Only works in rain or water.	FROSTBITE
+Bow — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+FROSTBITE_ARROW	3	Arrows apply Slowness I-III and extinguish fire on hit targets. Equivalent to Trident's FROSTBITE for ranged combat.	EXPLOSIVE_ARROW
+Mace — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+TREMOR	3	On hit, all mobs within 2/4/6 blocks receive Mining Fatigue II for 3 seconds (simulates the ground trembling, slowing their attacks).	GRAVITY_WELL
+Spear — New Enchantment (1 planned):
+
+Name	Max	Mechanic	Conflict
+PHANTOM_PIERCE	3	Charged spear attacks pierce through the first 1/2/3 targets, dealing full damage to each. Turns the spear into a line-AoE weapon.	SKEWERING
+PLANNED NEW ITEMS & RECIPES (Phase 9+)
+Item	Recipe Idea	Mechanic
+Warden's Echo (accessory)	Echo Shard + Sculk Catalyst + Amethyst Shard in anvil	Worn in offhand: nearby hostile mobs glow (like Spectral) within 16 blocks when sneaking. Uses durability.
+Totem of the Blood Moon	1 Totem of Undying + 4 Netherite Scrap + 4 Redstone Blocks	On death during Blood Moon, revive with full health + Strength II for 10s. Single use.
+Beacon of the King	9 Diamond Blocks + Nether Star center	Placed at the King Mob's death location: grants all nearby players (32 blocks) Haste II + Luck for 5 minutes. Single use.
+Enchanted Shulker Shell	Shulker Shell + 4 Ender Pearls + 4 Chorus Fruit	Craft into a "Portable Ender Chest" — right-click opens ender chest inventory anywhere. 50 uses.
+Elemental Arrows (4 types)	Arrow + relevant ingredient (Magma Cream, Snowball, Wind Charge, Glowstone)	Fire Arrow (ignites), Frost Arrow (slows), Wind Arrow (high knockback), Glow Arrow (Spectral effect). Craftable in stacks of 8.
+Guild Banner	Banner + guild-specific recipe	Placeable banner that grants guild members within 16 blocks a small buff (Speed I or Resistance I).
+7. WEAPON ABILITIES (Super Diamond & Netherite)
+Weapon	Diamond Ability	Netherite Definitive
+Sword	Dash Strike (dash + path damage, 10s CD)	Dimensional Cleave (12-block rift, massive AoE, 18s CD)
+Axe	Bloodthirst (5s lifesteal + haste, 12s CD)	Ragnarok Cleave (10-block shockwave, 3 waves, 22s CD)
+Pickaxe	Ore Pulse (detect ores 16-24 block, 15s CD)	Seismic Resonance (40-block Ancient Debris, 25s CD)
+Shovel	Earthen Wall (launch enemies + Resistance, 12s CD)	Tectonic Upheaval (12-block eruption, 20s CD)
+Sickle	Harvest Storm (spin AoE + bleed, 10s CD)	Reaper's Scythe (dual arc + lifesteal + Wither, 20s CD)
+Spear	Phantom Lunge (8-block dash + pierce, 12s CD)	Spear of the Void (30-block projectile + detonation, 20s CD)
+Bow	To be implemented	To be implemented
+Crossbow	To be implemented	To be implemented
+Trident	To be implemented	To be implemented
+Mace	To be implemented	To be implemented
+Ender Dragon exception: Definitive abilities deal only 30% damage to the Ender Dragon.
+
+8. MOB DIFFICULTY, BOSSES, EVENTS
+Baseline: 1.0× health, 1.0× damage (vanilla).
+
+Distance scaling (Overworld): 0-349 = none → 350 = 1.5×/1.3× → incrementally up to 5000 = 4.0×/3.0×.
+
+Biome multipliers: Pale Garden 2.0×, Deep Dark 2.5×, Swamp 1.4×, Nether 1.7-2.3×, End 2.5×/2.0×.
+
+Bosses: Dragon 3.5×/3.0×, Elder Guardian 2.5×/1.8×, Wither/Warden = vanilla.
+
+Creeper reduction: 50% spawn cancel.
+
+King Mob: 500 spawns → King (10×hp, 3×dmg, 3-9 diamonds, gold glowing, no despawn, one per world).
+
+Blood Moon: 15% chance/night, 1.5×/1.3× mobs, Darkness + red particles, double drops/XP. Every 10th: Blood Moon King (Zombie, diamond armor, Netherite sword, 400 HP, 5×dmg, 5-15 diamonds + netherite on death).
+
+9. ADDITIONAL SYSTEMS
+Guilds: Create/invite/join/leave/kick/disband/info/list. Max 10 members. Friendly fire disabled. Persists guilds.yml.
+
+Blessings (3): C's Bless (10 uses, +1 heart/use), Ami's Bless (10 uses, +2% dmg/use), La's Bless (10 uses, +2% armor/use). Right-click to consume. Permanent via AttributeModifiers.
+
+Best Buddies: Bone + Diamond → Wolf Armor. Wolf takes 95% less damage, deals 0 damage, gets Regen II.
+
+Weapon Mastery: 10 classes (sword/axe/pickaxe/shovel/sickle/bow/crossbow/trident/mace/spear). Linear: kills/1000 × 10% max dmg bonus.
+
+Inventory Sort: Shift-click empty slot to sort (Mouse Tweaks-style).
+
+Enchant Transfer: Enchanted item + plain book in anvil = book with all enchantments, 0 XP.
+
+Loot Booster: Enchanted books in chest loot. Mob drops: hostile 5%, boss 15% (+looting). Guardian shards, echo shards (40%).
+
+Drop Rate: Trident 35% from Drowned, Breeze 2-5 wind charges.
+
+Villager Trades: 50% price reduction, trade locking disabled.
+
+Axe Nerf: Attack speed 0.5 on all axes.
+
+Pale Garden Fog: Atmospheric effects every 40 ticks.
+
+10. CONFIGURATION DEFAULTS
+Copymob-difficulty: { enabled: true, baseline-health: 1.0, baseline-damage: 1.0 }
+creeper-reduction: { enabled: true, cancel-chance: 0.5 }
+pale-garden-fog: { enabled: true, check-interval: 40 }
+loot-booster: { enabled: true, chest-enchanted-book: true, echo-shard-chance: 0.40 }
+mob-book-drops: { enabled: true, hostile-chance: 0.05, boss-custom-chance: 0.15 }
+blessings: { c-bless: {max-uses: 10, heal: 1}, ami-bless: {max-uses: 10, dmg: 2%}, la-bless: {max-uses: 10, def: 2%} }
+anvil: { remove-too-expensive: true, xp-cost-reduction: 0.5 }
+drop-rate-booster: { trident-drop-chance: 0.35, breeze-wind-charge: {min: 2, max: 5} }
+villager-trades: { enabled: true, price-reduction: 0.50, disable-trade-locking: true }
+king-mob: { enabled: true, spawns-per-king: 500, health-mult: 10.0, damage-mult: 3.0, diamond-drop: {min: 3, max: 9} }
+axe-nerf: { enabled: true, attack-speed: 0.5 }
+weapon-mastery: { enabled: true, max-kills: 1000, max-bonus-percent: 10.0 }
+blood-moon: { enabled: true, check-interval: 100, chance: 0.15, mob-health: 1.5, mob-damage: 1.3, boss-every-nth: 10, boss-health-mult: 20.0, boss-damage-mult: 5.0, boss-diamond: {min: 5, max: 15}, double-drops: true }
+guilds: { enabled: true, max-members: 10, friendly-fire: false }
+dog-armor-reduction: 0.95
+super-tool: { iron-bonus: 1.0, diamond-bonus: 2.0, netherite-bonus: 3.0 }
+ore-detect: { diamond-radius: 16, netherite-radius: 24, debris-diamond: 24, debris-netherite: 40, duration-ticks: 200 }
+11. COMMANDS
+/guild (Player-only): create <name>, invite <player>, join, leave, kick <player>, disband, info, list
+
+/jglims: reload, stats <player>, enchants, sort, mastery
+
+12. ALL PDC KEYS
+Key	Type	Used By
+is_battle_sword	BYTE	BattleSwordManager
+is_battle_axe	BYTE	BattleAxeManager
+is_battle_pickaxe	BYTE	BattlePickaxeManager
+is_sickle	BYTE	SickleManager
+battle_shovel	BOOLEAN	BattleShovelManager
+is_battle_bow	BYTE	BattleBowManager
+is_battle_crossbow	BYTE	BattleBowManager
+is_battle_mace	BYTE	BattleMaceManager
+is_battle_trident	BYTE	BattleTridentManager
+is_battle_spear	BYTE	BattleSpearManager
+super_tool_tier	INTEGER (1/2/3)	SuperToolManager
+super_spear_tier	INTEGER (1/2/3)	SpearManager
+super_elytra_durability	INTEGER	SuperToolManager
+boss_damage_mult	DOUBLE	BossEnhancer
+mastery_sword thru mastery_spear	INTEGER	WeaponMasteryManager
+mastery_damage	(AttributeModifier key)	WeaponMasteryManager
+bloodthirst_active	LONG	WeaponAbilityListener
+Per-EnchantmentType keys	INTEGER (level)	CustomEnchantManager
+c_bless_item, ami_bless_item, la_bless_item	BYTE	RecipeManager
+13. WHAT WAS DONE IN THE PREVIOUS CHAT
+Phase 1 — Compilation Error Fixes (6 files)
+#	File	Fix
+1	ConfigManager.java	Added getPaleGardenFogInterval() alias, new config fields, backward-compat getters
+2	JGlimsPlugin.java	Fixed WeaponAbilityListener 6-arg constructor, added SpearManager + BattleShovelManager
+3	AnvilRecipeListener.java	Migrated 7 deprecated AnvilInventory calls → AnvilView, added spear enchantment recipes
+4	SoulboundListener.java	Migrated 2 deprecated calls → AnvilView
+5	EnchantTransferListener.java	Migrated 1 deprecated call → AnvilView
+Battle-for-All Refactor (8 files)
+#	File	Change
+1	BattleSwordManager.java	NEW
+2	BattlePickaxeManager.java	NEW
+3	BattleTridentManager.java	NEW
+4	BattleSpearManager.java	NEW
+5	SuperToolManager.java	MODIFIED — isBattleItem(), battle-required gating, spear/mace damage tables
+6	RecipeManager.java	MODIFIED — 12-arg constructor, all battle + super recipes, PDC guard
+7	JGlimsPlugin.java	MODIFIED — 4 new managers, all accessor methods
+8	WeaponMasteryManager.java	MODIFIED — spear mastery, all new battle recognition
+Both phases: BUILD SUCCESSFUL, 0 errors.
+
+14. FUTURE: New Enchantments, Items & Ideas (Phase 9+)
+This section is the creative expansion plan — to be implemented after all core systems are stable. See Section 6 above for the full enchantment expansion table (12 new enchantments planned across all weapon types), including the signature SOUL_HARVEST sickle enchantment (Wither → Regen drain mechanic), FROSTBITE_BLADE for swords, BURIAL for shovels, WRATH for axes, PROSPECTOR for pickaxes, TSUNAMI for tridents, and more.
+
+New item ideas include Warden's Echo (offhand mob detection), Totem of the Blood Moon (Blood Moon revival), Elemental Arrows (4 types), Guild Banners (area buff), Enchanted Shulker Shell (portable ender chest), and a Beacon of the King (King Mob death location buff).
+
+15. FUTURE: Custom Textures via GeyserMC + Rainbow (FINAL PHASE)
+The Goal
+Give every Battle and Super weapon a unique visual appearance that both Java and Bedrock players can see. A Diamond Battle Sword should look different from a vanilla Diamond Sword. A Netherite Super Definitive weapon should have a dramatically different, glowing model.
+
+How It Works — The GeyserMC Custom Items Pipeline
+For Java players: Minecraft 1.21.4+ introduced the item_model component. PaperMC plugins can set this component on any ItemStack (via meta.setItemModel(NamespacedKey)). Java clients use a server resource pack to map that model to a custom texture/3D model. This means our plugin can set item_model on every Battle/Super weapon, and Java players see the custom texture automatically through a resource pack.
+
+For Bedrock players: Geyser's Custom Items API (v2) allows mapping Java item_model values to custom Bedrock items with their own textures. This requires two things: a Geyser mapping JSON file (custom_mappings/mappings.json) and a Bedrock resource pack (placed in Geyser's packs/ folder). Geyser sends the Bedrock resource pack automatically to connecting Bedrock clients.
+
+Tools Available
+Tool	What It Does	Status
+Rainbow (GeyserMC)	Fabric client mod. Join server, hold custom items, run /rainbow map. Automatically generates both the Geyser mapping JSON and the Bedrock resource pack.	Early development but functional. Download: https://geysermc.org/download/?project=other-projects&rainbow=expanded
+Hydraulic (GeyserMC)	Server-side mod for modded Java servers. Auto-generates Bedrock equivalents of mod items.	Early development, NOT for production. Not needed for our plugin-only setup.
+Thunder (GeyserMC)	Converts simple Java resource packs (block/item textures) to Bedrock format.	Limited scope but useful for basic texture swaps.
+PackConverter (GeyserMC)	Library for converting full Java resource packs to Bedrock.	GitHub: https://github.com/GeyserMC/PackConverter
+Implementation Plan (Step by Step)
+Step 1 — Plugin-side (Java): Add item_model component to every Battle and Super weapon when created. Example:
+
+Copymeta.setItemModel(new NamespacedKey("jglims", "battle_diamond_sword"));
+This gives each custom weapon a unique item model identifier that can be targeted by resource packs.
+
+Step 2 — Java Resource Pack: Create a server resource pack with custom textures for each item model. Structure:
+
+assets/jglims/items/battle_diamond_sword.json     → item model definition
+assets/jglims/models/item/battle_diamond_sword.json → model (can reference custom texture)
+assets/jglims/textures/item/battle_diamond_sword.png → 16×16 or 32×32 texture
+Host the resource pack on a web server and configure PaperMC's server.properties to send it to Java clients.
+
+Step 3 — Geyser Mapping: Create custom_mappings/mappings.json with v2-format definitions mapping each item_model to a Bedrock custom item:
+
+Copy{
+  "format_version": 2,
+  "items": {
+    "minecraft:diamond_sword": [
+      {
+        "type": "definition",
+        "model": "jglims:battle_diamond_sword",
+        "bedrock_identifier": "jglims:battle_diamond_sword",
+        "display_name": "Diamond Battle Sword",
+        "bedrock_options": {
+          "icon": "jglims.battle_diamond_sword",
+          "display_handheld": true,
+          "creative_category": "equipment",
+          "creative_group": "itemGroup.name.sword"
+        }
+      }
+    ]
+  }
+}
+Step 4 — Bedrock Resource Pack: Create a Bedrock resource pack with matching textures and item_texture.json:
+
+Copy{
+  "resource_pack_name": "JGlimsPlugin",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "jglims.battle_diamond_sword": {
+      "textures": ["textures/items/battle_diamond_sword"]
+    }
+  }
+}
+Place in Geyser's packs/ folder. Bedrock players automatically download it on connect.
+
+Step 5 — Use Rainbow to Validate: Install Rainbow on a Fabric client, join the server, hold each custom weapon, run /rainbow map, then /rainbow finish. Compare its auto-generated output against our manual packs to catch any issues.
+
+Texture Design Ideas
+Weapon State	Visual Theme
+Battle (any material)	Slightly modified vanilla texture with a colored border/glow edge and a small "B" insignia
+Super Iron	Silver metallic sheen overlay, iron-colored trim
+Super Diamond	Cyan crystalline glow, diamond particle overlay
+Super Netherite (Definitive)	Dark crimson/purple aura, molten lava veins in the blade, dramatic glow
+Key Constraints
+Geyser does NOT auto-convert Java resource packs → must create both manually (or use Rainbow/Thunder).
+Bedrock custom items cannot modify vanilla item behavior at runtime — we handle all behavior server-side via PDC.
+enable-custom-content: true must be set in Geyser's config.yml.
+Resource packs go in plugins/Geyser-Spigot/packs/ on our server.
+Mapping files go in plugins/Geyser-Spigot/custom_mappings/.
+Links
+Resource	URL
+Geyser Custom Items v2 Docs	https://geysermc.org/wiki/geyser/custom-items/
+Geyser Resource Pack Docs	https://geysermc.org/wiki/geyser/packs/
+Rainbow Wiki	https://geysermc.org/wiki/other/rainbow/
+Rainbow Download	https://geysermc.org/download/?project=other-projects&rainbow=expanded
+Hydraulic Wiki	https://geysermc.org/wiki/other/hydraulic/
+Thunder Wiki	https://geysermc.org/wiki/other/thunder/
+Bedrock Resource Pack Guide	https://wiki.bedrock.dev/guide/project-setup.html#rp-manifest
+Bedrock Custom Item Textures	https://wiki.bedrock.dev/items/items-intro#applying-textures
+Example Geyser Mappings Repo	https://github.com/eclipseisoffline/geyser-example-mappings/
+PackConverter	https://github.com/GeyserMC/PackConverter
+16. KEY LINKS
+Resource	URL
+GitHub Repository	https://github.com/JGlims/JGlimsPlugin
+PaperMC API Javadoc (1.21.11)	https://jd.papermc.io/paper/1.21.11/
+AnvilView API	https://jd.papermc.io/paper/1.21.11/org/bukkit/inventory/view/AnvilView.html
+PaperMC Downloads	https://papermc.io/downloads/paper
+Docker Minecraft Server	https://hub.docker.com/r/itzg/minecraft-server
+Docker MC Docs	https://docker-minecraft-server.readthedocs.io/
+Geyser Downloads	https://download.geysermc.org/
+Geyser Custom Items v2	https://geysermc.org/wiki/geyser/custom-items/
+Geyser Resource Packs	https://geysermc.org/wiki/geyser/packs/
+Rainbow (Pack Converter)	https://geysermc.org/wiki/other/rainbow/
+Hydraulic (Mod Bridge)	https://geysermc.org/wiki/other/hydraulic/
+Chunky (Hangar)	https://hangar.papermc.io/pop4959/Chunky/versions/1.4.40
+SkinsRestorer (Hangar)	https://hangar.papermc.io/SRTeam/SkinsRestorer
+Minecraft Spear Wiki	https://minecraft.wiki/w/Spear
+Bedrock Resource Pack Dev	https://wiki.bedrock.dev/guide/project-setup.html
+17. STEP-BY-STEP PHASE PLAN
+✅ Phase 1 — Compilation Fixes (DONE)
+Fixed all errors, migrated to AnvilView API, added spear enchantments.
+
+✅ Phase 1.5 — Battle-for-All Refactor (DONE)
+Created 4 new Battle managers, modified SuperToolManager/RecipeManager/JGlimsPlugin/WeaponMasteryManager.
+
+Phase 2 — Missing Systems & Fixes (NEXT)
+Implement BestBuddiesListener.java (wolf 95% DR, 0 dmg, Regen II)
+Implement remaining weapon abilities (Bow, Crossbow, Trident, Mace)
+Verify/polish InventorySortListener
+Add Efficiency auto-apply for Super Battle Shovels (I/II/III by tier)
+Phase 3 — Recipe System Testing
+Verify all battle recipes in-game
+Verify all super recipes require battle PDC
+Verify sequential upgrade (Super Iron + 8 diamonds → Super Diamond)
+Test enchantment preservation through all upgrades
+Phase 4 — Super Tool System Polish
+Enforce material-matching for tiered weapons
+Implement "+2% damage per enchantment" for Netherite Definitive
+Implement "no enchantment limit" for Netherite Definitive
+Implement "no enchantment conflicts" for Netherite Definitive
+Phase 5 — Ability System Completion
+All 10 weapon class abilities (complete Bow, Crossbow, Trident, Mace)
+Enhanced definitive particles
+Verify ore-detect radii
+Ability checks only super-tool tier
+Phase 6 — Quality & Balance
+Axe nerf verification
+Lore consistency review
+Cross-material prevention
+Full enchantment preservation audit
+Phase 7 — Testing & Integration
+Deploy to creative server
+Full regression test (every recipe, enchantment, mob system)
+TPS verification
+Phase 8 — Go Live
+Delete creative world, recreate survival
+Install SkinsRestorer
+Pre-generate chunks with Chunky
+Launch
+Phase 9 — Enchantment Expansion
+Implement 12 new enchantments (SOUL_HARVEST, BURIAL, FROSTBITE_BLADE, WRATH, PROSPECTOR, etc.)
+Implement new items (Warden's Echo, Elemental Arrows, etc.)
+Add to AnvilRecipeListener, EnchantmentEffectListener, EnchantmentType enum
+Phase 10 — Custom Textures (Final)
+Create Java resource pack with custom item models for all Battle/Super weapons
+Set item_model component on all custom weapons in plugin code
+Create Geyser mapping JSON for Bedrock item definitions
+Create Bedrock resource pack with matching textures
+Use Rainbow to validate and generate packs
+Deploy packs to server, enable enable-custom-content: true in Geyser config
+Test on both Java and Bedrock clients
+18. INSTRUCTIONS FOR THE NEXT CHAT
+When continuing this project in a new chat session, provide this entire document and follow these rules:
+
+Always start by reading the GitHub repository: Fetch the latest source from https://github.com/JGlims/JGlimsPlugin and check every file before making changes. The repo is the source of truth.
+
+Always provide complete file replacements: Never provide partial snippets or "add this here." Every file must be a complete copy-paste replacement with the full file path.
+
+Include full file paths: e.g., src/main/java/com/jglims/plugin/weapons/BattleSwordManager.java.
+
+Work in phases: Follow the phase plan (Phase 2 is next). Complete one phase at a time. Verify build success before proceeding.
+
+Check the PaperMC 1.21.11 API: Use https://jd.papermc.io/paper/1.21.11/ for API verification. Use AnvilView (not deprecated AnvilInventory), Adventure components (not legacy ChatColor), EquipmentSlotGroup for AttributeModifiers, PersistentDataContainer for all data.
+
+Maintain backward compatibility: Never break existing PDC data on items players already have.
+
+Performance matters: TPS 20 target. Avoid heavy tick-frequency operations. Use player-specific spawnParticle to reduce network load.
+
+The uniform rule: ALL weapons require Battle to become Super. Only Elytra and Shield bypass this. SuperToolManager.isBattleItem() is the gatekeeper.
+
+Deliver files in dependency order: ConfigManager → Enchantment system → Weapon managers → SuperToolManager → RecipeManager → JGlimsPlugin → Listeners.
+
+Test the build after every phase: .\gradlew.bat clean jar must produce BUILD SUCCESSFUL with 0 errors.
+
+Deep think before coding: Before writing any file, read the existing version on GitHub, understand all dependencies, plan the changes, then deliver. Explain the reasoning behind every change.
+
+Be complete and explicit: When creating a new system (like BestBuddiesListener), explain what events to listen for, what PDC keys to check, what the behavior should be, and deliver the full file ready to compile.
+
+This document captures the complete state of JGlimsPlugin as of March 4, 2026. The build is green. Phase 2 begins next. The future vision extends through enchantment expansion (Phase 9) and custom crossplay textures via GeyserMC (Phase 10).
