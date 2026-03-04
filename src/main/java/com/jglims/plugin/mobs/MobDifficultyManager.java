@@ -21,7 +21,7 @@ public class MobDifficultyManager implements Listener {
     public MobDifficultyManager(JGlimsPlugin plugin, ConfigManager config) {
         this.plugin = plugin;
         this.config = config;
-        BiomeMultipliers.init();
+        BiomeMultipliers.initWithConfig(config);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
