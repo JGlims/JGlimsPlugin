@@ -8,11 +8,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.NamespacedKey;
+import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 public class CustomEnchantManager {
 
@@ -59,7 +64,6 @@ public class CustomEnchantManager {
         addConflict(EnchantmentType.TSUNAMI, EnchantmentType.FROSTBITE);
         addConflict(EnchantmentType.TREMOR, EnchantmentType.GRAVITY_WELL);
         addConflict(EnchantmentType.PHANTOM_PIERCE, EnchantmentType.SKEWERING);
-
     }
 
     private void addConflict(EnchantmentType a, EnchantmentType b) {
@@ -164,10 +168,11 @@ public class CustomEnchantManager {
     }
 
     /**
-     * Lists all custom enchantments with their max levels (for /jglims enchants command).
+     * Lists all custom enchantments with their max levels as Adventure Components.
+     * Used by /jglims enchants command.
      */
-    public List<String> listAllEnchantments() {
-        List<String> list = new ArrayList<>();
+    public List<Component> listAllEnchantments() {
+        List<Component> list = new ArrayList<>();
         for (EnchantmentType type : EnchantmentType.values()) {
             String name = type.name().replace('_', ' ');
             // Title case
@@ -177,7 +182,9 @@ public class CustomEnchantManager {
                   .append(word.substring(1).toLowerCase())
                   .append(' ');
             }
-            list.add("§e" + sb.toString().trim() + " §7(Max " + type.getMaxLevel() + ")");
+            Component line = Component.text(sb.toString().trim(), NamedTextColor.YELLOW)
+                    .append(Component.text(" (Max " + type.getMaxLevel() + ")", NamedTextColor.GRAY));
+            list.add(line);
         }
         return list;
     }
@@ -201,13 +208,16 @@ public class CustomEnchantManager {
     }
 
     /**
-     * Alias for listAllEnchantments() — backward compatibility.
-     * Accepts a CommandSender and sends the list directly.
+     * Sends the formatted enchantment list to a CommandSender using Adventure API.
+     * Replaces the legacy §-color-code version.
      */
-    public void listEnchantments(org.bukkit.command.CommandSender sender) {
-        List<String> enchants = listAllEnchantments();
-        sender.sendMessage("§6§l=== Custom Enchantments (" + enchants.size() + ") ===");
-        for (String line : enchants) {
+    public void listEnchantments(CommandSender sender) {
+        List<Component> enchants = listAllEnchantments();
+        sender.sendMessage(
+                Component.text("=== Custom Enchantments (" + enchants.size() + ") ===", NamedTextColor.GOLD)
+                        .decoration(TextDecoration.BOLD, true)
+        );
+        for (Component line : enchants) {
             sender.sendMessage(line);
         }
     }
