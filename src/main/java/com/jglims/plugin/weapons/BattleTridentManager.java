@@ -57,20 +57,34 @@ public class BattleTridentManager {
         // Mark as battle trident in PDC
         meta.getPersistentDataContainer().set(battleTridentKey, PersistentDataType.BYTE, (byte) 1);
 
-        double damage = 10.0; // 9 + 1
+        double vanillaDamage = 9.0;
+        double battleDamage = 10.0;
 
         // Set display name
         meta.displayName(Component.text("Battle Trident", NamedTextColor.DARK_RED)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Set lore
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text("9", NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text("1", NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text("10", NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("1.1 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text("1.1", NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Tidal Surge", NamedTextColor.AQUA)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Poseidon's Wrath", NamedTextColor.DARK_RED)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
@@ -79,7 +93,7 @@ public class BattleTridentManager {
 
         // Attack Damage modifier: 10.0 - 1.0 (player base) = 9.0
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(battleTridentDamageKey, damage - 1.0,
+                new AttributeModifier(battleTridentDamageKey, battleDamage - 1.0,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Attack Speed: 1.1 = 4.0 - 2.9

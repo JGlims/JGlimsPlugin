@@ -59,8 +59,9 @@ public class BattlePickaxeManager {
      * Netherite   | 6       | 7
      */
     public ItemStack createBattlePickaxe(Material pickaxeMaterial) {
-        double damage = getBattlePickaxeDamage(pickaxeMaterial);
-        if (damage < 0) return null;
+        double vanillaDamage = getVanillaPickaxeDamage(pickaxeMaterial);
+        if (vanillaDamage < 0) return null;
+        double battleDamage = vanillaDamage + 1.0;
 
         ItemStack battlePickaxe = new ItemStack(pickaxeMaterial, 1);
         ItemMeta meta = battlePickaxe.getItemMeta();
@@ -76,16 +77,29 @@ public class BattlePickaxeManager {
         meta.displayName(Component.text(tierName + " Battle Pickaxe", nameColor)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Set lore
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.0f", vanillaDamage), NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text("1", NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", battleDamage), NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("1.2 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text("1.2", NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("All mining enchantments retained", NamedTextColor.GREEN)
+        lore.add(Component.text("Mining enchantments retained", NamedTextColor.GREEN)
                 .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Ore Pulse", NamedTextColor.AQUA)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Seismic Resonance", NamedTextColor.DARK_RED)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
@@ -94,7 +108,7 @@ public class BattlePickaxeManager {
 
         // Attack Damage modifier: damage - 1.0 (player base)
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(battlePickaxeDamageKey, damage - 1.0,
+                new AttributeModifier(battlePickaxeDamageKey, battleDamage - 1.0,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Attack Speed: 1.2 = 4.0 - 2.8
@@ -109,14 +123,14 @@ public class BattlePickaxeManager {
         return battlePickaxe;
     }
 
-    private double getBattlePickaxeDamage(Material mat) {
+    private double getVanillaPickaxeDamage(Material mat) {
         return switch (mat) {
-            case WOODEN_PICKAXE  -> 3.0;   // 2 + 1
-            case STONE_PICKAXE   -> 4.0;   // 3 + 1
-            case IRON_PICKAXE    -> 5.0;   // 4 + 1
-            case GOLDEN_PICKAXE  -> 3.0;   // 2 + 1
-            case DIAMOND_PICKAXE -> 6.0;   // 5 + 1
-            case NETHERITE_PICKAXE -> 7.0; // 6 + 1
+            case WOODEN_PICKAXE  -> 2.0;
+            case STONE_PICKAXE   -> 3.0;
+            case IRON_PICKAXE    -> 4.0;
+            case GOLDEN_PICKAXE  -> 2.0;
+            case DIAMOND_PICKAXE -> 5.0;
+            case NETHERITE_PICKAXE -> 6.0;
             default -> -1;
         };
     }

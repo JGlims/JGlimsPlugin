@@ -49,22 +49,20 @@ public class SickleManager implements Listener {
 
     /**
      * Creates a sickle from a base hoe material.
-     * Sickle = +1 attack damage vs equivalent sword, +0.5s attack cooldown penalty.
+     * Sickle = equivalent sword damage + 1, attack speed 1.1.
      *
-     * Material    | Sword Dmg | Sickle Dmg | Attack Speed (sword=1.6, sickle=1.1)
+     * Material    | Sword Dmg | Sickle Dmg | Attack Speed
      * Wood        | 4         | 5          | 1.1
      * Stone       | 5         | 6          | 1.1
      * Iron        | 6         | 7          | 1.1
      * Gold        | 4         | 5          | 1.1
      * Diamond     | 7         | 8          | 1.1
      * Netherite   | 8         | 9          | 1.1
-     *
-     * Attack speed: swords are 1.6, -0.5 makes it 1.1.
-     * We set the attack damage and attack speed as attribute modifiers.
      */
     public ItemStack createSickle(Material hoeMaterial) {
-        double damage = getSickleDamage(hoeMaterial);
-        if (damage < 0) return null; // Not a valid hoe
+        double swordDamage = getEquivalentSwordDamage(hoeMaterial);
+        if (swordDamage < 0) return null;
+        double sickleDamage = swordDamage + 1.0;
 
         ItemStack sickle = new ItemStack(hoeMaterial, 1);
         ItemMeta meta = sickle.getItemMeta();
@@ -80,46 +78,65 @@ public class SickleManager implements Listener {
         meta.displayName(Component.text(tierName + " Sickle", nameColor)
             .decoration(TextDecoration.ITALIC, false));
 
-        // Set lore
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+            .append(Component.text(String.format("%.0f", swordDamage), NamedTextColor.GREEN))
+            .append(Component.text(" +", NamedTextColor.GRAY))
+            .append(Component.text("1", NamedTextColor.YELLOW))
+            .append(Component.text(" = ", NamedTextColor.GRAY))
+            .append(Component.text(String.format("%.0f", sickleDamage), NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("1.1 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+            .append(Component.text("1.1", NamedTextColor.WHITE))
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Tilling disabled", NamedTextColor.RED)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Harvest Storm", NamedTextColor.AQUA)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Reaper's Scythe", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
         // Remove default attribute display and set custom attributes
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
-        // Attack Damage: we set the TOTAL damage. Player base is 1.0, so modifier = damage - 1.0
+        // Attack Damage: modifier = damage - 1.0
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-            new AttributeModifier(sickleDamageKey, damage - 1.0,
+            new AttributeModifier(sickleDamageKey, sickleDamage - 1.0,
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
-        // Attack Speed: player base is 4.0, swords are 1.6 (modifier = -2.4).
-        // Sickle at 1.1 = modifier of -2.9 (4.0 - 2.9 = 1.1)
+        // Attack Speed: 1.1 = 4.0 - 2.9
         meta.addAttributeModifier(Attribute.ATTACK_SPEED,
             new AttributeModifier(sickleSpeedKey, -2.9,
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+
+        // Enchantment glint
+        meta.setEnchantmentGlintOverride(true);
 
         sickle.setItemMeta(meta);
         return sickle;
     }
 
     /**
-     * Returns the sickle attack damage for a given hoe material.
-     * Sickle damage = equivalent sword damage + 1
+     * Returns the equivalent sword damage for computing sickle damage.
+     * Sickle damage = sword damage + 1
      */
-    private double getSickleDamage(Material mat) {
+    private double getEquivalentSwordDamage(Material mat) {
         return switch (mat) {
-            case WOODEN_HOE -> 5.0;    // Wood sword 4 + 1
-            case STONE_HOE -> 6.0;     // Stone sword 5 + 1
-            case IRON_HOE -> 7.0;      // Iron sword 6 + 1
-            case GOLDEN_HOE -> 5.0;    // Gold sword 4 + 1
-            case DIAMOND_HOE -> 8.0;   // Diamond sword 7 + 1
-            case NETHERITE_HOE -> 9.0; // Netherite sword 8 + 1
+            case WOODEN_HOE -> 4.0;
+            case STONE_HOE -> 5.0;
+            case IRON_HOE -> 6.0;
+            case GOLDEN_HOE -> 4.0;
+            case DIAMOND_HOE -> 7.0;
+            case NETHERITE_HOE -> 8.0;
             default -> -1;
         };
     }

@@ -71,8 +71,9 @@ public class BattleSpearManager {
      * Creates a Battle Spear from a vanilla spear material.
      */
     public ItemStack createBattleSpear(Material spearMaterial) {
-        double damage = getBattleSpearDamage(spearMaterial);
-        if (damage < 0) return null;
+        double vanillaDamage = getVanillaSpearDamage(spearMaterial);
+        if (vanillaDamage < 0) return null;
+        double battleDamage = vanillaDamage + 1.0;
         double attackSpeed = getSpearAttackSpeed(spearMaterial);
 
         ItemStack battleSpear = new ItemStack(spearMaterial, 1);
@@ -89,14 +90,30 @@ public class BattleSpearManager {
         meta.displayName(Component.text(tierName + " Battle Spear", nameColor)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Set lore
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.0f", vanillaDamage), NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text("1", NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", battleDamage), NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text(String.format("%.2f", attackSpeed) + " Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.2f", attackSpeed), NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Attack Range: ", NamedTextColor.GRAY)
+                .append(Component.text("2.0 - 4.5 blocks", NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Phantom Lunge", NamedTextColor.AQUA)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Spear of the Void", NamedTextColor.DARK_RED)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
@@ -105,7 +122,7 @@ public class BattleSpearManager {
 
         // Attack Damage modifier: damage - 1.0 (player base)
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(battleSpearDamageKey, damage - 1.0,
+                new AttributeModifier(battleSpearDamageKey, battleDamage - 1.0,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Attack Speed modifier: speed - 4.0
@@ -120,15 +137,15 @@ public class BattleSpearManager {
         return battleSpear;
     }
 
-    private double getBattleSpearDamage(Material mat) {
+    private double getVanillaSpearDamage(Material mat) {
         return switch (mat) {
-            case WOODEN_SPEAR    -> 2.0;  // 1 + 1
-            case STONE_SPEAR     -> 3.0;  // 2 + 1
-            case COPPER_SPEAR    -> 3.0;  // 2 + 1
-            case GOLDEN_SPEAR    -> 3.0;  // 2 + 1
-            case IRON_SPEAR      -> 4.0;  // 3 + 1
-            case DIAMOND_SPEAR   -> 5.0;  // 4 + 1
-            case NETHERITE_SPEAR -> 6.0;  // 5 + 1
+            case WOODEN_SPEAR    -> 1.0;
+            case STONE_SPEAR     -> 2.0;
+            case COPPER_SPEAR    -> 2.0;
+            case GOLDEN_SPEAR    -> 2.0;
+            case IRON_SPEAR      -> 3.0;
+            case DIAMOND_SPEAR   -> 4.0;
+            case NETHERITE_SPEAR -> 5.0;
             default -> -1;
         };
     }

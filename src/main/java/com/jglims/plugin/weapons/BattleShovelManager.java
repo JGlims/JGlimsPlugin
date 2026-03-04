@@ -106,22 +106,34 @@ public class BattleShovelManager implements Listener {
         meta.displayName(Component.text(tierName + " Battle Shovel", nameColor)
                 .decoration(TextDecoration.ITALIC, false));
 
-        double damage = BATTLE_DAMAGE.getOrDefault(tier, 5.0);
+        double vanillaDamage = tier.getBaseDamage();
+        double battleDamage = BATTLE_DAMAGE.getOrDefault(tier, 5.0);
+        double battleBonus = battleDamage - vanillaDamage;
+
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.1f", vanillaDamage), NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.1f", battleBonus), NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", battleDamage), NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("1.2 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text("1.2", NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("Path-making disabled", NamedTextColor.RED)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Earthen Wall", NamedTextColor.AQUA)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Tectonic Upheaval", NamedTextColor.DARK_RED)
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
-        lore.add(Component.text("Diamond: Earthen Wall", NamedTextColor.AQUA)
-                .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Netherite: Tectonic Upheaval", NamedTextColor.DARK_RED)
+        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
@@ -133,7 +145,7 @@ public class BattleShovelManager implements Listener {
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
                 new AttributeModifier(
                         new NamespacedKey(plugin, "battle_shovel_damage"),
-                        damage - 1.0,
+                        battleDamage - 1.0,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 ));

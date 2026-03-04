@@ -44,7 +44,7 @@ public class BattleMaceManager {
 
     /**
      * Creates a Battle Mace from a vanilla mace.
-     * Battle Mace: 12 base damage, 0.7 attack speed.
+     * Battle Mace: 11 (vanilla) + 1 = 12 base damage, 0.7 attack speed.
      */
     public ItemStack createBattleMace() {
         ItemStack mace = new ItemStack(Material.MACE, 1);
@@ -56,13 +56,30 @@ public class BattleMaceManager {
         meta.displayName(Component.text("Battle Mace", NamedTextColor.DARK_RED)
             .decoration(TextDecoration.ITALIC, false));
 
+        double vanillaDamage = 11.0;
+        double battleDamage = 12.0;
+
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+12.0 Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+            .append(Component.text("11", NamedTextColor.GREEN))
+            .append(Component.text(" +", NamedTextColor.GRAY))
+            .append(Component.text("1", NamedTextColor.YELLOW))
+            .append(Component.text(" = ", NamedTextColor.GRAY))
+            .append(Component.text("12", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("0.7 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+            .append(Component.text("0.7", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Ground Slam", NamedTextColor.AQUA)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Meteor Strike", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
@@ -78,6 +95,9 @@ public class BattleMaceManager {
         meta.addAttributeModifier(Attribute.ATTACK_SPEED,
             new AttributeModifier(battleMaceSpeedKey, -3.3,
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+
+        // Enchantment glint
+        meta.setEnchantmentGlintOverride(true);
 
         mace.setItemMeta(meta);
         return mace;

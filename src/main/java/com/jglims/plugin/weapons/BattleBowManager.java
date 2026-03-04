@@ -52,14 +52,20 @@ public class BattleBowManager {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Ranged Battle Weapon", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Damage: ", NamedTextColor.GRAY)
+            .append(Component.text("Ranged (arrow-based)", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
+        lore.add(Component.text("Type: ", NamedTextColor.GRAY)
+            .append(Component.text("Ranged Battle Weapon", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
-        lore.add(Component.text("Diamond: Arrow Storm", NamedTextColor.AQUA)
+        lore.add(Component.text("\u25C6 Diamond: Arrow Storm", NamedTextColor.AQUA)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Netherite: Celestial Volley", NamedTextColor.DARK_RED)
+        lore.add(Component.text("\u25C6 Netherite: Celestial Volley", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
@@ -81,14 +87,20 @@ public class BattleBowManager {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Ranged Battle Weapon", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Damage: ", NamedTextColor.GRAY)
+            .append(Component.text("Ranged (bolt-based)", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
+        lore.add(Component.text("Type: ", NamedTextColor.GRAY)
+            .append(Component.text("Ranged Battle Weapon", NamedTextColor.WHITE))
             .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
-        lore.add(Component.text("Diamond: Chain Shot", NamedTextColor.AQUA)
+        lore.add(Component.text("\u25C6 Diamond: Chain Shot", NamedTextColor.AQUA)
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("Netherite: Thunder Barrage", NamedTextColor.DARK_RED)
+        lore.add(Component.text("\u25C6 Netherite: Thunder Barrage", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 

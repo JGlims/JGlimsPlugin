@@ -58,8 +58,9 @@ public class BattleSwordManager {
      * Netherite   | 8       | 9
      */
     public ItemStack createBattleSword(Material swordMaterial) {
-        double damage = getBattleSwordDamage(swordMaterial);
-        if (damage < 0) return null;
+        double vanillaDamage = getVanillaSwordDamage(swordMaterial);
+        if (vanillaDamage < 0) return null;
+        double battleDamage = vanillaDamage + 1.0;
 
         ItemStack battleSword = new ItemStack(swordMaterial, 1);
         ItemMeta meta = battleSword.getItemMeta();
@@ -75,14 +76,27 @@ public class BattleSwordManager {
         meta.displayName(Component.text(tierName + " Battle Sword", nameColor)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Set lore
+        // Set lore — uniform pattern
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("+" + String.format("%.1f", damage) + " Attack Damage", NamedTextColor.GRAY)
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.0f", vanillaDamage), NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text("1", NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", battleDamage), NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("1.6 Attack Speed", NamedTextColor.GRAY)
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text("1.6", NamedTextColor.WHITE))
                 .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("\u25C6 Diamond: Dash Strike", NamedTextColor.AQUA)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("\u25C6 Netherite: Dimensional Cleave", NamedTextColor.DARK_RED)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
@@ -91,7 +105,7 @@ public class BattleSwordManager {
 
         // Attack Damage modifier: damage - 1.0 (player base)
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                new AttributeModifier(battleSwordDamageKey, damage - 1.0,
+                new AttributeModifier(battleSwordDamageKey, battleDamage - 1.0,
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Attack Speed: 1.6 = 4.0 - 2.4
@@ -106,14 +120,14 @@ public class BattleSwordManager {
         return battleSword;
     }
 
-    private double getBattleSwordDamage(Material mat) {
+    private double getVanillaSwordDamage(Material mat) {
         return switch (mat) {
-            case WOODEN_SWORD  -> 5.0;   // 4 + 1
-            case STONE_SWORD   -> 6.0;   // 5 + 1
-            case IRON_SWORD    -> 7.0;   // 6 + 1
-            case GOLDEN_SWORD  -> 5.0;   // 4 + 1
-            case DIAMOND_SWORD -> 8.0;   // 7 + 1
-            case NETHERITE_SWORD -> 9.0; // 8 + 1
+            case WOODEN_SWORD  -> 4.0;
+            case STONE_SWORD   -> 5.0;
+            case IRON_SWORD    -> 6.0;
+            case GOLDEN_SWORD  -> 4.0;
+            case DIAMOND_SWORD -> 7.0;
+            case NETHERITE_SWORD -> 8.0;
             default -> -1;
         };
     }

@@ -1,15 +1,22 @@
 package com.jglims.plugin.weapons;
 
-import com.jglims.plugin.config.ConfigManager;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.*;
+import com.jglims.plugin.config.ConfigManager;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 public class SpearManager {
 
@@ -34,7 +41,7 @@ public class SpearManager {
 
         private final Material spearMaterial;
         private final Material repairIngredient;
-        private final double jabDamage;   // Java Edition jab damage (in HP, i.e. half-hearts)
+        private final double jabDamage;
         private final double attackSpeed;
 
         SpearTier(Material spearMaterial, Material repairIngredient, double jabDamage, double attackSpeed) {
@@ -140,11 +147,6 @@ public class SpearManager {
         int currentSuper = getSuperTier(baseSpear);
         if (newSuperTier <= currentSuper) return null; // Can't downgrade
 
-        // For tiered spears, enforce material matching for direct upgrades:
-        // Iron spear + 8 iron ingots -> Super Iron Iron Spear
-        // OR sequential: Super Iron spear + 8 diamonds -> Super Diamond spear
-        // We allow sequential upgrades regardless of base material.
-
         // Clone to preserve enchantments
         ItemStack result = baseSpear.clone();
         ItemMeta meta = result.getItemMeta();
@@ -153,16 +155,8 @@ public class SpearManager {
         // Set super tier
         meta.getPersistentDataContainer().set(superTierKey, PersistentDataType.INTEGER, newSuperTier);
 
-        // Calculate damage
+        // Calculate accumulated damage bonus
         double baseDamage = spearTier.getJabDamage();
-        double bonusDamage = switch (newSuperTier) {
-            case 1 -> config.getSuperIronBonusDamage();      // +1
-            case 2 -> config.getSuperDiamondBonusDamage();    // +2
-            case 3 -> config.getSuperNetheriteBonusDamage();  // +2 (over diamond, so +4 total if sequential)
-            default -> 0;
-        };
-
-        // For sequential upgrades, accumulated bonus is the sum
         double totalBonus = 0;
         for (int i = 1; i <= newSuperTier; i++) {
             totalBonus += switch (i) {
@@ -172,7 +166,6 @@ public class SpearManager {
                 default -> 0;
             };
         }
-
         double totalDamage = baseDamage + totalBonus;
 
         // Super tier name
@@ -185,45 +178,66 @@ public class SpearManager {
 
         String tierName = spearTier.name().charAt(0) + spearTier.name().substring(1).toLowerCase();
 
-        // Display name
-        String displayName = newSuperTier == 3
-                ? "§5✦ Definitive " + tierName + " Spear §5✦"
-                : "§6⚔ Super " + superName + " " + tierName + " Spear";
-        meta.setDisplayName(displayName);
+        // Display name — Adventure API
+        if (newSuperTier == 3) {
+            meta.displayName(Component.text("\u2726 Definitive " + tierName + " Spear \u2726", NamedTextColor.DARK_RED)
+                    .decoration(TextDecoration.ITALIC, false)
+                    .decoration(TextDecoration.BOLD, true));
+        } else {
+            meta.displayName(Component.text("Super " + superName + " " + tierName + " Spear",
+                            newSuperTier == 2 ? NamedTextColor.AQUA : NamedTextColor.WHITE)
+                    .decoration(TextDecoration.ITALIC, false));
+        }
 
-        // Build lore
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Custom Weapon");
-        lore.add("");
-        lore.add("§f⚔ Attack Damage: §a" + String.format("%.1f", baseDamage)
-                + " §7+ §e" + String.format("%.1f", totalBonus)
-                + " §7= §c" + String.format("%.1f", totalDamage));
-        lore.add("§f⚡ Attack Speed: §b" + String.format("%.2f", spearTier.getAttackSpeed()));
-        lore.add("§f⚔ Attack Range: §92.0 - 4.5 blocks");
-        lore.add("");
+        // Build lore — Adventure API uniform pattern
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.0f", baseDamage), NamedTextColor.GREEN))
+                .append(Component.text(" +", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", totalBonus), NamedTextColor.YELLOW))
+                .append(Component.text(" = ", NamedTextColor.GRAY))
+                .append(Component.text(String.format("%.0f", totalDamage), NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Attack Speed: ", NamedTextColor.GRAY)
+                .append(Component.text(String.format("%.2f", spearTier.getAttackSpeed()), NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Attack Range: ", NamedTextColor.GRAY)
+                .append(Component.text("2.0 - 4.5 blocks", NamedTextColor.WHITE))
+                .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
 
         // Ability info
         switch (newSuperTier) {
             case 1 -> {
-                lore.add("§7✦ Super Iron — No special ability");
-                lore.add("§8Upgrade to Diamond for abilities.");
+                lore.add(Component.text("Super Iron \u2014 No special ability", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("Upgrade to Diamond for abilities.", NamedTextColor.DARK_GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
             }
             case 2 -> {
-                lore.add("§d✦ Right-click: §fPhantom Lunge");
-                lore.add("§7Dash forward 8 blocks, damaging all");
-                lore.add("§7enemies in your path. §812s cooldown");
-                lore.add("");
-                lore.add("§7Diamond Super Weapon");
+                lore.add(Component.text("\u25C6 Right-click: Phantom Lunge", NamedTextColor.AQUA)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("Dash forward 8 blocks, damaging all", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("enemies in your path. 7s cooldown", NamedTextColor.DARK_GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
             }
             case 3 -> {
-                lore.add("§5✦ Right-click: §fSpear of the Void");
-                lore.add("§7Hurl a spectral spear that §cpierces");
-                lore.add("§7all enemies in its 30-block path, then");
-                lore.add("§7detonates, pulling enemies inward.");
-                lore.add("§5+2% damage per enchantment §7| §5No enchant limit");
-                lore.add("§820s cooldown");
-                lore.add("");
-                lore.add("§5§lDefinitive Super Weapon");
+                lore.add(Component.text("\u25C6 Right-click: Spear of the Void", NamedTextColor.DARK_RED)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("Hurl a spectral spear that pierces", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("all enemies in its 30-block path, then", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("detonates, pulling enemies inward.", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("+2% damage per enchantment | No enchant limit", NamedTextColor.DARK_RED)
+                        .decoration(TextDecoration.ITALIC, false));
+                lore.add(Component.text("14s cooldown", NamedTextColor.DARK_GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
             }
         }
 
@@ -240,7 +254,6 @@ public class SpearManager {
     public boolean isValidUpgrade(ItemStack spear, int targetSuperTier) {
         if (!isSpear(spear)) return false;
         int current = getSuperTier(spear);
-        // Must be exactly the next tier up, or a direct jump from 0
         return targetSuperTier > current && targetSuperTier <= 3;
     }
 
