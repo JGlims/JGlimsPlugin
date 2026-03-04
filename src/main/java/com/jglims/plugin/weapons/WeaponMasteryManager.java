@@ -33,7 +33,7 @@ public class WeaponMasteryManager implements Listener {
     private final JGlimsPlugin plugin;
     private final ConfigManager config;
 
-    // PDC keys for each weapon class kill count (stored on the player)
+    // PDC keys for each weapon class kill count
     private final NamespacedKey swordKillsKey;
     private final NamespacedKey axeKillsKey;
     private final NamespacedKey pickaxeKillsKey;
@@ -43,11 +43,12 @@ public class WeaponMasteryManager implements Listener {
     private final NamespacedKey crossbowKillsKey;
     private final NamespacedKey tridentKillsKey;
     private final NamespacedKey maceKillsKey;
+    private final NamespacedKey spearKillsKey;
 
     // Attribute modifier key
     private final NamespacedKey masteryModKey;
 
-    // Cache: player UUID -> current weapon class string for fast lookups
+    // Cache: player UUID -> current weapon class
     private final Map<UUID, String> lastWeaponClass = new HashMap<>();
 
     public WeaponMasteryManager(JGlimsPlugin plugin, ConfigManager config) {
@@ -62,6 +63,7 @@ public class WeaponMasteryManager implements Listener {
         this.crossbowKillsKey = new NamespacedKey(plugin, "mastery_crossbow");
         this.tridentKillsKey = new NamespacedKey(plugin, "mastery_trident");
         this.maceKillsKey = new NamespacedKey(plugin, "mastery_mace");
+        this.spearKillsKey = new NamespacedKey(plugin, "mastery_spear");
         this.masteryModKey = new NamespacedKey(plugin, "mastery_damage");
     }
 
@@ -86,7 +88,6 @@ public class WeaponMasteryManager implements Listener {
         int kills = pdc.getOrDefault(key, PersistentDataType.INTEGER, 0) + 1;
         pdc.set(key, PersistentDataType.INTEGER, kills);
 
-        // Update damage modifier if this is the currently-held weapon class
         applyMasteryModifier(killer, weaponClass);
     }
 
@@ -116,17 +117,14 @@ public class WeaponMasteryManager implements Listener {
         }, 5L);
     }
 
-    /**
-     * Applies the mastery damage modifier for the given weapon class.
-     */
     public void applyMasteryModifier(Player player, String weaponClass) {
         AttributeInstance attackDamage = player.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attackDamage == null) return;
 
         // Remove old modifier
         attackDamage.getModifiers().stream()
-            .filter(m -> m.getKey().equals(masteryModKey))
-            .forEach(attackDamage::removeModifier);
+                .filter(m -> m.getKey().equals(masteryModKey))
+                .forEach(attackDamage::removeModifier);
 
         if (weaponClass == null) return;
 
@@ -141,27 +139,21 @@ public class WeaponMasteryManager implements Listener {
 
         if (bonusPercent > 0) {
             attackDamage.addModifier(new AttributeModifier(
-                masteryModKey, bonusPercent, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+                    masteryModKey, bonusPercent, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
         }
 
         lastWeaponClass.put(player.getUniqueId(), weaponClass);
     }
 
-    /**
-     * Removes the mastery modifier.
-     */
     public void removeMasteryModifier(Player player) {
         AttributeInstance attackDamage = player.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attackDamage == null) return;
         attackDamage.getModifiers().stream()
-            .filter(m -> m.getKey().equals(masteryModKey))
-            .forEach(attackDamage::removeModifier);
+                .filter(m -> m.getKey().equals(masteryModKey))
+                .forEach(attackDamage::removeModifier);
         lastWeaponClass.remove(player.getUniqueId());
     }
 
-    /**
-     * Shows mastery stats to a player.
-     */
     public void showMastery(Player player) {
         PersistentDataContainer pdc = player.getPersistentDataContainer();
         int maxK = config.getMasteryMaxKills();
@@ -169,15 +161,15 @@ public class WeaponMasteryManager implements Listener {
 
         player.sendMessage(Component.text("=== Weapon Mastery ===", NamedTextColor.GOLD));
 
-        String[] classes = {"sword", "axe", "pickaxe", "shovel", "sickle", "bow", "crossbow", "trident", "mace"};
+        String[] classes = {"sword", "axe", "pickaxe", "shovel", "sickle", "bow", "crossbow", "trident", "mace", "spear"};
         for (String wc : classes) {
             NamespacedKey key = getKeyForClass(wc);
             if (key == null) continue;
             int kills = pdc.getOrDefault(key, PersistentDataType.INTEGER, 0);
             double bonus = Math.min((double) kills / maxK, 1.0) * maxB;
             player.sendMessage(Component.text(
-                " " + capitalize(wc) + ": " + kills + "/" + maxK + " kills (+" + String.format("%.1f", bonus) + "% damage)",
-                NamedTextColor.YELLOW));
+                    " " + capitalize(wc) + ": " + kills + "/" + maxK + " kills (+" + String.format("%.1f", bonus) + "% damage)",
+                    NamedTextColor.YELLOW));
         }
     }
 
@@ -185,16 +177,24 @@ public class WeaponMasteryManager implements Listener {
         if (weapon == null || weapon.getType().isAir()) return null;
         String matName = weapon.getType().name();
 
+        // Check custom battle weapons first (specific PDC markers)
         if (plugin.getSickleManager().isSickle(weapon)) return "sickle";
         if (plugin.getBattleAxeManager().isBattleAxe(weapon)) return "axe";
+        if (plugin.getBattleSwordManager().isBattleSword(weapon)) return "sword";
+        if (plugin.getBattlePickaxeManager().isBattlePickaxe(weapon)) return "pickaxe";
+        if (plugin.getBattleTridentManager().isBattleTrident(weapon)) return "trident";
+        if (plugin.getBattleSpearManager().isBattleSpear(weapon)) return "spear";
+        if (plugin.getBattleShovelManager().isBattleShovel(weapon)) return "shovel";
         if (plugin.getBattleMaceManager() != null && plugin.getBattleMaceManager().isBattleMace(weapon)) return "mace";
         if (plugin.getBattleBowManager().isBattleBow(weapon)) return "bow";
         if (plugin.getBattleBowManager().isBattleCrossbow(weapon)) return "crossbow";
 
+        // Fallback to vanilla material checks
         if (matName.endsWith("_SWORD")) return "sword";
         if (matName.endsWith("_AXE")) return "axe";
         if (matName.endsWith("_PICKAXE")) return "pickaxe";
         if (matName.endsWith("_SHOVEL")) return "shovel";
+        if (matName.endsWith("_SPEAR")) return "spear";
         if (weapon.getType() == Material.BOW) return "bow";
         if (weapon.getType() == Material.CROSSBOW) return "crossbow";
         if (weapon.getType() == Material.TRIDENT) return "trident";
@@ -214,6 +214,7 @@ public class WeaponMasteryManager implements Listener {
             case "crossbow" -> crossbowKillsKey;
             case "trident" -> tridentKillsKey;
             case "mace" -> maceKillsKey;
+            case "spear" -> spearKillsKey;
             default -> null;
         };
     }

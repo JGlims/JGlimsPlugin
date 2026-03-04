@@ -66,7 +66,6 @@ public class SuperToolManager implements Listener {
 
     /**
      * Checks if an item is a (Netherite) Super Netherite tool — the ultimate tier.
-     * This means it's NETHERITE base material AND (Netherite) Super tier.
      */
     public boolean isDefinitiveSuperNetherite(ItemStack item) {
         if (item == null) return false;
@@ -74,17 +73,48 @@ public class SuperToolManager implements Listener {
     }
 
     /**
+     * Checks if the item has ANY battle PDC marker.
+     * This is required before an item can become Super.
+     */
+    public boolean isBattleItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+
+        // Check all battle keys
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_sword"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_axe"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_pickaxe"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_sickle"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "battle_shovel"), PersistentDataType.BOOLEAN)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_bow"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_crossbow"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_mace"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_trident"), PersistentDataType.BYTE)) return true;
+        if (pdc.has(new NamespacedKey(plugin, "is_battle_spear"), PersistentDataType.BYTE)) return true;
+
+        // Elytra and Shield don't have battle versions — they go directly to super
+        Material mat = item.getType();
+        if (mat == Material.ELYTRA || mat == Material.SHIELD) return true;
+
+        return false;
+    }
+
+    /**
      * Creates a Super Tool at the specified tier from the given base tool.
+     * The base tool MUST be a Battle item (or Elytra/Shield).
      *
      * Tier 1 (Iron): +1 damage only, no ability
-     * Tier 2 (Diamond): +2 damage (non-netherite) or +1 (netherite base), enchantment-dependent abilities
-     * Tier 3 (Netherite): +3 damage (non-netherite) or +2 (netherite base), definitive abilities for netherite base
+     * Tier 2 (Diamond): +2 damage (non-netherite) or +1 (netherite base), abilities
+     * Tier 3 (Netherite): +3 damage (non-netherite) or +2 (netherite base), definitive abilities
      *
      * Trident exception: Diamond +3, Netherite +5
      */
     public ItemStack createSuperTool(ItemStack baseTool, int tier) {
         if (baseTool == null || baseTool.getType() == Material.AIR) return null;
         if (tier < TIER_IRON || tier > TIER_NETHERITE) return null;
+
+        // Must be a battle item (or Elytra/Shield) to become Super
+        if (!isBattleItem(baseTool) && !isSuperTool(baseTool)) return null;
 
         Material mat = baseTool.getType();
         ItemStack superTool = baseTool.clone();
@@ -100,6 +130,7 @@ public class SuperToolManager implements Listener {
         boolean isShield = mat == Material.SHIELD;
         boolean isBow = mat == Material.BOW;
         boolean isCrossbow = mat == Material.CROSSBOW;
+        boolean isSpear = SpearManager.isSpear(mat);
 
         String tierPrefix = getTierPrefix(tier);
         NamedTextColor tierColor = getTierColor(tier, isNetherite);
@@ -107,11 +138,13 @@ public class SuperToolManager implements Listener {
         // Set display name
         if (isElytra) {
             meta.displayName(Component.text(tierPrefix + " Elytra", tierColor)
-                .decoration(TextDecoration.ITALIC, false));
+                    .decoration(TextDecoration.ITALIC, false));
         } else {
             String baseName = getToolBaseName(mat);
-            meta.displayName(Component.text(tierPrefix + " " + baseName, tierColor)
-                .decoration(TextDecoration.ITALIC, false));
+            // Prepend "Battle" only if not already in the name for battle items
+            String displayBase = "Battle " + baseName;
+            meta.displayName(Component.text(tierPrefix + " " + displayBase, tierColor)
+                    .decoration(TextDecoration.ITALIC, false));
         }
 
         // Build lore
@@ -120,9 +153,14 @@ public class SuperToolManager implements Listener {
         existingLore.removeIf(c -> {
             String plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(c);
             return plain.startsWith("Super Tool") || plain.startsWith("(Iron) Super")
-                || plain.startsWith("(Diamond) Super") || plain.startsWith("(Netherite) Super")
-                || plain.contains("Bonus Attack Damage") || plain.contains("durability save")
-                || plain.contains("No enchantment conflicts") || plain.contains("Definitive ability");
+                    || plain.startsWith("(Diamond) Super") || plain.startsWith("(Netherite) Super")
+                    || plain.contains("Bonus Attack Damage") || plain.contains("durability save")
+                    || plain.contains("No enchantment conflicts") || plain.contains("Definitive ability")
+                    || plain.contains("Special ability") || plain.contains("Custom Weapon")
+                    || plain.contains("Attack Damage") || plain.contains("Attack Speed")
+                    || plain.contains("Can be upgraded") || plain.contains("Super Tool")
+                    || plain.contains("Battle Weapon") || plain.contains("mining enchantments")
+                    || plain.contains("Path-making") || plain.contains("reforged");
         });
 
         if (isElytra) {
@@ -130,47 +168,73 @@ public class SuperToolManager implements Listener {
             meta.getPersistentDataContainer().set(superElytraDurabilityKey, PersistentDataType.INTEGER, tier);
 
             existingLore.add(0, Component.text(tierPrefix + " Elytra", tierColor)
-                .decoration(TextDecoration.ITALIC, false));
-            existingLore.add(1, Component.text((int)(durabilitySave * 100) + "% durability save chance", NamedTextColor.GRAY)
-                .decoration(TextDecoration.ITALIC, false));
-            if (tier == TIER_NETHERITE) {
-                existingLore.add(2, Component.text("No enchantment conflicts", NamedTextColor.LIGHT_PURPLE)
                     .decoration(TextDecoration.ITALIC, false));
+            existingLore.add(1, Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
+                    .decoration(TextDecoration.ITALIC, false));
+            existingLore.add(2, Component.text((int)(durabilitySave * 100) + "% durability save chance", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            if (tier >= TIER_DIAMOND) {
+                existingLore.add(3, Component.text("Special ability unlocked", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+            }
+            if (tier == TIER_NETHERITE) {
+                existingLore.add(Component.text("No enchantment conflicts", NamedTextColor.LIGHT_PURPLE)
+                        .decoration(TextDecoration.ITALIC, false));
             }
         } else if (isShield || isBow || isCrossbow) {
             // Non-melee items: no damage modifier, just mark and lore
-            existingLore.add(0, Component.text(tierPrefix + " Tool", tierColor)
-                .decoration(TextDecoration.ITALIC, false));
-            if (tier >= TIER_DIAMOND) {
-                existingLore.add(1, Component.text("Special ability unlocked", NamedTextColor.GRAY)
+            existingLore.add(0, Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                     .decoration(TextDecoration.ITALIC, false));
-            }
-            if (tier == TIER_NETHERITE && isNetherite) {
-                existingLore.add(Component.text("Definitive ability", NamedTextColor.LIGHT_PURPLE)
+            existingLore.add(1, Component.text(tierPrefix + " Tool", tierColor)
                     .decoration(TextDecoration.ITALIC, false));
-                existingLore.add(Component.text("No enchantment conflicts", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.ITALIC, false));
-            }
-        } else {
-            double bonusDmg = getBonusDamage(mat, tier, isTrident);
-            double vanillaBaseDamage = getVanillaBaseDamage(mat);
-            double vanillaAttackSpeed = getVanillaAttackSpeed(mat);
-
-            existingLore.add(0, Component.text(tierPrefix + " Tool", tierColor)
-                .decoration(TextDecoration.ITALIC, false));
-            existingLore.add(1, Component.text("+" + formatDmg(bonusDmg) + " Bonus Attack Damage", NamedTextColor.GRAY)
-                .decoration(TextDecoration.ITALIC, false));
-
             if (tier >= TIER_DIAMOND) {
                 existingLore.add(2, Component.text("Special ability unlocked", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
+            }
+            if (tier == TIER_NETHERITE && (isNetherite || isBow || isCrossbow || isShield)) {
+                existingLore.add(Component.text("Definitive ability", NamedTextColor.LIGHT_PURPLE)
+                        .decoration(TextDecoration.ITALIC, false));
+                existingLore.add(Component.text("No enchantment conflicts", NamedTextColor.LIGHT_PURPLE)
+                        .decoration(TextDecoration.ITALIC, false));
+            }
+        } else {
+            // Melee weapons: damage modifier
+            double bonusDmg = getBonusDamage(mat, tier, isTrident, isSpear);
+            double baseDamage = getVanillaBaseDamage(mat);
+            double battleBonus = 1.0; // All battle versions add +1 damage
+            double vanillaAttackSpeed = getVanillaAttackSpeed(mat);
+
+            // Total damage = vanilla base + battle bonus (+1) + super bonus
+            double totalDamage = baseDamage + battleBonus + bonusDmg;
+
+            existingLore.add(0, Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
                     .decoration(TextDecoration.ITALIC, false));
+            existingLore.add(1, Component.text(tierPrefix + " Tool", tierColor)
+                    .decoration(TextDecoration.ITALIC, false));
+            existingLore.add(2, Component.text(" Attack Damage: ", NamedTextColor.WHITE)
+                    .append(Component.text(formatDmg(baseDamage), NamedTextColor.GREEN))
+                    .append(Component.text(" +", NamedTextColor.GRAY))
+                    .append(Component.text(formatDmg(battleBonus), NamedTextColor.GOLD))
+                    .append(Component.text(" +", NamedTextColor.GRAY))
+                    .append(Component.text(formatDmg(bonusDmg), NamedTextColor.AQUA))
+                    .append(Component.text(" = ", NamedTextColor.GRAY))
+                    .append(Component.text(formatDmg(totalDamage), NamedTextColor.RED))
+                    .decoration(TextDecoration.ITALIC, false));
+            existingLore.add(3, Component.text(" Attack Speed: " + formatDmg(vanillaAttackSpeed), NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+
+            if (tier >= TIER_DIAMOND) {
+                existingLore.add(4, Component.text("Special ability unlocked", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false));
             }
 
             if (tier == TIER_NETHERITE && isNetherite) {
                 existingLore.add(Component.text("Definitive ability", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.ITALIC, false));
+                        .decoration(TextDecoration.ITALIC, false));
                 existingLore.add(Component.text("No enchantment conflicts", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.ITALIC, false));
+                        .decoration(TextDecoration.ITALIC, false));
+                existingLore.add(Component.text("+2% damage per enchantment", NamedTextColor.LIGHT_PURPLE)
+                        .decoration(TextDecoration.ITALIC, false));
             }
 
             // Remove old attribute modifiers
@@ -178,20 +242,22 @@ public class SuperToolManager implements Listener {
             meta.removeAttributeModifier(Attribute.ATTACK_SPEED);
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
-            if (vanillaBaseDamage > 0) {
-                double totalModifier = vanillaBaseDamage + bonusDmg - 1.0;
+            if (baseDamage > 0 || battleBonus > 0) {
+                double totalModifier = baseDamage + battleBonus + bonusDmg - 1.0;
                 meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
-                    new AttributeModifier(superDamageKey, totalModifier,
-                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+                        new AttributeModifier(superDamageKey, totalModifier,
+                                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
                 double speedModifier = vanillaAttackSpeed - 4.0;
                 meta.addAttributeModifier(Attribute.ATTACK_SPEED,
-                    new AttributeModifier(superSpeedKey, speedModifier,
-                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+                        new AttributeModifier(superSpeedKey, speedModifier,
+                                AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
             }
         }
 
         meta.lore(existingLore);
+        // Ensure glint
+        meta.setEnchantmentGlintOverride(true);
         superTool.setItemMeta(meta);
         return superTool;
     }
@@ -210,7 +276,6 @@ public class SuperToolManager implements Listener {
         Map<EnchantmentType, Integer> customEnchants = enchantManager.getAllCustomEnchants(existingSuper);
 
         // Create new super at higher tier
-        // Strip the old super PDC first by creating a base clone
         ItemStack result = createSuperTool(existingSuper, newTier);
         if (result == null) return null;
 
@@ -227,7 +292,7 @@ public class SuperToolManager implements Listener {
         return result;
     }
 
-    private double getBonusDamage(Material mat, int tier, boolean isTrident) {
+    private double getBonusDamage(Material mat, int tier, boolean isTrident, boolean isSpear) {
         boolean isNetherite = isNetheriteMaterial(mat);
         if (isTrident) {
             return switch (tier) {
@@ -265,7 +330,7 @@ public class SuperToolManager implements Listener {
     public int getElytraDurabilityTier(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return 0;
         Integer tier = item.getItemMeta().getPersistentDataContainer()
-            .get(superElytraDurabilityKey, PersistentDataType.INTEGER);
+                .get(superElytraDurabilityKey, PersistentDataType.INTEGER);
         return tier != null ? tier : 0;
     }
 
@@ -297,35 +362,31 @@ public class SuperToolManager implements Listener {
 
     /**
      * Checks if a material can become a Super tool.
-     * Regular Axes, Bows, and Crossbows CANNOT — must be Battle variants.
-     * Hoes CAN (for sickles which are hoe-based).
+     * In v1.3.0, ALL weapons require a Battle version first.
+     * Only Elytra and Shield go directly to Super (they have no battle step).
+     * This method is kept for backward compat but the real check is isBattleItem().
      */
-        public boolean canBeSuperTool(Material mat) {
-        String name = mat.name();
-        // Regular axes cannot be super
-        if (name.endsWith("_AXE")) return false;
-        // Regular bows/crossbows cannot be super (must be Battle variants)
-        if (mat == Material.BOW || mat == Material.CROSSBOW) return false;
-        // Hoes cannot be super (sickles are the upgraded version)
-        if (name.endsWith("_HOE")) return false;
+    public boolean canBeSuperTool(Material mat) {
+        // Elytra and Shield go directly to Super
+        if (mat == Material.ELYTRA || mat == Material.SHIELD) return true;
 
-        return name.endsWith("_SWORD") || name.endsWith("_PICKAXE")
-            || name.endsWith("_SHOVEL")
-            || mat == Material.ELYTRA || mat == Material.TRIDENT
-            || mat == Material.SHIELD;
+        // All other items require a Battle PDC marker — checked at craft time
+        String name = mat.name();
+        return name.endsWith("_SWORD") || name.endsWith("_AXE")
+                || name.endsWith("_PICKAXE") || name.endsWith("_SHOVEL")
+                || name.endsWith("_HOE") || name.endsWith("_SPEAR")
+                || mat == Material.BOW || mat == Material.CROSSBOW
+                || mat == Material.TRIDENT || mat == Material.MACE;
     }
 
-    /**
-     * Returns the ingredient material for each super tier.
-     */
+    // ============ INGREDIENT HELPERS ============
+
     public Material getIronTierIngredient() { return Material.IRON_INGOT; }
     public Material getDiamondTierIngredient() { return Material.DIAMOND; }
     public Material getNetheriteTierIngredient() { return Material.NETHERITE_INGOT; }
-
-    /**
-     * Returns the special ingredient for (Iron) Super Battle Bow/Crossbow
-     */
     public Material getBattleBowIronIngredient() { return Material.STRING; }
+
+    // ============ VANILLA BASE DAMAGE (for lore calculations) ============
 
     public double getVanillaBaseDamage(Material mat) {
         return switch (mat) {
@@ -360,6 +421,14 @@ public class SuperToolManager implements Listener {
             case DIAMOND_HOE -> 1.0;
             case NETHERITE_HOE -> 1.0;
             case TRIDENT -> 9.0;
+            case MACE -> 11.0;
+            case WOODEN_SPEAR -> 1.0;
+            case STONE_SPEAR -> 2.0;
+            case COPPER_SPEAR -> 2.0;
+            case GOLDEN_SPEAR -> 2.0;
+            case IRON_SPEAR -> 3.0;
+            case DIAMOND_SPEAR -> 4.0;
+            case NETHERITE_SPEAR -> 5.0;
             default -> 0;
         };
     }
@@ -380,6 +449,13 @@ public class SuperToolManager implements Listener {
             case IRON_HOE -> 3.0;
             case DIAMOND_HOE, NETHERITE_HOE -> 4.0;
             case TRIDENT -> 1.1;
+            case MACE -> 0.6;
+            case WOODEN_SPEAR -> 1.54;
+            case STONE_SPEAR -> 1.33;
+            case COPPER_SPEAR -> 1.18;
+            case GOLDEN_SPEAR, IRON_SPEAR -> 1.05;
+            case DIAMOND_SPEAR -> 0.95;
+            case NETHERITE_SPEAR -> 0.87;
             default -> 4.0;
         };
     }

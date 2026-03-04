@@ -11,7 +11,6 @@ import com.jglims.plugin.crafting.VanillaRecipeRemover;
 import com.jglims.plugin.blessings.BlessingManager;
 import com.jglims.plugin.blessings.BlessingListener;
 import com.jglims.plugin.mobs.MobDifficultyManager;
-import com.jglims.plugin.mobs.BiomeMultipliers;
 import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.mobs.BloodMoonManager;
@@ -34,18 +33,30 @@ public class JGlimsPlugin extends JavaPlugin {
     private ConfigManager configManager;
     private CustomEnchantManager enchantManager;
     private BlessingManager blessingManager;
+
+    // Weapon managers (all battle + super)
     private SickleManager sickleManager;
     private BattleAxeManager battleAxeManager;
     private BattleBowManager battleBowManager;
     private BattleMaceManager battleMaceManager;
     private BattleShovelManager battleShovelManager;
+    private BattleSwordManager battleSwordManager;
+    private BattlePickaxeManager battlePickaxeManager;
+    private BattleTridentManager battleTridentManager;
+    private BattleSpearManager battleSpearManager;
     private SpearManager spearManager;
     private SuperToolManager superToolManager;
+
+    // Crafting
     private RecipeManager recipeManager;
+
+    // Mob systems
     private MobDifficultyManager mobDifficultyManager;
     private KingMobManager kingMobManager;
-    private WeaponMasteryManager weaponMasteryManager;
     private BloodMoonManager bloodMoonManager;
+
+    // Player systems
+    private WeaponMasteryManager weaponMasteryManager;
     private GuildManager guildManager;
 
     @Override
@@ -53,7 +64,7 @@ public class JGlimsPlugin extends JavaPlugin {
         instance = this;
         long start = System.currentTimeMillis();
 
-        // 1. Config (must be first — everything depends on it)
+        // 1. Config (must be first)
         configManager = new ConfigManager(this);
         configManager.loadConfig();
 
@@ -63,41 +74,39 @@ public class JGlimsPlugin extends JavaPlugin {
         // 3. Blessing system
         blessingManager = new BlessingManager(this);
 
-        // 4. Weapon systems — all managers
+        // 4. Weapon managers — all battle + base managers
         sickleManager = new SickleManager(this);
         battleAxeManager = new BattleAxeManager(this);
         battleBowManager = new BattleBowManager(this);
         battleMaceManager = new BattleMaceManager(this);
+        battleSwordManager = new BattleSwordManager(this);
+        battlePickaxeManager = new BattlePickaxeManager(this);
+        battleTridentManager = new BattleTridentManager(this);
+        battleSpearManager = new BattleSpearManager(this);
         superToolManager = new SuperToolManager(this);
-
-        // 5. New weapon managers (v1.3.0) — require configManager
         spearManager = new SpearManager(this, configManager);
         battleShovelManager = new BattleShovelManager(this, configManager);
 
-        // 6. Crafting recipes
+        // 5. Crafting recipes (pass all managers)
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
-                battleBowManager, battleMaceManager, superToolManager);
+                battleBowManager, battleMaceManager, superToolManager,
+                battleSwordManager, battlePickaxeManager, battleTridentManager,
+                battleSpearManager, battleShovelManager, spearManager);
         recipeManager.registerAllRecipes();
 
-        // 7. Remove vanilla recipes we replace
+        // 6. Remove vanilla recipes we replace
         VanillaRecipeRemover.remove(this);
 
-        // 8. Mob difficulty
+        // 7. Mob systems
         mobDifficultyManager = new MobDifficultyManager(this, configManager);
-
-        // 9. King mob system
         kingMobManager = new KingMobManager(this, configManager);
-
-        // 10. Weapon mastery
-        weaponMasteryManager = new WeaponMasteryManager(this, configManager);
-
-        // 11. Blood moon
         bloodMoonManager = new BloodMoonManager(this, configManager);
 
-        // 12. Guild system
+        // 8. Player systems
+        weaponMasteryManager = new WeaponMasteryManager(this, configManager);
         guildManager = new GuildManager(this, configManager);
 
-        // 13. Register all event listeners
+        // 9. Register all event listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new AnvilRecipeListener(this, enchantManager), this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
@@ -120,7 +129,7 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(bloodMoonManager, this);
         pm.registerEvents(new GuildListener(this, guildManager), this);
 
-        // WeaponAbilityListener — pass ALL managers it needs
+        // WeaponAbilityListener — pass needed managers
         pm.registerEvents(new WeaponAbilityListener(
                 this,
                 configManager,
@@ -130,12 +139,10 @@ public class JGlimsPlugin extends JavaPlugin {
                 battleShovelManager
         ), this);
 
-        // 14. Pale Garden fog — uses the alias method getPaleGardenFogInterval()
+        // 10. Scheduled tasks
         if (configManager.isPaleGardenFogEnabled()) {
             new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         }
-
-        // 15. Blood Moon scheduler
         if (configManager.isBloodMoonEnabled()) {
             bloodMoonManager.startScheduler();
         }
@@ -225,6 +232,10 @@ public class JGlimsPlugin extends JavaPlugin {
     public BattleBowManager getBattleBowManager() { return battleBowManager; }
     public BattleMaceManager getBattleMaceManager() { return battleMaceManager; }
     public BattleShovelManager getBattleShovelManager() { return battleShovelManager; }
+    public BattleSwordManager getBattleSwordManager() { return battleSwordManager; }
+    public BattlePickaxeManager getBattlePickaxeManager() { return battlePickaxeManager; }
+    public BattleTridentManager getBattleTridentManager() { return battleTridentManager; }
+    public BattleSpearManager getBattleSpearManager() { return battleSpearManager; }
     public SpearManager getSpearManager() { return spearManager; }
     public SuperToolManager getSuperToolManager() { return superToolManager; }
     public KingMobManager getKingMobManager() { return kingMobManager; }
