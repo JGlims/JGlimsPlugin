@@ -247,6 +247,16 @@ public class EnchantmentEffectListener implements Listener {
             livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, dur, 0, true, true, true));
         }
 
+        // --- Frostbite Blade (Phase 9) ---
+        int frostBladeLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.FROSTBITE_BLADE);
+        if (frostBladeLvl > 0) {
+            int dur = frostBladeLvl * 30; // 1.5s, 3s, 4.5s
+            livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, dur, frostBladeLvl - 1, true, true, true));
+            livingTarget.setFreezeTicks(Math.max(livingTarget.getFreezeTicks(), dur + 20));
+            livingTarget.getWorld().spawnParticle(Particle.SNOWFLAKE, livingTarget.getLocation().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.02);
+        }
+
+
         // --- Wither Touch ---
         int witherLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.WITHER_TOUCH);
         if (witherLvl > 0) {
@@ -308,6 +318,32 @@ public class EnchantmentEffectListener implements Listener {
             }
         }
 
+        // --- Wrath (Phase 9) ---
+        int wrathLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.WRATH);
+        if (wrathLvl > 0) {
+            NamespacedKey wrathTargetKey = new NamespacedKey(plugin, "wrath_target");
+            NamespacedKey wrathStackKey = new NamespacedKey(plugin, "wrath_stacks");
+            NamespacedKey wrathTimeKey = new NamespacedKey(plugin, "wrath_time");
+            PersistentDataContainer attackerPdc = attacker.getPersistentDataContainer();
+            String targetUuid = livingTarget.getUniqueId().toString();
+            String lastTarget = attackerPdc.getOrDefault(wrathTargetKey, PersistentDataType.STRING, "");
+            long lastTime = attackerPdc.getOrDefault(wrathTimeKey, PersistentDataType.LONG, 0L);
+            long now = System.currentTimeMillis();
+            int stacks;
+            if (targetUuid.equals(lastTarget) && (now - lastTime) < 3000L) {
+                stacks = Math.min(attackerPdc.getOrDefault(wrathStackKey, PersistentDataType.INTEGER, 0) + 1, 3);
+            } else {
+                stacks = 1;
+            }
+            attackerPdc.set(wrathTargetKey, PersistentDataType.STRING, targetUuid);
+            attackerPdc.set(wrathStackKey, PersistentDataType.INTEGER, stacks);
+            attackerPdc.set(wrathTimeKey, PersistentDataType.LONG, now);
+            double wrathBonus = stacks * (wrathLvl * 0.10) * baseDamage;
+            event.setDamage(baseDamage + wrathBonus);
+            baseDamage = event.getDamage();
+        }
+
+
         // --- Guillotine ---
         int guillotineLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.GUILLOTINE);
         if (guillotineLvl > 0 && !(livingTarget instanceof Boss)) {
@@ -327,6 +363,79 @@ public class EnchantmentEffectListener implements Listener {
             targetPdc.set(soulReapAttackerKey, PersistentDataType.STRING, attacker.getUniqueId().toString());
             targetPdc.set(soulReapLevelKey, PersistentDataType.INTEGER, soulReapLvl);
         }
+
+        // --- Soul Harvest (Phase 9) ---
+        int soulHarvestLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.SOUL_HARVEST);
+        if (soulHarvestLvl > 0) {
+            int witherDur = soulHarvestLvl * 40; // 2s, 4s, 6s
+            int witherAmp = soulHarvestLvl - 1;
+            livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, witherDur, witherAmp, true, true, true));
+            // Grant Regen to attacker while target has Wither
+            attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, witherDur, soulHarvestLvl - 1, true, false, false));
+            livingTarget.getWorld().spawnParticle(Particle.SOUL, livingTarget.getLocation().add(0, 1, 0), 6, 0.3, 0.4, 0.3, 0.02);
+        }
+
+        // --- Burial (Phase 9) ---
+        int burialLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.BURIAL);
+        if (burialLvl > 0) {
+            int dur = burialLvl * 20; // 1s, 2s, 3s
+            livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, dur, 2, true, true, true)); // Slowness III
+            livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, dur, 0, true, true, true)); // Blindness I
+            livingTarget.getWorld().spawnParticle(Particle.ASH, livingTarget.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0.02);
+        }
+
+        // --- Tremor (Phase 9) ---
+        int tremorLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.TREMOR);
+        if (tremorLvl > 0) {
+            double tremorRadius = tremorLvl * 2.0;
+            for (Entity nearby : livingTarget.getNearbyEntities(tremorRadius, tremorRadius, tremorRadius)) {
+                if (nearby instanceof LivingEntity le && nearby != attacker) {
+                    le.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 60, 1, true, true, true)); // Mining Fatigue II, 3s
+                }
+            }
+            livingTarget.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 60, 1, true, true, true));
+            livingTarget.getWorld().spawnParticle(Particle.BLOCK, livingTarget.getLocation(), 15, tremorRadius * 0.5, 0.2, tremorRadius * 0.5, 0.01,
+                Material.STONE.createBlockData());
+        }
+
+        // --- Phantom Pierce (Phase 9) ---
+        int phantomPierceLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.PHANTOM_PIERCE);
+        if (phantomPierceLvl > 0 && attacker.getAttackCooldown() >= 0.9f) { // Only on charged attacks
+            int pierceCt = phantomPierceLvl;
+            Vector atkDir = attacker.getLocation().getDirection().normalize();
+            Set<Entity> pierced = new HashSet<>();
+            pierced.add(livingTarget);
+            pierced.add(attacker);
+            LivingEntity current = livingTarget;
+            for (int i = 0; i < pierceCt; i++) {
+                LivingEntity next = null;
+                double bestDot = 0.5; // Must be roughly in front (within ~60 degrees)
+                double bestDist = 4.0;
+                for (Entity e : current.getNearbyEntities(4, 2, 4)) {
+                    if (e instanceof LivingEntity le && !pierced.contains(e)) {
+                        Vector toEntity = e.getLocation().toVector().subtract(current.getLocation().toVector()).normalize();
+                        double dot = atkDir.dot(toEntity);
+                        double d = current.getLocation().distance(e.getLocation());
+                        if (dot > bestDot && d < bestDist) {
+                            bestDot = dot;
+                            bestDist = d;
+                            next = le;
+                        }
+                    }
+                }
+                if (next == null) break;
+                next.damage(baseDamage, attacker);
+                pierced.add(next);
+                // Draw pierce line
+                Location from = current.getLocation().add(0, 1, 0);
+                Location to = next.getLocation().add(0, 1, 0);
+                current.getWorld().spawnParticle(Particle.END_ROD,
+                    from.clone().add(to.toVector().subtract(from.toVector()).multiply(0.5)),
+                    3, 0.1, 0.1, 0.1, 0.01);
+                current = next;
+            }
+        }
+
 
         // --- Normal Axe Combat Nerf (NEW v1.1.0) ---
         if (plugin.getConfigManager().isAxeNerfEnabled()) {
@@ -422,6 +531,49 @@ public class EnchantmentEffectListener implements Listener {
                 event.setDroppedExp(event.getDroppedExp() + bonusXp);
             }
         }
+
+        // --- Reaping Curse (Phase 9) ---
+        if (killer != null) {
+            ItemStack killerWeapon = killer.getInventory().getItemInMainHand();
+            int reapingCurseLvl = enchantManager.getEnchantLevel(killerWeapon, EnchantmentType.REAPING_CURSE);
+            if (reapingCurseLvl > 0) {
+                Location deathLoc = entity.getLocation();
+                double cloudRadius = switch (reapingCurseLvl) { case 1 -> 2.0; case 2 -> 3.0; default -> 4.0; };
+                int cloudDur = 60; // 3 seconds
+                new BukkitRunnable() {
+                    int ticks = 0;
+                    @Override
+                    public void run() {
+                        if (ticks >= cloudDur) { cancel(); return; }
+                        deathLoc.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, deathLoc.clone().add(0, 0.5, 0),
+                            3, cloudRadius * 0.3, 0.2, cloudRadius * 0.3, 0.01);
+                        if (ticks % 10 == 0) { // Damage pulse every 0.5s
+                            for (Entity nearby : deathLoc.getWorld().getNearbyEntities(deathLoc, cloudRadius, cloudRadius, cloudRadius)) {
+                                if (nearby instanceof LivingEntity le && nearby != killer && !(nearby instanceof Player)) {
+                                    le.damage(4.0, killer);
+                                }
+                            }
+                        }
+                        ticks += 5;
+                    }
+                }.runTaskTimer(plugin, 0L, 5L);
+            }
+
+            // --- Crop Reaper (Phase 9) ---
+            int cropReaperLvl = enchantManager.getEnchantLevel(killerWeapon, EnchantmentType.CROP_REAPER);
+            if (cropReaperLvl > 0) {
+                // Base 15% + 5% per Looting level
+                int lootingLvl = killerWeapon.getEnchantmentLevel(org.bukkit.enchantments.Enchantment.LOOTING);
+                double chance = 0.15 + (lootingLvl * 0.05);
+                if (ThreadLocalRandom.current().nextDouble() < chance) {
+                    Material[] crops = { Material.WHEAT, Material.CARROT, Material.POTATO,
+                                         Material.BEETROOT, Material.WHEAT_SEEDS, Material.MELON_SLICE };
+                    Material drop = crops[ThreadLocalRandom.current().nextInt(crops.length)];
+                    entity.getWorld().dropItemNaturally(entity.getLocation(), new ItemStack(drop, 1 + ThreadLocalRandom.current().nextInt(3)));
+                }
+            }
+        }
+
     }
 
     // ========================================================================
@@ -460,6 +612,17 @@ public class EnchantmentEffectListener implements Listener {
                     }
                 }
             }
+
+            // --- Frostbite Arrow (Phase 9) ---
+            int frostArrowLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.FROSTBITE_ARROW);
+            if (frostArrowLvl > 0 && event.getHitEntity() instanceof LivingEntity frostTarget) {
+                int dur = frostArrowLvl * 30; // 1.5s, 3s, 4.5s
+                frostTarget.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, dur, frostArrowLvl - 1, true, true, true));
+                frostTarget.setFreezeTicks(Math.max(frostTarget.getFreezeTicks(), dur + 20));
+                frostTarget.setFireTicks(0); // Extinguish fire
+                frostTarget.getWorld().spawnParticle(Particle.SNOWFLAKE, frostTarget.getLocation().add(0, 1, 0), 10, 0.4, 0.5, 0.4, 0.02);
+            }
+
         }
 
         if (projectile instanceof Trident) {
@@ -481,6 +644,29 @@ public class EnchantmentEffectListener implements Listener {
                     .multiply(pushStr * 0.4).setY(0.4);
                 target.setVelocity(pushDir);
             }
+
+            // --- Tsunami (Phase 9) ---
+            int tsunamiLvl = enchantManager.getEnchantLevel(weapon, EnchantmentType.TSUNAMI);
+            if (tsunamiLvl > 0 && event.getHitEntity() instanceof LivingEntity tsunamiTarget) {
+                World world = tsunamiTarget.getWorld();
+                boolean inWaterOrRain = tsunamiTarget.isInWater() || world.hasStorm();
+                if (inWaterOrRain) {
+                    double pushDist = switch (tsunamiLvl) { case 1 -> 3.0; case 2 -> 5.0; default -> 7.0; };
+                    double radius = pushDist * 0.6;
+                    Location impactLoc = tsunamiTarget.getLocation();
+                    for (Entity nearby : world.getNearbyEntities(impactLoc, radius, radius, radius)) {
+                        if (nearby instanceof LivingEntity le && nearby != shooter) {
+                            Vector push = le.getLocation().toVector().subtract(impactLoc.toVector()).normalize()
+                                .multiply(pushDist * 0.5).setY(0.5);
+                            le.setVelocity(push);
+                            le.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0, true, true, true));
+                        }
+                    }
+                    world.spawnParticle(Particle.SPLASH, impactLoc.clone().add(0, 0.5, 0), 30, radius * 0.5, 0.3, radius * 0.5, 0.1);
+                    world.spawnParticle(Particle.BUBBLE, impactLoc.clone().add(0, 1, 0), 15, radius * 0.3, 0.3, radius * 0.3, 0.05);
+                }
+            }
+
         }
     }
 
@@ -572,6 +758,36 @@ public class EnchantmentEffectListener implements Listener {
             return;
         }
 
+        // --- Earthshatter (Phase 9) ---
+        int earthshatterLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.EARTHSHATTER);
+        if (earthshatterLvl > 0 && isShovelMineable(block.getType())) {
+            Material targetMat = block.getType();
+            int radius = earthshatterLvl; // 1, 2, or 3
+            processingBlockBreak.add(player.getUniqueId());
+            try {
+                int broken = 0;
+                int maxBlocks = radius * radius * radius * 4; // reasonable cap
+                for (int x = -radius; x <= radius; x++) {
+                    for (int y = -radius; y <= radius; y++) {
+                        for (int z = -radius; z <= radius; z++) {
+                            if (x == 0 && y == 0 && z == 0) continue;
+                            Block relative = block.getRelative(x, y, z);
+                            if (relative.getType() == targetMat && broken < maxBlocks) {
+                                relative.breakNaturally(tool);
+                                broken++;
+                            }
+                        }
+                    }
+                }
+            } finally {
+                processingBlockBreak.remove(player.getUniqueId());
+            }
+            block.getWorld().spawnParticle(Particle.BLOCK, block.getLocation().add(0.5, 0.5, 0.5),
+                15, radius * 0.5, 0.3, radius * 0.5, 0.01, block.getBlockData());
+            return;
+        }
+
+
         int autoSmeltLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.AUTO_SMELT);
         if (autoSmeltLvl > 0 && isSmeltableOre(block.getType())) {
             Material smelted = getSmeltedDrop(block.getType());
@@ -580,6 +796,20 @@ public class EnchantmentEffectListener implements Listener {
                 block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(smelted, 1));
             }
         }
+
+        // --- Prospector (Phase 9) ---
+        int prospectorLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.PROSPECTOR);
+        if (prospectorLvl > 0 && isOre(block.getType())) {
+            double chance = prospectorLvl * 0.05; // 5%, 10%, 15%
+            if (ThreadLocalRandom.current().nextDouble() < chance) {
+                // Double the drops by breaking again virtually
+                for (ItemStack drop : block.getDrops(tool, player)) {
+                    block.getWorld().dropItemNaturally(block.getLocation(), drop.clone());
+                }
+                block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, 0.01);
+            }
+        }
+
 
         int magLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.MAGNETISM);
         if (magLvl > 0) {

@@ -122,6 +122,30 @@ public class AnvilRecipeListener implements Listener {
         recipes.put(EnchantmentType.EXTENDED_REACH,  new AnvilRecipe(Enchantment.SHARPNESS, Material.BLAZE_ROD, true, 3));
         recipes.put(EnchantmentType.SKEWERING,       new AnvilRecipe(Enchantment.SHARPNESS, Material.POINTED_DRIPSTONE, true, 3));
 
+                // ===================== PHASE 9: NEW ENCHANTMENTS =====================
+        // Sword
+        recipes.put(EnchantmentType.FROSTBITE_BLADE,  new AnvilRecipe(Enchantment.SHARPNESS, Material.BLUE_ICE, true, 3));
+        // Axe
+        recipes.put(EnchantmentType.WRATH,            new AnvilRecipe(Enchantment.SHARPNESS, Material.BLAZE_POWDER, true, 3));
+        // Pickaxe
+        recipes.put(EnchantmentType.PROSPECTOR,       new AnvilRecipe(Enchantment.EFFICIENCY, Material.RAW_GOLD, true, 3));
+        // Shovel
+        recipes.put(EnchantmentType.BURIAL,           new AnvilRecipe(Enchantment.SHARPNESS, Material.SOUL_SOIL, true, 3));
+        recipes.put(EnchantmentType.EARTHSHATTER,     new AnvilRecipe(Enchantment.EFFICIENCY, Material.TNT, true, 3));
+        // Sickle
+        recipes.put(EnchantmentType.SOUL_HARVEST,     new AnvilRecipe(Enchantment.SHARPNESS, Material.SOUL_LANTERN, true, 3));
+        recipes.put(EnchantmentType.REAPING_CURSE,    new AnvilRecipe(Enchantment.SHARPNESS, Material.FERMENTED_SPIDER_EYE, true, 3));
+        recipes.put(EnchantmentType.CROP_REAPER,      new AnvilRecipe(Enchantment.SHARPNESS, Material.HAY_BLOCK, false, 1));
+        // Bow
+        recipes.put(EnchantmentType.FROSTBITE_ARROW,  new AnvilRecipe(Enchantment.POWER, Material.BLUE_ICE, true, 3));
+        // Trident
+        recipes.put(EnchantmentType.TSUNAMI,          new AnvilRecipe(Enchantment.UNBREAKING, Material.NAUTILUS_SHELL, true, 3));
+        // Mace
+        recipes.put(EnchantmentType.TREMOR,           new AnvilRecipe(Enchantment.UNBREAKING, Material.SCULK_CATALYST, true, 3));
+        // Spear
+        recipes.put(EnchantmentType.PHANTOM_PIERCE,   new AnvilRecipe(Enchantment.SHARPNESS, Material.PHANTOM_MEMBRANE, true, 3));
+
+
         plugin.getLogger().info("Registered " + recipes.size() + " anvil enchantment recipes.");
     }
 
@@ -390,6 +414,21 @@ public class AnvilRecipeListener implements Listener {
             case IMPALING_THRUST -> "Bypasses " + switch (level) { case 1 -> "15%"; case 2 -> "25%"; default -> "35%"; } + " of target's armor";
             case EXTENDED_REACH -> "+" + switch (level) { case 1 -> "0.5"; case 2 -> "1.0"; default -> "1.5"; } + " block attack range";
             case SKEWERING -> "Charge attack pierces through " + switch (level) { case 1 -> "2"; case 2 -> "3"; default -> "4"; } + " blocks behind target";
+
+            // === Phase 9 enchantments ===
+            case FROSTBITE_BLADE -> "Applies Slowness " + toRoman(level) + " + freeze visual on hit";
+            case WRATH -> "Consecutive hits on same target: +" + (level * 10) + "% damage (resets on switch)";
+            case PROSPECTOR -> (level * 5) + "% chance for double ore yield (stacks with Fortune)";
+            case BURIAL -> "Applies Slowness III + Blindness I for " + level + "s on hit";
+            case EARTHSHATTER -> "Breaking a block sends shockwave breaking identical blocks (radius " + level + ")";
+            case SOUL_HARVEST -> "Wither " + toRoman(level) + " on hit + Regen " + toRoman(level) + " while Wither active";
+            case REAPING_CURSE -> "Kill creates lingering Instant Damage cloud at corpse (radius " + switch (level) { case 1 -> "2"; case 2 -> "3"; default -> "4"; } + ")";
+            case CROP_REAPER -> "Kills have 15%+5%/Looting chance to drop crops";
+            case FROSTBITE_ARROW -> "Arrows apply Slowness " + toRoman(level) + " + extinguish fire";
+            case TSUNAMI -> "Thrown hit creates water burst pushing mobs " + switch (level) { case 1 -> "3"; case 2 -> "5"; default -> "7"; } + " blocks (rain/water only)";
+            case TREMOR -> "On hit, nearby mobs get Mining Fatigue II for 3s (radius " + (level * 2) + ")";
+            case PHANTOM_PIERCE -> "Charged attacks pierce through " + level + " target" + (level > 1 ? "s" : "") + " dealing full damage";
+
         };
     }
 
@@ -422,6 +461,13 @@ public class AnvilRecipeListener implements Listener {
             case MOMENTUM -> vanillaEnchants.containsKey(Enchantment.FROST_WALKER);
             case SEISMIC_SLAM -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
             // Spear enchantment conflicts are handled via CustomEnchantManager's conflict map
+
+            case FROSTBITE_BLADE -> vanillaEnchants.containsKey(Enchantment.FIRE_ASPECT);
+            case EARTHSHATTER -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
+            case PROSPECTOR -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
+            case TSUNAMI -> vanillaEnchants.containsKey(Enchantment.RIPTIDE);
+            case FROSTBITE_ARROW -> vanillaEnchants.containsKey(Enchantment.FLAME);
+
             default -> false;
         };
     }
@@ -439,6 +485,16 @@ public class AnvilRecipeListener implements Listener {
             case MOMENTUM -> NamedTextColor.WHITE;
             case HARVESTING_MOON -> NamedTextColor.GOLD;
             case IMPALING_THRUST, EXTENDED_REACH, SKEWERING -> NamedTextColor.DARK_AQUA;
+            case FROSTBITE_BLADE, FROSTBITE_ARROW -> NamedTextColor.AQUA;
+            case WRATH -> NamedTextColor.DARK_RED;
+            case PROSPECTOR -> NamedTextColor.GOLD;
+            case BURIAL -> NamedTextColor.DARK_GRAY;
+            case EARTHSHATTER -> NamedTextColor.YELLOW;
+            case SOUL_HARVEST, REAPING_CURSE -> NamedTextColor.DARK_PURPLE;
+            case CROP_REAPER -> NamedTextColor.GREEN;
+            case TSUNAMI -> NamedTextColor.DARK_AQUA;
+            case TREMOR -> NamedTextColor.GRAY;
+            case PHANTOM_PIERCE -> NamedTextColor.WHITE;
             default -> NamedTextColor.BLUE;
         };
     }

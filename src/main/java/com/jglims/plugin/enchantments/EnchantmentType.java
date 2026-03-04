@@ -8,6 +8,7 @@ public enum EnchantmentType {
     VENOMSTRIKE(3),
     LIFESTEAL(3),
     CHAIN_LIGHTNING(3),
+    FROSTBITE_BLADE(3),  // NEW Phase 9
 
     // === Axe ===
     BERSERKER(5),
@@ -15,6 +16,7 @@ public enum EnchantmentType {
     CLEAVE(3),
     TIMBER(3),
     GUILLOTINE(3),
+    WRATH(3),  // NEW Phase 9
 
     // === Pickaxe ===
     VEINMINER(3),
@@ -22,20 +24,27 @@ public enum EnchantmentType {
     AUTO_SMELT(1),
     MAGNETISM(1),
     EXCAVATOR(3),
+    PROSPECTOR(3),  // NEW Phase 9
 
     // === Shovel ===
     HARVESTER(3),
+    BURIAL(3),        // NEW Phase 9
+    EARTHSHATTER(3),  // NEW Phase 9
 
     // === Hoe / Sickle ===
     GREEN_THUMB(1),
     REPLENISH(1),
     HARVESTING_MOON(3),
+    SOUL_HARVEST(3),   // NEW Phase 9
+    REAPING_CURSE(3),  // NEW Phase 9
+    CROP_REAPER(1),    // NEW Phase 9
 
     // === Bow ===
     EXPLOSIVE_ARROW(3),
     HOMING(3),
     RAPIDFIRE(3),
     SNIPER(3),
+    FROSTBITE_ARROW(3),  // NEW Phase 9
 
     // === Crossbow ===
     THUNDERLORD(5),
@@ -47,6 +56,7 @@ public enum EnchantmentType {
     BLOOD_PRICE(3),
     REAPERS_MARK(3),
     WITHER_TOUCH(3),
+    TSUNAMI(3),  // NEW Phase 9
 
     // === Armor ===
     SWIFTNESS(3),
@@ -70,11 +80,13 @@ public enum EnchantmentType {
     MAGNETIZE(3),
     GRAVITY_WELL(3),
     MOMENTUM(3),
+    TREMOR(3),  // NEW Phase 9
 
-    // === Spear (NEW) ===
+    // === Spear ===
     IMPALING_THRUST(3),
     EXTENDED_REACH(3),
     SKEWERING(3),
+    PHANTOM_PIERCE(3),  // NEW Phase 9
 
     // === Universal ===
     SOULBOUND(1),

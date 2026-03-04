@@ -47,6 +47,19 @@ public class CustomEnchantManager {
         addConflict(EnchantmentType.IMPALING_THRUST, EnchantmentType.EXTENDED_REACH);
         addConflict(EnchantmentType.EXTENDED_REACH, EnchantmentType.SKEWERING);
         addConflict(EnchantmentType.IMPALING_THRUST, EnchantmentType.SKEWERING);
+
+        // === Phase 9 conflicts ===
+        addConflict(EnchantmentType.FROSTBITE_BLADE, EnchantmentType.VENOMSTRIKE);
+        addConflict(EnchantmentType.WRATH, EnchantmentType.CLEAVE);
+        addConflict(EnchantmentType.PROSPECTOR, EnchantmentType.AUTO_SMELT);
+        addConflict(EnchantmentType.BURIAL, EnchantmentType.HARVESTER);
+        addConflict(EnchantmentType.SOUL_HARVEST, EnchantmentType.GREEN_THUMB);
+        addConflict(EnchantmentType.REAPING_CURSE, EnchantmentType.REPLENISH);
+        addConflict(EnchantmentType.FROSTBITE_ARROW, EnchantmentType.EXPLOSIVE_ARROW);
+        addConflict(EnchantmentType.TSUNAMI, EnchantmentType.FROSTBITE);
+        addConflict(EnchantmentType.TREMOR, EnchantmentType.GRAVITY_WELL);
+        addConflict(EnchantmentType.PHANTOM_PIERCE, EnchantmentType.SKEWERING);
+
     }
 
     private void addConflict(EnchantmentType a, EnchantmentType b) {
