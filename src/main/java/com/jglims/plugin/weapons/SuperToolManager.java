@@ -255,6 +255,8 @@ public class SuperToolManager implements Listener {
             }
         }
 
+
+        
         meta.lore(existingLore);
         // Ensure glint
         meta.setEnchantmentGlintOverride(true);
