@@ -140,7 +140,7 @@ villager-trades:
 # --- King Mob ---
 king-mob:
   enabled: true
-  spawns-per-king: 500
+  spawns-per-king: 100
   health-multiplier: 10.0
   damage-multiplier: 3.0
   diamond-drop-min: 3

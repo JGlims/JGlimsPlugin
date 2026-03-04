@@ -52,9 +52,18 @@ public class BattleBowManager {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Ranged Battle Weapon", NamedTextColor.GRAY)
+            .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Diamond: Arrow Storm", NamedTextColor.AQUA)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Netherite: Celestial Volley", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
+
+        meta.setEnchantmentGlintOverride(true);
 
         bow.setItemMeta(meta);
         return bow;
@@ -72,9 +81,18 @@ public class BattleBowManager {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Custom Weapon", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Ranged Battle Weapon", NamedTextColor.GRAY)
+            .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("Can be upgraded to Super", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.empty());
+        lore.add(Component.text("Diamond: Chain Shot", NamedTextColor.AQUA)
+            .decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("Netherite: Thunder Barrage", NamedTextColor.DARK_RED)
+            .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
+
+        meta.setEnchantmentGlintOverride(true);
 
         crossbow.setItemMeta(meta);
         return crossbow;

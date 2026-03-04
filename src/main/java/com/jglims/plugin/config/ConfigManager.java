@@ -264,7 +264,7 @@ public class ConfigManager {
 
         // --- King Mob ---
         kingMobEnabled = config.getBoolean("king-mob.enabled", true);
-        spawnsPerKing = config.getInt("king-mob.spawns-per-king", 500);
+        spawnsPerKing = config.getInt("king-mob.spawns-per-king", 100);
         kingHealthMultiplier = config.getDouble("king-mob.health-multiplier", 10.0);
         kingDamageMultiplier = config.getDouble("king-mob.damage-multiplier", 3.0);
         kingDiamondDropMin = config.getInt("king-mob.diamond-drop-min", 3);
