@@ -104,7 +104,7 @@ public class BattleBowManager {
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         crossbow.setItemMeta(meta);
         return crossbow;
