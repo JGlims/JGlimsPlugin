@@ -1,220 +1,211 @@
 package com.jglims.plugin.legendary;
 
-import org.bukkit.Material;
-
-/**
- * All 44 legendary weapons.
- * 24 LEGENDARY (elite) + 20 UNCOMMON (common world-chest finds).
- *
- * CustomModelData ranges:
- *   30001–30024 = LEGENDARY
- *   30025–30044 = UNCOMMON
- */
 public enum LegendaryWeapon {
 
-    // ═══════════════════════════════════════════════════════════════
-    // LEGENDARY TIER (24) — Boss drops + rare chests — DMG 11–18
-    // ═══════════════════════════════════════════════════════════════
+    // ============ LEGENDARY TIER (24 weapons) ============
 
-    OCEANS_RAGE("oceans_rage", "Ocean's Rage", Material.DIAMOND_SWORD, 14, 30001,
-        LegendaryTier.LEGENDARY, "Majestica", "Ocean Rage",
-        "Tidal Crash", "Riptide Surge", 8, 15),
+    // --- Swords (Material: DIAMOND_SWORD) ---
+    OCEANS_RAGE("oceans_rage", "Ocean's Rage", "DIAMOND_SWORD", 14, 30001,
+            LegendaryTier.LEGENDARY, "Majestica", "aquantictrident",
+            "Tidal Crash", "Riptide Surge", 12, 8),
 
-    AQUATIC_SACRED_BLADE("aquatic_sacred_blade", "Aquatic Sacred Blade", Material.DIAMOND_SWORD, 13, 30002,
-        LegendaryTier.LEGENDARY, "Majestica", "Aquantic Sacred Blade",
-        "Aqua Heal", "Depth Pressure", 20, 25),
+    TRUE_EXCALIBUR("true_excalibur", "True Excalibur", "DIAMOND_SWORD", 15, 30002,
+            LegendaryTier.LEGENDARY, "Majestica", "excalibur",
+            "Holy Smite", "Divine Shield", 15, 10),
 
-    TRUE_EXCALIBUR("true_excalibur", "True Excalibur", Material.DIAMOND_SWORD, 16, 30003,
-        LegendaryTier.LEGENDARY, "Majestica", "Phoenixe's Grace",
-        "Holy Smite", "Divine Shield", 10, 45),
+    MURAMASA("muramasa", "Muramasa", "DIAMOND_SWORD", 13, 30003,
+            LegendaryTier.LEGENDARY, "Majestica", "muramasa",
+            "Bleeding Strike", "Blood Frenzy", 10, 6),
 
-    REQUIEM_NINTH_ABYSS("requiem_ninth_abyss", "Requiem of the Ninth Abyss", Material.DIAMOND_SWORD, 15, 30004,
-        LegendaryTier.LEGENDARY, "Majestica", "Soul Devourer",
-        "Soul Devour", "Abyss Gate", 12, 60),
+    SOUL_COLLECTOR("soul_collector", "Soul Collector", "DIAMOND_SWORD", 12, 30004,
+            LegendaryTier.LEGENDARY, "Majestica", "soul_collector",
+            "Soul Drain", "Spirit Walk", 14, 10),
 
-    ROYAL_CHAKRAM("royal_chakram", "Royal Chakram", Material.DIAMOND_SWORD, 12, 30005,
-        LegendaryTier.LEGENDARY, "Majestica", "Royal Chakram",
-        "Chakram Throw", "Spinning Shield", 6, 20),
+    VOID_HEART("void_heart", "Void Oculus", "DIAMOND_SWORD", 14, 30005,
+            LegendaryTier.LEGENDARY, "Fantasy 3D", "void_oculus",
+            "Void Collapse", "Dimensional Shift", 16, 12),
 
-    BERSERKERS_GREATAXE("berserkers_greataxe", "Berserker's Greataxe", Material.DIAMOND_AXE, 17, 30006,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Berserker's Greataxe",
-        "Berserker Slam", "Blood Rage", 10, 30),
+    DRAGONBONE("dragonbone", "Dragon Sword", "DIAMOND_SWORD", 15, 30006,
+            LegendaryTier.LEGENDARY, "Fantasy 3D", "dragon_sword",
+            "Dragon Breath", "Scale Armor", 14, 10),
 
-    ACIDIC_CLEAVER("acidic_cleaver", "Acidic Cleaver", Material.DIAMOND_AXE, 14, 30007,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Treacherous Cleaver",
-        "Acid Splash", "Corrosive Aura", 10, 25),
+    ECLIPSE_SABER("eclipse_saber", "Gloomsteel Katana", "DIAMOND_SWORD", 13, 30007,
+            LegendaryTier.LEGENDARY, "Fantasy 3D", "gloomsteel_katana",
+            "Eclipse Slash", "Shadow Veil", 12, 8),
 
-    BLACK_IRON_GREATSWORD("black_iron_greatsword", "Black Iron Greatsword", Material.DIAMOND_SWORD, 15, 30008,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Black Iron Greatsword",
-        "Dark Slash", "Iron Fortress", 8, 30),
+    RAVENOUS_BLADE("ravenous_blade", "Ravenous Blade", "DIAMOND_SWORD", 14, 30008,
+            LegendaryTier.LEGENDARY, "Fantasy 3D", "ravenous_blade",
+            "Devour", "Hunger Aura", 10, 6),
 
-    MURAMASA("muramasa", "Muramasa", Material.DIAMOND_SWORD, 13, 30009,
-        LegendaryTier.LEGENDARY, "Majestica", "Muramasa",
-        "Crimson Flash", "Bloodlust", 6, 20),
+    // --- Axes (Material: DIAMOND_AXE) ---
+    CALAMITY_BLADE("calamity_blade", "Calamity Blade", "DIAMOND_AXE", 16, 30009,
+            LegendaryTier.LEGENDARY, "Fantasy 3D", "calamity_blade",
+            "Cataclysm", "Doom Aura", 18, 12),
 
-    PHOENIXS_GRACE("phoenixs_grace", "Phoenix's Grace", Material.DIAMOND_AXE, 15, 30010,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Gilded Phoenix Greataxe",
-        "Phoenix Strike", "Rebirth Flame", 10, 120),
+    JADE_REAPER("jade_reaper", "Jade Halberd", "DIAMOND_AXE", 14, 30010,
+            LegendaryTier.LEGENDARY, "Majestica", "jadehalberd",
+            "Emerald Sweep", "Jade Barrier", 12, 8),
 
-    SOUL_COLLECTOR("soul_collector", "Soul Collector", Material.DIAMOND_SWORD, 14, 30011,
-        LegendaryTier.LEGENDARY, "Majestica", "Soul Collector",
-        "Soul Harvest", "Spirit Army", 8, 30),
+    FROSTSCYTHE("frostscythe", "Frost Scythe", "DIAMOND_AXE", 13, 30011,
+            LegendaryTier.LEGENDARY, "Majestica", "frostscythe",
+            "Frozen Tempest", "Permafrost", 14, 10),
 
-    AMETHYST_SHURIKEN("amethyst_shuriken", "Amethyst Shuriken", Material.DIAMOND_SWORD, 11, 30012,
-        LegendaryTier.LEGENDARY, "Majestica", "Amethyst Shuriken",
-        "Shuriken Barrage", "Shadow Step", 7, 15),
+    NIGHTSHADE("nightshade", "Divine Reaper", "DIAMOND_AXE", 15, 30012,
+            LegendaryTier.LEGENDARY, "Majestica", "divine_reaper",
+            "Shadow Harvest", "Nightfall", 16, 12),
 
-    VALHAKYRA("valhakyra", "Valhakyra", Material.DIAMOND_SWORD, 15, 30013,
-        LegendaryTier.LEGENDARY, "Majestica", "Valhakyra",
-        "Valkyrie Dive", "Wings of Valor", 12, 25),
+    // --- Tridents (Material: TRIDENT) ---
+    TIDECALLER("tidecaller", "Aquantic Trident", "TRIDENT", 12, 30013,
+            LegendaryTier.LEGENDARY, "Majestica", "aquantictrident",
+            "Tidal Wave", "Ocean's Blessing", 14, 10),
 
-    WINDREAPER("windreaper", "Windreaper", Material.DIAMOND_SWORD, 13, 30014,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Windreaper",
-        "Gale Slash", "Cyclone", 8, 20),
+    REQUIEM("requiem", "Requiem of the Ninth Abyss", "TRIDENT", 14, 30014,
+            LegendaryTier.LEGENDARY, "Majestica", "requiem_of_hell",
+            "Abyssal Judgment", "Death's Echo", 18, 14),
 
-    PHANTOMGUARD("phantomguard", "Phantomguard", Material.DIAMOND_SWORD, 14, 30015,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Phantomguard Greatsword",
-        "Spectral Cleave", "Phase Shift", 10, 35),
+    // --- Hoes (Material: DIAMOND_HOE) ---
+    AMETHYST_SHURIKEN("amethyst_shuriken", "Amethyst Shuriken", "DIAMOND_HOE", 10, 30015,
+            LegendaryTier.LEGENDARY, "Majestica", "amethyst_shuriken",
+            "Shuriken Storm", "Crystal Shield", 8, 6),
 
-    MOONLIGHT("moonlight", "Moonlight", Material.DIAMOND_SWORD, 13, 30016,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Moonlight",
-        "Lunar Beam", "Eclipse", 10, 30),
+    ROYAL_CHAKRAM("royal_chakram", "Royal Chakram", "DIAMOND_HOE", 11, 30016,
+            LegendaryTier.LEGENDARY, "Majestica", "royalchakram",
+            "Chakram Throw", "Royal Guard", 10, 8),
 
-    ZENITH("zenith", "Zenith", Material.DIAMOND_SWORD, 18, 30017,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Zenith",
-        "Final Judgment", "Ascension", 15, 60),
+    // --- More Swords ---
+    LEGENDARY_SWORD("legendary_sword", "Legendary Sword", "DIAMOND_SWORD", 16, 30017,
+            LegendaryTier.LEGENDARY, "Majestica", "legendarysword",
+            "Legendary Strike", "Valor Aura", 20, 15),
 
-    SOLSTICE("solstice", "Solstice", Material.DIAMOND_SWORD, 14, 30018,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Solstice",
-        "Solar Flare", "Daybreak", 10, 25),
+    PHOENIX_GRACE("phoenix_grace", "Pheonix Grace", "DIAMOND_SWORD", 13, 30018,
+            LegendaryTier.LEGENDARY, "Majestica", "pheonixgrace",
+            "Phoenix Rebirth", "Flame Wings", 16, 12),
 
-    GRAND_CLAYMORE("grand_claymore", "Grand Claymore", Material.DIAMOND_SWORD, 16, 30019,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Grand Claymore",
-        "Titan Swing", "Colossus Stance", 10, 30),
+    KALMIA_VEIL("kalmia_veil", "Bramblethorn", "DIAMOND_SWORD", 12, 30019,
+            LegendaryTier.LEGENDARY, "Majestica", "bramblethorn",
+            "Toxic Bloom", "Poison Mist", 10, 8),
 
-    CALAMITY_BLADE("calamity_blade", "Calamity Blade", Material.DIAMOND_SWORD, 15, 30020,
-        LegendaryTier.LEGENDARY, "Majestica", "Calamity Blade",
-        "Cataclysm", "Doomsday", 12, 35),
+    ABOMINABLE_SABER("abominable_saber", "Abominable Great Saber", "DIAMOND_SWORD", 15, 30020,
+            LegendaryTier.LEGENDARY, "Majestica", "abominablegreatsaber",
+            "Abominable Cleave", "Terror Aura", 14, 10),
 
-    DRAGON_SWORD("dragon_sword", "Dragon Sword", Material.DIAMOND_SWORD, 14, 30021,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Dragon Sword",
-        "Dragon Breath", "Draconic Roar", 10, 25),
+    DEMONIC_BLADE("demonic_blade", "Demonic Blade", "DIAMOND_SWORD", 14, 30021,
+            LegendaryTier.LEGENDARY, "Majestica", "demonicblade",
+            "Demon's Wrath", "Hellfire Shroud", 12, 8),
 
-    TALONBRAND("talonbrand", "Talonbrand", Material.DIAMOND_SWORD, 13, 30022,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Talonbrand",
-        "Talon Strike", "Predator's Mark", 8, 20),
+    VOLCANIC_SABER("volcanic_saber", "Molten Blade", "DIAMOND_SWORD", 13, 30022,
+            LegendaryTier.LEGENDARY, "Majestica", "moltenblade",
+            "Eruption", "Magma Shield", 10, 6),
 
-    EMERALD_GREATCLEAVER("emerald_greatcleaver", "Emerald Greatcleaver", Material.DIAMOND_AXE, 16, 30023,
-        LegendaryTier.LEGENDARY, "Fantasy 3D", "Emerald Greatcleaver",
-        "Emerald Storm", "Gem Barrier", 10, 40),
+    // --- More Axes ---
+    STARS_EDGE("stars_edge", "Star's Edge", "DIAMOND_AXE", 14, 30023,
+            LegendaryTier.LEGENDARY, "Majestica", "stars_edge",
+            "Stellar Cleave", "Constellation", 12, 8),
 
-    DEMONS_BLOOD_BLADE("demons_blood_blade", "Demon's Blood Blade", Material.DIAMOND_SWORD, 15, 30024,
-        LegendaryTier.LEGENDARY, "Majestica", "Demon's Blood Blade",
-        "Blood Rite", "Demonic Form", 8, 35),
+    INFERNO_AXE("inferno_axe", "Emberblade", "DIAMOND_AXE", 15, 30024,
+            LegendaryTier.LEGENDARY, "Majestica", "emberblade",
+            "Inferno Slam", "Blaze Aura", 14, 10),
 
-    // ═══════════════════════════════════════════════════════════════
-    // UNCOMMON LEGENDARY TIER (20) — World chests — DMG 10–13
-    // ═══════════════════════════════════════════════════════════════
+    // ============ UNCOMMON TIER (20 weapons) ============
 
-    NOCTURNE("nocturne", "Nocturne", Material.DIAMOND_SWORD, 12, 30025,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Nocturne",
-        "Shadow Slash", "Night Cloak", 7, 20),
+    // --- Diamond Swords ---
+    NOCTURNE("nocturne", "Nocturne", "DIAMOND_SWORD", 10, 30025,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "nocturne",
+            "Shadow Slash", "Night Cloak", 8, 5),
 
-    GRAVESCEPTER("gravescepter", "Gravescepter", Material.DIAMOND_SWORD, 11, 30026,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Revenant's Gravescepter",
-        "Grave Rise", "Death's Grasp", 15, 18),
+    BLAZE_REAPER("blaze_reaper", "Windreaper", "DIAMOND_SWORD", 9, 30026,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "windreaper",
+            "Flame Sweep", "Heat Aura", 8, 5),
 
-    LYCANBANE("lycanbane", "Lycanbane", Material.DIAMOND_SWORD, 12, 30027,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Lycanbane",
-        "Silver Strike", "Hunter's Sense", 8, 20),
+    TITANS_EDGE("titans_edge", "Zenith", "DIAMOND_SWORD", 10, 30027,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "zenith",
+            "Titan Smash", "Fortify", 10, 6),
 
-    GLOOMSTEEL_KATANA("gloomsteel_katana", "Gloomsteel Katana", Material.DIAMOND_SWORD, 11, 30028,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Gloomsteel Katana",
-        "Quick Draw", "Shadow Stance", 5, 18),
+    CRYSTAL_FANG("crystal_fang", "Crystal Frostblade", "DIAMOND_SWORD", 9, 30028,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "crystal_frostblade",
+            "Crystal Pierce", "Prism Shield", 8, 5),
 
-    VIRIDIAN_CLEAVER("viridian_cleaver", "Viridian Cleaver", Material.DIAMOND_AXE, 13, 30029,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Viridian Greataxe",
-        "Verdant Slam", "Overgrowth", 8, 22),
+    THUNDER_EDGE("thunder_edge", "Talonbrand", "DIAMOND_SWORD", 10, 30029,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "talonbrand",
+            "Lightning Strike", "Storm Shield", 10, 6),
 
-    CRESCENT_EDGE("crescent_edge", "Crescent Edge", Material.DIAMOND_AXE, 12, 30030,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Crescent Greataxe",
-        "Lunar Cleave", "Crescent Guard", 7, 20),
+    FROST_MOURNE("frost_mourne", "Ethereal Frostblade", "DIAMOND_SWORD", 9, 30030,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "ethereal_frostblade",
+            "Frost Nova", "Ice Armor", 8, 5),
 
-    GRAVECLEAVER("gravecleaver", "Gravecleaver", Material.DIAMOND_AXE, 12, 30031,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Revenant's Gravecleaver",
-        "Bone Shatter", "Undying Rage", 10, 45),
+    CORRUPTED_SABER("corrupted_saber", "Lycanbane", "DIAMOND_SWORD", 10, 30031,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "lycanbane",
+            "Corruption Wave", "Dark Shield", 10, 6),
 
-    AMETHYST_GREATBLADE("amethyst_greatblade", "Amethyst Greatblade", Material.DIAMOND_SWORD, 11, 30032,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Amethyst Greatblade",
-        "Crystal Burst", "Gem Resonance", 8, 25),
+    TWILIGHT_KATANA("twilight_katana", "Vesper", "DIAMOND_SWORD", 9, 30032,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "vesper",
+            "Twilight Slash", "Dusk Veil", 8, 5),
 
-    FLAMBERGE("flamberge", "Flamberge", Material.DIAMOND_SWORD, 12, 30033,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Flamberge",
-        "Flame Wave", "Ember Shield", 8, 18),
+    OBSIDIAN_FANG("obsidian_fang", "Moonlight", "DIAMOND_SWORD", 10, 30033,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "moonlight",
+            "Obsidian Shatter", "Stone Skin", 10, 6),
 
-    CRYSTAL_FROSTBLADE("crystal_frostblade", "Crystal Frostblade", Material.DIAMOND_SWORD, 11, 30034,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Crystal Frostblade",
-        "Frost Spike", "Permafrost", 7, 22),
+    CELESTIAL_ARC("celestial_arc", "Solstice", "DIAMOND_SWORD", 9, 30034,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "solstice",
+            "Star Beam", "Celestial Aura", 8, 5),
 
-    DEMONSLAYER("demonslayer", "Demonslayer", Material.DIAMOND_SWORD, 13, 30035,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Demonslayer's Greatsword",
-        "Holy Rend", "Purifying Aura", 8, 20),
+    SUNFORGE("sunforge", "Winterthorn", "DIAMOND_SWORD", 10, 30035,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "winterthorn",
+            "Solar Flare", "Sun Shield", 10, 6),
 
-    VENGEANCE("vengeance", "Vengeance", Material.DIAMOND_SWORD, 10, 30036,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Vengeance Blade",
-        "Retribution", "Grudge Mark", 12, 15),
+    BLOOD_CRESCENT("blood_crescent", "Demon's Blood Blade", "DIAMOND_SWORD", 9, 30036,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "demons_blood_blade",
+            "Blood Moon", "Lifesteal", 8, 5),
 
-    OCULUS("oculus", "Oculus", Material.DIAMOND_SWORD, 11, 30037,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Oculus",
-        "All-Seeing Strike", "Third Eye", 8, 25),
+    NETHER_GLAIVE("nether_glaive", "Demonic Sword", "DIAMOND_SWORD", 10, 30037,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "demonic_sword",
+            "Nether Sweep", "Wither Shield", 10, 6),
 
-    ANCIENT_GREATSLAB("ancient_greatslab", "Ancient Greatslab", Material.DIAMOND_SWORD, 13, 30038,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Ancient Greatslab",
-        "Seismic Slam", "Stone Skin", 9, 22),
+    EMERALD_SLICER("emerald_slicer", "Nature Sword", "DIAMOND_SWORD", 9, 30038,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "nature_sword",
+            "Emerald Cut", "Nature's Grace", 8, 5),
 
-    // === TRIDENT LEGENDARIES (3) ===
-    NEPTUNES_FANG("neptunes_fang", "Neptune's Fang", Material.TRIDENT, 12, 30039,
-        LegendaryTier.UNCOMMON, "Majestica", "Frost Axe",
-        "Riptide Slash", "Maelstrom", 7, 22),
+    AMETHYST_GREATBLADE("amethyst_greatblade", "Amethyst Greatblade", "DIAMOND_SWORD", 10, 30039,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "amethyst_greatblade",
+            "Amethyst Slam", "Crystal Barrier", 10, 6),
 
-    TIDECALLER("tidecaller", "Tidecaller", Material.TRIDENT, 11, 30040,
-        LegendaryTier.UNCOMMON, "Majestica", "Aquantic Sacred Blade",
-        "Tidal Spear", "Depth Ward", 8, 20),
+    // --- Golden Swords (Uncommon only) ---
+    PRISM_SABER("prism_saber", "Grand Claymore", "GOLDEN_SWORD", 8, 30040,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "grand_claymore",
+            "Prism Burst", "Rainbow Shield", 8, 5),
 
-    STORMFORK("stormfork", "Stormfork", Material.TRIDENT, 13, 30041,
-        LegendaryTier.UNCOMMON, "Majestica", "Ocean Rage",
-        "Lightning Javelin", "Thunder Shield", 10, 25),
+    TEMPEST_CLAW("tempest_claw", "Gilded Phoenix Greataxe", "GOLDEN_SWORD", 8, 30041,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "gilded_phoenix_greataxe",
+            "Wind Slash", "Gale Shield", 8, 5),
 
-    JADE_REAPER("jade_reaper", "Jade Reaper", Material.DIAMOND_HOE, 12, 30042,
-        LegendaryTier.UNCOMMON, "Majestica", "Jade Halberd",
-        "Jade Crescent", "Emerald Harvest", 7, 30),
+    RUNIC_BLADE("runic_blade", "Vengeance Blade", "GOLDEN_SWORD", 8, 30042,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "vengeance_blade",
+            "Rune Blast", "Rune Ward", 8, 5),
 
-    VINDICATOR("vindicator", "Vindicator", Material.DIAMOND_AXE, 11, 30043,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Vindicator",
-        "Executioner's Chop", "Rally Cry", 8, 25),
+    PHANTOM_EDGE("phantom_edge", "Azure Dagger", "GOLDEN_SWORD", 8, 30043,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "azure_dagger",
+            "Phase Strike", "Ghost Walk", 8, 5),
 
-    SPIDER_FANG("spider_fang", "Spider Fang", Material.DIAMOND_SWORD, 10, 30044,
-        LegendaryTier.UNCOMMON, "Fantasy 3D", "Spider Sword",
-        "Web Trap", "Wall Crawler", 8, 20);
-
-    // ═══════════════════════════════════════════════════════════════
+    STARFALL_SHARD("starfall_shard", "Oculus", "GOLDEN_SWORD", 8, 30044,
+            LegendaryTier.UNCOMMON, "Fantasy 3D", "oculus",
+            "Meteor Rain", "Star Shield", 8, 5);
 
     private final String id;
     private final String displayName;
-    private final Material baseMaterial;
+    private final String baseMaterial;
     private final int baseDamage;
     private final int customModelData;
     private final LegendaryTier tier;
     private final String textureSource;
     private final String textureName;
-    private final String rightClickAbilityName;
-    private final String holdAbilityName;
+    private final String rightClickAbility;
+    private final String holdAbility;
     private final int rightClickCooldown;
     private final int holdCooldown;
 
-    LegendaryWeapon(String id, String displayName, Material baseMaterial, int baseDamage,
-                    int customModelData, LegendaryTier tier, String textureSource,
-                    String textureName, String rightClickAbilityName, String holdAbilityName,
+    LegendaryWeapon(String id, String displayName, String baseMaterial, int baseDamage, int customModelData,
+                    LegendaryTier tier, String textureSource, String textureName,
+                    String rightClickAbility, String holdAbility,
                     int rightClickCooldown, int holdCooldown) {
         this.id = id;
         this.displayName = displayName;
@@ -224,28 +215,25 @@ public enum LegendaryWeapon {
         this.tier = tier;
         this.textureSource = textureSource;
         this.textureName = textureName;
-        this.rightClickAbilityName = rightClickAbilityName;
-        this.holdAbilityName = holdAbilityName;
+        this.rightClickAbility = rightClickAbility;
+        this.holdAbility = holdAbility;
         this.rightClickCooldown = rightClickCooldown;
         this.holdCooldown = holdCooldown;
     }
 
     public String getId() { return id; }
     public String getDisplayName() { return displayName; }
-    public Material getBaseMaterial() { return baseMaterial; }
+    public String getBaseMaterial() { return baseMaterial; }
     public int getBaseDamage() { return baseDamage; }
     public int getCustomModelData() { return customModelData; }
     public LegendaryTier getTier() { return tier; }
     public String getTextureSource() { return textureSource; }
     public String getTextureName() { return textureName; }
-    public String getRightClickAbilityName() { return rightClickAbilityName; }
-    public String getHoldAbilityName() { return holdAbilityName; }
+    public String getRightClickAbility() { return rightClickAbility; }
+    public String getHoldAbility() { return holdAbility; }
     public int getRightClickCooldown() { return rightClickCooldown; }
     public int getHoldCooldown() { return holdCooldown; }
 
-    /**
-     * Look up a weapon by its string ID.
-     */
     public static LegendaryWeapon fromId(String id) {
         for (LegendaryWeapon weapon : values()) {
             if (weapon.id.equals(id)) return weapon;
