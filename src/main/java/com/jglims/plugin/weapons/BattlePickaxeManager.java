@@ -117,7 +117,7 @@ public class BattlePickaxeManager {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         battlePickaxe.setItemMeta(meta);
         return battlePickaxe;

@@ -157,7 +157,7 @@ public class BattleShovelManager implements Listener {
                         EquipmentSlotGroup.MAINHAND
                 ));
 
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         item.setItemMeta(meta);
         return item;

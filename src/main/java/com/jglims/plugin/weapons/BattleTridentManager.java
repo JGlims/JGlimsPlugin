@@ -102,7 +102,7 @@ public class BattleTridentManager {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         battleTrident.setItemMeta(meta);
         return battleTrident;

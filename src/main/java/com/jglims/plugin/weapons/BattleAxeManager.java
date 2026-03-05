@@ -121,7 +121,7 @@ public class BattleAxeManager implements Listener {
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         battleAxe.setItemMeta(meta);
         return battleAxe;

@@ -114,7 +114,7 @@ public class BattleSwordManager {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         battleSword.setItemMeta(meta);
         return battleSword;

@@ -131,7 +131,7 @@ public class BattleSpearManager {
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         battleSpear.setItemMeta(meta);
         return battleSpear;

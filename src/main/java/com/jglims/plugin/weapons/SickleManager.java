@@ -119,7 +119,7 @@ public class SickleManager implements Listener {
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         sickle.setItemMeta(meta);
         return sickle;

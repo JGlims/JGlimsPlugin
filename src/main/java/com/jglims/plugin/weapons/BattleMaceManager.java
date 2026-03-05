@@ -97,7 +97,7 @@ public class BattleMaceManager {
                 AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
         // Enchantment glint
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         mace.setItemMeta(meta);
         return mace;

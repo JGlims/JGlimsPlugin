@@ -44,6 +44,8 @@ import org.bukkit.util.Vector;
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.config.ConfigManager;
 import com.jglims.plugin.enchantments.CustomEnchantManager;
+import com.jglims.plugin.guilds.GuildManager;
+
 
 /**
  * WeaponAbilityListener — v1.3.1
@@ -63,23 +65,28 @@ public class WeaponAbilityListener implements Listener {
     private final SuperToolManager superToolManager;
     private final SpearManager spearManager;
     private final BattleShovelManager battleShovelManager;
+    private final GuildManager guildManager;
+
 
     private final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
     private final NamespacedKey superTierKey;
 
     public WeaponAbilityListener(JGlimsPlugin plugin, ConfigManager config,
-                                  CustomEnchantManager enchantManager,
-                                  SuperToolManager superToolManager,
-                                  SpearManager spearManager,
-                                  BattleShovelManager battleShovelManager) {
+                              CustomEnchantManager enchantManager,
+                              SuperToolManager superToolManager,
+                              SpearManager spearManager,
+                              BattleShovelManager battleShovelManager,
+                              GuildManager guildManager) {
         this.plugin = plugin;
         this.config = config;
         this.enchantManager = enchantManager;
         this.superToolManager = superToolManager;
         this.spearManager = spearManager;
         this.battleShovelManager = battleShovelManager;
+        this.guildManager = guildManager;
         this.superTierKey = new NamespacedKey(plugin, "super_tool_tier");
     }
+
 
     // ============================================================
     // UTILITY: Cooldown management
@@ -166,16 +173,24 @@ public class WeaponAbilityListener implements Listener {
     // ============================================================
 
     private List<LivingEntity> getNearbyEnemies(Location center, double radius, Player exclude) {
-        List<LivingEntity> enemies = new ArrayList<>();
-        for (Entity e : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
-            if (e instanceof LivingEntity le && !(e instanceof Player) && !(e instanceof ArmorStand) && e != exclude) {
-                if (le.getLocation().distanceSquared(center) <= radius * radius) {
-                    enemies.add(le);
+    List<LivingEntity> enemies = new ArrayList<>();
+    for (Entity e : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+        if (e instanceof LivingEntity le && !(e instanceof ArmorStand) && e != exclude) {
+            if (le.getLocation().distanceSquared(center) <= radius * radius) {
+                // If target is a Player, check guild friendly-fire
+                if (le instanceof Player targetPlayer && exclude != null) {
+                    // Skip if both players are in the same guild
+                    if (guildManager.areInSameGuild(exclude.getUniqueId(), targetPlayer.getUniqueId())) {
+                        continue;
+                    }
                 }
+                enemies.add(le);
             }
         }
-        return enemies;
     }
+    return enemies;
+}
+
 
     // ============================================================
     // MAIN EVENT: Right-click ability activation

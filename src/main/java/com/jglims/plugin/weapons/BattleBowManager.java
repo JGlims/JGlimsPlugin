@@ -69,7 +69,7 @@ public class BattleBowManager {
             .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
-        meta.setEnchantmentGlintOverride(true);
+        meta.setEnchantmentGlintOverride(false);
 
         bow.setItemMeta(meta);
         return bow;

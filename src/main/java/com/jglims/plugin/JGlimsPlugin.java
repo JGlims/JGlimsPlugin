@@ -149,13 +149,15 @@ public class JGlimsPlugin extends JavaPlugin {
 
         // WeaponAbilityListener — pass needed managers
         pm.registerEvents(new WeaponAbilityListener(
-                this,
-                configManager,
-                enchantManager,
-                superToolManager,
-                spearManager,
-                battleShovelManager
+        this,
+        configManager,
+        enchantManager,
+        superToolManager,
+        spearManager,
+        battleShovelManager,
+        guildManager
         ), this);
+
 
         // FIX #3: Register BestBuddiesListener (was missing — wolf 95% DR, pacifist, Regen II)
         pm.registerEvents(new BestBuddiesListener(this, configManager), this);
