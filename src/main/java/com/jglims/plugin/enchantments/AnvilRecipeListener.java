@@ -1,6 +1,7 @@
 package com.jglims.plugin.enchantments;
 
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.legendary.LegendaryWeaponManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -29,12 +30,15 @@ public class AnvilRecipeListener implements Listener {
 
     private final JGlimsPlugin plugin;
     private final CustomEnchantManager enchantManager;
+    private final LegendaryWeaponManager legendaryWeaponManager;
     private final Map<EnchantmentType, AnvilRecipe> recipes = new EnumMap<>(EnchantmentType.class);
     private final NamespacedKey superTierKey;
 
-    public AnvilRecipeListener(JGlimsPlugin plugin, CustomEnchantManager enchantManager) {
+    public AnvilRecipeListener(JGlimsPlugin plugin, CustomEnchantManager enchantManager,
+                                LegendaryWeaponManager legendaryWeaponManager) {
         this.plugin = plugin;
         this.enchantManager = enchantManager;
+        this.legendaryWeaponManager = legendaryWeaponManager;
         this.superTierKey = new NamespacedKey(plugin, "super_tool_tier");
         registerRecipes();
     }
@@ -122,7 +126,7 @@ public class AnvilRecipeListener implements Listener {
         recipes.put(EnchantmentType.EXTENDED_REACH,  new AnvilRecipe(Enchantment.SHARPNESS, Material.BLAZE_ROD, true, 3));
         recipes.put(EnchantmentType.SKEWERING,       new AnvilRecipe(Enchantment.SHARPNESS, Material.POINTED_DRIPSTONE, true, 3));
 
-                // ===================== PHASE 9: NEW ENCHANTMENTS =====================
+        // ===================== PHASE 9: NEW ENCHANTMENTS =====================
         // Sword
         recipes.put(EnchantmentType.FROSTBITE_BLADE,  new AnvilRecipe(Enchantment.SHARPNESS, Material.BLUE_ICE, true, 3));
         // Axe
@@ -145,12 +149,11 @@ public class AnvilRecipeListener implements Listener {
         // Spear
         recipes.put(EnchantmentType.PHANTOM_PIERCE,   new AnvilRecipe(Enchantment.SHARPNESS, Material.PHANTOM_MEMBRANE, true, 3));
 
-
         plugin.getLogger().info("Registered " + recipes.size() + " anvil enchantment recipes.");
     }
 
     // ========================================================================
-    // PREPARE ANVIL EVENT — uses AnvilView for repair cost / rename text
+    // PREPARE ANVIL EVENT  uses AnvilView for repair cost / rename text
     // ========================================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
@@ -160,6 +163,16 @@ public class AnvilRecipeListener implements Listener {
         ItemStack firstSlot = inv.getItem(0);
         ItemStack secondSlot = inv.getItem(1);
         if (firstSlot == null || secondSlot == null) return;
+
+        // ══ PHASE 8: Block ALL anvil operations on legendary weapons ══
+        if (legendaryWeaponManager.isLegendary(firstSlot) || legendaryWeaponManager.isLegendary(secondSlot)) {
+            event.setResult(null);
+            // Send feedback to player
+            if (event.getView().getPlayer() instanceof Player player) {
+                player.sendActionBar(Component.text("Legendary weapons cannot be enchanted or modified!", NamedTextColor.RED));
+            }
+            return;
+        }
 
         if (secondSlot.getType() == Material.TOTEM_OF_UNDYING) {
             handleSoulboundPrepare(event, anvilView, firstSlot, secondSlot);
@@ -308,7 +321,7 @@ public class AnvilRecipeListener implements Listener {
     }
 
     // ========================================================================
-    // INVENTORY CLICK — clear anvil slots after custom operation
+    // INVENTORY CLICK  clear anvil slots after custom operation
     // ========================================================================
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
@@ -410,12 +423,9 @@ public class AnvilRecipeListener implements Listener {
             case BEST_BUDDIES -> "Wolf takes 95% less damage, deals no damage";
             case SEISMIC_SLAM -> "Slams ground for " + (level * 3) + " AoE damage (radius " + switch (level) { case 1 -> "3"; case 2 -> "4"; default -> "5"; } + ")";
             case MAGNETIZE -> "Pulls enemies within " + (2 + level * 2) + " blocks toward impact";
-            // Spear enchantments (NEW v1.3.0)
             case IMPALING_THRUST -> "Bypasses " + switch (level) { case 1 -> "15%"; case 2 -> "25%"; default -> "35%"; } + " of target's armor";
             case EXTENDED_REACH -> "+" + switch (level) { case 1 -> "0.5"; case 2 -> "1.0"; default -> "1.5"; } + " block attack range";
             case SKEWERING -> "Charge attack pierces through " + switch (level) { case 1 -> "2"; case 2 -> "3"; default -> "4"; } + " blocks behind target";
-
-            // === Phase 9 enchantments ===
             case FROSTBITE_BLADE -> "Applies Slowness " + toRoman(level) + " + freeze visual on hit";
             case WRATH -> "Consecutive hits on same target: +" + (level * 10) + "% damage (resets on switch)";
             case PROSPECTOR -> (level * 5) + "% chance for double ore yield (stacks with Fortune)";
@@ -428,7 +438,6 @@ public class AnvilRecipeListener implements Listener {
             case TSUNAMI -> "Thrown hit creates water burst pushing mobs " + switch (level) { case 1 -> "3"; case 2 -> "5"; default -> "7"; } + " blocks (rain/water only)";
             case TREMOR -> "On hit, nearby mobs get Mining Fatigue II for 3s (radius " + (level * 2) + ")";
             case PHANTOM_PIERCE -> "Charged attacks pierce through " + level + " target" + (level > 1 ? "s" : "") + " dealing full damage";
-
         };
     }
 
@@ -460,14 +469,11 @@ public class AnvilRecipeListener implements Listener {
             case CHAIN_LIGHTNING -> vanillaEnchants.containsKey(Enchantment.FIRE_ASPECT);
             case MOMENTUM -> vanillaEnchants.containsKey(Enchantment.FROST_WALKER);
             case SEISMIC_SLAM -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
-            // Spear enchantment conflicts are handled via CustomEnchantManager's conflict map
-
             case FROSTBITE_BLADE -> vanillaEnchants.containsKey(Enchantment.FIRE_ASPECT);
             case EARTHSHATTER -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
             case PROSPECTOR -> vanillaEnchants.containsKey(Enchantment.SILK_TOUCH);
             case TSUNAMI -> vanillaEnchants.containsKey(Enchantment.RIPTIDE);
             case FROSTBITE_ARROW -> vanillaEnchants.containsKey(Enchantment.FLAME);
-
             default -> false;
         };
     }

@@ -1,17 +1,17 @@
 name: JGlimsPlugin
-version: 1.3.0
+version: 1.4.0
 main: com.jglims.plugin.JGlimsPlugin
 api-version: 1.21
 author: JGlims
 description: >-
-  Custom enchantments, battle axes, battle bows, battle maces, super tools,
+  Custom enchantments, battle weapons, super tools, legendary weapons (44),
   sickles, blessings, mob difficulty, inventory sorting, weapon mastery,
   blood moon events, guilds, and much more.
 
 commands:
   jglims:
     description: JGlimsPlugin admin commands
-    usage: /jglims <reload|stats|enchants|sort|mastery>
+    usage: /jglims <reload|stats|enchants|sort|mastery|legendary|help>
     permission: jglims.admin
   guild:
     description: Guild management commands

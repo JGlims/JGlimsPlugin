@@ -3,6 +3,7 @@ package com.jglims.plugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -17,6 +18,10 @@ import com.jglims.plugin.enchantments.EnchantmentEffectListener;
 import com.jglims.plugin.enchantments.SoulboundListener;
 import com.jglims.plugin.guilds.GuildListener;
 import com.jglims.plugin.guilds.GuildManager;
+import com.jglims.plugin.legendary.LegendaryAbilityListener;
+import com.jglims.plugin.legendary.LegendaryLootListener;
+import com.jglims.plugin.legendary.LegendaryWeapon;
+import com.jglims.plugin.legendary.LegendaryWeaponManager;
 import com.jglims.plugin.mobs.BloodMoonManager;
 import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
@@ -44,6 +49,7 @@ import com.jglims.plugin.weapons.WeaponMasteryManager;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 public class JGlimsPlugin extends JavaPlugin {
 
@@ -64,6 +70,9 @@ public class JGlimsPlugin extends JavaPlugin {
     private BattleSpearManager battleSpearManager;
     private SpearManager spearManager;
     private SuperToolManager superToolManager;
+
+    // Legendary weapon system (Phase 8)
+    private LegendaryWeaponManager legendaryWeaponManager;
 
     // Crafting
     private RecipeManager recipeManager;
@@ -105,6 +114,9 @@ public class JGlimsPlugin extends JavaPlugin {
         spearManager = new SpearManager(this, configManager);
         battleShovelManager = new BattleShovelManager(this, configManager);
 
+        // 4b. Legendary weapon manager (Phase 8)
+        legendaryWeaponManager = new LegendaryWeaponManager(this);
+
         // 5. Crafting recipes (pass all managers)
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
@@ -126,7 +138,7 @@ public class JGlimsPlugin extends JavaPlugin {
 
         // 9. Register all event listeners
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new AnvilRecipeListener(this, enchantManager), this);
+        pm.registerEvents(new AnvilRecipeListener(this, enchantManager, legendaryWeaponManager), this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
         pm.registerEvents(new SoulboundListener(this, enchantManager), this);
         pm.registerEvents(new BlessingListener(this, blessingManager), this);
@@ -149,18 +161,23 @@ public class JGlimsPlugin extends JavaPlugin {
 
         // WeaponAbilityListener — pass needed managers
         pm.registerEvents(new WeaponAbilityListener(
-        this,
-        configManager,
-        enchantManager,
-        superToolManager,
-        spearManager,
-        battleShovelManager,
-        guildManager
+                this,
+                configManager,
+                enchantManager,
+                superToolManager,
+                spearManager,
+                battleShovelManager,
+                guildManager
         ), this);
 
-
-        // FIX #3: Register BestBuddiesListener (was missing — wolf 95% DR, pacifist, Regen II)
+        // BestBuddiesListener (wolf 95% DR, pacifist, Regen II)
         pm.registerEvents(new BestBuddiesListener(this, configManager), this);
+
+        // ══ PHASE 8: Legendary weapon listeners ══
+        pm.registerEvents(new LegendaryAbilityListener(this, configManager, legendaryWeaponManager, guildManager), this);
+        pm.registerEvents(new LegendaryLootListener(this, legendaryWeaponManager, bloodMoonManager), this);
+
+        getLogger().info("Legendary weapon system loaded: " + LegendaryWeapon.values().length + " weapons registered.");
 
         // 10. Scheduled tasks
         if (configManager.isPaleGardenFogEnabled()) {
@@ -218,7 +235,7 @@ public class JGlimsPlugin extends JavaPlugin {
         if (!command.getName().equalsIgnoreCase("jglims")) return false;
         if (args.length == 0) {
             sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|help>", NamedTextColor.YELLOW));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -238,9 +255,67 @@ public class JGlimsPlugin extends JavaPlugin {
                 if (sender instanceof Player player) weaponMasteryManager.showMastery(player);
                 else sender.sendMessage(Component.text("Only players can view mastery.", NamedTextColor.RED));
             }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery", NamedTextColor.RED));
+            case "legendary" -> handleLegendaryCommand(sender, args);
+            case "help" -> {
+                sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+                sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims stats <player>", NamedTextColor.YELLOW).append(Component.text(" - Show blessing stats", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims enchants", NamedTextColor.YELLOW).append(Component.text(" - List custom enchantments", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims sort", NamedTextColor.YELLOW).append(Component.text(" - Sorting info", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims mastery", NamedTextColor.YELLOW).append(Component.text(" - Weapon mastery progress", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims legendary <id|list>", NamedTextColor.YELLOW).append(Component.text(" - Give/list legendary weapons (OP)", NamedTextColor.GRAY)));
+            }
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, help", NamedTextColor.RED));
         }
         return true;
+    }
+
+    /**
+     * /jglims legendary <id|list>
+     * OP-only. Gives a legendary weapon by ID, or lists all IDs.
+     */
+    private void handleLegendaryCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) {
+            sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED));
+            return;
+        }
+        if (args.length < 2 || args[1].equalsIgnoreCase("list")) {
+            // List all legendary weapon IDs
+            sender.sendMessage(Component.text("=== Legendary Weapons (" + LegendaryWeapon.values().length + ") ===", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
+            for (LegendaryWeapon w : LegendaryWeapon.values()) {
+                NamedTextColor tierColor = w.getTier() == LegendaryWeapon.LegendaryTier.LEGENDARY
+                        ? NamedTextColor.DARK_PURPLE : NamedTextColor.GOLD;
+                sender.sendMessage(Component.text(" " + w.getId(), tierColor)
+                        .append(Component.text(" — " + w.getDisplayName() + " (DMG " + w.getBaseDamage() + ")", NamedTextColor.GRAY)));
+            }
+            sender.sendMessage(Component.text("Use: /jglims legendary <id>", NamedTextColor.YELLOW));
+            return;
+        }
+
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Component.text("Only players can receive legendary weapons.", NamedTextColor.RED));
+            return;
+        }
+
+        String weaponId = args[1].toLowerCase();
+        LegendaryWeapon weapon = LegendaryWeapon.fromId(weaponId);
+        if (weapon == null) {
+            sender.sendMessage(Component.text("Unknown legendary ID: " + weaponId, NamedTextColor.RED));
+            sender.sendMessage(Component.text("Use /jglims legendary list to see all IDs.", NamedTextColor.YELLOW));
+            return;
+        }
+
+        ItemStack item = legendaryWeaponManager.createWeapon(weapon);
+        if (item == null) {
+            sender.sendMessage(Component.text("Failed to create legendary weapon!", NamedTextColor.RED));
+            return;
+        }
+
+        player.getInventory().addItem(item);
+        NamedTextColor tierColor = weapon.getTier() == LegendaryWeapon.LegendaryTier.LEGENDARY
+                ? NamedTextColor.DARK_PURPLE : NamedTextColor.GOLD;
+        player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                .append(Component.text(weapon.getDisplayName(), tierColor).decorate(TextDecoration.BOLD)));
     }
 
     // ========================
@@ -261,6 +336,7 @@ public class JGlimsPlugin extends JavaPlugin {
     public BattleSpearManager getBattleSpearManager() { return battleSpearManager; }
     public SpearManager getSpearManager() { return spearManager; }
     public SuperToolManager getSuperToolManager() { return superToolManager; }
+    public LegendaryWeaponManager getLegendaryWeaponManager() { return legendaryWeaponManager; }
     public KingMobManager getKingMobManager() { return kingMobManager; }
     public WeaponMasteryManager getWeaponMasteryManager() { return weaponMasteryManager; }
     public BloodMoonManager getBloodMoonManager() { return bloodMoonManager; }
