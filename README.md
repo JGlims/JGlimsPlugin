@@ -579,5 +579,3 @@ docker cp build/libs/JGlimsPlugin-1.3.0.jar mc:/data/plugins/JGlimsPlugin.jar
 docker restart mc
 docker logs -f mc 2>&1 | grep -i jglims
 Step 4 — Test: Run /jglims enchants in-game — you should see the gold bold header and yellow enchantment names with gray max-level text, all rendered natively by Adventure without any § codes.
-
-Let me know once you've pushed and I'll verify both files on GitHub!
