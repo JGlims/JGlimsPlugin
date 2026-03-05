@@ -928,7 +928,7 @@ public class LegendaryAbilityListener implements Listener {
                 target.removePotionEffect(effect.getType());
             }
         }
-        p.playSound(p.getLocation(), Sound.ENTITY_WOLF_HOWL, 1.5f, 1.2f);
+        p.playSound(p.getLocation(), Sound.ENTITY_WOLF_AMBIENT, 1.5f, 1.2f);
         target.getWorld().spawnParticle(Particle.END_ROD, target.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
         p.sendActionBar(Component.text("\u2694 Silver Strike! Buffs purged!", NamedTextColor.WHITE));
     }
@@ -1359,7 +1359,7 @@ public class LegendaryAbilityListener implements Listener {
         p.teleport(behind);
         dealDamage(p, target, p.getInventory().getItemInMainHand().getType() == Material.DIAMOND_SWORD ? 22.0 : 22.0);
         p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.5f);
-        p.getWorld().spawnParticle(Particle.CRIT_MAGIC, target.getLocation().add(0, 1, 0), 20, 0.3, 0.5, 0.3, 0.2);
+        p.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 20, 0.3, 0.5, 0.3, 0.2);
         p.sendActionBar(Component.text("\u2694 Shadow Step! Critical hit!", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
     }
 
@@ -1564,7 +1564,7 @@ public class LegendaryAbilityListener implements Listener {
             e.setGlowing(true);
             Bukkit.getScheduler().runTaskLater(plugin, () -> e.setGlowing(false), 200L);
         }
-        p.playSound(p.getLocation(), Sound.ENTITY_WOLF_HOWL, 2.0f, 0.8f);
+        p.playSound(p.getLocation(), Sound.ENTITY_WOLF_AMBIENT, 2.0f, 0.8f);
         p.sendActionBar(Component.text("\u2694 Hunter's Sense! " + entities.size() + " entities revealed", NamedTextColor.WHITE));
     }
 
