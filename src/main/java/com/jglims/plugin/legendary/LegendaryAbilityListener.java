@@ -1603,4 +1603,324 @@ public class LegendaryAbilityListener implements Listener {
         p.getWorld().spawnParticle(Particle.ENCHANT, p.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.1);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (crescentParryActive.getOrDefault(p.getUniqueId(), false)) {
-                crescentParryActive.put(p.getUniqueId(), false);
+                                crescentParryActive.put(p.getUniqueId(), false);
+                p.sendActionBar(Component.text("Crescent Guard expired", NamedTextColor.GRAY));
+            }
+        }, 80L); // 4s window
+        p.sendActionBar(Component.text("\u263D Crescent Guard! Parry next hit", NamedTextColor.YELLOW));
+    }
+
+    // ── #31 GRAVECLEAVER: Undying Rage — 8s: survive lethal at 1 HP once ──
+    private void holdGravecleaver(Player p) {
+        UUID uid = p.getUniqueId();
+        undyingRageActive.put(uid, true);
+        undyingRageExpiry.put(uid, System.currentTimeMillis() + 8000L);
+        p.playSound(p.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 1.5f, 0.5f);
+        p.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, p.getLocation().add(0, 1, 0), 15, 0.5, 1, 0.5, 0.1);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (undyingRageActive.getOrDefault(uid, false)) {
+                undyingRageActive.put(uid, false);
+                p.sendActionBar(Component.text("Undying Rage expired", NamedTextColor.GRAY));
+            }
+        }, 160L);
+        p.sendActionBar(Component.text("\u2620 UNDYING RAGE! Survive lethal hit once for 8s", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #32 AMETHYST GREATBLADE: Gem Resonance — 8s Strength I to allies in 10 blocks ──
+    private void holdAmethystGreatblade(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 2.0f, 1.2f);
+        p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 30, 5, 2, 5, 0.02);
+        for (Entity e : p.getWorld().getNearbyEntities(p.getLocation(), 10, 10, 10)) {
+            if (e instanceof Player ally && !ally.getUniqueId().equals(p.getUniqueId())) {
+                if (guildManager.areInSameGuild(p.getUniqueId(), ally.getUniqueId())) {
+                    ally.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 0));
+                    ally.sendActionBar(Component.text("\u2666 Gem Resonance from " + p.getName() + "!", NamedTextColor.LIGHT_PURPLE));
+                }
+            }
+        }
+        p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 0));
+        p.sendActionBar(Component.text("\u2666 Gem Resonance! Strength I to nearby allies", NamedTextColor.LIGHT_PURPLE));
+    }
+
+    // ── #33 FLAMBERGE: Ember Shield — 5s: attackers take 4 fire dmg ──
+    private void holdFlamberge(Player p) {
+        UUID uid = p.getUniqueId();
+        emberShieldActive.put(uid, true);
+        emberShieldExpiry.put(uid, System.currentTimeMillis() + 5000L);
+        p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_AMBIENT, 1.5f, 1.0f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 100 || !p.isOnline()) {
+                    emberShieldActive.put(uid, false);
+                    cancel();
+                    return;
+                }
+                if (ticks % 5 == 0) {
+                    double angle = ticks * 0.3;
+                    Location loc = p.getLocation().add(Math.cos(angle) * 1.2, 1, Math.sin(angle) * 1.2);
+                    p.getWorld().spawnParticle(Particle.FLAME, loc, 2, 0.05, 0.05, 0.05, 0);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2600 Ember Shield! 5s fire reflect", NamedTextColor.RED));
+    }
+
+    // ── #34 CRYSTAL FROSTBLADE: Permafrost — 5-block AoE Slow II + Mining Fatigue 6s ──
+    private void holdCrystalFrostblade(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.5f, 0.5f);
+        p.getWorld().spawnParticle(Particle.SNOWFLAKE, p.getLocation().add(0, 1, 0), 50, 2.5, 1.5, 2.5, 0.02);
+        for (LivingEntity e : getNearbyEnemies(p.getLocation(), 5.0, p)) {
+            e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 1));
+            e.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 120, 0));
+            e.getWorld().spawnParticle(Particle.SNOWFLAKE, e.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0);
+        }
+        p.sendActionBar(Component.text("\u2744 Permafrost! Enemies frozen", NamedTextColor.AQUA));
+    }
+
+    // ── #35 DEMONSLAYER: Purifying Aura — 6s: undead in 8 blocks take 2 dmg/s ──
+    private void holdDemonslayer(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 1.5f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 120 || !p.isOnline()) { cancel(); return; }
+                if (ticks % 20 == 0) {
+                    for (LivingEntity e : getNearbyEnemies(p.getLocation(), 8.0, p)) {
+                        boolean undead = e.getType() == EntityType.ZOMBIE || e.getType() == EntityType.SKELETON
+                                || e.getType() == EntityType.WITHER_SKELETON || e.getType() == EntityType.PHANTOM
+                                || e.getType() == EntityType.DROWNED || e.getType() == EntityType.HUSK
+                                || e.getType() == EntityType.STRAY || e.getType() == EntityType.ZOMBIFIED_PIGLIN
+                                || e.getType() == EntityType.ZOGLIN || e.getType() == EntityType.WITHER;
+                        if (undead) {
+                            e.damage(4.0);
+                            e.getWorld().spawnParticle(Particle.END_ROD, e.getLocation().add(0, 1, 0), 5, 0.2, 0.3, 0.2, 0.02);
+                        }
+                    }
+                }
+                if (ticks % 10 == 0) {
+                    p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 0.5, 0), 10, 4, 0.5, 4, 0.01);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2694 Purifying Aura! 6s undead burn", NamedTextColor.YELLOW));
+    }
+
+    // ── #36 VENGEANCE: Grudge Mark — Target takes +20% dmg from you for 15s ──
+    private void holdVengeance(Player p) {
+        LivingEntity target = getTargetEntity(p, 10.0);
+        if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
+        UUID uid = p.getUniqueId();
+        grudgeTargets.put(uid, target.getUniqueId());
+        grudgeExpiry.put(uid, System.currentTimeMillis() + 15000L);
+        target.setGlowing(true);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            target.setGlowing(false);
+            grudgeTargets.remove(uid);
+            grudgeExpiry.remove(uid);
+        }, 300L);
+        p.playSound(p.getLocation(), Sound.ENTITY_WARDEN_ANGRY, 1.0f, 1.5f);
+        target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, target.getLocation().add(0, 2, 0), 10, 0.3, 0.3, 0.3, 0);
+        p.sendActionBar(Component.text("\u2694 Grudge Mark! +20% dmg to target for 15s", NamedTextColor.RED));
+    }
+
+    // ── #37 OCULUS: Third Eye — 10s Glowing on all entities in 30 blocks ──
+    private void holdOculus(Player p) {
+        List<LivingEntity> entities = getNearbyEnemies(p.getLocation(), 30.0, p);
+        for (LivingEntity e : entities) {
+            e.setGlowing(true);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> e.setGlowing(false), 200L);
+        }
+        p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 200, 0));
+        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 2.0f);
+        p.getWorld().spawnParticle(Particle.ENCHANT, p.getLocation().add(0, 2, 0), 40, 2, 2, 2, 0.5);
+        p.sendActionBar(Component.text("\u2609 Third Eye! " + entities.size() + " entities revealed + Night Vision", NamedTextColor.LIGHT_PURPLE));
+    }
+
+    // ── #38 ANCIENT GREATSLAB: Stone Skin — 6s Resistance II + KB-immune ──
+    private void holdAncientGreatslab(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0)); // weight feel
+        p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
+        p.getWorld().spawnParticle(Particle.BLOCK, p.getLocation(), 40, 1, 1, 1, 0.1, Material.STONE.createBlockData());
+        p.sendActionBar(Component.text("\u2694 Stone Skin! 6s Resistance II", NamedTextColor.GRAY));
+    }
+
+    // ── #39 NEPTUNE'S FANG: Maelstrom — 6-block water vortex, pull + 3 dmg/s 5s ──
+    private void holdNeptunesFang(Player p) {
+        Location center = p.getLocation().clone();
+        p.playSound(center, Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.5f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 100 || !p.isOnline()) { cancel(); return; }
+                // Vortex particles
+                for (int i = 0; i < 12; i++) {
+                    double angle = (2 * Math.PI / 12) * i + ticks * 0.15;
+                    double r = 3.0 + Math.sin(ticks * 0.1) * 1.0;
+                    double y = 0.3 + (ticks % 40) * 0.05;
+                    Location loc = center.clone().add(Math.cos(angle) * r, y, Math.sin(angle) * r);
+                    p.getWorld().spawnParticle(Particle.SPLASH, loc, 2, 0.1, 0.1, 0.1, 0);
+                    p.getWorld().spawnParticle(Particle.BUBBLE, loc, 1, 0.1, 0.1, 0.1, 0);
+                }
+                // Damage + pull every second
+                if (ticks % 20 == 0) {
+                    for (LivingEntity e : getNearbyEnemies(center, 6.0, p)) {
+                        e.damage(6.0);
+                        Vector pull = center.toVector().subtract(e.getLocation().toVector()).normalize().multiply(0.6).setY(0.2);
+                        e.setVelocity(e.getVelocity().add(pull));
+                    }
+                    p.getWorld().playSound(center, Sound.ENTITY_GENERIC_SPLASH, 1.0f, 0.8f);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2248 MAELSTROM! 5s water vortex", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #40 TIDECALLER: Depth Ward — 8s Dolphin's Grace + Respiration + Drowned-immune ──
+    private void holdTidecaller(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 160, 0));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING, 160, 0));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER, 160, 0));
+        p.playSound(p.getLocation(), Sound.AMBIENT_UNDERWATER_ENTER, 1.5f, 1.0f);
+        p.getWorld().spawnParticle(Particle.BUBBLE, p.getLocation().add(0, 1, 0), 40, 1, 2, 1, 0.1);
+        p.sendActionBar(Component.text("\u2248 Depth Ward! 8s Dolphin's Grace + Water Breathing", NamedTextColor.AQUA));
+    }
+
+    // ── #41 STORMFORK: Thunder Shield — 6s: attackers get lightning ──
+    private void holdStormfork(Player p) {
+        UUID uid = p.getUniqueId();
+        thunderShieldActive.put(uid, true);
+        thunderShieldExpiry.put(uid, System.currentTimeMillis() + 6000L);
+        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 1.5f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 120 || !p.isOnline()) {
+                    thunderShieldActive.put(uid, false);
+                    cancel();
+                    return;
+                }
+                if (ticks % 10 == 0) {
+                    double angle = ticks * 0.3;
+                    Location loc = p.getLocation().add(Math.cos(angle) * 1.5, 1.5, Math.sin(angle) * 1.5);
+                    p.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 3, 0.1, 0.1, 0.1, 0);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u26A1 Thunder Shield! 6s lightning counter", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #42 JADE REAPER: Emerald Harvest — 10s: kills drop 1-3 emeralds ──
+    private void holdJadeReaper(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.5f, 0.8f);
+        p.getWorld().spawnParticle(Particle.COMPOSTER, p.getLocation().add(0, 1, 0), 20, 1, 1, 1, 0.05);
+        // Store activation time — checked in a kill listener
+        // For simplicity, use a potion effect as a marker
+        p.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 200, 0));
+        p.sendActionBar(Component.text("\u2618 Emerald Harvest! Kills drop emeralds for 10s", NamedTextColor.GREEN));
+    }
+
+    // ── #43 VINDICATOR: Rally Cry — 6s: allies in 8 blocks get Speed I + Strength I ──
+    private void holdVindicator(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_RAVAGER_CELEBRATE, 2.0f, 1.2f);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 1, 0), 20, 2, 2, 2, 0.1);
+        for (Entity e : p.getWorld().getNearbyEntities(p.getLocation(), 8, 8, 8)) {
+            if (e instanceof Player ally) {
+                if (ally.getUniqueId().equals(p.getUniqueId()) ||
+                        guildManager.areInSameGuild(p.getUniqueId(), ally.getUniqueId())) {
+                    ally.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 120, 0));
+                    ally.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 120, 0));
+                    if (!ally.getUniqueId().equals(p.getUniqueId())) {
+                        ally.sendActionBar(Component.text("\u2694 Rally Cry from " + p.getName() + "!", NamedTextColor.GOLD));
+                    }
+                }
+            }
+        }
+        p.sendActionBar(Component.text("\u2694 RALLY CRY! Allies buffed for 6s", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #44 SPIDER FANG: Wall Crawler — 8s levitation near blocks + Night Vision ──
+    private void holdSpiderFang(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 160, 0));
+        p.playSound(p.getLocation(), Sound.ENTITY_SPIDER_AMBIENT, 1.5f, 1.0f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 160 || !p.isOnline()) { cancel(); return; }
+                // Check if player is against a wall
+                Location feet = p.getLocation();
+                boolean nearWall = false;
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dz == 0) continue;
+                        Block adjacent = feet.clone().add(dx, 0, dz).getBlock();
+                        if (adjacent.getType().isSolid()) { nearWall = true; break; }
+                    }
+                    if (nearWall) break;
+                }
+                if (nearWall && p.isSneaking()) {
+                    // Hold player in place against wall (anti-gravity)
+                    p.setVelocity(new Vector(0, 0.05, 0));
+                    if (ticks % 5 == 0) {
+                        p.getWorld().spawnParticle(Particle.BLOCK, feet, 3, 0.2, 0, 0.2, 0, Material.COBWEB.createBlockData());
+                    }
+                }
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2620 Wall Crawler! 8s wall-climb (sneak near walls) + Night Vision", NamedTextColor.DARK_GREEN));
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  HELPER METHODS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Gets the nearest living entity the player is looking at (ray-cast style).
+     * Searches entities within the given range in the player's look direction.
+     */
+    private LivingEntity getTargetEntity(Player player, double range) {
+        Vector dir = player.getLocation().getDirection().normalize();
+        Location start = player.getEyeLocation();
+        LivingEntity closest = null;
+        double closestDist = range + 1;
+
+        for (Entity e : player.getWorld().getNearbyEntities(player.getLocation(), range, range, range)) {
+            if (!(e instanceof LivingEntity le) || e instanceof ArmorStand || e == player) continue;
+            if (le instanceof Player target) {
+                if (target.getGameMode() == GameMode.CREATIVE || target.getGameMode() == GameMode.SPECTATOR) continue;
+                if (guildManager.areInSameGuild(player.getUniqueId(), target.getUniqueId())) continue;
+            }
+
+            // Check if entity is roughly in the direction the player is looking
+            Vector toEntity = le.getLocation().add(0, 1, 0).toVector().subtract(start.toVector());
+            double distance = toEntity.length();
+            if (distance > range) continue;
+
+            double dot = dir.dot(toEntity.normalize());
+            if (dot > 0.85) { // within ~30-degree cone
+                if (distance < closestDist) {
+                    closestDist = distance;
+                    closest = le;
+                }
+            }
+        }
+        return closest;
+    }
+
+    /**
+     * Rotates a vector around the Y axis by the given angle in radians.
+     */
+    private Vector rotateY(Vector v, double angle) {
+        double cos = Math.cos(angle);
+        double sin = Math.sin(angle);
+        double x = v.getX() * cos - v.getZ() * sin;
+        double z = v.getX() * sin + v.getZ() * cos;
+        return v.setX(x).setZ(z);
+    }
+}
