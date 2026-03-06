@@ -999,4 +999,180 @@ final class LegendaryPrimaryAbilities {
         }
         p.sendActionBar(Component.text("\u2726 REALITY CLEAVE! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
     }
+
+    // ════════════════════════════════════════════════════════════════
+    //  ABYSSAL TIER PRIMARY ABILITIES (4) — 200 particles per burst
+    // ════════════════════════════════════════════════════════════════
+
+    // ── #60 REQUIEM AWAKENED: Abyssal Devour — 12-block AoE soul drain, 40 dmg, full lifesteal, chain explosions ──
+    void rcRequiemAwakened(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
+        p.playSound(c, Sound.ENTITY_WITHER_SPAWN, 1.5f, 0.5f);
+        // Initial soul-fire ring
+        for (int i = 0; i < 36; i++) {
+            double angle = Math.toRadians(i * 10);
+            Location ring = c.clone().add(Math.cos(angle) * 6, 1, Math.sin(angle) * 6);
+            p.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, ring, 6, 0.1, 0.3, 0.1, 0.02);
+        }
+        p.getWorld().spawnParticle(Particle.SOUL, c.clone().add(0, 1, 0), 100, 6, 3, 6, 0.1);
+        p.getWorld().spawnParticle(Particle.SCULK_CHARGE_POP, c.clone().add(0, 1, 0), 100, 6, 2, 6, 0.05);
+        double totalHealed = 0;
+        List<LivingEntity> enemies = ctx.getNearbyEnemies(c, 12.0, p);
+        for (LivingEntity e : enemies) {
+            ctx.dealDamage(p, e, 40.0);
+            e.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 200, 2));
+            e.getWorld().spawnParticle(Particle.SOUL, e.getLocation().add(0, 1, 0), 20, 0.5, 0.8, 0.5, 0.05);
+            totalHealed += 40.0;
+            // Chain explosion on kill
+            if (e.getHealth() <= 0 || e.isDead()) {
+                Location deathLoc = e.getLocation();
+                Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
+                    deathLoc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, deathLoc.add(0, 1, 0), 50, 2.5, 1.5, 2.5, 0.1);
+                    deathLoc.getWorld().spawnParticle(Particle.EXPLOSION, deathLoc, 3, 1, 1, 1, 0);
+                    deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 0.5f);
+                    for (LivingEntity nearby : ctx.getNearbyEnemies(deathLoc, 5.0, p)) {
+                        ctx.dealDamage(p, nearby, 15.0);
+                    }
+                }, 5L);
+            }
+        }
+        double maxHp = p.getAttribute(Attribute.MAX_HEALTH).getValue();
+        p.setHealth(Math.min(maxHp, p.getHealth() + Math.min(totalHealed, maxHp)));
+        p.sendActionBar(Component.text("\u2620 ABYSSAL DEVOUR! " + enemies.size() + " souls consumed!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #61 EXCALIBUR AWAKENED: Divine Annihilation — 15-block chain beam, 35 dmg × 8 targets, lightning, heals 4/hit, holy explosion ──
+    void rcExcaliburAwakened(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.5f);
+        p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1.0f);
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location start = p.getEyeLocation();
+        // Holy beam phase
+        new BukkitRunnable() {
+            int tick = 0;
+            final java.util.Set<java.util.UUID> hit = new java.util.HashSet<>();
+            @Override public void run() {
+                if (tick > 15) {
+                    // Final holy explosion at beam end
+                    Location end = start.clone().add(dir.clone().multiply(15));
+                    end.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, end, 100, 5, 3, 5, 0.5);
+                    end.getWorld().spawnParticle(Particle.END_ROD, end, 100, 5, 4, 5, 0.3);
+                    end.getWorld().playSound(end, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 1.5f);
+                    for (LivingEntity e : ctx.getNearbyEnemies(end, 10.0, p)) {
+                        ctx.dealDamage(p, e, 25.0);
+                    }
+                    cancel();
+                    return;
+                }
+                Location point = start.clone().add(dir.clone().multiply(tick));
+                p.getWorld().spawnParticle(Particle.END_ROD, point, 15, 0.3, 0.3, 0.3, 0.05);
+                p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, point, 10, 0.2, 0.2, 0.2, 0.02);
+                for (LivingEntity e : ctx.getNearbyEnemies(point, 2.5, p)) {
+                    if (hit.size() >= 8) break;
+                    if (hit.add(e.getUniqueId())) {
+                        ctx.dealDamage(p, e, 35.0);
+                        e.getWorld().strikeLightningEffect(e.getLocation());
+                        double maxHp = p.getAttribute(Attribute.MAX_HEALTH).getValue();
+                        p.setHealth(Math.min(maxHp, p.getHealth() + 4.0));
+                        e.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, e.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.2);
+                    }
+                }
+                tick++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2726 DIVINE ANNIHILATION! \u2726", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #62 CREATION SPLITTER AWAKENED: Reality Shatter — 3s charge, 80 true dmg 15-block line, launch + collapse ──
+    void rcCreationSplitterAwakened(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 0.3f);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 127)); // root during charge
+        p.setGlowing(true);
+        // Charge phase — escalating particles
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 60) { cancel(); return; }
+                int particleCount = 5 + (tick * 3);
+                double radius = 0.5 + (tick * 0.03);
+                p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, p.getLocation().add(0, 1, 0), particleCount, radius, radius, radius, 0.1);
+                p.getWorld().spawnParticle(Particle.SCULK_CHARGE_POP, p.getLocation().add(0, 1.5, 0), tick / 3, 0.3, 0.5, 0.3, 0.05);
+                if (tick % 20 == 0) p.playSound(p.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5f, 0.5f + (tick * 0.015f));
+                tick++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        // Release after 3 seconds
+        Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
+            p.setGlowing(false);
+            p.removePotionEffect(PotionEffectType.SLOWNESS);
+            Vector dir = p.getLocation().getDirection().normalize();
+            Location start = p.getEyeLocation();
+            p.playSound(p.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.5f);
+            p.playSound(p.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
+            final java.util.Set<java.util.UUID> launched = new java.util.HashSet<>();
+            new BukkitRunnable() {
+                int tick = 0;
+                @Override public void run() {
+                    if (tick > 15) { cancel(); return; }
+                    Location point = start.clone().add(dir.clone().multiply(tick));
+                    p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, point, 40, 0.5, 0.5, 0.5, 0.2);
+                    p.getWorld().spawnParticle(Particle.SCULK_CHARGE_POP, point, 20, 0.3, 0.3, 0.3, 0.1);
+                    p.getWorld().spawnParticle(Particle.SONIC_BOOM, point, 1, 0, 0, 0, 0);
+                    for (LivingEntity e : ctx.getNearbyEnemies(point, 2.5, p)) {
+                        if (launched.add(e.getUniqueId())) {
+                            e.damage(80.0); // true damage, bypasses armor
+                            e.setVelocity(new Vector(0, 4.0, 0)); // launch 20 blocks up
+                            e.getWorld().spawnParticle(Particle.REVERSE_PORTAL, e.getLocation(), 40, 0.5, 1, 0.5, 0.2);
+                        }
+                    }
+                    tick++;
+                }
+            }.runTaskTimer(ctx.plugin, 0L, 1L);
+            // Collapse phase after 2 seconds
+            Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
+                Location collapse = start.clone().add(dir.clone().multiply(8));
+                collapse.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, collapse, 5, 3, 2, 3, 0);
+                collapse.getWorld().spawnParticle(Particle.REVERSE_PORTAL, collapse, 100, 5, 5, 5, 0.5);
+                collapse.getWorld().playSound(collapse, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
+                for (LivingEntity e : ctx.getNearbyEnemies(collapse, 8.0, p)) {
+                    ctx.dealDamage(p, e, 30.0);
+                }
+            }, 40L);
+        }, 60L);
+        p.sendActionBar(Component.text("\u2620 CHARGING REALITY SHATTER... \u2620", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #63 WHISPERWIND AWAKENED: Silent Storm — 30 invisible wind blades in 60 cone, 10 dmg each, pass through everything ──
+    void rcWhisperwindAwakened(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 2.0f, 0.3f);
+        p.playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 0.5f);
+        Vector baseDir = p.getLocation().getDirection().normalize();
+        for (int i = 0; i < 30; i++) {
+            double spreadAngle = Math.toRadians((i - 15) * 2.0); // 60 degree cone
+            double verticalOffset = (Math.random() - 0.5) * 0.3;
+            Vector bladeDir = ctx.rotateY(baseDir.clone(), spreadAngle).setY(baseDir.getY() + verticalOffset).normalize();
+            final Vector fDir = bladeDir;
+            final int delay = i / 3; // stagger slightly
+            Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
+                new BukkitRunnable() {
+                    Location loc = p.getEyeLocation().clone();
+                    int ticks = 0;
+                    @Override public void run() {
+                        if (ticks > 20) { cancel(); return; }
+                        loc.add(fDir.clone().multiply(1.5));
+                        p.getWorld().spawnParticle(Particle.CLOUD, loc, 3, 0.05, 0.05, 0.05, 0);
+                        p.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc, 1, 0, 0, 0, 0);
+                        for (LivingEntity e : ctx.getNearbyEnemies(loc, 1.5, p)) {
+                            ctx.dealDamage(p, e, 10.0);
+                            e.getWorld().spawnParticle(Particle.CLOUD, e.getLocation().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.05);
+                        }
+                        ticks++;
+                    }
+                }.runTaskTimer(ctx.plugin, 0L, 1L);
+            }, delay);
+        }
+        p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 60, 2, 1, 2, 0.3);
+        p.sendActionBar(Component.text("\u2601 SILENT STORM! 30 blades unleashed!", TextColor.color(200, 200, 255)).decorate(TextDecoration.BOLD));
+    }
 }

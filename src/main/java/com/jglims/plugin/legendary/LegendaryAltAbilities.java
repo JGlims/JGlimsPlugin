@@ -976,4 +976,227 @@ final class LegendaryAltAbilities {
         }
         p.sendActionBar(Component.text("\u2726 GENESIS BREAK! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
     }
+
+    // ════════════════════════════════════════════════════════════════
+    //  ABYSSAL TIER ALTERNATE ABILITIES (4) — 200 particles per burst
+    // ════════════════════════════════════════════════════════════════
+
+    // ── #60 REQUIEM AWAKENED: Void Collapse — 15-block singularity, 8s pull + DoT, 60 dmg final explosion ──
+    void altRequiemAwakened(Player p) {
+        Location target = p.getLocation().add(p.getLocation().getDirection().multiply(8));
+        p.playSound(target, Sound.ENTITY_WARDEN_EMERGE, 2.0f, 0.3f);
+        p.playSound(target, Sound.BLOCK_PORTAL_TRIGGER, 1.5f, 0.3f);
+        p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, target, 100, 2, 2, 2, 0.5);
+        final Location center = target.clone();
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 160) {
+                    // Final collapse explosion
+                    center.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 5, 0, 0, 0, 0);
+                    center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 200, 7, 5, 7, 0.3);
+                    center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center, 200, 8, 5, 8, 0.5);
+                    center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
+                    center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
+                    for (LivingEntity e : ctx.getNearbyEnemies(center, 15.0, p)) {
+                        ctx.dealDamage(p, e, 60.0);
+                        e.setVelocity(e.getLocation().toVector().subtract(center.toVector()).normalize().multiply(3.0).setY(1.5));
+                    }
+                    cancel();
+                    return;
+                }
+                // Swirling vortex particles
+                for (int i = 0; i < 20; i++) {
+                    double angle = Math.toRadians(i * 18 + ticks * 3);
+                    double r = 7.0 - (ticks * 0.04);
+                    if (r < 1) r = 1;
+                    double y = Math.sin(ticks * 0.1 + i) * 2;
+                    Location vortex = center.clone().add(Math.cos(angle) * r, 1 + y, Math.sin(angle) * r);
+                    p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, vortex, 2, 0.1, 0.1, 0.1, 0);
+                }
+                if (ticks % 5 == 0) {
+                    p.getWorld().spawnParticle(Particle.SCULK_CHARGE_POP, center, 10, 3, 2, 3, 0.05);
+                }
+                // Pull + DoT every second
+                if (ticks % 20 == 0) {
+                    for (LivingEntity e : ctx.getNearbyEnemies(center, 15.0, p)) {
+                        Vector pull = center.toVector().subtract(e.getLocation().toVector()).normalize().multiply(0.8);
+                        e.setVelocity(e.getVelocity().add(pull));
+                        e.damage(8.0, p);
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 40, 0));
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 40, 0));
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 40, 1));
+                    }
+                    center.getWorld().playSound(center, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.3f);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2620 VOID COLLAPSE! Reality tears apart!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #61 EXCALIBUR AWAKENED: Sacred Realm — 12-block sanctuary dome, 10s, allies buffed, enemies burned ──
+    void altExcaliburAwakened(Player p) {
+        Location center = p.getLocation().clone();
+        p.playSound(center, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 0.8f);
+        p.playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.0f);
+        // Invulnerability for caster
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 300, 4));
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override public void run() {
+                if (ticks >= 200) { cancel(); return; }
+                // Golden dome wall particles
+                for (int i = 0; i < 36; i++) {
+                    double angle = Math.toRadians(i * 10 + ticks * 2);
+                    for (int h = 0; h < 6; h++) {
+                        Location wall = center.clone().add(Math.cos(angle) * 12, h, Math.sin(angle) * 12);
+                        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, wall, 1, 0, 0, 0, 0);
+                    }
+                }
+                // Ground holy symbol (rotating cross)
+                double symbolAngle = ticks * 0.05;
+                for (int arm = 0; arm < 4; arm++) {
+                    double a = symbolAngle + arm * (Math.PI / 2);
+                    for (double d = 1; d < 10; d += 0.5) {
+                        Location sym = center.clone().add(Math.cos(a) * d, 0.1, Math.sin(a) * d);
+                        p.getWorld().spawnParticle(Particle.END_ROD, sym, 1, 0, 0, 0, 0);
+                    }
+                }
+                // Buff allies + hurt enemies every second
+                if (ticks % 20 == 0) {
+                    for (org.bukkit.entity.Entity entity : center.getWorld().getNearbyEntities(center, 12, 12, 12)) {
+                        if (entity instanceof Player ally && !ally.getUniqueId().equals(p.getUniqueId())) {
+                            if (ctx.guildManager.areInSameGuild(p.getUniqueId(), ally.getUniqueId())) {
+                                ally.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 30, 3));
+                                ally.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 30, 3));
+                                ally.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 30, 1));
+                            }
+                        }
+                    }
+                    for (LivingEntity e : ctx.getNearbyEnemies(center, 12.0, p)) {
+                        e.damage(6.0, p);
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 30, 1));
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 2));
+                        e.getWorld().spawnParticle(Particle.END_ROD, e.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0.05);
+                    }
+                    center.getWorld().playSound(center, Sound.BLOCK_BEACON_AMBIENT, 1.5f, 1.5f);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2726 SACRED REALM! The light protects! \u2726", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #62 CREATION SPLITTER AWAKENED: Big Bang — 5s channel, 20-block 100 dmg explosion, massive knockback ──
+    void altCreationSplitterAwakened(Player p) {
+        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 0.3f);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 127)); // root
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4)); // invuln during channel
+        p.setGlowing(true);
+        // 5-second ascending charge
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 100) { cancel(); return; }
+                double progress = tick / 100.0;
+                int particles = (int)(10 + progress * 190);
+                double radius = 1 + progress * 10;
+                p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1 + progress * 3, 0), particles, radius, radius, radius, 0.1);
+                p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 2, 0), (int)(progress * 50), 0.5, 1, 0.5, 0.3);
+                if (tick % 20 == 0) {
+                    p.playSound(p.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f + (float)(progress * 1.5));
+                    p.getWorld().spawnParticle(Particle.FLASH, p.getLocation().add(0, 2, 0), 1, 0, 0, 0, 0);
+                }
+                // Warning ring on ground
+                for (int i = 0; i < 72; i++) {
+                    double angle = Math.toRadians(i * 5);
+                    Location ring = p.getLocation().add(Math.cos(angle) * 20, 0.1, Math.sin(angle) * 20);
+                    p.getWorld().spawnParticle(Particle.DUST, ring, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(255, 50, 50), 2.0f));
+                }
+                tick++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        // Detonation after 5 seconds
+        Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
+            p.setGlowing(false);
+            p.removePotionEffect(PotionEffectType.SLOWNESS);
+            Location blast = p.getLocation();
+            // THE BIG BANG
+            blast.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, blast.clone().add(0, 2, 0), 10, 5, 3, 5, 0);
+            blast.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, blast.clone().add(0, 3, 0), 200, 10, 8, 10, 1.0);
+            blast.getWorld().spawnParticle(Particle.END_ROD, blast.clone().add(0, 5, 0), 200, 12, 10, 12, 0.5);
+            blast.getWorld().spawnParticle(Particle.FLASH, blast.clone().add(0, 3, 0), 5, 0, 0, 0, 0);
+            blast.getWorld().playSound(blast, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
+            blast.getWorld().playSound(blast, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
+            blast.getWorld().playSound(blast, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.3f);
+            // Screen shake via knockback on all nearby players (including enemies)
+            for (LivingEntity e : ctx.getNearbyEnemies(blast, 20.0, p)) {
+                ctx.dealDamage(p, e, 100.0);
+                Vector kb = e.getLocation().toVector().subtract(blast.toVector()).normalize().multiply(8.0).setY(5.0);
+                e.setVelocity(kb);
+                e.setFireTicks(200);
+            }
+            p.sendActionBar(Component.text("\u2726 BIG BANG!!! \u2726", TextColor.color(255, 215, 0)).decorate(TextDecoration.BOLD));
+        }, 100L);
+        p.sendActionBar(Component.text("\u2726 CHANNELING BIG BANG... DO NOT MOVE! \u2726", TextColor.color(255, 100, 0)).decorate(TextDecoration.BOLD));
+    }
+
+    // ── #63 WHISPERWIND AWAKENED: Phantom Cyclone — 15-block homing tornado 12s, 10 dmg/s, pull 20 blocks, caster gets Speed III ──
+    void altWhisperwindAwakened(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 240, 2));
+        Location tornadoLoc = p.getLocation().add(p.getLocation().getDirection().multiply(5));
+        p.playSound(tornadoLoc, Sound.ENTITY_BREEZE_WIND_BURST, 2.0f, 0.3f);
+        p.playSound(tornadoLoc, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.5f, 0.5f);
+        new BukkitRunnable() {
+            int ticks = 0;
+            Location loc = tornadoLoc.clone();
+            @Override public void run() {
+                if (ticks >= 240) {
+                    loc.getWorld().spawnParticle(Particle.CLOUD, loc, 80, 4, 6, 4, 0.3);
+                    loc.getWorld().playSound(loc, Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 0.5f);
+                    cancel();
+                    return;
+                }
+                // Home toward nearest enemy
+                LivingEntity nearest = null;
+                double nearestDist = 30;
+                for (LivingEntity e : ctx.getNearbyEnemies(loc, 30.0, p)) {
+                    double d = e.getLocation().distanceSquared(loc);
+                    if (d < nearestDist * nearestDist) { nearestDist = Math.sqrt(d); nearest = e; }
+                }
+                if (nearest != null) {
+                    Vector toTarget = nearest.getLocation().toVector().subtract(loc.toVector()).normalize().multiply(0.4);
+                    loc.add(toTarget);
+                }
+                // Tornado particles — spiraling column
+                for (int h = 0; h < 10; h++) {
+                    double angle = Math.toRadians(ticks * 8 + h * 36);
+                    double r = 1.5 + h * 0.3;
+                    Location spiral = loc.clone().add(Math.cos(angle) * r, h * 0.5, Math.sin(angle) * r);
+                    p.getWorld().spawnParticle(Particle.CLOUD, spiral, 2, 0.1, 0.1, 0.1, 0);
+                    p.getWorld().spawnParticle(Particle.SWEEP_ATTACK, spiral, 1, 0.1, 0.1, 0.1, 0);
+                }
+                p.getWorld().spawnParticle(Particle.DUST, loc.clone().add(0, 0.5, 0), 10, 1.5, 0.5, 1.5, 0, new Particle.DustOptions(Color.fromRGB(200, 200, 255), 2.0f));
+                // Damage + pull every second
+                if (ticks % 20 == 0) {
+                    for (LivingEntity e : ctx.getNearbyEnemies(loc, 15.0, p)) {
+                        e.damage(10.0, p);
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, 1));
+                        e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 2));
+                        Vector pull = loc.toVector().subtract(e.getLocation().toVector()).normalize().multiply(1.2);
+                        e.setVelocity(e.getVelocity().add(pull));
+                    }
+                    // Pull from 20 blocks away
+                    for (LivingEntity e : ctx.getNearbyEnemies(loc, 20.0, p)) {
+                        Vector pull = loc.toVector().subtract(e.getLocation().toVector()).normalize().multiply(0.5);
+                        e.setVelocity(e.getVelocity().add(pull));
+                    }
+                    loc.getWorld().playSound(loc, Sound.ENTITY_BREEZE_SHOOT, 1.0f, 0.5f);
+                }
+                ticks++;
+            }
+        }.runTaskTimer(ctx.plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2601 PHANTOM CYCLONE! The storm follows its prey!", TextColor.color(200, 200, 255)).decorate(TextDecoration.BOLD));
+    }
 }

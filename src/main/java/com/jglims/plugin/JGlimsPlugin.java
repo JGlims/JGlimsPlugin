@@ -405,7 +405,7 @@ public class JGlimsPlugin extends JavaPlugin {
     private void handlePowerUpCommand(CommandSender sender, String[] args) {
         if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /jglims powerup <heart|soul|titan|phoenix|keep|stats> [player]", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims powerup <heart|soul|titan|phoenix|keep|vitality|berserker|stats> [player]", NamedTextColor.YELLOW));
             return;
         }
         if (args[1].equalsIgnoreCase("stats")) {
@@ -430,11 +430,13 @@ public class JGlimsPlugin extends JavaPlugin {
             case "titan" -> powerUpManager.createTitanResolve();
             case "phoenix" -> powerUpManager.createPhoenixFeather();
             case "keep" -> powerUpManager.createKeepInventorer();
+            case "vitality" -> powerUpManager.createVitalityShard();
+            case "berserker" -> powerUpManager.createBerserkerMark();
             default -> null;
         };
         if (powerUp == null) {
             sender.sendMessage(Component.text("Unknown power-up type: " + args[1], NamedTextColor.RED));
-            sender.sendMessage(Component.text("Types: heart, soul, titan, phoenix, keep, stats", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Types: heart, soul, titan, phoenix, keep, vitality, berserker, stats", NamedTextColor.YELLOW));
             return;
         }
         target.getInventory().addItem(powerUp);

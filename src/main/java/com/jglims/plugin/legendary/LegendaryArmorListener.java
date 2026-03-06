@@ -103,6 +103,10 @@ public class LegendaryArmorListener implements Listener {
                 player.removePotionEffect(PotionEffectType.SLOWNESS);
                 player.setFreezeTicks(0);
             }
+            case ABYSSAL_PLATE -> {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 400, 0, true, false, false));
+                player.removePotionEffect(PotionEffectType.DARKNESS);
+            }
             default -> {}
         }
     }
@@ -117,6 +121,9 @@ public class LegendaryArmorListener implements Listener {
                         mob.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 1, true, false, false));
                     }
                 }
+            }
+            case ABYSSAL_PLATE -> {
+                player.removePotionEffect(PotionEffectType.WITHER);
             }
             default -> {}
         }
@@ -138,6 +145,9 @@ public class LegendaryArmorListener implements Listener {
                     player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 0, true, false, false));
                 }
             }
+            case ABYSSAL_PLATE -> {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, 0, true, false, false));
+            }
             default -> {}
         }
     }
@@ -147,6 +157,10 @@ public class LegendaryArmorListener implements Listener {
         if (set == null) return;
         switch (set) {
             case FROST_WARDEN -> {
+                player.setFireTicks(0);
+                player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false, false));
+            }
+            case ABYSSAL_PLATE -> {
                 player.setFireTicks(0);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 40, 0, true, false, false));
             }
@@ -192,6 +206,10 @@ public class LegendaryArmorListener implements Listener {
                     attacker.getWorld().spawnParticle(Particle.DRAGON_BREATH, target.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
                 }
             }
+            if (fullSet == LegendaryArmorSet.ABYSSAL_PLATE) {
+                event.setDamage(event.getDamage() * 1.30);
+                attacker.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, target.getLocation().add(0, 1, 0), 8, 0.3, 0.5, 0.3, 0.03);
+            }
             if (fullSet == LegendaryArmorSet.BLOOD_MOON) {
                 double healed = event.getFinalDamage() * 0.05;
                 double maxHp = attacker.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue();
@@ -215,6 +233,11 @@ public class LegendaryArmorListener implements Listener {
             }
         }
         if (event.getEntity() instanceof Player victim && event.getDamager() instanceof LivingEntity attacker) {
+            if (armorManager.isWearingPiece(victim, LegendaryArmorSet.ABYSSAL_PLATE, LegendaryArmorSet.ArmorSlot.CHESTPLATE)) {
+                attacker.damage(8.0, victim);
+                attacker.setFireTicks(80);
+                attacker.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, attacker.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
+            }
             if (armorManager.isWearingPiece(victim, LegendaryArmorSet.NATURES_EMBRACE, LegendaryArmorSet.ArmorSlot.CHESTPLATE)) {
                 attacker.damage(3.0, victim);
                 attacker.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, attacker.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0);
@@ -225,12 +248,25 @@ public class LegendaryArmorListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getCause() == EntityDamageEvent.DamageCause.WITHER
+                && armorManager.hasFullSet(player, LegendaryArmorSet.ABYSSAL_PLATE)) {
+            event.setCancelled(true);
+            return;
+        }
         if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             if (armorManager.isWearingPiece(player, LegendaryArmorSet.VOID_WALKER, LegendaryArmorSet.ArmorSlot.BOOTS)
                     || armorManager.isWearingPiece(player, LegendaryArmorSet.DRAGON_KNIGHT, LegendaryArmorSet.ArmorSlot.BOOTS)) {
                 event.setCancelled(true);
                 return;
             }
+        }
+        if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE
+                || event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK
+                || event.getCause() == EntityDamageEvent.DamageCause.LAVA
+                || event.getCause() == EntityDamageEvent.DamageCause.HOT_FLOOR)
+                && armorManager.isWearingPiece(player, LegendaryArmorSet.ABYSSAL_PLATE, LegendaryArmorSet.ArmorSlot.BOOTS)) {
+            event.setCancelled(true);
+            return;
         }
         if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE
                 || event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK

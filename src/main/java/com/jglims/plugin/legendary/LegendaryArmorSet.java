@@ -45,14 +45,21 @@ public enum LegendaryArmorSet {
             "Dark Vision (Night Vision while sneaking)", "+2 sneak attack damage", "Silent movement", "No footstep particles",
             "shadow_stalker_helmet", "shadow_stalker_chestplate", "shadow_stalker_leggings", "shadow_stalker_boots"),
 
-    FROST_WARDEN("frost_warden", "Frost Warden", LegendaryTier.EPIC,
+    ABYSSAL_PLATE("abyssal_plate", "Abyssal Plate", LegendaryTier.ABYSSAL,
+            Material.NETHERITE_HELMET, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS,
+            30161, 30162, 30163, 30164,
+            28, "+30% melee damage, Wither immunity",
+            "Permanent Night Vision + Darkness immunity", "Soul-fire thorns (8 dmg to attackers) + Wither immunity", "Speed I permanent + 60% knockback resistance", "Full fire/lava immunity + obsidian walker",
+            "abyssal_plate_helmet", "abyssal_plate_chestplate", "abyssal_plate_leggings", "abyssal_plate_boots"),
+
+        FROST_WARDEN("frost_warden", "Frost Warden", LegendaryTier.EPIC,
             Material.NETHERITE_HELMET, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS,
             30151, 30152, 30153, 30154,
             20, "Freeze nearby enemies (Slowness II, 4-block radius, 3s interval)",
             "Frost Resistance (no Slowness/Freezing)", "Slowness aura (enemies in 3 blocks)", "Ice Walk (water freezes in 2-block radius)", "Lava creates obsidian on contact, fire immunity",
             "frost_warden_helmet", "frost_warden_chestplate", "frost_warden_leggings", "frost_warden_boots");
 
-    // ABYSSAL_PLATE added in Phase 16 with Abyss dimension
+    // ABYSSAL_PLATE added in rebalance update
 
     private final String id;
     private final String displayName;

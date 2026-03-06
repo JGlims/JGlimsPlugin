@@ -1,5 +1,5 @@
 # ==============================================
-# JGlimsPlugin v1.3.0 Configuration
+# JGlimsPlugin v1.4.0 Configuration (Rebalanced)
 # ==============================================
 
 # --- Mob Difficulty ---
@@ -12,49 +12,48 @@ mob-difficulty:
       health: 1.5
       damage: 1.3
     700:
+      health: 1.7
+      damage: 1.4
+    1000:
       health: 2.0
       damage: 1.6
-    1000:
-      health: 2.5
-      damage: 1.9
     2000:
-      health: 3.0
-      damage: 2.2
-    3000:
-      health: 3.5
-      damage: 2.5
-    5000:
-      health: 4.0
-      damage: 3.0
-  biome:
-    pale-garden: 2.0
-    deep-dark: 2.5
-    swamp: 1.4
-    nether-wastes:
-      health: 1.7
-      damage: 1.7
-    soul-sand-valley:
-      health: 1.9
-      damage: 1.9
-    crimson-forest:
-      health: 2.0
-      damage: 2.0
-    warped-forest:
-      health: 2.0
-      damage: 2.0
-    basalt-deltas:
       health: 2.3
-      damage: 2.3
-    end:
-      health: 2.5
+      damage: 1.8
+    3000:
+      health: 2.6
       damage: 2.0
+    5000:
+      health: 3.0
+      damage: 2.3
+  biome:
+    pale-garden: 1.8
+    deep-dark: 2.2
+    swamp: 1.3
+    nether-wastes:
+      health: 1.5
+      damage: 1.5
+    soul-sand-valley:
+      health: 1.5
+      damage: 1.5
+    crimson-forest:
+      health: 1.6
+      damage: 1.6
+    warped-forest:
+      health: 1.6
+      damage: 1.6
+    basalt-deltas:
+      health: 1.8
+      damage: 1.8
+    end:
+      health: 2.0
+      damage: 1.6
 
 # --- Boss Enhancer ---
-# Warden and Wither at vanilla (1.0). Ender Dragon is the strongest.
 boss-enhancer:
   ender-dragon:
     health: 3.5
-    damage: 3.0
+    damage: 2.5
   wither:
     health: 1.0
     damage: 1.0
@@ -62,8 +61,8 @@ boss-enhancer:
     health: 1.0
     damage: 1.0
   elder-guardian:
-    health: 2.5
-    damage: 1.8
+    health: 2.0
+    damage: 1.5
 
 # --- Creeper Reduction ---
 creeper-reduction:
@@ -141,8 +140,8 @@ villager-trades:
 king-mob:
   enabled: true
   spawns-per-king: 100
-  health-multiplier: 10.0
-  damage-multiplier: 3.0
+  health-multiplier: 7.0
+  damage-multiplier: 2.5
   diamond-drop-min: 3
   diamond-drop-max: 9
 
@@ -155,7 +154,7 @@ axe-nerf:
 weapon-mastery:
   enabled: true
   max-kills: 1000
-  max-bonus-percent: 10.0
+  max-bonus-percent: 20.0
 
 # --- Blood Moon ---
 blood-moon:
@@ -165,8 +164,8 @@ blood-moon:
   mob-health-multiplier: 1.5
   mob-damage-multiplier: 1.3
   boss-every-nth: 10
-  boss-health-multiplier: 20.0
-  boss-damage-multiplier: 5.0
+  boss-health-multiplier: 12.0
+  boss-damage-multiplier: 3.5
   boss-diamond-min: 5
   boss-diamond-max: 15
   double-drops: true
@@ -190,11 +189,8 @@ super-tools:
 
 # --- Ore Detect (Super Pickaxe Ability) ---
 ore-detect:
-  # Normal ore radius
   radius-diamond: 8
   radius-netherite: 12
-  # Ancient Debris gets a MUCH larger radius
   ancient-debris-radius-diamond: 24
   ancient-debris-radius-netherite: 40
-  # How long particles show (ticks, 200 = 10 seconds)
   duration-ticks: 200

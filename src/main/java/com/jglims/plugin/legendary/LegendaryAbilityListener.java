@@ -154,6 +154,10 @@ public class LegendaryAbilityListener implements Listener {
             case DRAGON_SLAYING_BLADE -> primary.rcDragonSlayingBlade(player);
             case STOP_SIGN -> primary.rcStopSign(player);
             case CREATION_SPLITTER -> primary.rcCreationSplitter(player);
+            case REQUIEM_AWAKENED -> primary.rcRequiemAwakened(player);
+            case EXCALIBUR_AWAKENED -> primary.rcExcaliburAwakened(player);
+            case CREATION_SPLITTER_AWAKENED -> primary.rcCreationSplitterAwakened(player);
+            case WHISPERWIND_AWAKENED -> primary.rcWhisperwindAwakened(player);
         }
     }
 
@@ -222,6 +226,10 @@ public class LegendaryAbilityListener implements Listener {
             case DRAGON_SLAYING_BLADE -> alt.altDragonSlayingBlade(player);
             case STOP_SIGN -> alt.altStopSign(player);
             case CREATION_SPLITTER -> alt.altCreationSplitter(player);
+            case REQUIEM_AWAKENED -> alt.altRequiemAwakened(player);
+            case EXCALIBUR_AWAKENED -> alt.altExcaliburAwakened(player);
+            case CREATION_SPLITTER_AWAKENED -> alt.altCreationSplitterAwakened(player);
+            case WHISPERWIND_AWAKENED -> alt.altWhisperwindAwakened(player);
         }
     }
 
