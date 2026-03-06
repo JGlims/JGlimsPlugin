@@ -13,10 +13,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -30,7 +28,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -169,14 +166,14 @@ public class LegendaryAbilityListener implements Listener {
         if (weapon == null) return;
 
         if (player.isSneaking()) {
-            // SNEAK + RIGHT-CLICK → Right-click ability
-            handleHoldAbility(player, weapon);
+            // CROUCH + RIGHT-CLICK → Alternate ability (rule A.10)
+            handleAltAbility(player, weapon);
             event.setCancelled(true);
         } else {
             // NON-SNEAK RIGHT-CLICK → Start hold timer for hold ability
             // REMOVED: old hold timer
-            // REMOVED: old hold charged
-            handleHoldAbility(player, weapon);
+            // RIGHT-CLICK → Primary ability (rule A.10)
+            handlePrimaryAbility(player, weapon);
             event.setCancelled(true);
         }
     }
