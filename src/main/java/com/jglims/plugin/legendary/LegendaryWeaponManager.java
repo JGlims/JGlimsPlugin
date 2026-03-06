@@ -15,32 +15,15 @@ import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 
 import com.jglims.plugin.JGlimsPlugin;
-import com.jglims.plugin.legendary.LegendaryWeapon.LegendaryTier;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 /**
- * LegendaryWeaponManager - creates legendary weapon ItemStacks.
- *
- * PDC Tags on every legendary weapon:
- *   is_legendary_weapon  (BYTE, 1)
- *   legendary_id         (STRING, e.g. "oceans_rage")
- *   legendary_tier       (STRING, "legendary" or "uncommon")
- *   legendary_cooldown   (LONG, timestamp of last ability use - set by listener)
- *   legendary_damage     (attribute key)
- *   legendary_speed      (attribute key)
- *
- * All legendary weapons are unbreakable, un-enchantable (blocked by AnvilRecipeListener),
- * have no enchantment glint, and display custom lore.
- *
- * Resource pack model selection uses the 1.21.4+ string-based CustomModelData system.
- * The textureName from LegendaryWeapon is set as strings[0] on the item.
- * The resource pack's assets/minecraft/items/*.json files use a "select" model type
- * with "property": "minecraft:custom_model_data" and string-based "when" cases.
- *
- * v1.4.0 Phase 8b - Input rework: abilities are now right-click / crouch+right-click.
+ * LegendaryWeaponManager - creates legendary weapon ItemStacks, identifies them.
+ * v3.0.0 Phase 8c - Rewritten for 5-tier system.
  */
 public class LegendaryWeaponManager {
 
@@ -62,14 +45,10 @@ public class LegendaryWeaponManager {
         this.legendarySpeedKey = new NamespacedKey(plugin, "legendary_speed");
     }
 
-    // -- Accessors --
-
     public NamespacedKey getLegendaryKey() { return legendaryKey; }
     public NamespacedKey getLegendaryIdKey() { return legendaryIdKey; }
     public NamespacedKey getLegendaryTierKey() { return legendaryTierKey; }
     public NamespacedKey getLegendaryCooldownKey() { return legendaryCooldownKey; }
-
-    // -- Detection --
 
     public boolean isLegendary(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -86,54 +65,38 @@ public class LegendaryWeaponManager {
 
     public LegendaryTier getTier(ItemStack item) {
         if (!isLegendary(item)) return null;
-        String tier = item.getItemMeta().getPersistentDataContainer()
+        String tierStr = item.getItemMeta().getPersistentDataContainer()
                 .get(legendaryTierKey, PersistentDataType.STRING);
-        if ("legendary".equals(tier)) return LegendaryTier.LEGENDARY;
-        if ("uncommon".equals(tier)) return LegendaryTier.UNCOMMON;
-        return null;
+        return LegendaryTier.fromId(tierStr);
     }
 
-    // -- Item Creation --
-
-    /**
-     * Creates a legendary weapon ItemStack from the enum definition.
-     */
     public ItemStack createWeapon(LegendaryWeapon weapon) {
         ItemStack item = new ItemStack(weapon.getBaseMaterial(), 1);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return null;
 
-        // PDC tags
         meta.getPersistentDataContainer().set(legendaryKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(legendaryIdKey, PersistentDataType.STRING, weapon.getId());
-        meta.getPersistentDataContainer().set(legendaryTierKey, PersistentDataType.STRING,
-                weapon.getTier() == LegendaryTier.LEGENDARY ? "legendary" : "uncommon");
+        meta.getPersistentDataContainer().set(legendaryTierKey, PersistentDataType.STRING, weapon.getTier().getId());
 
-        // Unbreakable, no glint
         meta.setUnbreakable(true);
         meta.setEnchantmentGlintOverride(false);
 
-        // 1.21.4+ string-based CustomModelData
         CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
         cmd.setStrings(List.of(weapon.getTextureName()));
         meta.setCustomModelDataComponent(cmd);
 
-        // Display name
-        NamedTextColor nameColor = weapon.getTier() == LegendaryTier.LEGENDARY
-                ? NamedTextColor.DARK_PURPLE : NamedTextColor.GOLD;
+        TextColor nameColor = weapon.getTier().getColor();
         meta.displayName(Component.text(weapon.getDisplayName(), nameColor)
                 .decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Lore
         List<Component> lore = buildLore(weapon);
         meta.lore(lore);
 
-        // Hide default attributes
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
 
-        // Set damage attribute
         double attackSpeed = getAttackSpeed(weapon.getBaseMaterial());
         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE,
                 new AttributeModifier(legendaryDamageKey, weapon.getBaseDamage() - 1.0,
@@ -146,29 +109,15 @@ public class LegendaryWeaponManager {
         return item;
     }
 
-    // -- Lore Builder --
-
     private List<Component> buildLore(LegendaryWeapon weapon) {
         List<Component> lore = new ArrayList<>();
-        boolean isElite = weapon.getTier() == LegendaryTier.LEGENDARY;
+        LegendaryTier tier = weapon.getTier();
 
-        // Tier tag
-        if (isElite) {
-            lore.add(Component.text("\u2726 LEGENDARY \u2726", NamedTextColor.DARK_PURPLE)
-                    .decorate(TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-        } else {
-            lore.add(Component.text("\u2726 UNCOMMON LEGENDARY \u2726", NamedTextColor.GOLD)
-                    .decorate(TextDecoration.BOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-        }
-
-        // Texture source
-        lore.add(Component.text("Texture: " + weapon.getTextureSource() + " \u2014 " + weapon.getTextureName(),
-                NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, true));
+        lore.add(Component.text(tier.getDisplayTag(), tier.getColor())
+                .decorate(TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
 
-        // Stats
         lore.add(Component.text("Attack Damage: ", NamedTextColor.GRAY)
                 .append(Component.text(weapon.getBaseDamage(), NamedTextColor.RED)
                         .decorate(TextDecoration.BOLD))
@@ -180,24 +129,29 @@ public class LegendaryWeaponManager {
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
 
-        // Abilities -- PHASE 8b: Updated labels
         lore.add(Component.text("\u25B6 Right-Click: ", NamedTextColor.GREEN)
-                .append(Component.text(weapon.getRightClickAbilityName(), NamedTextColor.WHITE))
-                .append(Component.text(" (" + weapon.getRightClickCooldown() + "s)", NamedTextColor.DARK_GRAY))
+                .append(Component.text(weapon.getPrimaryAbilityName(), NamedTextColor.WHITE))
+                .append(Component.text(" (" + weapon.getPrimaryCooldown() + "s)", NamedTextColor.DARK_GRAY))
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("\u25B6 Crouch + Right-Click: ", NamedTextColor.LIGHT_PURPLE)
-                .append(Component.text(weapon.getHoldAbilityName(), NamedTextColor.WHITE))
-                .append(Component.text(" (" + weapon.getHoldCooldown() + "s)", NamedTextColor.DARK_GRAY))
+                .append(Component.text(weapon.getAltAbilityName(), NamedTextColor.WHITE))
+                .append(Component.text(" (" + weapon.getAltCooldown() + "s)", NamedTextColor.DARK_GRAY))
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
 
-        // Properties
+        if (tier == LegendaryTier.MYTHIC) {
+            lore.add(Component.text("\u2605 Mythic Power \u2605", NamedTextColor.GOLD)
+                    .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        } else if (tier == LegendaryTier.ABYSSAL) {
+            lore.add(Component.text("\u2620 Abyssal Might \u2620", tier.getColor())
+                    .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        }
+
         lore.add(Component.text("Unbreakable", NamedTextColor.BLUE)
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.text("Cannot be enchanted", NamedTextColor.RED)
                 .decoration(TextDecoration.ITALIC, false));
 
-        // Base item type hint (for tridents)
         if (weapon.getBaseMaterial() == Material.TRIDENT) {
             lore.add(Component.text("Throwable \u2014 returns automatically", NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
@@ -205,8 +159,6 @@ public class LegendaryWeaponManager {
 
         return lore;
     }
-
-    // -- Attack Speed by Material --
 
     private double getAttackSpeed(Material mat) {
         return switch (mat) {

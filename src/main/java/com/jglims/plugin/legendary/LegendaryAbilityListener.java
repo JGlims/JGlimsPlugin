@@ -49,11 +49,10 @@ import net.kyori.adventure.text.format.TextDecoration;
  * LegendaryAbilityListener — handles all 44 legendary weapon abilities.
  *
  * Two ability types per weapon:
- *   1. RIGHT-CLICK ability: sneak + right-click (same pattern as battle weapons)
- *   2. HOLD ability: hold right-click for 2+ seconds (new mechanic)
- *      Bedrock alternative: double-sneak + right-click (detected via Floodgate)
+ *   1. PRIMARY ability: right-click (rule A.10)
+ *   2. ALTERNATE ability: crouch + right-click (rule A.10)
  *
- * v1.4.0 — Phase 8 implementation
+ * v3.0.0 — Phase 8b/8c rewrite. Input: RC=primary, Crouch+RC=alternate.
  */
 public class LegendaryAbilityListener implements Listener {
 
@@ -64,10 +63,6 @@ public class LegendaryAbilityListener implements Listener {
 
     // Cooldown tracking: player UUID -> ability name -> expiry timestamp
     private final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
-
-    // Hold-ability tracking: player UUID -> timestamp when right-click started
-    private final Map<UUID, Long> holdStartTimes = new HashMap<>();
-    private final Map<UUID, Boolean> holdAbilityCharged = new HashMap<>();
 
     // Active buff tracking for various abilities
     private final Map<UUID, Integer> bloodlustStacks = new HashMap<>(); // Muramasa
@@ -93,9 +88,6 @@ public class LegendaryAbilityListener implements Listener {
     private final Map<UUID, Long> gemBarrierExpiry = new HashMap<>();
     private final Map<UUID, Boolean> shadowStanceActive = new HashMap<>(); // Gloomsteel Katana
     private final Map<UUID, Long> shadowStanceExpiry = new HashMap<>();
-
-    // Hold-ability charge time in milliseconds
-    private static final long HOLD_CHARGE_MS = 2000L;
 
     public LegendaryAbilityListener(JGlimsPlugin plugin, ConfigManager config,
                                      LegendaryWeaponManager weaponManager,
@@ -178,98 +170,31 @@ public class LegendaryAbilityListener implements Listener {
 
         if (player.isSneaking()) {
             // SNEAK + RIGHT-CLICK → Right-click ability
-            handleRightClickAbility(player, weapon);
+            handleHoldAbility(player, weapon);
             event.setCancelled(true);
         } else {
             // NON-SNEAK RIGHT-CLICK → Start hold timer for hold ability
-            holdStartTimes.put(player.getUniqueId(), System.currentTimeMillis());
-            holdAbilityCharged.put(player.getUniqueId(), false);
-            startHoldChargeDisplay(player, weapon);
+            // REMOVED: old hold timer
+            // REMOVED: old hold charged
+            handleHoldAbility(player, weapon);
+            event.setCancelled(true);
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    // HOLD ABILITY — Charge mechanic
-    // ════════════════════════════════════════════════════════════════
-
-    private void startHoldChargeDisplay(Player player, LegendaryWeapon weapon) {
-        UUID uuid = player.getUniqueId();
-        new BukkitRunnable() {
-            int ticks = 0;
-            @Override
-            public void run() {
-                if (!player.isOnline() || !holdStartTimes.containsKey(uuid)) {
-                    cancel();
-                    return;
-                }
-
-                // Check if player released (no longer holding right-click item)
-                ItemStack current = player.getInventory().getItemInMainHand();
-                LegendaryWeapon currentWeapon = weaponManager.identify(current);
-                if (currentWeapon != weapon) {
-                    holdStartTimes.remove(uuid);
-                    holdAbilityCharged.remove(uuid);
-                    cancel();
-                    return;
-                }
-
-                long elapsed = System.currentTimeMillis() - holdStartTimes.getOrDefault(uuid, System.currentTimeMillis());
-                int progress = (int) Math.min(5, (elapsed * 5) / HOLD_CHARGE_MS);
-
-                if (elapsed >= HOLD_CHARGE_MS && !holdAbilityCharged.getOrDefault(uuid, false)) {
-                    // FULLY CHARGED — activate hold ability
-                    holdAbilityCharged.put(uuid, true);
-                    holdStartTimes.remove(uuid);
-                    player.sendActionBar(Component.text("[", NamedTextColor.DARK_GRAY)
-                            .append(Component.text("\u25A0\u25A0\u25A0\u25A0\u25A0", NamedTextColor.GREEN))
-                            .append(Component.text("] ", NamedTextColor.DARK_GRAY))
-                            .append(Component.text("ACTIVATED!", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)));
-                    player.playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);
-                    handleHoldAbility(player, weapon);
-                    cancel();
-                    return;
-                }
-
-                // Show charging bar
-                StringBuilder filled = new StringBuilder();
-                StringBuilder empty = new StringBuilder();
-                for (int i = 0; i < 5; i++) {
-                    if (i < progress) filled.append("\u25A0");
-                    else empty.append("\u25A1");
-                }
-                player.sendActionBar(Component.text("[", NamedTextColor.DARK_GRAY)
-                        .append(Component.text(filled.toString(), NamedTextColor.LIGHT_PURPLE))
-                        .append(Component.text(empty.toString(), NamedTextColor.DARK_GRAY))
-                        .append(Component.text("] ", NamedTextColor.DARK_GRAY))
-                        .append(Component.text("Charging " + weapon.getHoldAbilityName() + "...", NamedTextColor.LIGHT_PURPLE)));
-
-                if (ticks % 4 == 0) {
-                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.3f, 0.8f + (progress * 0.15f));
-                }
-
-                ticks++;
-                if (ticks > 60) { // 3 second max hold window
-                    holdStartTimes.remove(uuid);
-                    holdAbilityCharged.remove(uuid);
-                    cancel();
-                }
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
-    }
 
     // ════════════════════════════════════════════════════════════════
-    // RIGHT-CLICK ABILITY DISPATCHER
+    // PRIMARY ABILITY DISPATCHER (Right-Click)
     // ════════════════════════════════════════════════════════════════
 
-    private void handleRightClickAbility(Player player, LegendaryWeapon weapon) {
-        String name = weapon.getRightClickAbilityName();
-        int cd = weapon.getRightClickCooldown();
+    private void handlePrimaryAbility(Player player, LegendaryWeapon weapon) {
+        String name = weapon.getPrimaryAbilityName();
+        int cd = weapon.getPrimaryCooldown();
 
         if (isOnCooldown(player, name)) { sendCooldownMsg(player, name); return; }
         setCooldown(player, name, cd);
 
         switch (weapon) {
-            // ── LEGENDARY TIER (24) ────────────────────────────────
+            // ── MYTHIC/EPIC/RARE ────────────────────────────────
             case OCEANS_RAGE -> rcOceansRage(player);
             case AQUATIC_SACRED_BLADE -> rcAquaticSacredBlade(player);
             case TRUE_EXCALIBUR -> rcTrueExcalibur(player);
@@ -294,7 +219,7 @@ public class LegendaryAbilityListener implements Listener {
             case TALONBRAND -> rcTalonbrand(player);
             case EMERALD_GREATCLEAVER -> rcEmeraldGreatcleaver(player);
             case DEMONS_BLOOD_BLADE -> rcDemonsBloodBlade(player);
-            // ── UNCOMMON TIER (20) ─────────────────────────────────
+            // ── COMMON ─────────────────────────────────
             case NOCTURNE -> rcNocturne(player);
             case GRAVESCEPTER -> rcGravescepter(player);
             case LYCANBANE -> rcLycanbane(player);
@@ -319,12 +244,12 @@ public class LegendaryAbilityListener implements Listener {
     }
 
     // ════════════════════════════════════════════════════════════════
-    // HOLD ABILITY DISPATCHER
+    // ALTERNATE ABILITY DISPATCHER (Crouch + Right-Click)
     // ════════════════════════════════════════════════════════════════
 
-    private void handleHoldAbility(Player player, LegendaryWeapon weapon) {
-        String name = weapon.getHoldAbilityName();
-        int cd = weapon.getHoldCooldown();
+    private void handleAltAbility(Player player, LegendaryWeapon weapon) {
+        String name = weapon.getAltAbilityName();
+        int cd = weapon.getAltCooldown();
 
         if (isOnCooldown(player, name)) { sendCooldownMsg(player, name); return; }
         setCooldown(player, name, cd);
