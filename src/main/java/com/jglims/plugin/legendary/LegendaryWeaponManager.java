@@ -11,6 +11,7 @@ import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 
 import com.jglims.plugin.JGlimsPlugin;
@@ -28,9 +29,16 @@ import net.kyori.adventure.text.format.TextDecoration;
  *   legendary_id         (STRING, e.g. "oceans_rage")
  *   legendary_tier       (STRING, "legendary" or "uncommon")
  *   legendary_cooldown   (LONG, timestamp of last ability use — set by listener)
+ *   legendary_damage     (attribute key)
+ *   legendary_speed      (attribute key)
  *
  * All legendary weapons are unbreakable, un-enchantable (blocked by AnvilRecipeListener),
  * have no enchantment glint, and display custom lore.
+ *
+ * Resource pack model selection uses the 1.21.4+ string-based CustomModelData system.
+ * The textureName from LegendaryWeapon is set as strings[0] on the item.
+ * The resource pack's assets/minecraft/items/*.json files use a "select" model type
+ * with "property": "minecraft:custom_model_data" and string-based "when" cases.
  */
 public class LegendaryWeaponManager {
 
@@ -103,8 +111,13 @@ public class LegendaryWeaponManager {
         meta.setUnbreakable(true);
         meta.setEnchantmentGlintOverride(false);
 
-        // CustomModelData for resource pack textures
-        meta.setCustomModelData(weapon.getCustomModelData());
+        // ── 1.21.4+ string-based CustomModelData ────────────────────
+        // The textureName (e.g. "stormbringer") is set as strings[0].
+        // The resource pack items/*.json uses select → custom_model_data
+        // with "when": "stormbringer" to pick the correct model.
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(List.of(weapon.getTextureName()));
+        meta.setCustomModelDataComponent(cmd);
 
         // Display name
         NamedTextColor nameColor = weapon.getTier() == LegendaryTier.LEGENDARY
@@ -152,7 +165,7 @@ public class LegendaryWeaponManager {
         }
 
         // Texture source
-        lore.add(Component.text("Texture: " + weapon.getTextureSource() + " — " + weapon.getTextureName(),
+        lore.add(Component.text("Texture: " + weapon.getTextureSource() + " \u2014 " + weapon.getTextureName(),
                 NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, true));
         lore.add(Component.empty());
 
@@ -187,7 +200,7 @@ public class LegendaryWeaponManager {
 
         // Base item type hint (for tridents)
         if (weapon.getBaseMaterial() == Material.TRIDENT) {
-            lore.add(Component.text("Throwable — returns automatically", NamedTextColor.AQUA)
+            lore.add(Component.text("Throwable \u2014 returns automatically", NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
         }
 
