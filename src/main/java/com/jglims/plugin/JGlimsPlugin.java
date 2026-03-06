@@ -39,6 +39,9 @@ import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.mobs.MobDifficultyManager;
 import com.jglims.plugin.powerups.PowerUpListener;
 import com.jglims.plugin.powerups.PowerUpManager;
+import com.jglims.plugin.quests.QuestManager;
+import com.jglims.plugin.quests.QuestProgressListener;
+import com.jglims.plugin.quests.NpcWizardManager;
 import com.jglims.plugin.structures.StructureManager;
 import com.jglims.plugin.utility.BestBuddiesListener;
 import com.jglims.plugin.utility.DropRateListener;
@@ -100,6 +103,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private AbyssDragonBoss abyssDragonBoss;
     private InfinityStoneManager infinityStoneManager;
     private InfinityGauntletManager infinityGauntletManager;
+    private QuestManager questManager;
+    private NpcWizardManager npcWizardManager;
 
     @Override
     public void onEnable() {
@@ -134,6 +139,8 @@ public class JGlimsPlugin extends JavaPlugin {
         abyssDragonBoss = new AbyssDragonBoss(this, abyssDimensionManager);
         eventManager = new EventManager(this);
         eventManager.initialize();
+        questManager = new QuestManager(this);
+        npcWizardManager = new NpcWizardManager(this);
 
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
@@ -193,6 +200,9 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(eventManager.getPillagerSiege(), this);
         pm.registerEvents(eventManager.getEndRift(), this);
         pm.registerEvents(infinityGauntletManager, this);
+        pm.registerEvents(questManager, this);
+        pm.registerEvents(new QuestProgressListener(this, questManager), this);
+        pm.registerEvents(npcWizardManager, this);
 
         getLogger().info("Legendary armor system loaded: " + LegendaryArmorSet.values().length + " sets.");
         for (LegendaryTier tier : LegendaryTier.values()) {
@@ -206,11 +216,14 @@ public class JGlimsPlugin extends JavaPlugin {
         getLogger().info("Boss mastery title system loaded.");
         getLogger().info("Structure generation system loaded (" + com.jglims.plugin.structures.StructureType.values().length + " structure types).");
         getLogger().info("Event system loaded: Nether Storm, Piglin Uprising, Void Collapse, End Rift.");
-        getLogger().info("Roaming boss system loaded (The Watcher, Hellfire Drake).");
+        getLogger().info("Roaming boss system loaded (The Watcher, Hellfire Drake, Frostbound Colossus, Jungle Predator, End Wraith, Abyssal Leviathan).");
+        getLogger().info("Quest system loaded (6 quest lines, NPC Wizard shop).");
 
         if (configManager.isPaleGardenFogEnabled()) new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         if (configManager.isBloodMoonEnabled()) bloodMoonManager.startScheduler();
         roamingBossManager.startScheduler();
+        questManager.startScheduler();
+        npcWizardManager.startScheduler();
 
         long elapsed = System.currentTimeMillis() - start;
         getLogger().info("JGlimsPlugin v" + getDescription().getVersion() + " enabled in " + elapsed + "ms!");
@@ -265,9 +278,11 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims armor <set|list> [slot]", NamedTextColor.YELLOW).append(Component.text(" - Give/list legendary armor (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims powerup <type|stats> [player]", NamedTextColor.YELLOW).append(Component.text(" - Give power-ups / view stats (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims bosstitles", NamedTextColor.YELLOW).append(Component.text(" - View boss mastery titles", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims quests", NamedTextColor.YELLOW).append(Component.text(" - View quest progress", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
             }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, help", NamedTextColor.RED));
+            case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, quests, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -456,4 +471,6 @@ public class JGlimsPlugin extends JavaPlugin {
     public InfinityStoneManager getInfinityStoneManager() { return infinityStoneManager; }
     public InfinityGauntletManager getInfinityGauntletManager() { return infinityGauntletManager; }
     public RoamingBossManager getRoamingBossManager() { return roamingBossManager; }
+    public QuestManager getQuestManager() { return questManager; }
+    public NpcWizardManager getNpcWizardManager() { return npcWizardManager; }
 }

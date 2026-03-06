@@ -128,9 +128,9 @@ public class StructureManager implements Listener {
             case GIGANTIC_CASTLE -> buildGiganticCastle(b);
             case ULTRA_VILLAGE -> buildUltraVillage(b);
             case DUNGEON_DEEP -> buildDungeonDeep(b);
-            case THANOS_TEMPLE -> buildGenericStructure(b, type);
-            case PILLAGER_FORTRESS -> buildGenericStructure(b, type);
-            case PILLAGER_AIRSHIP -> buildGenericStructure(b, type);
+            case THANOS_TEMPLE -> buildThanosTemple(b);
+            case PILLAGER_FORTRESS -> buildPillagerFortress(b);
+            case PILLAGER_AIRSHIP -> buildPillagerAirship(b);
             case FROST_DUNGEON -> buildFrostDungeon(b);
             case BANDIT_HIDEOUT -> buildBanditHideout(b);
             case SUNKEN_RUINS -> buildSunkenRuins(b);
@@ -567,7 +567,185 @@ public class StructureManager implements Listener {
     //  GENERIC FALLBACK + UTILITIES
     // ══════════════════════════════════════
 
-    private void buildGenericStructure(StructureBuilder b, StructureType type) {
+
+    // ═══════════════════════════════════════════════════════════════
+    //  OVERWORLD — Custom builds replacing generic (Part 3B)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void buildThanosTemple(StructureBuilder b) {
+        // Stepped pyramid base (5 steps, obsidian + purpur)
+        for (int step = 0; step < 5; step++) {
+            int r = 22 - step * 4;
+            int y = step * 4;
+            b.fillBox(-r, y, -r, r, y, r, Material.OBSIDIAN);
+            b.fillWalls(-r, y + 1, -r, r, y + 3, r, Material.PURPUR_BLOCK);
+            b.hollowBox(-r, y + 1, -r, r, y + 3, r);
+        }
+        // Top platform
+        b.fillBox(-6, 20, -6, 6, 20, 6, Material.PURPUR_BLOCK);
+        b.fillBox(-5, 21, -5, 5, 21, 5, Material.OBSIDIAN);
+        // Throne
+        b.fillBox(-1, 21, 2, 1, 21, 4, Material.GOLD_BLOCK);
+        b.setBlock(0, 22, 3, Material.GOLD_BLOCK); b.setBlock(0, 23, 3, Material.GOLD_BLOCK);
+        b.setBlock(-1, 23, 3, Material.GOLD_BLOCK); b.setBlock(1, 23, 3, Material.GOLD_BLOCK);
+        b.setBlock(0, 24, 3, Material.GOLD_BLOCK);
+        // Infinity Stone pedestals (6 around the top)
+        Material[] stoneMats = {Material.RED_CONCRETE, Material.BLUE_CONCRETE, Material.YELLOW_CONCRETE, Material.ORANGE_CONCRETE, Material.GREEN_CONCRETE, Material.PURPLE_CONCRETE};
+        int[][] pedestalPositions = {{-4, 0}, {4, 0}, {0, -4}, {0, 4}, {-3, -3}, {3, 3}};
+        for (int i = 0; i < 6; i++) {
+            int px = pedestalPositions[i][0]; int pz = pedestalPositions[i][1];
+            b.setBlock(px, 21, pz, Material.QUARTZ_PILLAR);
+            b.setBlock(px, 22, pz, Material.QUARTZ_PILLAR);
+            b.setBlock(px, 23, pz, stoneMats[i]);
+        }
+        // Entrance
+        b.fillBox(-3, 1, -22, 3, 6, -22, Material.AIR);
+        b.setBlock(-4, 7, -22, Material.PURPUR_PILLAR); b.setBlock(4, 7, -22, Material.PURPUR_PILLAR);
+        // Grand staircase inside
+        for (int s = 0; s < 20; s++) {
+            int sz = -20 + s; int sy = s;
+            b.fillBox(-2, sy, sz, 2, sy, sz, Material.PURPUR_STAIRS);
+        }
+        // Underground vault
+        b.fillBox(-15, -8, -15, 15, -1, 15, Material.OBSIDIAN);
+        b.fillBox(-14, -7, -14, 14, -1, 14, Material.AIR);
+        b.fillFloor(-14, -14, 14, 14, -8, Material.CRYING_OBSIDIAN);
+        for (int[] c : new int[][]{{-10, -10}, {10, -10}, {-10, 10}, {10, 10}}) {
+            b.pillar(c[0], -7, -1, c[1], Material.PURPUR_PILLAR);
+            b.setBlock(c[0], -1, c[1], Material.END_ROD);
+        }
+        b.setBlock(0, -7, 0, Material.BEACON);
+        // Decay for ruins feel
+        b.decay(-22, 8, -22, 22, 20, 22, 0.08);
+        b.scatter(-22, 0, -22, 22, 20, 22, Material.PURPUR_BLOCK, Material.CRACKED_STONE_BRICKS, 0.06);
+        // Chests and boss
+        b.placeChest(0, 21, 0); b.placeChest(-12, -7, 0); b.placeChest(12, -7, 0);
+        b.setBossSpawn(0, 21, -2);
+    }
+
+    private void buildPillagerFortress(StructureBuilder b) {
+        // Outer walls
+        b.fillWalls(-28, 0, -28, 28, 10, 28, Material.COBBLESTONE);
+        b.hollowBox(-28, 1, -28, 28, 10, 28);
+        b.fillFloor(-27, -27, 27, 27, 0, Material.STONE_BRICKS);
+        // Battlements on top
+        for (int x = -28; x <= 28; x += 2) {
+            b.setBlock(x, 11, -28, Material.COBBLESTONE_WALL);
+            b.setBlock(x, 11, 28, Material.COBBLESTONE_WALL);
+        }
+        for (int z = -28; z <= 28; z += 2) {
+            b.setBlock(-28, 11, z, Material.COBBLESTONE_WALL);
+            b.setBlock(28, 11, z, Material.COBBLESTONE_WALL);
+        }
+        // Corner watchtowers (4)
+        for (int[] c : new int[][]{{-28, -28}, {28, -28}, {-28, 28}, {28, 28}}) {
+            b.fillBox(c[0] - 3, 0, c[1] - 3, c[0] + 3, 16, c[1] + 3, Material.STONE_BRICKS);
+            b.fillBox(c[0] - 2, 1, c[1] - 2, c[0] + 2, 15, c[1] + 2, Material.AIR);
+            b.fillBox(c[0] - 4, 14, c[1] - 4, c[0] + 4, 14, c[1] + 4, Material.DARK_OAK_PLANKS);
+            b.setBlock(c[0], 15, c[1], Material.LANTERN);
+            for (int y = 1; y <= 14; y++) b.setBlock(c[0] + 1, y, c[1] - 2, Material.LADDER);
+        }
+        // Main gate
+        b.fillBox(-3, 1, -28, 3, 7, -28, Material.AIR);
+        b.setBlock(-4, 8, -28, Material.DARK_OAK_LOG); b.setBlock(4, 8, -28, Material.DARK_OAK_LOG);
+        b.fillBox(-3, 7, -28, 3, 7, -28, Material.DARK_OAK_PLANKS);
+        // Pillager banners along entrance
+        for (int x = -2; x <= 2; x += 2) b.setBlock(x, 8, -27, Material.WHITE_BANNER);
+        // Central courtyard
+        b.filledCircle(0, 0, 0, 8, Material.SMOOTH_STONE);
+        b.setBlock(0, 1, 0, Material.CAMPFIRE);
+        b.pillar(-6, 1, 4, 0, Material.DARK_OAK_FENCE); b.pillar(6, 1, 4, 0, Material.DARK_OAK_FENCE);
+        // Barracks (left side)
+        b.fillBox(-25, 0, -15, -15, 0, -5, Material.STONE_BRICKS);
+        b.fillWalls(-25, 1, -15, -15, 5, -5, Material.DARK_OAK_PLANKS);
+        b.hollowBox(-25, 1, -15, -15, 5, -5);
+        b.fillBox(-25, 6, -15, -15, 6, -5, Material.DARK_OAK_PLANKS);
+        b.setBlock(-20, 1, -15, Material.AIR); b.setBlock(-20, 2, -15, Material.AIR);
+        for (int bx = -24; bx <= -16; bx += 4) { b.setBlock(bx, 1, -12, Material.RED_BED); b.setBlock(bx, 1, -8, Material.RED_BED); }
+        // Armory (right side)
+        b.fillBox(15, 0, -15, 25, 0, -5, Material.STONE_BRICKS);
+        b.fillWalls(15, 1, -15, 25, 5, -5, Material.COBBLESTONE);
+        b.hollowBox(15, 1, -15, 25, 5, -5);
+        b.fillBox(15, 6, -15, 25, 6, -5, Material.DARK_OAK_PLANKS);
+        b.setBlock(20, 1, -15, Material.AIR); b.setBlock(20, 2, -15, Material.AIR);
+        b.setBlock(16, 1, -13, Material.ANVIL); b.setBlock(17, 1, -13, Material.GRINDSTONE);
+        b.setBlock(24, 1, -6, Material.BARREL); b.setBlock(23, 1, -6, Material.BARREL);
+        // Command tent (rear)
+        b.fillBox(-8, 0, 10, 8, 0, 22, Material.STONE_BRICKS);
+        b.fillWalls(-8, 1, 10, 8, 6, 22, Material.DARK_OAK_PLANKS);
+        b.hollowBox(-8, 1, 10, 8, 6, 22);
+        b.fillBox(-8, 7, 10, 8, 7, 22, Material.DARK_OAK_PLANKS);
+        b.setBlock(0, 1, 10, Material.AIR); b.setBlock(0, 2, 10, Material.AIR);
+        b.setBlock(0, 1, 16, Material.CRAFTING_TABLE); b.setBlock(1, 1, 16, Material.CARTOGRAPHY_TABLE);
+        // Dungeon below
+        b.fillBox(-10, -6, -10, 10, -1, 10, Material.STONE_BRICKS);
+        b.fillBox(-9, -5, -9, 9, -1, 9, Material.AIR);
+        for (int z = -8; z <= 8; z += 4) {
+            b.setBlock(-8, -5, z, Material.IRON_BARS); b.setBlock(-8, -4, z, Material.IRON_BARS);
+            b.setBlock(8, -5, z, Material.IRON_BARS); b.setBlock(8, -4, z, Material.IRON_BARS);
+        }
+        // Chests and boss
+        b.placeChest(-22, 1, -10); b.placeChest(22, 1, -10); b.placeChest(0, 1, 18); b.placeChest(0, -5, 0);
+        b.setBossSpawn(0, 1, 5);
+    }
+
+    private void buildPillagerAirship(StructureBuilder b) {
+        // Hull (floating 15 blocks above ground)
+        int baseY = 15;
+        // Main deck hull — boat shape
+        for (int z = -12; z <= 12; z++) {
+            int halfWidth = z < -8 ? (z + 12) : (z > 8 ? (12 - z) : 4);
+            if (halfWidth < 1) halfWidth = 1;
+            b.fillBox(-halfWidth, baseY, z, halfWidth, baseY, z, Material.DARK_OAK_PLANKS);
+            // Hull sides (walls, 3 blocks high)
+            b.setBlock(-halfWidth, baseY + 1, z, Material.DARK_OAK_PLANKS);
+            b.setBlock(halfWidth, baseY + 1, z, Material.DARK_OAK_PLANKS);
+            b.setBlock(-halfWidth, baseY + 2, z, Material.DARK_OAK_FENCE);
+            b.setBlock(halfWidth, baseY + 2, z, Material.DARK_OAK_FENCE);
+        }
+        // Fill deck interior
+        b.fillFloor(-3, -10, 3, 10, baseY, Material.OAK_PLANKS);
+        // Below-deck cargo hold
+        b.fillBox(-3, baseY - 3, -6, 3, baseY - 1, 6, Material.DARK_OAK_PLANKS);
+        b.fillBox(-2, baseY - 2, -5, 2, baseY - 1, 5, Material.AIR);
+        b.setBlock(0, baseY - 2, 0, Material.BARREL);
+        b.setBlock(1, baseY - 2, 2, Material.BARREL);
+        b.setBlock(-1, baseY - 2, -3, Material.BARREL);
+        // Captain's cabin at the stern
+        b.fillBox(-3, baseY + 1, 6, 3, baseY + 4, 10, Material.DARK_OAK_PLANKS);
+        b.fillBox(-2, baseY + 1, 7, 2, baseY + 3, 9, Material.AIR);
+        b.setBlock(0, baseY + 1, 6, Material.AIR); b.setBlock(0, baseY + 2, 6, Material.AIR);
+        b.setBlock(0, baseY + 1, 8, Material.CRAFTING_TABLE);
+        b.setBlock(1, baseY + 3, 8, Material.LANTERN);
+        // Balloon above (big wool envelope)
+        int balloonY = baseY + 6;
+        for (int y = 0; y < 8; y++) {
+            int r = y < 2 ? (2 + y) : (y > 5 ? (9 - y) : 4);
+            b.filledCircle(0, balloonY + y, 0, r, Material.GRAY_WOOL);
+        }
+        // Ropes connecting balloon to hull
+        for (int[] rope : new int[][]{{-2, -4}, {2, -4}, {-2, 4}, {2, 4}}) {
+            for (int ry = baseY + 3; ry <= balloonY; ry++) {
+                b.setBlock(rope[0], ry, rope[1], Material.IRON_BARS);
+            }
+        }
+        // Mast and crow's nest at the bow
+        b.pillar(0, baseY + 1, 10, -10, Material.OAK_LOG);
+        b.fillBox(-2, baseY + 11, -12, 2, baseY + 11, -8, Material.OAK_PLANKS);
+        b.circle(0, baseY + 12, -10, 2, Material.OAK_FENCE);
+        // Crossbow mounts on deck
+        b.setBlock(-3, baseY + 1, -6, Material.DARK_OAK_FENCE); b.setBlock(-3, baseY + 2, -6, Material.TRIPWIRE_HOOK);
+        b.setBlock(3, baseY + 1, 0, Material.DARK_OAK_FENCE); b.setBlock(3, baseY + 2, 0, Material.TRIPWIRE_HOOK);
+        // Banners
+        b.setBlock(0, baseY + 12, -10, Material.WHITE_BANNER);
+        b.setBlock(-4, baseY + 2, 0, Material.WHITE_BANNER);
+        b.setBlock(4, baseY + 2, 0, Material.WHITE_BANNER);
+        // Chests and boss
+        b.placeChest(0, baseY + 1, 9); b.placeChest(0, baseY - 2, 3); b.placeChest(1, baseY + 1, -4);
+        b.setBossSpawn(0, baseY + 1, 0);
+    }
+
+        private void buildGenericStructure(StructureBuilder b, StructureType type) {
         int hx = type.getSizeX() / 2; int hz = type.getSizeZ() / 2;
         b.fillBox(-hx, 0, -hz, hx, 0, hz, Material.STONE_BRICKS);
         b.fillWalls(-hx, 1, -hz, hx, 4, hz, Material.STONE_BRICKS); b.hollowBox(-hx, 1, -hz, hx, 4, hz);
