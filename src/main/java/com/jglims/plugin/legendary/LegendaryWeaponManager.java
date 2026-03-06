@@ -22,13 +22,13 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 /**
- * LegendaryWeaponManager — creates legendary weapon ItemStacks.
+ * LegendaryWeaponManager - creates legendary weapon ItemStacks.
  *
  * PDC Tags on every legendary weapon:
  *   is_legendary_weapon  (BYTE, 1)
  *   legendary_id         (STRING, e.g. "oceans_rage")
  *   legendary_tier       (STRING, "legendary" or "uncommon")
- *   legendary_cooldown   (LONG, timestamp of last ability use — set by listener)
+ *   legendary_cooldown   (LONG, timestamp of last ability use - set by listener)
  *   legendary_damage     (attribute key)
  *   legendary_speed      (attribute key)
  *
@@ -39,6 +39,8 @@ import net.kyori.adventure.text.format.TextDecoration;
  * The textureName from LegendaryWeapon is set as strings[0] on the item.
  * The resource pack's assets/minecraft/items/*.json files use a "select" model type
  * with "property": "minecraft:custom_model_data" and string-based "when" cases.
+ *
+ * v1.4.0 Phase 8b - Input rework: abilities are now right-click / crouch+right-click.
  */
 public class LegendaryWeaponManager {
 
@@ -60,14 +62,14 @@ public class LegendaryWeaponManager {
         this.legendarySpeedKey = new NamespacedKey(plugin, "legendary_speed");
     }
 
-    // ── Accessors ───────────────────────────────────────────────────
+    // -- Accessors --
 
     public NamespacedKey getLegendaryKey() { return legendaryKey; }
     public NamespacedKey getLegendaryIdKey() { return legendaryIdKey; }
     public NamespacedKey getLegendaryTierKey() { return legendaryTierKey; }
     public NamespacedKey getLegendaryCooldownKey() { return legendaryCooldownKey; }
 
-    // ── Detection ───────────────────────────────────────────────────
+    // -- Detection --
 
     public boolean isLegendary(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -91,7 +93,7 @@ public class LegendaryWeaponManager {
         return null;
     }
 
-    // ── Item Creation ───────────────────────────────────────────────
+    // -- Item Creation --
 
     /**
      * Creates a legendary weapon ItemStack from the enum definition.
@@ -111,10 +113,7 @@ public class LegendaryWeaponManager {
         meta.setUnbreakable(true);
         meta.setEnchantmentGlintOverride(false);
 
-        // ── 1.21.4+ string-based CustomModelData ────────────────────
-        // The textureName (e.g. "stormbringer") is set as strings[0].
-        // The resource pack items/*.json uses select → custom_model_data
-        // with "when": "stormbringer" to pick the correct model.
+        // 1.21.4+ string-based CustomModelData
         CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
         cmd.setStrings(List.of(weapon.getTextureName()));
         meta.setCustomModelDataComponent(cmd);
@@ -147,7 +146,7 @@ public class LegendaryWeaponManager {
         return item;
     }
 
-    // ── Lore Builder ────────────────────────────────────────────────
+    // -- Lore Builder --
 
     private List<Component> buildLore(LegendaryWeapon weapon) {
         List<Component> lore = new ArrayList<>();
@@ -181,12 +180,12 @@ public class LegendaryWeaponManager {
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
 
-        // Abilities
+        // Abilities -- PHASE 8b: Updated labels
         lore.add(Component.text("\u25B6 Right-Click: ", NamedTextColor.GREEN)
                 .append(Component.text(weapon.getRightClickAbilityName(), NamedTextColor.WHITE))
                 .append(Component.text(" (" + weapon.getRightClickCooldown() + "s)", NamedTextColor.DARK_GRAY))
                 .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.text("\u25B6 Hold (2s): ", NamedTextColor.LIGHT_PURPLE)
+        lore.add(Component.text("\u25B6 Crouch + Right-Click: ", NamedTextColor.LIGHT_PURPLE)
                 .append(Component.text(weapon.getHoldAbilityName(), NamedTextColor.WHITE))
                 .append(Component.text(" (" + weapon.getHoldCooldown() + "s)", NamedTextColor.DARK_GRAY))
                 .decoration(TextDecoration.ITALIC, false));
@@ -207,7 +206,7 @@ public class LegendaryWeaponManager {
         return lore;
     }
 
-    // ── Attack Speed by Material ────────────────────────────────────
+    // -- Attack Speed by Material --
 
     private double getAttackSpeed(Material mat) {
         return switch (mat) {
