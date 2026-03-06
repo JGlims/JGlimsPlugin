@@ -1,4 +1,4 @@
-package com.jglims.plugin;
+﻿package com.jglims.plugin;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -33,6 +33,7 @@ import com.jglims.plugin.legendary.LegendaryWeapon;
 import com.jglims.plugin.legendary.LegendaryWeaponManager;
 import com.jglims.plugin.mobs.BloodMoonManager;
 import com.jglims.plugin.mobs.BossMasteryManager;
+import com.jglims.plugin.mobs.RoamingBossManager;
 import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.mobs.MobDifficultyManager;
@@ -91,6 +92,7 @@ public class JGlimsPlugin extends JavaPlugin {
     private WeaponMasteryManager weaponMasteryManager;
     private GuildManager guildManager;
     private BossMasteryManager bossMasteryManager;
+    private RoamingBossManager roamingBossManager;
     private PowerUpManager powerUpManager;
     private EventManager eventManager;
     private StructureManager structureManager;
@@ -147,6 +149,7 @@ public class JGlimsPlugin extends JavaPlugin {
         weaponMasteryManager = new WeaponMasteryManager(this, configManager);
         guildManager = new GuildManager(this, configManager);
         bossMasteryManager = new BossMasteryManager(this);
+        roamingBossManager = new RoamingBossManager(this);
 
         PluginManager pm = getServer().getPluginManager();
         AnvilRecipeListener anvilListener = new AnvilRecipeListener(this, enchantManager, legendaryWeaponManager);
@@ -172,6 +175,7 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(bloodMoonManager, this);
         pm.registerEvents(new GuildListener(this, guildManager), this);
         pm.registerEvents(bossMasteryManager, this);
+        pm.registerEvents(roamingBossManager, this);
         pm.registerEvents(new WeaponAbilityListener(this, configManager, enchantManager, superToolManager, spearManager, battleShovelManager, guildManager), this);
         pm.registerEvents(new BestBuddiesListener(this, configManager), this);
         pm.registerEvents(new LegendaryAbilityListener(this, configManager, legendaryWeaponManager, guildManager), this);
@@ -202,9 +206,11 @@ public class JGlimsPlugin extends JavaPlugin {
         getLogger().info("Boss mastery title system loaded.");
         getLogger().info("Structure generation system loaded (" + com.jglims.plugin.structures.StructureType.values().length + " structure types).");
         getLogger().info("Event system loaded: Nether Storm, Piglin Uprising, Void Collapse, End Rift.");
+        getLogger().info("Roaming boss system loaded (The Watcher, Hellfire Drake).");
 
         if (configManager.isPaleGardenFogEnabled()) new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         if (configManager.isBloodMoonEnabled()) bloodMoonManager.startScheduler();
+        roamingBossManager.startScheduler();
 
         long elapsed = System.currentTimeMillis() - start;
         getLogger().info("JGlimsPlugin v" + getDescription().getVersion() + " enabled in " + elapsed + "ms!");
@@ -449,4 +455,5 @@ public class JGlimsPlugin extends JavaPlugin {
     public AbyssDragonBoss getAbyssDragonBoss() { return abyssDragonBoss; }
     public InfinityStoneManager getInfinityStoneManager() { return infinityStoneManager; }
     public InfinityGauntletManager getInfinityGauntletManager() { return infinityGauntletManager; }
+    public RoamingBossManager getRoamingBossManager() { return roamingBossManager; }
 }

@@ -1,4 +1,4 @@
-package com.jglims.plugin.structures;
+﻿package com.jglims.plugin.structures;
 
 import com.jglims.plugin.legendary.LegendaryTier;
 import org.bukkit.World;
@@ -81,7 +81,6 @@ public enum StructureType {
         50, 40, 50, true, "Thanos", 800,
         Set.of(Biome.BADLANDS, Biome.ERODED_BADLANDS, Biome.STONY_PEAKS, Biome.WINDSWEPT_HILLS)),
 
-
     PILLAGER_FORTRESS("Pillager Fortress", World.Environment.NORMAL, LegendaryTier.EPIC,
         60, 35, 60, true, "Fortress Warlord", 400,
         Set.of(Biome.PLAINS, Biome.SAVANNA, Biome.TAIGA, Biome.WINDSWEPT_HILLS, Biome.STONY_PEAKS)),
@@ -89,6 +88,28 @@ public enum StructureType {
     PILLAGER_AIRSHIP("Pillager Airship", World.Environment.NORMAL, LegendaryTier.RARE,
         30, 25, 15, true, "Sky Captain", 250,
         Set.of(Biome.PLAINS, Biome.MEADOW, Biome.SUNFLOWER_PLAINS, Biome.SAVANNA)),
+
+    // ── NEW Overworld Structures (Plus Part 2) ──
+    FROST_DUNGEON("Frost Dungeon", World.Environment.NORMAL, LegendaryTier.EPIC,
+        35, 20, 35, true, "Frost Warden", 350,
+        Set.of(Biome.SNOWY_PLAINS, Biome.FROZEN_RIVER, Biome.SNOWY_TAIGA, Biome.ICE_SPIKES, Biome.FROZEN_PEAKS)),
+
+    BANDIT_HIDEOUT("Bandit Hideout", World.Environment.NORMAL, LegendaryTier.RARE,
+        25, 15, 25, true, "Bandit King", 200,
+        Set.of(Biome.BADLANDS, Biome.ERODED_BADLANDS, Biome.DESERT, Biome.SAVANNA)),
+
+    SUNKEN_RUINS("Sunken Ruins", World.Environment.NORMAL, LegendaryTier.EPIC,
+        30, 15, 30, true, "Drowned Warlord", 300,
+        Set.of(Biome.OCEAN, Biome.DEEP_OCEAN, Biome.LUKEWARM_OCEAN, Biome.DEEP_LUKEWARM_OCEAN, Biome.WARM_OCEAN)),
+
+    CURSED_GRAVEYARD("Cursed Graveyard", World.Environment.NORMAL, LegendaryTier.EPIC,
+        25, 12, 25, true, "Grave Revenant", 350,
+        Set.of(Biome.DARK_FOREST, Biome.SWAMP, Biome.MANGROVE_SWAMP, Biome.TAIGA)),
+
+    SKY_ALTAR("Sky Altar", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        20, 30, 20, true, "Celestial Guardian", 500,
+        Set.of(Biome.STONY_PEAKS, Biome.WINDSWEPT_HILLS, Biome.MEADOW, Biome.JAGGED_PEAKS, Biome.FROZEN_PEAKS)),
+
     // ── Nether Structures ──
     CRIMSON_CITADEL("Crimson Citadel", World.Environment.NETHER, LegendaryTier.EPIC,
         40, 30, 40, true, "Crimson Warlord", 350,
@@ -110,6 +131,15 @@ public enum StructureType {
         50, 30, 50, true, "Piglin King", 400,
         Set.of(Biome.CRIMSON_FOREST)),
 
+    // ── NEW Nether Structures (Plus Part 2) ──
+    WITHER_SANCTUM("Wither Sanctum", World.Environment.NETHER, LegendaryTier.EPIC,
+        40, 35, 40, true, "Wither Priest", 450,
+        Set.of(Biome.SOUL_SAND_VALLEY, Biome.NETHER_WASTES)),
+
+    BLAZE_COLOSSEUM("Blaze Colosseum", World.Environment.NETHER, LegendaryTier.EPIC,
+        45, 25, 45, true, "Infernal Champion", 400,
+        Set.of(Biome.NETHER_WASTES, Biome.BASALT_DELTAS)),
+
     // ── End Structures ──
     VOID_SHRINE("Void Shrine", World.Environment.THE_END, LegendaryTier.MYTHIC,
         25, 20, 25, true, "Void Sentinel", 300,
@@ -129,6 +159,21 @@ public enum StructureType {
 
     DRAGON_DEATH_CHEST("Ender Dragon Death Chest", World.Environment.THE_END, LegendaryTier.MYTHIC,
         10, 5, 10, false, null, 0,
+        null),
+
+    // ── NEW Abyss Structures (Plus Part 2) ──
+    // Note: These use CUSTOM environment but are filtered by world name "world_abyss"
+    // The Abyss dimension uses THE_END environment internally
+    ABYSSAL_CASTLE("Abyssal Castle", World.Environment.THE_END, LegendaryTier.ABYSSAL,
+        120, 80, 120, true, "Abyssal Overlord", 1200,
+        null),
+
+    VOID_NEXUS("Void Nexus", World.Environment.THE_END, LegendaryTier.ABYSSAL,
+        30, 40, 30, true, "Void Arbiter", 800,
+        null),
+
+    SHATTERED_CATHEDRAL("Shattered Cathedral", World.Environment.THE_END, LegendaryTier.ABYSSAL,
+        50, 45, 50, true, "Fallen Archbishop", 1000,
         null);
 
     private final String displayName;
@@ -171,6 +216,11 @@ public enum StructureType {
         return validBiomes == null || validBiomes.contains(biome);
     }
 
+    /** Returns true if this structure belongs to the Abyss dimension. */
+    public boolean isAbyssDimension() {
+        return this == ABYSSAL_CASTLE || this == VOID_NEXUS || this == SHATTERED_CATHEDRAL;
+    }
+
     public double getGenerationChance() {
         return switch (lootTier) {
             case COMMON -> 0.008;
@@ -185,6 +235,15 @@ public enum StructureType {
         java.util.List<StructureType> list = new java.util.ArrayList<>();
         for (StructureType st : values()) {
             if (st.dimension == env) list.add(st);
+        }
+        return list.toArray(new StructureType[0]);
+    }
+
+    /** Returns only Abyss structures (for the custom Abyss dimension). */
+    public static StructureType[] abyssStructures() {
+        java.util.List<StructureType> list = new java.util.ArrayList<>();
+        for (StructureType st : values()) {
+            if (st.isAbyssDimension()) list.add(st);
         }
         return list.toArray(new StructureType[0]);
     }
