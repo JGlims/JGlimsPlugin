@@ -1138,3 +1138,550 @@ Total new content when all phases complete:
   - 8 legendary shields/off-hand items
   - 6+ legendary fishing rods/fish
   - 5 challenge modes
+
+
+
+
+
+
+## N. EXPANSION ROADMAP — FUTURE PHASES (v2.0.0 → v3.0.0)
+
+Everything below is planned content. Phases are ordered by implementation priority.
+Status key: ❌ = Not started | 🔨 = In progress | ✅ = Complete
+
+---
+
+### Phase 20 — End Rift Overworld Event ❌
+**Priority: HIGHEST — small scope, reuses existing weapon pools**
+
+A 10% chance triggers when the Ender Dragon dies. A massive purple End-portal-textured ring 
+(15×15 blocks) opens at a random location within 500 blocks of world spawn. The rift spawns 
+escalating waves of Endermen, Shulkers, and Phantom swarms over 10 minutes, culminating in 
+the **End Rift Dragon** — a custom Ender Dragon variant (600 HP, 2× damage, void breath = 
+Wither + Blindness, lightning strikes, summons Shulker turrets, no crystals to heal). Drops 
+1–2 MYTHIC weapons from the End Rift pool (Tengen's Blade, Soul Devourer, Star Edge, 
+Creation Splitter, Stop Sign). Rift closes after boss death or 15-minute timeout.
+
+New files:
+- `events/EndRiftEvent.java` (~15 KB) — wave spawning, portal visuals, boss mechanics
+- Update `EventManager.java` — dragon-death hook, rift trigger logic
+
+---
+
+### Phase 21 — Enhanced Pillager Warfare System ❌
+**Priority: HIGH — makes overworld exploration dangerous and rewarding**
+
+Completely overhauls Pillager encounters with three new systems:
+
+**A. Pillager War Parties** — Roaming squads of 8–15 Pillagers spawn in plains, forests, and 
+savanna biomes. Led by a **War Chief** (Vindicator, 250 HP, diamond armor, banner carrier). 
+War parties actively hunt players within 100 blocks. Drops: RARE weapons, emeralds, banners.
+
+**B. Pillager Siege Waves** — When a player sleeps in an Ultra Village, there is a 20% chance 
+of triggering a multi-wave siege the next night. Five escalating waves:
+- Wave 1: 15 Pillagers + 2 Ravagers
+- Wave 2: 25 Pillagers + 3 Ravagers + 1 Evoker
+- Wave 3: 30 Pillagers + 5 Ravagers + 2 Evokers + Vex swarm
+- Wave 4: 40 Pillagers + Iron Golem defectors (hostile) + War Chief
+- Wave 5: **Pillager Warlord** boss (Vindicator, 600 HP, netherite armor, ground-slam AoE, 
+  rallying cry that buffs all remaining Pillagers)
+Surviving all 5 waves rewards: 2 EPIC weapons, Heart Crystal, 64 emeralds, Hero of the 
+Village X effect (30 minutes).
+
+**C. Pillager Structures** — Two new structures added to StructureType:
+- **Pillager Fortress** (Plains/Savanna, 60×35×60, EPIC loot) — Multi-story fortified base 
+  with watchtowers, prison cells holding captive villagers, armory chests, and the War Chief 
+  mini-boss (350 HP). Freeing prisoners grants reputation + emerald rewards.
+- **Pillager Airship** (Any overworld, 40×25×15, floating at Y 150–200, MYTHIC loot) — A 
+  massive flying ship made of dark oak, copper, and wool sails, anchored by chains. Contains 
+  a **Sky Captain** mini-boss (Pillager, 400 HP, crossbow with explosive bolts, elytra). 
+  Chests contain MYTHIC weapons, elytra, and fireworks.
+
+New files:
+- `events/PillagerWarPartyEvent.java` (~12 KB)
+- `events/PillagerSiegeEvent.java` (~18 KB)
+- `events/PillagerSiegeWave.java` (~5 KB) — wave definition data class
+- Update `StructureType.java` — add PILLAGER_FORTRESS, PILLAGER_AIRSHIP
+- Update `StructureBuilder.java` — fortress and airship build methods
+
+---
+
+### Phase 22 — Infinity Gauntlet + Thanos ❌
+**Priority: HIGH — most exciting secret endgame content**
+
+**Thanos Temple** — New MYTHIC structure (Badlands/Mountains, 50×40×50, deepslate + gold 
+blocks + purple stained glass). Interior: trapped corridors, puzzle rooms with redstone 
+mechanisms, throne room. Boss: **Thanos** (custom Iron Golem, 800 HP, purple/gold texture, 
+ground-slam AoE dealing 15 damage in 5-block radius, energy beam attack = Wither II + 
+Slowness III for 5 seconds, phases at 50% HP with speed boost + double damage). Guaranteed 
+drop: **Thanos Glove** (custom item, CMD 40001).
+
+**Infinity Stone Fragments** — Six colored stone fragments (secret, undocumented items). 
+Each has a 0.1% chance to drop from any normal mob killed during a Blood Moon. They do NOT 
+appear in any in-game documentation.
+
+| Stone | Color | CMD | Texture |
+|-------|-------|-----|---------|
+| Power Stone | Purple | 40010 | `infinity_stone_power` |
+| Space Stone | Blue | 40011 | `infinity_stone_space` |
+| Reality Stone | Red | 40012 | `infinity_stone_reality` |
+| Soul Stone | Orange | 40013 | `infinity_stone_soul` |
+| Time Stone | Green | 40014 | `infinity_stone_time` |
+| Mind Stone | Yellow | 40015 | `infinity_stone_mind` |
+
+**Crafting chain**: Fragment + Nether Star in anvil → finished Infinity Stone. Then: Thanos 
+Glove + all 6 Infinity Stones = **Infinity Gauntlet** (shapeless recipe).
+
+**Gauntlet ability**: Right-click kills 50% of all loaded hostile mobs in current dimension. 
+Excludes bosses, mini-bosses, and event mobs. 300-second cooldown. Visual: gold particle 
+snap burst, screen-shake, dramatic sound. Indestructible.
+
+New files:
+- `legendary/InfinityGauntletManager.java` (~10 KB)
+- `legendary/InfinityStoneManager.java` (~8 KB)
+- Update `StructureType.java` — add THANOS_TEMPLE
+- Update `RecipeManager.java` — gauntlet recipe
+
+---
+
+### Phase 23 — Quest Villagers & NPC Wizard ❌
+**Priority: HIGH — gives players direction and goals**
+
+**Quest Villager** — Custom Nitwit with name "§6Questmaster". Spawns in Ultra Villages. 
+Opens a chest GUI with quest categories. Quests refresh weekly.
+
+| Category | Examples | Rewards |
+|----------|----------|---------|
+| Overworld | Kill 50 zombies, Find a Ruined Colosseum, Survive a Blood Moon | Soul Fragments, Heart Crystals, COMMON weapons |
+| Nether | Kill 20 Blazes, Clear Crimson Citadel, Defeat Piglin King | Blessing Crystals, RARE weapons, Nether Star shards |
+| End | Kill 100 Endermen, Defeat End Rift Dragon, Find Dragon's Hoard | MYTHIC weapons, Phoenix Feather |
+| Special | Collect all 6 Infinity Stones, Defeat all 5 bosses, Earn God Slayer | Exclusive title, one ABYSSAL weapon choice |
+
+Special sale item: **KeepInventorer** — consumable that permanently enables keep-inventory 
+for the purchasing player. Cost: 64 diamonds + 32 emeralds.
+
+**NPC Wizard** — Custom villager with name "§5Archmage". Spawns in Mage Towers and Ultra 
+Villages. Sells rotating stock of 3 exclusive MYTHIC weapons (48 diamonds + 16 Nether Stars 
+each), Heart Crystals (32 diamonds), Blessing Crystals (16 diamonds), and enchanted books 
+(custom enchantments at max level, 24 diamonds each).
+
+New files:
+- `npcs/QuestVillagerManager.java` (~15 KB)
+- `npcs/QuestDefinition.java` (~4 KB)
+- `npcs/QuestTracker.java` (~8 KB)
+- `npcs/WizardVillagerManager.java` (~10 KB)
+
+---
+
+### Phase 24 — Abyss Dimension ❌
+**Priority: MEDIUM-HIGH — massive endgame expansion**
+
+A custom dimension that mirrors The End's floating-island aesthetic but with a dark crimson 
+and void color palette. No flat terrain — only scattered floating islands of varying sizes 
+suspended above the void, connected by narrow obsidian bridges and occasional portal 
+gateways between island clusters.
+
+**Portal**: Nether portal shape (4×5 frame minimum) built with **Purpur Blocks** instead of 
+obsidian. Activated by right-clicking the frame with a custom **Abyssal Key** item (dropped 
+by the Ender Dragon, 100% chance). The portal texture is dark red/purple swirling particles. 
+Entering the portal teleports the player to the Abyss world.
+
+**World generation**: Floating islands of end stone, deepslate, crying obsidian, and sculk 
+blocks. Islands range from small (10×10) to massive (80×80). The void below kills instantly 
+at Y -64. Ambient particles: soul fire, reverse-falling ash, occasional void tendrils. 
+Lighting: perpetual twilight, no day/night cycle. Hostile mobs spawn at 3× normal rate with 
+2× base HP.
+
+**Abyss Structures** (5 new entries in StructureType):
+
+| Structure | Size | Boss | HP | Loot Tier | Description |
+|-----------|------|------|----|-----------|-------------|
+| Abyssal Fortress | 60×40×60 | Abyssal Knight | 500 | ABYSSAL | Dark stone fortress on largest island, multi-floor, trapped hallways |
+| Void Spire | 15×80×15 | Void Watcher | 350 | MYTHIC | Impossibly tall obsidian tower, spiral staircase, eye-of-ender theme |
+| Corrupted Library | 40×20×40 | The Archivist | 300 | MYTHIC | Shelves of enchanted books, puzzle to unlock vault |
+| Soul Forge | 30×25×30 | Forge Master | 400 | ABYSSAL | Lava-and-sculk workshop, crafting table for abyssal upgrades |
+| Abyss Dragon Lair | 100×60×100 | Abyss Dragon | 1000 | ABYSSAL | Largest island, obsidian nest, multi-phase boss arena |
+
+**Abyss Dragon** — The ultimate boss. 1000 HP, 3 phases:
+- Phase 1 (100–60% HP): Standard dragon flight, void breath (Wither III + Blindness), 
+  summons Abyssal Endermen (200 HP each, teleport aggressively)
+- Phase 2 (60–30% HP): Lands and fights melee, tail swipe AoE, ground slam creates void 
+  fissures (instant 10 damage if stepped on), speed increase
+- Phase 3 (30–0% HP): Enrages, all attacks deal 2× damage, summons void meteors (falling 
+  entities dealing 20 AoE damage), arena crumbles at edges
+
+Drops: 2–3 ABYSSAL weapons (Requiem Awakened, Excalibur Awakened, Creation Splitter 
+Awakened, Whisperwind Awakened), Abyssal Plate armor pieces (guaranteed 1, 25% chance for 
+second piece), Dragon Heart power-up (+2 max hearts permanently, unique).
+
+New files:
+- `abyss/AbyssWorldManager.java` (~20 KB) — world creation, portal mechanics, generation
+- `abyss/AbyssPortalListener.java` (~8 KB) — purpur frame detection, key activation
+- `abyss/AbyssDragonBoss.java` (~15 KB) — 3-phase boss AI
+- `abyss/AbyssMobManager.java` (~6 KB) — custom abyss mobs
+- Update `StructureType.java` — 5 abyss structures
+- Update `LegendaryArmorSet.java` — add ABYSSAL_PLATE set
+
+---
+
+### Phase 25 — Legendary Ranged Weapons ❌
+**Priority: MEDIUM — expands combat variety**
+
+15 legendary bows and crossbows, each with unique primary + alt abilities.
+
+| # | Name | Type | Dmg | Tier | Primary | Alt |
+|---|------|------|-----|------|---------|-----|
+| 64 | Artemis' Longbow | BOW | 16 | MYTHIC | Moonshot (homing arrow) | Rain of Arrows (15 arrows in AoE) |
+| 65 | Windforce | BOW | 14 | EPIC | Gale Arrow (knockback 10) | Tornado Shot (spinning arrow AoE) |
+| 66 | Hellfire Crossbow | CROSSBOW | 18 | MYTHIC | Inferno Bolt (fire AoE on impact) | Napalm Barrage (3 fire bolts) |
+| 67 | Frostbite | BOW | 13 | RARE | Frost Arrow (slowness III) | Blizzard (AoE freeze 5s) |
+| 68 | Soulpiercer | CROSSBOW | 17 | MYTHIC | Soul Bolt (ignores armor) | Spirit Volley (5 homing bolts) |
+| 69 | Eclipse Bow | BOW | 15 | EPIC | Shadow Arrow (blindness + damage) | Lunar Eclipse (darkness AoE) |
+| 70 | Dragonfire Repeater | CROSSBOW | 19 | MYTHIC | Dragon Bolt (fire breath trail) | Wyrmfire Barrage (rapid 8 bolts) |
+| 71 | Titan's Ballista | CROSSBOW | 22 | MYTHIC | Siege Bolt (5-block explosion) | Fortify (shield + slow reload) |
+| 72 | Verdant Bow | BOW | 12 | RARE | Vine Arrow (roots target 3s) | Nature's Embrace (heal AoE) |
+| 73 | Thunder Cannon | CROSSBOW | 20 | MYTHIC | Lightning Rod (chain lightning) | Thunderclap (AoE stun 2s) |
+| 74 | Phantom Bow | BOW | 14 | EPIC | Phase Arrow (passes through walls) | Spectral Volley (invisible arrows) |
+| 75 | Coral Crossbow | CROSSBOW | 15 | EPIC | Bubble Shot (levitation 3s) | Depth Charge (water explosion) |
+| 76 | Blood Hunter's Bow | BOW | 16 | EPIC | Crimson Arrow (lifesteal 30%) | Blood Rain (AoE bleed) |
+| 77 | Celestial Longbow | BOW | 20 | MYTHIC | Star Arrow (meteor on impact) | Constellation (5 guided stars) |
+| 78 | Void Crossbow | CROSSBOW | 18 | MYTHIC | Void Bolt (gravity pull) | Black Hole (AoE slow + damage) |
+
+New files:
+- `legendary/LegendaryRangedWeapon.java` (~6 KB) — enum
+- `legendary/LegendaryRangedManager.java` (~10 KB) — item creation
+- `legendary/LegendaryRangedAbilities.java` (~40 KB) — all abilities
+- `legendary/LegendaryRangedListener.java` (~15 KB) — event handling
+
+---
+
+### Phase 26 — Ocean Expansion ❌
+**Priority: MEDIUM — new dimension-like biome content**
+
+Massively expands ocean gameplay with underwater structures, a world boss, and a new event.
+
+**New Structures** (added to StructureType):
+
+| Structure | Biome | Size | Boss | HP | Loot | Description |
+|-----------|-------|------|------|----|------|-------------|
+| Sunken City | Deep Ocean | 100×30×100 | Drowned King | 500 | EPIC | Massive underwater ruins with air pockets, coral gardens, treasure vaults |
+| Ghost Ship | Ocean (surface) | 50×30×20 | Captain Blacktide | 350 | EPIC | Half-sunk galleon, skeletal crew, cannon traps, captain's quarters |
+| Coral Palace | Warm Ocean | 40×25×40 | Coral Guardian | 300 | RARE | Prismarine + coral palace, guardian spawners, throne room |
+| Underwater Cave System | Deep Ocean | 60×40×60 | Cave Leviathan | 450 | EPIC | Interconnected underwater caves, glow lichen, drowned nests |
+| Shipwreck Graveyard | Ocean | 80×20×80 | None (5+ loot chests) | — | RARE | Cluster of 4–6 shipwrecks piled together, barnacle-covered |
+| Mermaid Grotto | Lukewarm Ocean | 25×20×25 | None (friendly NPC) | — | RARE | Hidden cave with a Mermaid NPC that trades ocean loot for RARE weapons |
+
+**Kraken World Event** — 3% chance when player is in a boat on deep ocean for 5+ minutes. 
+The **Kraken** (Elder Guardian variant, 800 HP, tentacle attacks = launched Guardians, ink 
+cloud = Blindness AoE, whirlpool = pulls all entities toward center, body slam = 20 damage 
+AoE). Drops: 2 MYTHIC weapons, Trident of the Deep (new MYTHIC trident, #79, 20 damage, 
+abilities: Maelstrom Strike / Abyssal Tide), Heart Crystal, 10–20 prismarine shards.
+
+New files:
+- `events/KrakenEvent.java` (~12 KB)
+- `structures/OceanStructureBuilder.java` (~15 KB) — underwater building utilities
+- Update `StructureType.java` — 6 ocean structures
+
+---
+
+### Phase 27 — World Bosses ❌
+**Priority: MEDIUM — adds roaming endgame threats across all dimensions**
+
+World bosses are massive, rare creatures that roam specific biomes. Only one can exist per 
+world at a time. They spawn naturally (0.5% per hour check) or can be summoned via a ritual 
+at specific structures. All are visible on the map via a boss bar when within 200 blocks.
+
+**Overworld World Bosses:**
+
+| Boss | Biome | HP | Mechanic | Drops |
+|------|-------|----|----------|-------|
+| The Colossus | Mountains/Stony | 1200 | 15-block-tall Iron Golem, ground pound creates shockwave (15 dmg, 10-block radius), throws boulders (falling blocks), stomp stun (2s). At 30% HP, splits into 3 Mini-Colossi (300 HP each) | 2 MYTHIC weapons, Titan's Resolve, 3 Heart Crystals |
+| Ancient Hydra | Swamp/Mangrove | 900 (3 heads × 300 HP) | Three-headed (3 Wither Skeleton riders on a Ravager). Each head must be killed separately. Heads regenerate after 30s if not all killed. Poison breath, tail lash | 2 MYTHIC weapons, 5 Soul Fragments, Hydra Scale (new power-up: +15% poison immunity) |
+| The Lich King | Dark Forest/Pale Garden | 800 | Undead necromancer (Evoker base). Summons skeleton armies, casts wither bolts, teleports, creates bone cage traps. At 50% HP, raises a Bone Dragon minion (400 HP) | 2 MYTHIC weapons, Lich's Phylactery (respawn point override, 1 use), 5 Soul Fragments |
+| Sandstorm Titan | Desert/Badlands | 1000 | Husk-based giant. Creates sandstorms (reduced visibility + Slowness), summons sand pillars (falling block damage), quicksand traps, earthquake stomp | 2 MYTHIC weapons, Desert Crown (new helmet, sand immunity, EPIC tier), 3 Heart Crystals |
+
+**Nether World Bosses:**
+
+| Boss | Biome | HP | Mechanic | Drops |
+|------|-------|----|----------|-------|
+| Infernal Titan | Nether Wastes | 1100 | Massive Blaze variant. Fireball barrage (12 fireballs), lava eruption (floor becomes lava in 10-block radius for 10s), flame dash (charges through players), ember shield (reflects projectiles) | 2 MYTHIC weapons, Infernal Core (permanent Fire Resistance I), 4 Soul Fragments |
+| The Crimson Mother | Crimson Forest | 900 | Giant Hoglin matriarch. Charge attack, spawns Baby Hoglins (50 HP, swarm), crimson spore cloud (Nausea + Poison), ground tremor (crack pattern damage) | 2 EPIC weapons, Crimson Heart (permanent +2 HP in Nether), Nether Star |
+| Wither Storm | Soul Sand Valley | 1500 | Three Withers fused together on a giant skeleton body. Triple wither skull barrage, soul drain beam (steals HP), gravitational pull, spawns Wither Skeletons continuously. Requires destroying 3 cores (one per head, 500 HP each) before main body takes damage | 3 MYTHIC weapons, Wither Heart (new power-up: Wither immunity + 10% damage boost to undead), 2 Nether Stars |
+
+**End World Boss:**
+
+| Boss | Location | HP | Mechanic | Drops |
+|------|----------|----|----------|-------|
+| Void Leviathan | End Islands (roaming) | 1200 | Elder-Guardian-shaped void creature. Void beam (15 dmg/s channel), teleport ambush, spawns Void Tentacles (destructible, grab + throw players), devour (instant kill below 20% player HP, dodgeable). Arena: destroys blocks it touches | 3 MYTHIC weapons, Void Essence (permanent Slow Falling in End), Abyssal Key |
+
+New files:
+- `mobs/WorldBossManager.java` (~20 KB) — spawn logic, boss bars, tracking
+- `mobs/WorldBossAI.java` (~25 KB) — individual boss mechanics
+- `mobs/WorldBossLoot.java` (~8 KB) — drop tables and announcements
+
+---
+
+### Phase 28 — Dungeon Generator ❌
+**Priority: MEDIUM — procedural content for infinite replayability**
+
+Procedurally generated multi-room dungeons that spawn underground (Y 0–30) in all 
+dimensions. Each dungeon consists of 5–15 connected rooms selected from a room template pool. 
+Rooms are connected by corridors with random traps (arrow dispensers, lava pits, falling 
+blocks, poison dart walls). Each dungeon has a guaranteed boss room at the end.
+
+**Dungeon Tiers:**
+
+| Tier | Rooms | Depth | Dimension | Boss Room | Loot |
+|------|-------|-------|-----------|-----------|------|
+| Minor | 5–7 | Y 20–30 | Overworld | Dungeon Guardian (Zombie, 200 HP) | COMMON–RARE |
+| Standard | 8–10 | Y 10–20 | Overworld/Nether | Dungeon Lord (Skeleton, 350 HP) | RARE–EPIC |
+| Grand | 11–15 | Y 0–10 | Any | Dungeon Overlord (custom, 500 HP) | EPIC–MYTHIC |
+| Abyssal | 12–15 | Y varies | Abyss only | Abyssal Warden (custom, 700 HP) | MYTHIC–ABYSSAL |
+
+**Room Templates** (20+ templates):
+Treasure Room (multi-chest), Mob Arena (wave survival to unlock exit), Puzzle Room (lever 
+sequence, pressure plate maze), Lava Bridge (timed crossing), Library (enchanted book loot), 
+Spawner Room (4 spawners, must destroy all), Flooded Room (underwater section), Collapsed 
+Room (parkour over rubble), Throne Room (mini-boss), Forge Room (free weapon upgrade 
+station), Prison Room (free captive villagers for loot), Trap Corridor (gauntlet of traps), 
+Mushroom Garden (potion ingredient loot), Crystal Cave (ore bonanza + cave spider ambush), 
+Boss Antechamber (preparation room before boss), Secret Room (hidden behind destructible 
+wall, rare loot), Vault (locked, requires key from another room).
+
+New files:
+- `dungeons/DungeonGenerator.java` (~20 KB) — procedural layout algorithm
+- `dungeons/DungeonRoom.java` (~5 KB) — room template data class
+- `dungeons/DungeonRoomBuilder.java` (~25 KB) — room construction methods
+- `dungeons/DungeonTrapManager.java` (~10 KB) — trap mechanics
+- `dungeons/DungeonBossManager.java` (~8 KB) — dungeon boss spawning
+
+---
+
+### Phase 29 — Legendary Shields & Off-hand Items ❌
+**Priority: MEDIUM — completes the equipment system**
+
+12 legendary shields and 6 legendary off-hand items (spellbooks, orbs, war banner), each 
+with passive effects when held in the off-hand slot.
+
+| # | Name | Type | Tier | Passive | Active (right-click while sneaking) |
+|---|------|------|------|---------|-------------------------------------|
+| 80 | Dragon Scale Shield | SHIELD | MYTHIC | -20% fire damage | Dragon Roar (fear AoE 5s, 60s CD) |
+| 81 | Void Barrier | SHIELD | MYTHIC | Absorb 1 hit every 30s | Void Reflect (return 50% damage, 45s CD) |
+| 82 | Crystal Ward | SHIELD | EPIC | +10% magic resistance | Crystal Explosion (AoE 8 dmg, 40s CD) |
+| 83 | Blood Buckler | SHIELD | EPIC | 3% lifesteal on block | Blood Shield (15 HP shield, 50s CD) |
+| 84 | Stormguard | SHIELD | EPIC | Lightning on perfect block | Chain Lightning (3 targets, 30s CD) |
+| 85 | Bone Wall | SHIELD | RARE | Thorns II equivalent | Bone Cage (trap target 3s, 45s CD) |
+| 86 | Nature's Aegis | SHIELD | RARE | Passive regen I while blocking | Vine Wall (blocking barrier, 40s CD) |
+| 87 | Frost Bulwark | SHIELD | EPIC | Slowness I to melee attackers | Ice Wall (3-high ice barrier, 35s CD) |
+| 88 | Infernal Rampart | SHIELD | MYTHIC | Fire aura (1 dmg/s to nearby enemies) | Flame Wave (AoE 12 dmg, 50s CD) |
+| 89 | Abyssal Aegis | SHIELD | ABYSSAL | -30% all damage while blocking | Absolute Defense (invulnerable 3s, 120s CD) |
+| 90 | Tome of Storms | SPELLBOOK | MYTHIC | +15% lightning damage | Summon Lightning Storm (5 bolts, 60s CD) |
+| 91 | Orb of Souls | ORB | MYTHIC | +10% Soul Fragment gain | Soul Burst (AoE 15 dmg + heal, 50s CD) |
+| 92 | Necronomicon | SPELLBOOK | EPIC | Summon 2 skeleton allies | Raise Dead (5 skeleton army, 90s CD) |
+| 93 | Phoenix Orb | ORB | MYTHIC | Auto-revive (180s internal CD) | Phoenix Burst (AoE fire + heal, 60s CD) |
+| 94 | War Banner of the Conqueror | BANNER | EPIC | +10% damage for all nearby allies (8 blocks) | Battle Cry (AoE Strength II 10s, 120s CD) |
+| 95 | Void Grimoire | SPELLBOOK | ABYSSAL | +20% ability damage | Void Rift (teleport + AoE 20 dmg, 90s CD) |
+
+New files:
+- `legendary/LegendaryOffhand.java` (~5 KB) — enum
+- `legendary/LegendaryOffhandManager.java` (~10 KB)
+- `legendary/LegendaryOffhandListener.java` (~20 KB)
+
+---
+
+### Phase 30 — Pet System ❌
+**Priority: MEDIUM-LOW — fun quality-of-life system**
+
+Mythical pets that follow the player, provide passive buffs, and can assist in combat. 
+Obtained from boss drops, structure chests, or NPC Wizard. Only one active pet at a time. 
+Pets are indestructible but can be dismissed. Commands: `/pet summon`, `/pet dismiss`, 
+`/pet list`, `/pet rename`.
+
+| Pet | Source | Passive Buff | Combat Ability | Appearance |
+|-----|--------|-------------|----------------|------------|
+| Baby Dragon | Ender Dragon (5%) | Fire Resistance | Fireball every 15s | Small dragon (Bee model, fire particles) |
+| Shadow Cat | Dungeon Grand tier (10%) | Night Vision + Stealth | Pounce attack every 10s | Black cat with void particles |
+| Phoenix Chick | Phoenix's Grace alt (3%) | Slow regen + auto-revive pet | Fire dash every 20s | Small chicken, flame particles |
+| Void Wisp | Void Shrine chest (8%) | Slow Falling + Ender pearl no damage | Void bolt every 12s | Floating orb, purple particles |
+| Crystal Golem | Allay Sanctuary (15%) | +5% all damage resistance | Ground pound every 20s | Small iron golem, amethyst particles |
+| Storm Hawk | Pillager Airship (10%) | Speed I while outdoors | Lightning strike every 15s | Parrot with lightning particles |
+| Necro Pup | Lich King drop (8%) | +10% XP gain | Summon skeleton every 30s | Wolf with green eyes, soul particles |
+| Magma Sprite | Nether World Boss (5%) | Fire Resistance + lava walk | Fireball burst every 15s | Tiny Blaze, magma particles |
+
+New files:
+- `pets/PetManager.java` (~15 KB)
+- `pets/PetListener.java` (~12 KB)
+- `pets/PetType.java` (~4 KB)
+- `pets/PetAI.java` (~10 KB)
+
+---
+
+### Phase 31 — Seasons & Weather System ❌
+**Priority: LOW — atmospheric enhancement**
+
+Four seasons cycle every 7 real-world days (configurable). Each season affects mob spawning, 
+crop growth, and adds visual effects.
+
+| Season | Duration | Effects | Visual |
+|--------|----------|---------|--------|
+| Spring | Days 1–7 | +50% crop growth, +20% passive mob spawns, rain 30% more frequent | Flower particles, green tint |
+| Summer | Days 8–14 | +25% fire spread, deserts deal 0.5 dmg/s without water nearby, +15% hostile mob damage | Heat shimmer particles, orange tint |
+| Autumn | Days 15–21 | +30% leaf decay, +20% drop rates, mushroom growth boost | Falling leaf particles, amber tint |
+| Winter | Days 22–28 | Snow in all biomes above Y 90, water freezes in cold biomes, -20% movement speed outdoors without boots, +25% undead spawns | Snowfall particles, blue tint |
+
+New files:
+- `utility/SeasonManager.java` (~12 KB)
+- `utility/SeasonListener.java` (~8 KB)
+
+---
+
+### Phase 32 — Fishing Overhaul ❌
+**Priority: LOW — relaxing side content**
+
+Custom fish, legendary fishing rods, and a fishing tournament event.
+
+**Legendary Fish** (10 types): Each has a custom texture and grants a temporary buff when 
+consumed (Golden Koi = Luck III 5min, Void Bass = Night Vision 10min, Lava Eel = Fire 
+Resistance 5min, etc.). Rare fish have a 1–5% catch rate.
+
+**Legendary Fishing Rods** (3):
+- Rod of the Deep (#96, EPIC, +30% rare fish chance, Luck of the Sea V)
+- Abyssal Angler (#97, MYTHIC, auto-catch AFK fishing, double catch rate)
+- Poseidon's Line (#98, MYTHIC, can fish up RARE weapons and Heart Crystals)
+
+**Fishing Tournament** — Triggers randomly once per in-game week. 10-minute competition. 
+Player who catches the most legendary fish wins: 1 EPIC weapon + 32 diamonds + title 
+"Master Angler."
+
+New files:
+- `utility/FishingOverhaulManager.java` (~12 KB)
+- `utility/FishingOverhaulListener.java` (~8 KB)
+
+---
+
+### Phase 33 — Guild Wars & Territories ❌
+**Priority: LOW — multiplayer endgame**
+
+Extends the existing guild system with territory claiming, guild levels, and wars.
+
+**Territory System**: Guilds can claim chunks (max 9 per guild level). Claimed chunks 
+prevent non-guild members from building/breaking. Guild banners mark territory.
+
+**Guild Levels**: Earned through collective member activity (kills, quests, bosses). Level 
+1–10, each level unlocks: +1 max members, +1 claimable chunk, guild perks (shared XP boost, 
+shared loot bonus, guild home teleport).
+
+**Guild Wars**: One guild can declare war on another (costs 32 diamonds). During a war 
+(24 real hours), guild members can damage each other in any territory. The guild with more 
+kills at the end wins the loser's treasury (stored diamonds/items). War MVP gets a unique 
+weapon skin.
+
+**Guild Hall** — New structure type. Guilds that reach level 5 can build a Guild Hall at 
+their base. Provides: shared storage (double chest accessible by all members), guild 
+crafting table (bonus recipes), guild beacon (permanent buffs in territory).
+
+New files:
+- `guilds/GuildTerritoryManager.java` (~12 KB)
+- `guilds/GuildWarManager.java` (~10 KB)
+- `guilds/GuildLevelManager.java` (~8 KB)
+- Update `GuildManager.java` — territory and war hooks
+
+---
+
+### Phase 34 — Hardcore Challenge Modes ❌
+**Priority: LOWEST — for experienced players seeking difficulty**
+
+Optional challenge modifiers that increase difficulty in exchange for better loot. Activated 
+via a **Challenge Token** (crafted: 4 Nether Stars + 4 diamonds + 1 dragon breath, or 
+purchased from NPC Wizard for 64 diamonds).
+
+| Challenge | Modifier | Loot Bonus |
+|-----------|----------|------------|
+| Iron Man | No natural regen, no totems | +50% weapon drop rate |
+| Glass Cannon | Player takes 3× damage, deals 2× damage | +75% weapon drop rate |
+| Swarm | All mob spawns tripled | +100% Soul Fragment drops |
+| Famine | No food regen above 6 hunger bars | +50% Heart Crystal drops |
+| Eclipse | Permanent darkness effect outdoors | +60% all drop rates |
+| Corruption | Wither I permanent effect | +100% weapon drop rate |
+
+Challenges last 1 real-world hour. Multiple can be stacked (bonuses multiply). Dying ends 
+all active challenges with no bonus.
+
+New files:
+- `utility/ChallengeManager.java` (~10 KB)
+- `utility/ChallengeListener.java` (~8 KB)
+
+---
+
+### N.1 — ADDITIONAL STRUCTURES (added across relevant phases)
+
+These structures supplement existing phases and are added to `StructureType.java` as each 
+phase is implemented:
+
+| Structure | Dimension | Biome | Size | Boss | HP | Tier | Phase |
+|-----------|-----------|-------|------|------|----|------|-------|
+| Pillager Fortress | Overworld | Plains/Savanna | 60×35×60 | War Chief | 350 | EPIC | 21 |
+| Pillager Airship | Overworld | Any (floating Y 150+) | 40×25×15 | Sky Captain | 400 | MYTHIC | 21 |
+| Thanos Temple | Overworld | Badlands/Mountains | 50×40×50 | Thanos | 800 | MYTHIC | 22 |
+| Sunken City | Overworld | Deep Ocean | 100×30×100 | Drowned King | 500 | EPIC | 26 |
+| Ghost Ship | Overworld | Ocean (surface) | 50×30×20 | Captain Blacktide | 350 | EPIC | 26 |
+| Coral Palace | Overworld | Warm Ocean | 40×25×40 | Coral Guardian | 300 | RARE | 26 |
+| Underwater Caves | Overworld | Deep Ocean | 60×40×60 | Cave Leviathan | 450 | EPIC | 26 |
+| Shipwreck Graveyard | Overworld | Ocean | 80×20×80 | None | — | RARE | 26 |
+| Mermaid Grotto | Overworld | Lukewarm Ocean | 25×20×25 | None (NPC) | — | RARE | 26 |
+| Abyssal Fortress | Abyss | Any (floating island) | 60×40×60 | Abyssal Knight | 500 | ABYSSAL | 24 |
+| Void Spire | Abyss | Any (floating island) | 15×80×15 | Void Watcher | 350 | MYTHIC | 24 |
+| Corrupted Library | Abyss | Any (floating island) | 40×20×40 | The Archivist | 300 | MYTHIC | 24 |
+| Soul Forge | Abyss | Any (floating island) | 30×25×30 | Forge Master | 400 | ABYSSAL | 24 |
+| Abyss Dragon Lair | Abyss | Largest island | 100×60×100 | Abyss Dragon | 1000 | ABYSSAL | 24 |
+| Frost Dungeon | Overworld | Snowy/Frozen | 35×25×35 | Frost Giant | 400 | EPIC | 27 |
+| Volcanic Forge | Nether | Basalt Deltas | 35×30×35 | Forge Demon | 450 | EPIC | 27 |
+
+**Total structures after all phases: 27 (current) + 16 (new) = 43 structures**
+
+---
+
+### N.2 — TOTAL CONTENT SUMMARY (after all phases)
+
+| Category | Current | After Expansion | Notes |
+|----------|---------|-----------------|-------|
+| Legendary Melee Weapons | 59 | 63 (+ 4 ABYSSAL) | IDs 30001–30063 |
+| Legendary Ranged Weapons | 0 | 15 | IDs 30064–30078 |
+| Legendary Shields/Offhand | 0 | 16 | IDs 30080–30095 |
+| Legendary Fishing Rods | 0 | 3 | IDs 30096–30098 |
+| Legendary Armor Sets | 6 | 8 (+ Abyssal Plate, Desert Crown) | |
+| Custom Structures | 27 | 43 | All 3 dimensions + Abyss |
+| World Events | 4 | 8 (+ End Rift, Kraken, Pillager Siege, Fishing Tournament) | |
+| World Bosses | 0 | 8 (4 OW, 3 Nether, 1 End) | |
+| Dungeon Types | 0 | 4 tiers (procedural) | |
+| Custom Enchantments | 64 | 64 (unchanged) | |
+| Boss Mastery Titles | 6 | 8 (+ Abyss Dragon, God Slayer) | |
+| Pets | 0 | 8 | |
+| Quests | 0 | ~20 unique quests | |
+| NPC Types | 0 | 2 (Questmaster, Archmage) | |
+| Seasons | 0 | 4 | |
+| Challenge Modes | 0 | 6 | |
+| Total Java Files | 52 | ~85 estimated | |
+| Dimensions | 3 (vanilla) | 4 (+ Abyss) | |
+
+---
+
+### N.3 — IMPLEMENTATION ORDER
+
+| Order | Phase | Est. New Files | Est. LOC | Depends On |
+|-------|-------|---------------|----------|------------|
+| 1st | Phase 20 (End Rift Event) | 1–2 | ~800 | Nothing |
+| 2nd | Phase 22 (Infinity Gauntlet) | 2–3 | ~1,200 | Nothing |
+| 3rd | Phase 21 (Pillager Warfare) | 3–4 | ~2,000 | Nothing |
+| 4th | Phase 23 (Quest NPCs) | 4 | ~2,500 | Nothing |
+| 5th | Phase 25 (Ranged Weapons) | 4 | ~4,000 | Nothing |
+| 6th | Phase 26 (Ocean Expansion) | 2–3 | ~2,000 | Nothing |
+| 7th | Phase 27 (World Bosses) | 3 | ~3,500 | Nothing |
+| 8th | Phase 24 (Abyss Dimension) | 4–5 | ~5,000 | Phase 22 (Abyssal Key) |
+| 9th | Phase 28 (Dungeons) | 5 | ~5,000 | Nothing |
+| 10th | Phase 29 (Shields/Offhand) | 3 | ~2,500 | Nothing |
+| 11th | Phase 30 (Pets) | 4 | ~3,000 | Phase 27 (boss drops) |
+| 12th | Phase 31 (Seasons) | 2 | ~1,500 | Nothing |
+| 13th | Phase 32 (Fishing) | 2 | ~1,500 | Nothing |
+| 14th | Phase 33 (Guild Wars) | 3 | ~2,000 | Existing guild system |
+| 15th | Phase 34 (Challenge Modes) | 2 | ~1,500 | Nothing |
