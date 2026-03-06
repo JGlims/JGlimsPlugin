@@ -237,6 +237,21 @@ public class LegendaryAbilityListener implements Listener {
             case JADE_REAPER -> rcJadeReaper(player);
             case VINDICATOR -> rcVindicator(player);
             case SPIDER_FANG -> rcSpiderFang(player);
+            case DIVINE_AXE_RHITTA -> rcDivineAxeRhitta(player);
+            case YORU -> rcYoru(player);
+            case TENGENS_BLADE -> rcTengensBlade(player);
+            case EDGE_ASTRAL_PLANE -> rcEdgeAstralPlane(player);
+            case FALLEN_GODS_SPEAR -> rcFallenGodsSpear(player);
+            case NATURE_SWORD -> rcNatureSword(player);
+            case HEAVENLY_PARTISAN -> rcHeavenlyPartisan(player);
+            case SOUL_DEVOURER -> rcSoulDevourer(player);
+            case MJOLNIR -> rcMjolnir(player);
+            case THOUSAND_DEMON_DAGGERS -> rcThousandDemonDaggers(player);
+            case STAR_EDGE -> rcStarEdge(player);
+            case RIVERS_OF_BLOOD -> rcRiversOfBlood(player);
+            case DRAGON_SLAYING_BLADE -> rcDragonSlayingBlade(player);
+            case STOP_SIGN -> rcStopSign(player);
+            case CREATION_SPLITTER -> rcCreationSplitter(player);
         }
     }
 
@@ -296,6 +311,21 @@ public class LegendaryAbilityListener implements Listener {
             case JADE_REAPER -> holdJadeReaper(player);
             case VINDICATOR -> holdVindicator(player);
             case SPIDER_FANG -> holdSpiderFang(player);
+            case DIVINE_AXE_RHITTA -> altDivineAxeRhitta(player);
+            case YORU -> altYoru(player);
+            case TENGENS_BLADE -> altTengensBlade(player);
+            case EDGE_ASTRAL_PLANE -> altEdgeAstralPlane(player);
+            case FALLEN_GODS_SPEAR -> altFallenGodsSpear(player);
+            case NATURE_SWORD -> altNatureSword(player);
+            case HEAVENLY_PARTISAN -> altHeavenlyPartisan(player);
+            case SOUL_DEVOURER -> altSoulDevourer(player);
+            case MJOLNIR -> altMjolnir(player);
+            case THOUSAND_DEMON_DAGGERS -> altThousandDemonDaggers(player);
+            case STAR_EDGE -> altStarEdge(player);
+            case RIVERS_OF_BLOOD -> altRiversOfBlood(player);
+            case DRAGON_SLAYING_BLADE -> altDragonSlayingBlade(player);
+            case STOP_SIGN -> altStopSign(player);
+            case CREATION_SPLITTER -> altCreationSplitter(player);
         }
     }
 
@@ -1844,5 +1874,519 @@ public class LegendaryAbilityListener implements Listener {
         double x = v.getX() * cos - v.getZ() * sin;
         double z = v.getX() * sin + v.getZ() * cos;
         return v.setX(x).setZ(z);
+    }
+
+    // ================================================================
+    // PRIMARY ABILITIES - NEW MYTHIC WEAPONS #45-59 (Phase 9)
+    // ================================================================
+
+    // #45 DIVINE AXE RHITTA: Cruel Sun - massive fire AoE 10 blocks, 24 dmg
+    private void rcDivineAxeRhitta(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_BLAZE_SHOOT, 2.0f, 0.4f);
+        p.playSound(c, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.6f);
+        p.getWorld().spawnParticle(Particle.FLAME, c.clone().add(0, 3, 0), 100, 5, 3, 5, 0.15);
+        p.getWorld().spawnParticle(Particle.LAVA, c.clone().add(0, 2, 0), 50, 4, 2, 4, 0);
+        p.getWorld().spawnParticle(Particle.DUST, c.clone().add(0, 5, 0), 30, 3, 1, 3, 0, new Particle.DustOptions(Color.fromRGB(255, 165, 0), 3.0f));
+        for (LivingEntity e : getNearbyEnemies(c, 10.0, p)) {
+            dealDamage(p, e, 24.0);
+            e.setFireTicks(200);
+            e.setVelocity(e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(1.5).setY(0.8));
+        }
+        p.sendActionBar(Component.text("\u2600 CRUEL SUN! \u2600", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // #46 YORU: World's Strongest Slash - 20-block line, 22 dmg, cuts through everything
+    private void rcYoru(Player p) {
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location start = p.getEyeLocation();
+        p.playSound(start, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 1.2f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick > 20) { cancel(); return; }
+                Location point = start.clone().add(dir.clone().multiply(tick));
+                p.getWorld().spawnParticle(Particle.SWEEP_ATTACK, point, 5, 0.3, 0.3, 0.3, 0);
+                p.getWorld().spawnParticle(Particle.DUST, point, 8, 0.2, 0.2, 0.2, 0, new Particle.DustOptions(Color.fromRGB(20, 0, 50), 2.0f));
+                for (LivingEntity e : getNearbyEnemies(point, 2.0, p)) { dealDamage(p, e, 22.0); }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2694 WORLD'S STRONGEST SLASH! \u2694", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #47 TENGEN'S BLADE: Sound Breathing - 8 rapid slashes in cone, 4 dmg each
+    private void rcTengensBlade(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 2.0f);
+        Location c = p.getLocation().add(p.getLocation().getDirection().multiply(3));
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 8) { cancel(); return; }
+                p.getWorld().spawnParticle(Particle.SWEEP_ATTACK, c.clone().add(Math.sin(tick * 0.8), 1, Math.cos(tick * 0.8)), 3, 0.5, 0.5, 0.5, 0);
+                p.getWorld().spawnParticle(Particle.NOTE, c.clone().add(0, 2, 0), 5, 1, 0.5, 1, 1);
+                for (LivingEntity e : getNearbyEnemies(c, 5.0, p)) { dealDamage(p, e, 4.0); }
+                p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.5f, 1.5f + (tick * 0.1f));
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        p.sendActionBar(Component.text("\u266B Sound Breathing! \u266B", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #48 EDGE OF THE ASTRAL PLANE: Astral Rend - teleport 8 blocks forward, 20 dmg slash
+    private void rcEdgeAstralPlane(Player p) {
+        Location origin = p.getLocation();
+        Vector dir = origin.getDirection().normalize();
+        Location target = origin.clone().add(dir.multiply(8));
+        target.setY(p.getWorld().getHighestBlockYAt(target) + 1);
+        p.teleport(target);
+        p.playSound(target, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.8f);
+        p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, origin.add(0, 1, 0), 50, 0.5, 1, 0.5, 0.1);
+        p.getWorld().spawnParticle(Particle.END_ROD, target.add(0, 1, 0), 80, 2, 2, 2, 0.1);
+        for (LivingEntity e : getNearbyEnemies(target, 4.0, p)) { dealDamage(p, e, 20.0); }
+        p.sendActionBar(Component.text("\u2727 Astral Rend! \u2727", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #49 FALLEN GOD'S SPEAR: Divine Impale - single target 30 dmg + launch
+    private void rcFallenGodsSpear(Player p) {
+        LivingEntity target = getTargetEntity(p, 8.0);
+        if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
+        dealDamage(p, target, 30.0);
+        target.setVelocity(new Vector(0, 2.5, 0));
+        p.playSound(p.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 1.0f);
+        p.getWorld().spawnParticle(Particle.END_ROD, target.getLocation().add(0, 1, 0), 60, 0.5, 1, 0.5, 0.2);
+        p.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 40, 0.5, 0.5, 0.5, 0.3);
+        p.sendActionBar(Component.text("\u2694 DIVINE IMPALE! \u2694", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+    }
+
+    // #50 NATURE SWORD: Gaia's Wrath - 8-block AoE, 18 dmg + poison + roots (slowness IV)
+    private void rcNatureSword(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.BLOCK_GRASS_BREAK, 2.0f, 0.5f);
+        p.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, c.add(0, 0.5, 0), 80, 4, 0.5, 4, 0);
+        p.getWorld().spawnParticle(Particle.COMPOSTER, c, 40, 4, 1, 4, 0);
+        for (LivingEntity e : getNearbyEnemies(c, 8.0, p)) {
+            dealDamage(p, e, 18.0);
+            e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 80, 3));
+            e.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 100, 1));
+        }
+        p.sendActionBar(Component.text("\u2618 Gaia's Wrath! \u2618", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+    }
+
+    // #51 HEAVENLY PARTISAN: Holy Lance - 15-block beam, 20 dmg, heals allies 4 hearts
+    private void rcHeavenlyPartisan(Player p) {
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location start = p.getEyeLocation();
+        p.playSound(start, Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.5f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick > 15) { cancel(); return; }
+                Location point = start.clone().add(dir.clone().multiply(tick));
+                p.getWorld().spawnParticle(Particle.END_ROD, point, 8, 0.2, 0.2, 0.2, 0);
+                p.getWorld().spawnParticle(Particle.DUST, point, 5, 0.1, 0.1, 0.1, 0, new Particle.DustOptions(Color.fromRGB(255, 255, 200), 1.5f));
+                for (LivingEntity e : getNearbyEnemies(point, 1.5, p)) { dealDamage(p, e, 20.0); }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        for (Entity e : p.getLocation().getWorld().getNearbyEntities(p.getLocation(), 8, 8, 8)) {
+            if (e instanceof Player ally && ally != p && guildManager.areInSameGuild(p.getUniqueId(), ally.getUniqueId())) {
+                double max = ally.getAttribute(Attribute.MAX_HEALTH).getValue();
+                ally.setHealth(Math.min(max, ally.getHealth() + 8.0));
+                ally.getWorld().spawnParticle(Particle.HEART, ally.getLocation().add(0, 2, 0), 5, 0.3, 0.3, 0.3, 0);
+            }
+        }
+        p.sendActionBar(Component.text("\u2694 Holy Lance! \u2694", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+    }
+
+    // #52 SOUL DEVOURER: Soul Rip - drain 20 dmg from target, heal 50%
+    private void rcSoulDevourer(Player p) {
+        LivingEntity target = getTargetEntity(p, 6.0);
+        if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
+        dealDamage(p, target, 20.0);
+        double heal = 10.0;
+        double max = p.getAttribute(Attribute.MAX_HEALTH).getValue();
+        p.setHealth(Math.min(max, p.getHealth() + heal));
+        p.playSound(p.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1.5f, 0.4f);
+        p.getWorld().spawnParticle(Particle.SOUL, target.getLocation().add(0, 1, 0), 60, 0.5, 1, 0.5, 0.1);
+        p.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, p.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0);
+        p.sendActionBar(Component.text("\u2620 Soul Rip! +5 hearts", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #53 MJOLNIR: Thunderstrike - throw lightning at target location, 22 dmg AoE 6 blocks
+    private void rcMjolnir(Player p) {
+        Location target = p.getLocation().add(p.getLocation().getDirection().multiply(6));
+        p.getWorld().strikeLightningEffect(target);
+        p.getWorld().strikeLightningEffect(target.clone().add(2, 0, 0));
+        p.getWorld().strikeLightningEffect(target.clone().add(-2, 0, 0));
+        p.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.7f);
+        p.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, target.add(0, 1, 0), 80, 3, 2, 3, 0.2);
+        for (LivingEntity e : getNearbyEnemies(target, 6.0, p)) {
+            dealDamage(p, e, 22.0);
+            e.setVelocity(new Vector(0, 1.0, 0));
+        }
+        p.sendActionBar(Component.text("\u26A1 THUNDERSTRIKE! \u26A1", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+    }
+
+    // #54 THOUSAND DEMON DAGGERS: Demon Barrage - 12 projectiles, 3 dmg each
+    private void rcThousandDemonDaggers(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.5f, 1.5f);
+        Vector baseDir = p.getLocation().getDirection().normalize();
+        for (int i = -5; i <= 6; i++) {
+            double angle = Math.toRadians(i * 8);
+            Vector dir = rotateY(baseDir.clone(), angle);
+            final Vector fDir = dir;
+            new BukkitRunnable() {
+                Location loc = p.getEyeLocation().clone();
+                int ticks = 0;
+                @Override public void run() {
+                    if (ticks > 12) { cancel(); return; }
+                    loc.add(fDir);
+                    p.getWorld().spawnParticle(Particle.DUST, loc, 2, 0.05, 0.05, 0.05, 0, new Particle.DustOptions(Color.fromRGB(180, 0, 0), 0.8f));
+                    for (LivingEntity e : getNearbyEnemies(loc, 0.8, p)) {
+                        dealDamage(p, e, 3.0);
+                        e.setFireTicks(40);
+                        cancel(); return;
+                    }
+                    ticks++;
+                }
+            }.runTaskTimer(plugin, i + 6, 1L);
+        }
+        p.sendActionBar(Component.text("\u2620 Demon Barrage!", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #55 STAR EDGE: Cosmic Slash - 12-block line beam, 22 dmg, launches targets to sky
+    private void rcStarEdge(Player p) {
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location start = p.getEyeLocation();
+        p.playSound(start, Sound.BLOCK_BEACON_DEACTIVATE, 2.0f, 2.0f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick > 12) { cancel(); return; }
+                Location point = start.clone().add(dir.clone().multiply(tick));
+                p.getWorld().spawnParticle(Particle.END_ROD, point, 10, 0.3, 0.3, 0.3, 0.05);
+                p.getWorld().spawnParticle(Particle.DUST, point, 5, 0.1, 0.1, 0.1, 0, new Particle.DustOptions(Color.fromRGB(200, 200, 255), 2.0f));
+                for (LivingEntity e : getNearbyEnemies(point, 2.0, p)) {
+                    dealDamage(p, e, 22.0);
+                    e.setVelocity(new Vector(0, 3.0, 0));
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2726 Cosmic Slash! \u2726", NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
+    }
+
+    // #56 RIVERS OF BLOOD: Corpse Piler - 6 rapid dashes in sequence, 5 dmg each
+    private void rcRiversOfBlood(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 1.8f);
+        new BukkitRunnable() {
+            int dash = 0;
+            @Override public void run() {
+                if (dash >= 6) { cancel(); return; }
+                p.setVelocity(p.getLocation().getDirection().multiply(1.2));
+                Location loc = p.getLocation();
+                p.getWorld().spawnParticle(Particle.DUST, loc.add(0, 1, 0), 15, 0.5, 0.5, 0.5, 0, new Particle.DustOptions(Color.fromRGB(180, 0, 0), 1.5f));
+                p.getWorld().spawnParticle(Particle.SWEEP_ATTACK, loc, 3, 0.3, 0.3, 0.3, 0);
+                for (LivingEntity e : getNearbyEnemies(loc, 3.0, p)) { dealDamage(p, e, 5.0); }
+                p.playSound(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.5f + (dash * 0.15f));
+                dash++;
+            }
+        }.runTaskTimer(plugin, 0L, 3L);
+        p.sendActionBar(Component.text("\u2620 Corpse Piler!", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #57 DRAGON SLAYING BLADE: Dragon Pierce - massive single-target 35 dmg (2x vs dragon-type)
+    private void rcDragonSlayingBlade(Player p) {
+        LivingEntity target = getTargetEntity(p, 6.0);
+        if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
+        double dmg = 35.0;
+        if (target.getType() == EntityType.ENDER_DRAGON) dmg = 70.0;
+        dealDamage(p, target, dmg);
+        p.playSound(p.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 1.2f);
+        p.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 80, 0.5, 1, 0.5, 0.3);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, target.getLocation().add(0, 1, 0), 40, 0.5, 1, 0.5, 0.2);
+        p.sendActionBar(Component.text("\u2694 DRAGON PIERCE! \u2694", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // #58 STOP SIGN: Full Stop - stuns all enemies in 6-block radius for 3s, 15 dmg
+    private void rcStopSign(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
+        p.getWorld().spawnParticle(Particle.DUST, c.add(0, 1, 0), 60, 3, 2, 3, 0, new Particle.DustOptions(Color.fromRGB(255, 0, 0), 3.0f));
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 2, 0, 0, 0, 0);
+        for (LivingEntity e : getNearbyEnemies(c, 6.0, p)) {
+            dealDamage(p, e, 15.0);
+            e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 255));
+            e.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 60, 255));
+            e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0));
+        }
+        p.sendActionBar(Component.text("\u26D4 FULL STOP! \u26D4", NamedTextColor.RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #59 CREATION SPLITTER: Reality Cleave - 10-block cross AoE, 25 dmg
+    private void rcCreationSplitter(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.5f);
+        p.playSound(c, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.3f);
+        for (int i = -10; i <= 10; i++) {
+            Location l1 = c.clone().add(i, 1, 0);
+            Location l2 = c.clone().add(0, 1, i);
+            p.getWorld().spawnParticle(Particle.END_ROD, l1, 3, 0.1, 0.1, 0.1, 0);
+            p.getWorld().spawnParticle(Particle.END_ROD, l2, 3, 0.1, 0.1, 0.1, 0);
+        }
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, c.add(0, 2, 0), 100, 2, 2, 2, 0.5);
+        for (LivingEntity e : getNearbyEnemies(c, 10.0, p)) {
+            dealDamage(p, e, 25.0);
+            e.setVelocity(e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(2.0).setY(1.0));
+        }
+        p.sendActionBar(Component.text("\u2726 REALITY CLEAVE! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // ================================================================
+    // ALTERNATE ABILITIES - NEW MYTHIC WEAPONS #45-59 (Phase 9)
+    // ================================================================
+
+    // #45 DIVINE AXE RHITTA ALT: Sunshine - buff: +50% damage for 10s, fire aura
+    private void altDivineAxeRhitta(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 1));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 200, 0));
+        p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 1.0f);
+        p.getWorld().spawnParticle(Particle.FLAME, p.getLocation().add(0, 1, 0), 80, 1.5, 2, 1.5, 0.1);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 200 || !p.isOnline()) { cancel(); return; }
+                if (tick % 5 == 0) p.getWorld().spawnParticle(Particle.FLAME, p.getLocation().add(0, 1, 0), 5, 0.5, 0.5, 0.5, 0.02);
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2600 SUNSHINE! +Strength II for 10s", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // #46 YORU ALT: Dark Mirror - teleport behind target, 15 dmg backstab
+    private void altYoru(Player p) {
+        LivingEntity target = getTargetEntity(p, 10.0);
+        if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
+        Location behind = target.getLocation().clone().add(target.getLocation().getDirection().normalize().multiply(-2));
+        behind.setYaw(target.getLocation().getYaw());
+        behind.setPitch(0);
+        p.teleport(behind);
+        dealDamage(p, target, 15.0);
+        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.5f);
+        p.getWorld().spawnParticle(Particle.SMOKE, p.getLocation().add(0, 1, 0), 40, 0.5, 1, 0.5, 0.05);
+        p.sendActionBar(Component.text("\u2694 Dark Mirror! Backstab!", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #47 TENGEN'S BLADE ALT: Constant Flux - speed III + haste II for 12s
+    private void altTengensBlade(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 240, 2));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 240, 1));
+        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 2.0f, 2.0f);
+        p.getWorld().spawnParticle(Particle.NOTE, p.getLocation().add(0, 2, 0), 30, 1, 0.5, 1, 1);
+        p.sendActionBar(Component.text("\u266B Constant Flux! Speed III + Haste II", NamedTextColor.LIGHT_PURPLE));
+    }
+
+    // #48 EDGE OF THE ASTRAL PLANE ALT: Planar Shift - phase through 10 blocks, invulnerable
+    private void altEdgeAstralPlane(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60, 0));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60, 3));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 4));
+        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.5f);
+        p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, p.getLocation().add(0, 1, 0), 60, 0.5, 1, 0.5, 0.1);
+        p.sendActionBar(Component.text("\u2727 Planar Shift! 3s invulnerability", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #49 FALLEN GOD'S SPEAR ALT: Heaven's Fall - leap up + slam, 20 dmg AoE 8 blocks
+    private void altFallenGodsSpear(Player p) {
+        p.setVelocity(new Vector(0, 3.0, 0));
+        p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Location land = p.getLocation();
+            p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, land, 5, 0, 0, 0, 0);
+            p.getWorld().spawnParticle(Particle.END_ROD, land, 80, 4, 1, 4, 0.2);
+            p.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
+            for (LivingEntity e : getNearbyEnemies(land, 8.0, p)) {
+                dealDamage(p, e, 20.0);
+                e.setVelocity(e.getLocation().toVector().subtract(land.toVector()).normalize().multiply(2.0).setY(1.2));
+            }
+        }, 30L);
+        p.sendActionBar(Component.text("\u2694 Heaven's Fall! \u2694", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+    }
+
+    // #50 NATURE SWORD ALT: Overgrowth Surge - heal 8 hearts + regen III 10s + ally heal
+    private void altNatureSword(Player p) {
+        double max = p.getAttribute(Attribute.MAX_HEALTH).getValue();
+        p.setHealth(Math.min(max, p.getHealth() + 16.0));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 200, 2));
+        p.playSound(p.getLocation(), Sound.BLOCK_GRASS_BREAK, 2.0f, 1.2f);
+        p.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, p.getLocation().add(0, 1, 0), 60, 2, 1, 2, 0);
+        p.getWorld().spawnParticle(Particle.HEART, p.getLocation().add(0, 2, 0), 15, 1, 0.5, 1, 0);
+        for (Entity e : p.getLocation().getWorld().getNearbyEntities(p.getLocation(), 6, 6, 6)) {
+            if (e instanceof Player ally && ally != p && guildManager.areInSameGuild(p.getUniqueId(), ally.getUniqueId())) {
+                double amax = ally.getAttribute(Attribute.MAX_HEALTH).getValue();
+                ally.setHealth(Math.min(amax, ally.getHealth() + 8.0));
+                ally.getWorld().spawnParticle(Particle.HEART, ally.getLocation().add(0, 2, 0), 5, 0.3, 0.3, 0.3, 0);
+            }
+        }
+        p.sendActionBar(Component.text("\u2618 Overgrowth Surge! Full heal + Regen III", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+    }
+
+    // #51 HEAVENLY PARTISAN ALT: Celestial Judgment - smite 3 lightning bolts on nearest enemies
+    private void altHeavenlyPartisan(Player p) {
+        List<LivingEntity> targets = getNearbyEnemies(p.getLocation(), 12.0, p);
+        int strikes = Math.min(3, targets.size());
+        for (int i = 0; i < strikes; i++) {
+            LivingEntity t = targets.get(i);
+            final int delay = i * 10;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                p.getWorld().strikeLightningEffect(t.getLocation());
+                dealDamage(p, t, 18.0);
+                t.getWorld().spawnParticle(Particle.END_ROD, t.getLocation().add(0, 1, 0), 30, 0.5, 2, 0.5, 0.1);
+            }, delay);
+        }
+        p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.8f);
+        p.sendActionBar(Component.text("\u2694 Celestial Judgment! " + strikes + " smites", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
+    }
+
+    // #52 SOUL DEVOURER ALT: Devouring Maw - AoE drain 12 dmg, heal per enemy hit
+    private void altSoulDevourer(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_WITHER_HURT, 1.5f, 0.5f);
+        p.getWorld().spawnParticle(Particle.SOUL, c.add(0, 1, 0), 80, 4, 2, 4, 0.05);
+        int hits = 0;
+        for (LivingEntity e : getNearbyEnemies(c, 6.0, p)) {
+            dealDamage(p, e, 12.0);
+            hits++;
+        }
+        double heal = hits * 4.0;
+        double max = p.getAttribute(Attribute.MAX_HEALTH).getValue();
+        p.setHealth(Math.min(max, p.getHealth() + heal));
+        p.sendActionBar(Component.text("\u2620 Devouring Maw! Healed " + (hits * 2) + " hearts", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
+    }
+
+    // #53 MJOLNIR ALT: Bifrost Slam - leap + triple lightning on landing
+    private void altMjolnir(Player p) {
+        p.setVelocity(new Vector(0, 2.5, 0).add(p.getLocation().getDirection().multiply(1.0)));
+        p.playSound(p.getLocation(), Sound.ITEM_TRIDENT_THUNDER, 2.0f, 0.8f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Location land = p.getLocation();
+            for (int i = 0; i < 3; i++) {
+                Location strike = land.clone().add(Math.sin(i * 2.1) * 3, 0, Math.cos(i * 2.1) * 3);
+                p.getWorld().strikeLightningEffect(strike);
+            }
+            p.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, land, 100, 4, 1, 4, 0.3);
+            p.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.6f);
+            for (LivingEntity e : getNearbyEnemies(land, 8.0, p)) {
+                dealDamage(p, e, 20.0);
+                e.setVelocity(new Vector(0, 1.5, 0));
+            }
+        }, 25L);
+        p.sendActionBar(Component.text("\u26A1 BIFROST SLAM! \u26A1", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+    }
+
+    // #54 THOUSAND DEMON DAGGERS ALT: Infernal Dance - fire spin 6s, 4 dmg/tick to nearby
+    private void altThousandDemonDaggers(Player p) {
+        p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_AMBIENT, 2.0f, 1.0f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 120 || !p.isOnline()) { cancel(); return; }
+                if (tick % 10 == 0) {
+                    Location c = p.getLocation();
+                    double angle = tick * 0.3;
+                    for (int i = 0; i < 4; i++) {
+                        double a = angle + (i * Math.PI / 2);
+                        Location pl = c.clone().add(Math.cos(a) * 2.5, 1, Math.sin(a) * 2.5);
+                        p.getWorld().spawnParticle(Particle.FLAME, pl, 3, 0.1, 0.1, 0.1, 0.02);
+                    }
+                    for (LivingEntity e : getNearbyEnemies(c, 3.5, p)) {
+                        dealDamage(p, e, 4.0);
+                        e.setFireTicks(20);
+                    }
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u2620 Infernal Dance! 6s fire spin", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #55 STAR EDGE ALT: Supernova - massive 12-block AoE, 18 dmg + blindness
+    private void altStarEdge(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
+        p.getWorld().spawnParticle(Particle.END_ROD, c.add(0, 2, 0), 100, 6, 3, 6, 0.3);
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 3, 0, 0, 0, 0);
+        for (LivingEntity e : getNearbyEnemies(c, 12.0, p)) {
+            dealDamage(p, e, 18.0);
+            e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0));
+            e.setVelocity(e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(2.5).setY(1.0));
+        }
+        p.sendActionBar(Component.text("\u2726 SUPERNOVA! \u2726", NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
+    }
+
+    // #56 RIVERS OF BLOOD ALT: Blood Tsunami - wave 10 blocks, 16 dmg + wither
+    private void altRiversOfBlood(Player p) {
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location start = p.getLocation();
+        p.playSound(start, Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.4f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick > 10) { cancel(); return; }
+                Location point = start.clone().add(dir.clone().multiply(tick));
+                p.getWorld().spawnParticle(Particle.DUST, point.clone().add(0, 1, 0), 20, 1.5, 1, 1.5, 0, new Particle.DustOptions(Color.fromRGB(139, 0, 0), 2.0f));
+                for (LivingEntity e : getNearbyEnemies(point, 3.0, p)) {
+                    dealDamage(p, e, 16.0);
+                    e.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1));
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+        p.sendActionBar(Component.text("\u2620 Blood Tsunami!", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #57 DRAGON SLAYING BLADE ALT: Slayer's Fury - 10s buff: +30% damage, +resist II
+    private void altDragonSlayingBlade(Player p) {
+        p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 1));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 200, 1));
+        p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.5f);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 1, 0), 50, 1, 1.5, 1, 0.3);
+        p.sendActionBar(Component.text("\u2694 Slayer's Fury! Strength II + Resistance II 10s", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+    }
+
+    // #58 STOP SIGN ALT: Road Rage - charge forward 10 blocks, stun + 12 dmg along path
+    private void altStopSign(Player p) {
+        p.setVelocity(p.getLocation().getDirection().multiply(3.0));
+        p.playSound(p.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 2.0f, 0.8f);
+        new BukkitRunnable() {
+            int tick = 0;
+            @Override public void run() {
+                if (tick >= 10) { cancel(); return; }
+                Location loc = p.getLocation();
+                p.getWorld().spawnParticle(Particle.DUST, loc.add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0, new Particle.DustOptions(Color.fromRGB(255, 0, 0), 2.0f));
+                for (LivingEntity e : getNearbyEnemies(loc, 2.5, p)) {
+                    dealDamage(p, e, 12.0);
+                    e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 255));
+                }
+                tick++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+        p.sendActionBar(Component.text("\u26D4 Road Rage! \u26D4", NamedTextColor.RED).decorate(TextDecoration.BOLD));
+    }
+
+    // #59 CREATION SPLITTER ALT: Genesis Break - massive explosion, 30 dmg, 15-block AoE
+    private void altCreationSplitter(Player p) {
+        Location c = p.getLocation();
+        p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
+        p.playSound(c, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c.add(0, 2, 0), 8, 3, 2, 3, 0);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, c, 100, 7, 3, 7, 0.8);
+        p.getWorld().spawnParticle(Particle.END_ROD, c, 80, 7, 5, 7, 0.2);
+        for (LivingEntity e : getNearbyEnemies(c, 15.0, p)) {
+            dealDamage(p, e, 30.0);
+            e.setVelocity(e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(3.0).setY(1.5));
+        }
+        p.sendActionBar(Component.text("\u2726 GENESIS BREAK! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
     }
 }

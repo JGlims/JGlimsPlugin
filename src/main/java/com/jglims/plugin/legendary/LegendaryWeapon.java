@@ -3,13 +3,15 @@ package com.jglims.plugin.legendary;
 import org.bukkit.Material;
 
 /**
- * LegendaryWeapon - enum of all 44 legendary weapons.
- * v3.0.0 Phase 8c - Rewritten with 5-tier system.
+ * LegendaryWeapon - enum of all legendary weapons.
+ * v3.1.0 Phase 9 - Added 15 MYTHIC weapons (#45-59).
  * Input: primary = right-click, alternate = crouch + right-click (rule A.10).
  */
 public enum LegendaryWeapon {
 
+    // ================================================================
     // COMMON TIER (damage 10-13, PCD 5-8s, ACD 15-25s, 10 particles)
+    // ================================================================
     AMETHYST_SHURIKEN("amethyst_shuriken", "Amethyst Shuriken", Material.DIAMOND_SWORD, 11, 30012, LegendaryTier.COMMON, "amethyst_shuriken", "Shuriken Barrage", "Shadow Step", 7, 15),
     GRAVESCEPTER("gravescepter", "Gravescepter", Material.DIAMOND_SWORD, 11, 30026, LegendaryTier.COMMON, "revenants_gravescepter", "Grave Rise", "Death's Grasp", 8, 18),
     LYCANBANE("lycanbane", "Lycanbane", Material.DIAMOND_SWORD, 12, 30027, LegendaryTier.COMMON, "lycanbane", "Silver Strike", "Hunter's Sense", 8, 20),
@@ -31,7 +33,9 @@ public enum LegendaryWeapon {
     VINDICATOR("vindicator", "Vindicator", Material.DIAMOND_AXE, 11, 30043, LegendaryTier.COMMON, "vindicator", "Executioner's Chop", "Rally Cry", 8, 25),
     SPIDER_FANG("spider_fang", "Spider Fang", Material.DIAMOND_SWORD, 10, 30044, LegendaryTier.COMMON, "spider_sword", "Web Trap", "Wall Crawler", 8, 20),
 
+    // ================================================================
     // RARE TIER (damage 12-15, PCD 7-10s, ACD 20-30s, 25 particles)
+    // ================================================================
     OCEANS_RAGE("oceans_rage", "Ocean's Rage", Material.TRIDENT, 14, 30001, LegendaryTier.RARE, "stormbringer", "Stormbringer", "Riptide Surge", 8, 25),
     AQUATIC_SACRED_BLADE("aquatic_sacred_blade", "Aquatic Sacred Blade", Material.DIAMOND_SWORD, 13, 30002, LegendaryTier.RARE, "aquantic_sacred_blade", "Aqua Heal", "Depth Pressure", 10, 25),
     ROYAL_CHAKRAM("royal_chakram", "Royal Chakram", Material.DIAMOND_SWORD, 12, 30005, LegendaryTier.RARE, "royalchakram", "Chakram Throw", "Spinning Shield", 7, 20),
@@ -41,7 +45,9 @@ public enum LegendaryWeapon {
     MOONLIGHT("moonlight", "Moonlight", Material.DIAMOND_SWORD, 13, 30016, LegendaryTier.RARE, "moonlight", "Lunar Beam", "Eclipse", 10, 30),
     TALONBRAND("talonbrand", "Talonbrand", Material.DIAMOND_SWORD, 13, 30022, LegendaryTier.RARE, "talonbrand", "Talon Strike", "Predator's Mark", 8, 20),
 
+    // ================================================================
     // EPIC TIER (damage 14-17, PCD 8-12s, ACD 25-45s, 50 particles)
+    // ================================================================
     BERSERKERS_GREATAXE("berserkers_greataxe", "Berserker's Greataxe", Material.DIAMOND_AXE, 17, 30006, LegendaryTier.EPIC, "berserkers_greataxe", "Berserker Slam", "Blood Rage", 10, 30),
     BLACK_IRON_GREATSWORD("black_iron_greatsword", "Black Iron Greatsword", Material.DIAMOND_SWORD, 15, 30008, LegendaryTier.EPIC, "black_iron_greatsword", "Dark Slash", "Iron Fortress", 8, 30),
     SOLSTICE("solstice", "Solstice", Material.DIAMOND_SWORD, 14, 30018, LegendaryTier.EPIC, "solstice", "Solar Flare", "Daybreak", 10, 25),
@@ -50,7 +56,10 @@ public enum LegendaryWeapon {
     EMERALD_GREATCLEAVER("emerald_greatcleaver", "Emerald Greatcleaver", Material.DIAMOND_AXE, 16, 30023, LegendaryTier.EPIC, "emerald_greatcleaver", "Emerald Storm", "Gem Barrier", 10, 40),
     DEMONS_BLOOD_BLADE("demons_blood_blade", "Demon's Blood Blade", Material.DIAMOND_SWORD, 15, 30024, LegendaryTier.EPIC, "demons_blood_blade", "Blood Rite", "Demonic Form", 8, 35),
 
+    // ================================================================
     // MYTHIC TIER (damage 16-22, PCD 10-15s, ACD 30-60s, 100 particles)
+    // ================================================================
+    // -- Original 44 promoted to MYTHIC --
     TRUE_EXCALIBUR("true_excalibur", "True Excalibur", Material.DIAMOND_SWORD, 20, 30003, LegendaryTier.MYTHIC, "excalibur", "Holy Smite", "Divine Shield", 10, 45),
     REQUIEM_NINTH_ABYSS("requiem_ninth_abyss", "Requiem of the Ninth Abyss", Material.DIAMOND_SWORD, 20, 30004, LegendaryTier.MYTHIC, "requiem_of_hell", "Soul Devour", "Abyss Gate", 12, 60),
     PHOENIXS_GRACE("phoenixs_grace", "Phoenix's Grace", Material.DIAMOND_AXE, 20, 30010, LegendaryTier.MYTHIC, "gilded_phoenix_greataxe", "Phoenix Strike", "Rebirth Flame", 10, 60),
@@ -59,7 +68,23 @@ public enum LegendaryWeapon {
     PHANTOMGUARD("phantomguard", "Phantomguard Greatsword", Material.DIAMOND_SWORD, 19, 30015, LegendaryTier.MYTHIC, "phantomguard_greatsword", "Spectral Cleave", "Phase Shift", 10, 35),
     ZENITH("zenith", "Zenith", Material.DIAMOND_SWORD, 22, 30017, LegendaryTier.MYTHIC, "zenith", "Final Judgment", "Ascension", 15, 60),
     DRAGON_SWORD("dragon_sword", "Dragon Sword", Material.DIAMOND_SWORD, 18, 30021, LegendaryTier.MYTHIC, "dragon_sword", "Dragon Breath", "Draconic Roar", 10, 45),
-    NOCTURNE("nocturne", "Nocturne", Material.DIAMOND_SWORD, 18, 30025, LegendaryTier.MYTHIC, "nocturne", "Shadow Slash", "Night Cloak", 10, 40);
+    NOCTURNE("nocturne", "Nocturne", Material.DIAMOND_SWORD, 18, 30025, LegendaryTier.MYTHIC, "nocturne", "Shadow Slash", "Night Cloak", 10, 40),
+    // -- NEW MYTHIC #45-59 (Phase 9) --
+    DIVINE_AXE_RHITTA("divine_axe_rhitta", "Divine Axe Rhitta", Material.DIAMOND_AXE, 22, 30045, LegendaryTier.MYTHIC, "divine_axe_rhitta", "Cruel Sun", "Sunshine", 12, 50),
+    YORU("yoru", "Yoru", Material.DIAMOND_SWORD, 20, 30046, LegendaryTier.MYTHIC, "yoru", "World's Strongest Slash", "Dark Mirror", 14, 55),
+    TENGENS_BLADE("tengens_blade", "Tengen's Blade", Material.DIAMOND_SWORD, 19, 30047, LegendaryTier.MYTHIC, "tengens_blade", "Sound Breathing", "Constant Flux", 10, 40),
+    EDGE_ASTRAL_PLANE("edge_astral_plane", "Edge of the Astral Plane", Material.DIAMOND_SWORD, 21, 30048, LegendaryTier.MYTHIC, "edge_astral_plane", "Astral Rend", "Planar Shift", 13, 60),
+    FALLEN_GODS_SPEAR("fallen_gods_spear", "Fallen God's Spear", Material.DIAMOND_SWORD, 20, 30049, LegendaryTier.MYTHIC, "fallen_gods_spear", "Divine Impale", "Heaven's Fall", 11, 50),
+    NATURE_SWORD("nature_sword", "Nature Sword", Material.DIAMOND_SWORD, 18, 30050, LegendaryTier.MYTHIC, "nature_sword", "Gaia's Wrath", "Overgrowth Surge", 10, 40),
+    HEAVENLY_PARTISAN("heavenly_partisan", "Heavenly Partisan", Material.DIAMOND_SWORD, 19, 30051, LegendaryTier.MYTHIC, "heavenly_partisan", "Holy Lance", "Celestial Judgment", 11, 45),
+    SOUL_DEVOURER("soul_devourer", "Soul Devourer", Material.DIAMOND_SWORD, 20, 30052, LegendaryTier.MYTHIC, "soul_devourer", "Soul Rip", "Devouring Maw", 12, 50),
+    MJOLNIR("mjolnir", "Mjolnir", Material.MACE, 22, 30053, LegendaryTier.MYTHIC, "mjolnir", "Thunderstrike", "Bifrost Slam", 14, 55),
+    THOUSAND_DEMON_DAGGERS("thousand_demon_daggers", "Thousand Demon Daggers", Material.DIAMOND_SWORD, 18, 30054, LegendaryTier.MYTHIC, "thousand_demon_daggers", "Demon Barrage", "Infernal Dance", 10, 35),
+    STAR_EDGE("star_edge", "Star Edge", Material.DIAMOND_SWORD, 20, 30055, LegendaryTier.MYTHIC, "star_edge", "Cosmic Slash", "Supernova", 13, 55),
+    RIVERS_OF_BLOOD("rivers_of_blood", "Rivers of Blood", Material.DIAMOND_SWORD, 19, 30056, LegendaryTier.MYTHIC, "rivers_of_blood", "Corpse Piler", "Blood Tsunami", 10, 40),
+    DRAGON_SLAYING_BLADE("dragon_slaying_blade", "Dragon Slaying Blade", Material.DIAMOND_SWORD, 20, 30057, LegendaryTier.MYTHIC, "dragon_slaying_blade", "Dragon Pierce", "Slayer's Fury", 12, 50),
+    STOP_SIGN("stop_sign", "Stop Sign", Material.DIAMOND_AXE, 18, 30058, LegendaryTier.MYTHIC, "stop_sign", "Full Stop", "Road Rage", 10, 35),
+    CREATION_SPLITTER("creation_splitter", "Creation Splitter", Material.DIAMOND_SWORD, 22, 30059, LegendaryTier.MYTHIC, "creation_splitter", "Reality Cleave", "Genesis Break", 15, 60);
 
     // ABYSSAL TIER - Weapons #60-63 added in Phase 16
 
