@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.mobs;
+package com.jglims.plugin.mobs;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.config.ConfigManager;

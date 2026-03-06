@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin;
+package com.jglims.plugin;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;

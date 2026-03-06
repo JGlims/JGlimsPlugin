@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.events;
+package com.jglims.plugin.events;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.config.ConfigManager;

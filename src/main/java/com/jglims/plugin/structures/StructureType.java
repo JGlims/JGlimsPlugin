@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.structures;
+package com.jglims.plugin.structures;
 
 import com.jglims.plugin.legendary.LegendaryTier;
 import org.bukkit.World;
