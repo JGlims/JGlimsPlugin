@@ -28,6 +28,8 @@ import com.jglims.plugin.weapons.BattleTridentManager;
 import com.jglims.plugin.weapons.SickleManager;
 import com.jglims.plugin.weapons.SpearManager;
 import com.jglims.plugin.weapons.SuperToolManager;
+import com.jglims.plugin.legendary.InfinityStoneManager;
+import com.jglims.plugin.legendary.InfinityGauntletManager;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -47,13 +49,16 @@ public class RecipeManager implements Listener {
     private final BattleSpearManager battleSpearManager;
     private final BattleShovelManager battleShovelManager;
     private final SpearManager spearManager;
+    private final InfinityStoneManager infinityStoneManager;
+    private final InfinityGauntletManager infinityGauntletManager;
 
     public RecipeManager(JGlimsPlugin plugin, SickleManager sickleManager,
                          BattleAxeManager battleAxeManager, BattleBowManager battleBowManager,
                          BattleMaceManager battleMaceManager, SuperToolManager superToolManager,
                          BattleSwordManager battleSwordManager, BattlePickaxeManager battlePickaxeManager,
                          BattleTridentManager battleTridentManager, BattleSpearManager battleSpearManager,
-                         BattleShovelManager battleShovelManager, SpearManager spearManager) {
+                         BattleShovelManager battleShovelManager, SpearManager spearManager,
+                         InfinityStoneManager infinityStoneManager, InfinityGauntletManager infinityGauntletManager) {
         this.plugin = plugin;
         this.sickleManager = sickleManager;
         this.battleAxeManager = battleAxeManager;
@@ -66,6 +71,8 @@ public class RecipeManager implements Listener {
         this.battleSpearManager = battleSpearManager;
         this.battleShovelManager = battleShovelManager;
         this.spearManager = spearManager;
+        this.infinityStoneManager = infinityStoneManager;
+        this.infinityGauntletManager = infinityGauntletManager;
     }
 
     public void registerAllRecipes() {
@@ -87,8 +94,9 @@ public class RecipeManager implements Listener {
         registerBattleSpears();
 
         registerSuperToolRecipes();
+        registerInfinityGauntlet();
 
-        plugin.getLogger().info("All custom crafting recipes registered (v1.3.1 — fixed Sword/Pickaxe/Shovel Super recipes).");
+        plugin.getLogger().info("All custom crafting recipes registered (v1.4.0 — added Infinity Gauntlet — fixed Sword/Pickaxe/Shovel Super recipes).");
     }
 
     private void registerEyeOfEnder() {
@@ -431,6 +439,36 @@ public class RecipeManager implements Listener {
             plugin.getServer().addRecipe(recipe);
         }
     }
+    // =================== INFINITY GAUNTLET (Phase 22) ===================
+    private void registerInfinityGauntlet() {
+        if (infinityStoneManager == null || infinityGauntletManager == null) return;
+
+        // Infinity Gauntlet = Thanos Glove + all 6 finished Infinity Stones
+        // Layout:
+        //  P T S    (Power, Time, Space)
+        //  R G M    (Reality, Glove, Mind)
+        //  . O .    (., sOul, .)
+        NamespacedKey key = new NamespacedKey(plugin, "infinity_gauntlet");
+        ItemStack gauntlet = infinityGauntletManager.createInfinityGauntlet();
+        if (gauntlet == null) return;
+
+        ShapedRecipe recipe = new ShapedRecipe(key, gauntlet);
+        recipe.shape("PTS", "RGM", " O ");
+
+        // Each ingredient is a finished Infinity Stone (custom items checked via onPrepareCraft)
+        // We use placeholder materials here — the actual validation happens in onPrepareCraft
+        recipe.setIngredient('P', Material.CRYING_OBSIDIAN);   // Power Stone placeholder
+        recipe.setIngredient('T', Material.CLOCK);             // Time Stone placeholder
+        recipe.setIngredient('S', Material.ENDER_EYE);         // Space Stone placeholder
+        recipe.setIngredient('R', Material.REDSTONE_BLOCK);    // Reality Stone placeholder
+        recipe.setIngredient('G', Material.NETHERITE_INGOT);   // Glove placeholder (center)
+        recipe.setIngredient('M', Material.LAPIS_BLOCK);       // Mind Stone placeholder
+        recipe.setIngredient('O', Material.GHAST_TEAR);        // Soul Stone placeholder
+
+        plugin.getServer().addRecipe(recipe);
+        plugin.getLogger().info("Registered Infinity Gauntlet crafting recipe.");
+    }
+
 
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {

@@ -35,7 +35,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 
 /**
  * LegendaryLootListener - boss drops and structure chest legendary injection.
- * v3.2.0 Phase 10 - Added weapons #45-59 to drop tables.
+ * v3.3.0 Phase 20 - Integrated End Rift trigger on Ender Dragon death.
  */
 public class LegendaryLootListener implements Listener {
 
@@ -76,7 +76,7 @@ public class LegendaryLootListener implements Listener {
             LegendaryWeapon.RIVERS_OF_BLOOD
     };
 
-    // End Rift boss pool (Phase 10)
+    // End Rift boss pool (Phase 10) — used by LegendaryLootListener for forward-compat
     private static final LegendaryWeapon[] END_RIFT_POOL = {
             LegendaryWeapon.TENGENS_BLADE,
             LegendaryWeapon.SOUL_DEVOURER,
@@ -184,12 +184,15 @@ public class LegendaryLootListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity instanceof EnderDragon) { handleDragonDeathChest(entity); return; }
+        if (entity instanceof EnderDragon) { handleDragonDeath(entity); return; }
         if (entity instanceof ElderGuardian) { dropFromPool(event, ELDER_GUARDIAN_POOL, 1, 1, "Elder Guardian"); return; }
         if (entity instanceof Warden) { dropFromPool(event, WARDEN_POOL, 1, 2, "Warden"); return; }
-        if (entity instanceof Wither) { dropFromPool(event, WITHER_POOL, 1, 2, "Wither"); return; }
-        // End Rift boss drops (checked via custom name tag)
-        if (isEndRiftBoss(entity)) { dropFromPool(event, END_RIFT_POOL, 1, 2, "End Rift Dragon"); return; }
+        if (entity instanceof Wither) {
+            // Don't intercept Wither death if it's an End Rift boss
+            if (plugin.getEventManager().isEventBoss(entity)) return;
+            dropFromPool(event, WITHER_POOL, 1, 2, "Wither");
+            return;
+        }
         // Blood Moon King
         if (bloodMoonManager.isBloodMoonKing(entity)) {
             ThreadLocalRandom rand = ThreadLocalRandom.current();
@@ -204,33 +207,22 @@ public class LegendaryLootListener implements Listener {
         }
     }
 
-    /**
-     * Checks if the entity is an End Rift boss.
-     * Uses custom name tag to identify - End Rift bosses are tagged "End Rift Dragon"
-     * when spawned by the End Rift event system (Phase 12+).
-     * For now this acts as a forward-compatible hook.
-     */
-    private boolean isEndRiftBoss(LivingEntity entity) {
-        Component name = entity.customName();
-        if (name == null) return false;
-        // Adventure API plain text serialization
-        String plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(name);
-        return plain.contains("End Rift Dragon");
-    }
+    // ── DRAGON DEATH → CHEST + END RIFT TRIGGER ──
 
-    private void dropFromPool(EntityDeathEvent event, LegendaryWeapon[] pool, int min, int max, String bossName) {
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-        int count = Math.min(rand.nextInt(min, max + 1), pool.length);
-        List<LegendaryWeapon> available = new ArrayList<>(Arrays.asList(pool));
-        for (int i = 0; i < count && !available.isEmpty(); i++) {
-            int idx = rand.nextInt(available.size());
-            LegendaryWeapon weapon = available.remove(idx);
-            ItemStack weaponItem = weaponManager.createWeapon(weapon);
-            if (weaponItem != null) { event.getDrops().add(weaponItem); announceWeaponDrop(weapon, bossName, event.getEntity().getLocation()); }
-        }
-    }
+    private void handleDragonDeath(LivingEntity dragon) {
+        // 1. Always do the death chest
+        handleDragonDeathChest(dragon);
 
-    // ── DRAGON DEATH CHEST ──
+        // 2. Try to trigger End Rift event (10% chance, handled inside EventManager)
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            boolean riftOpened = plugin.getEventManager().tryTriggerEndRift();
+            if (riftOpened) {
+                plugin.getLogger().info("End Rift triggered after Ender Dragon death!");
+            } else {
+                plugin.getLogger().info("End Rift did not trigger this time (10% chance).");
+            }
+        }, 100L); // 5 seconds after dragon death
+    }
 
     private void handleDragonDeathChest(LivingEntity dragon) {
         Location loc = dragon.getLocation();
@@ -289,6 +281,18 @@ public class LegendaryLootListener implements Listener {
             LegendaryWeapon weapon = pool.remove(rand.nextInt(pool.size()));
             ItemStack weaponItem = weaponManager.createWeapon(weapon);
             if (weaponItem != null) loc.getWorld().dropItemNaturally(loc, weaponItem);
+        }
+    }
+
+    private void dropFromPool(EntityDeathEvent event, LegendaryWeapon[] pool, int min, int max, String bossName) {
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+        int count = Math.min(rand.nextInt(min, max + 1), pool.length);
+        List<LegendaryWeapon> available = new ArrayList<>(Arrays.asList(pool));
+        for (int i = 0; i < count && !available.isEmpty(); i++) {
+            int idx = rand.nextInt(available.size());
+            LegendaryWeapon weapon = available.remove(idx);
+            ItemStack weaponItem = weaponManager.createWeapon(weapon);
+            if (weaponItem != null) { event.getDrops().add(weaponItem); announceWeaponDrop(weapon, bossName, event.getEntity().getLocation()); }
         }
     }
 

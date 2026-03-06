@@ -77,6 +77,18 @@ public enum StructureType {
         30, 15, 30, true, "Dungeon Keeper", 300,
         null),
 
+    THANOS_TEMPLE("Thanos Temple", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        50, 40, 50, true, "Thanos", 800,
+        Set.of(Biome.BADLANDS, Biome.ERODED_BADLANDS, Biome.STONY_PEAKS, Biome.WINDSWEPT_HILLS)),
+
+
+    PILLAGER_FORTRESS("Pillager Fortress", World.Environment.NORMAL, LegendaryTier.EPIC,
+        60, 35, 60, true, "Fortress Warlord", 400,
+        Set.of(Biome.PLAINS, Biome.SAVANNA, Biome.TAIGA, Biome.WINDSWEPT_HILLS, Biome.STONY_PEAKS)),
+
+    PILLAGER_AIRSHIP("Pillager Airship", World.Environment.NORMAL, LegendaryTier.RARE,
+        30, 25, 15, true, "Sky Captain", 250,
+        Set.of(Biome.PLAINS, Biome.MEADOW, Biome.SUNFLOWER_PLAINS, Biome.SAVANNA)),
     // ── Nether Structures ──
     CRIMSON_CITADEL("Crimson Citadel", World.Environment.NETHER, LegendaryTier.EPIC,
         40, 30, 40, true, "Crimson Warlord", 350,
@@ -126,7 +138,7 @@ public enum StructureType {
     private final boolean hasBoss;
     private final String bossName;
     private final int bossBaseHP;
-    private final Set<Biome> validBiomes; // null = any biome in that dimension
+    private final Set<Biome> validBiomes;
 
     StructureType(String displayName, World.Environment dimension, LegendaryTier lootTier,
                   int sizeX, int sizeY, int sizeZ,
@@ -159,7 +171,6 @@ public enum StructureType {
         return validBiomes == null || validBiomes.contains(biome);
     }
 
-    /** Get the generation weight (rarity). Higher tier = rarer. */
     public double getGenerationChance() {
         return switch (lootTier) {
             case COMMON -> 0.008;
@@ -170,7 +181,6 @@ public enum StructureType {
         };
     }
 
-    /** Get all structures for a given dimension. */
     public static StructureType[] byDimension(World.Environment env) {
         java.util.List<StructureType> list = new java.util.ArrayList<>();
         for (StructureType st : values()) {

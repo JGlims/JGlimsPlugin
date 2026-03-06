@@ -21,8 +21,11 @@ import java.util.*;
 
 /**
  * Central event manager. Schedules periodic checks for Nether Storm,
- * Piglin Uprising, and Void Collapse. Provides shared utility methods
- * for boss spawning, loot drops, announcements, and particle effects.
+ * Piglin Uprising, Void Collapse, and manages the End Rift trigger.
+ * Provides shared utility methods for boss spawning, loot drops,
+ * announcements, and particle effects.
+ *
+ * Phase 20: Added EndRiftEvent integration (dragon-death trigger).
  */
 public class EventManager {
 
@@ -42,6 +45,9 @@ public class EventManager {
     private NetherStormEvent netherStorm;
     private PiglinUprisingEvent piglinUprising;
     private VoidCollapseEvent voidCollapse;
+    private PillagerWarPartyEvent pillagerWarParty;
+    private PillagerSiegeEvent pillagerSiege;
+    private EndRiftEvent endRift;
 
     public EventManager(JGlimsPlugin plugin) {
         this.plugin = plugin;
@@ -58,8 +64,11 @@ public class EventManager {
         netherStorm = new NetherStormEvent(plugin, this);
         piglinUprising = new PiglinUprisingEvent(plugin, this);
         voidCollapse = new VoidCollapseEvent(plugin, this);
+        pillagerWarParty = new PillagerWarPartyEvent(plugin, this);
+        pillagerSiege = new PillagerSiegeEvent(plugin, this);
+        endRift = new EndRiftEvent(plugin, this);
         startScheduler();
-        plugin.getLogger().info("Event system loaded (Nether Storm, Piglin Uprising, Void Collapse).");
+        plugin.getLogger().info("Event system loaded (Nether Storm, Piglin Uprising, Void Collapse, End Rift).");
     }
 
     private void startScheduler() {
@@ -67,12 +76,37 @@ public class EventManager {
         new BukkitRunnable() {
             @Override
             public void run() {
+                checkOverworldEvents();
                 checkNetherEvents();
                 checkEndEvents();
             }
         }.runTaskTimer(plugin, 1200L, 1200L);
     }
 
+
+    private void checkOverworldEvents() {
+        for (World world : plugin.getServer().getWorlds()) {
+            if (world.getEnvironment() != World.Environment.NORMAL) continue;
+            if (world.getPlayers().isEmpty()) continue;
+            if (isEventActive(world.getName())) continue;
+            if (isOnCooldown(world.getName())) continue;
+
+            // Pillager War Party: 6% chance per check
+            if (random.nextDouble() < 0.06) {
+                startEvent(world, "PILLAGER_WAR_PARTY");
+                pillagerWarParty.start(world);
+                return;
+            }
+            // Pillager Siege: 4% chance per check (night only)
+            if (world.getTime() >= 13000 && world.getTime() <= 23000) {
+                if (random.nextDouble() < 0.04) {
+                    startEvent(world, "PILLAGER_SIEGE");
+                    pillagerSiege.start(world);
+                    return;
+                }
+            }
+        }
+    }
     private void checkNetherEvents() {
         for (World world : plugin.getServer().getWorlds()) {
             if (world.getEnvironment() != World.Environment.NETHER) continue;
@@ -111,7 +145,30 @@ public class EventManager {
         }
     }
 
-    // ── Event state management ──
+    /**
+     * Called when the Ender Dragon dies. Attempts to trigger the End Rift event
+     * in the overworld. Returns true if the rift opened.
+     */
+    public boolean tryTriggerEndRift() {
+        if (endRift.isActive()) return false;
+        // Check if any overworld already has an active event
+        for (World w : plugin.getServer().getWorlds()) {
+            if (w.getEnvironment() == World.Environment.NORMAL && isEventActive(w.getName())) {
+                return false;
+            }
+        }
+        boolean triggered = endRift.tryTrigger();
+        if (triggered) {
+            // Find the overworld and mark it as having an active event
+            plugin.getServer().getWorlds().stream()
+                    .filter(w -> w.getEnvironment() == World.Environment.NORMAL)
+                    .findFirst()
+                    .ifPresent(w -> startEvent(w, "END_RIFT"));
+        }
+        return triggered;
+    }
+
+    //  Event state management 
 
     public void startEvent(World world, String eventType) {
         activeEvents.put(world.getName(), System.currentTimeMillis());
@@ -136,7 +193,7 @@ public class EventManager {
         return (System.currentTimeMillis() - endTime) < EVENT_COOLDOWN_MS;
     }
 
-    // ── Shared utilities ──
+    //  Shared utilities 
 
     /**
      * Broadcast a dramatic event message to all players in a world.
@@ -243,7 +300,7 @@ public class EventManager {
         center.getWorld().spawnParticle(particle, center, count, radius, radius / 2, radius);
     }
 
-    // ── Getters ──
+    //  Getters 
     public JGlimsPlugin getPlugin() { return plugin; }
     public Random getRandom() { return random; }
     public NamespacedKey getKeyEventBoss() { return KEY_EVENT_BOSS; }
@@ -251,4 +308,7 @@ public class EventManager {
     public NetherStormEvent getNetherStorm() { return netherStorm; }
     public PiglinUprisingEvent getPiglinUprising() { return piglinUprising; }
     public VoidCollapseEvent getVoidCollapse() { return voidCollapse; }
+    public PillagerWarPartyEvent getPillagerWarParty() { return pillagerWarParty; }
+    public PillagerSiegeEvent getPillagerSiege() { return pillagerSiege; }
+    public EndRiftEvent getEndRift() { return endRift; }
 }

@@ -19,6 +19,8 @@ import com.jglims.plugin.enchantments.SoulboundListener;
 import com.jglims.plugin.events.EventManager;
 import com.jglims.plugin.guilds.GuildListener;
 import com.jglims.plugin.guilds.GuildManager;
+import com.jglims.plugin.legendary.InfinityGauntletManager;
+import com.jglims.plugin.legendary.InfinityStoneManager;
 import com.jglims.plugin.legendary.LegendaryAbilityListener;
 import com.jglims.plugin.legendary.LegendaryArmorListener;
 import com.jglims.plugin.legendary.LegendaryArmorManager;
@@ -90,6 +92,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private PowerUpManager powerUpManager;
     private EventManager eventManager;
     private StructureManager structureManager;
+    private InfinityStoneManager infinityStoneManager;
+    private InfinityGauntletManager infinityGauntletManager;
 
     @Override
     public void onEnable() {
@@ -115,6 +119,8 @@ public class JGlimsPlugin extends JavaPlugin {
 
         legendaryWeaponManager = new LegendaryWeaponManager(this);
         legendaryArmorManager = new LegendaryArmorManager(this);
+        infinityStoneManager = new InfinityStoneManager(this);
+        infinityGauntletManager = new InfinityGauntletManager(this, infinityStoneManager);
         powerUpManager = new PowerUpManager(this);
         structureManager = new StructureManager(this);
         eventManager = new EventManager(this);
@@ -123,7 +129,8 @@ public class JGlimsPlugin extends JavaPlugin {
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
                 battleSwordManager, battlePickaxeManager, battleTridentManager,
-                battleSpearManager, battleShovelManager, spearManager);
+                battleSpearManager, battleShovelManager, spearManager,
+                infinityStoneManager, infinityGauntletManager);
         recipeManager.registerAllRecipes();
         VanillaRecipeRemover.remove(this);
 
@@ -135,7 +142,9 @@ public class JGlimsPlugin extends JavaPlugin {
         bossMasteryManager = new BossMasteryManager(this);
 
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new AnvilRecipeListener(this, enchantManager, legendaryWeaponManager), this);
+        AnvilRecipeListener anvilListener = new AnvilRecipeListener(this, enchantManager, legendaryWeaponManager);
+        if (infinityStoneManager != null) anvilListener.setInfinityStoneManager(infinityStoneManager);
+        pm.registerEvents(anvilListener, this);
         pm.registerEvents(new EnchantmentEffectListener(this, enchantManager), this);
         pm.registerEvents(new SoulboundListener(this, enchantManager), this);
         pm.registerEvents(new BlessingListener(this, blessingManager), this);
@@ -167,6 +176,10 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(eventManager.getNetherStorm(), this);
         pm.registerEvents(eventManager.getPiglinUprising(), this);
         pm.registerEvents(eventManager.getVoidCollapse(), this);
+        pm.registerEvents(eventManager.getPillagerWarParty(), this);
+        pm.registerEvents(eventManager.getPillagerSiege(), this);
+        pm.registerEvents(eventManager.getEndRift(), this);
+        pm.registerEvents(infinityGauntletManager, this);
 
         getLogger().info("Legendary armor system loaded: " + LegendaryArmorSet.values().length + " sets.");
         for (LegendaryTier tier : LegendaryTier.values()) {
@@ -174,9 +187,12 @@ public class JGlimsPlugin extends JavaPlugin {
             if (tierWeapons.length > 0) getLogger().info("  " + tier.getId() + ": " + tierWeapons.length + " weapons");
         }
         getLogger().info("Legendary weapon system loaded: " + LegendaryWeapon.values().length + " weapons across " + LegendaryTier.values().length + " tiers.");
+        getLogger().info("Infinity Stone system loaded: " + InfinityStoneManager.StoneType.values().length + " stones.");
+        getLogger().info("Infinity Gauntlet system loaded.");
         getLogger().info("Power-up system loaded.");
         getLogger().info("Boss mastery title system loaded.");
         getLogger().info("Structure generation system loaded (" + com.jglims.plugin.structures.StructureType.values().length + " structure types).");
+        getLogger().info("Event system loaded: Nether Storm, Piglin Uprising, Void Collapse, End Rift.");
 
         if (configManager.isPaleGardenFogEnabled()) new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         if (configManager.isBloodMoonEnabled()) bloodMoonManager.startScheduler();
@@ -209,7 +225,7 @@ public class JGlimsPlugin extends JavaPlugin {
         if (!command.getName().equalsIgnoreCase("jglims")) return false;
         if (args.length == 0) {
             sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|help>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|help>", NamedTextColor.YELLOW));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -222,6 +238,7 @@ public class JGlimsPlugin extends JavaPlugin {
             case "armor" -> handleArmorCommand(sender, args);
             case "powerup" -> handlePowerUpCommand(sender, args);
             case "bosstitles" -> { if (sender instanceof Player player) bossMasteryManager.showBossTitles(player); else sender.sendMessage(Component.text("Only players can view boss titles.", NamedTextColor.RED)); }
+            case "gauntlet" -> handleGauntletCommand(sender, args);
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -233,10 +250,57 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims armor <set|list> [slot]", NamedTextColor.YELLOW).append(Component.text(" - Give/list legendary armor (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims powerup <type|stats> [player]", NamedTextColor.YELLOW).append(Component.text(" - Give power-ups / view stats (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims bosstitles", NamedTextColor.YELLOW).append(Component.text(" - View boss mastery titles", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
             }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, help", NamedTextColor.RED));
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, help", NamedTextColor.RED));
         }
         return true;
+    }
+
+    private void handleGauntletCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can receive items.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims gauntlet <glove|gauntlet|stone <type>|fragment <type>>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Stone types: power, space, reality, soul, time, mind", NamedTextColor.GRAY));
+            return;
+        }
+        switch (args[1].toLowerCase()) {
+            case "glove" -> {
+                player.getInventory().addItem(infinityGauntletManager.createThanosGlove());
+                player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                        .append(Component.text("Thanos Glove", TextColor.color(200, 150, 50)).decorate(TextDecoration.BOLD)));
+            }
+            case "gauntlet" -> {
+                player.getInventory().addItem(infinityGauntletManager.createInfinityGauntlet());
+                player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                        .append(Component.text("Infinity Gauntlet", TextColor.color(255, 215, 0)).decorate(TextDecoration.BOLD)));
+            }
+            case "stone" -> {
+                if (args.length < 3) { sender.sendMessage(Component.text("Specify stone type: power, space, reality, soul, time, mind", NamedTextColor.RED)); return; }
+                InfinityStoneManager.StoneType type = getStoneTypeFromArg(args[2]);
+                if (type == null) { sender.sendMessage(Component.text("Unknown stone type: " + args[2], NamedTextColor.RED)); return; }
+                player.getInventory().addItem(infinityStoneManager.createFinishedStone(type));
+                player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                        .append(Component.text(type.getDisplayName(), type.getColor()).decorate(TextDecoration.BOLD)));
+            }
+            case "fragment" -> {
+                if (args.length < 3) { sender.sendMessage(Component.text("Specify stone type: power, space, reality, soul, time, mind", NamedTextColor.RED)); return; }
+                InfinityStoneManager.StoneType type = getStoneTypeFromArg(args[2]);
+                if (type == null) { sender.sendMessage(Component.text("Unknown stone type: " + args[2], NamedTextColor.RED)); return; }
+                player.getInventory().addItem(infinityStoneManager.createFragment(type));
+                player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                        .append(Component.text(type.getDisplayName() + " Fragment", type.getColor()).decorate(TextDecoration.BOLD)));
+            }
+            default -> sender.sendMessage(Component.text("Unknown sub: glove, gauntlet, stone <type>, fragment <type>", NamedTextColor.RED));
+        }
+    }
+
+    private InfinityStoneManager.StoneType getStoneTypeFromArg(String arg) {
+        for (InfinityStoneManager.StoneType t : InfinityStoneManager.StoneType.values()) {
+            if (t.getId().equalsIgnoreCase(arg)) return t;
+        }
+        return null;
     }
 
     private void handleLegendaryCommand(CommandSender sender, String[] args) {
@@ -319,12 +383,8 @@ public class JGlimsPlugin extends JavaPlugin {
             if (args.length >= 3) {
                 target = getServer().getPlayer(args[2]);
                 if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return; }
-            } else if (sender instanceof Player p) {
-                target = p;
-            } else {
-                sender.sendMessage(Component.text("Usage: /jglims powerup stats <player>", NamedTextColor.RED));
-                return;
-            }
+            } else if (sender instanceof Player p) { target = p; }
+            else { sender.sendMessage(Component.text("Usage: /jglims powerup stats <player>", NamedTextColor.RED)); return; }
             powerUpManager.showPowerUpStats(target);
             return;
         }
@@ -332,12 +392,8 @@ public class JGlimsPlugin extends JavaPlugin {
         if (args.length >= 3) {
             target = getServer().getPlayer(args[2]);
             if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return; }
-        } else if (sender instanceof Player p) {
-            target = p;
-        } else {
-            sender.sendMessage(Component.text("Usage: /jglims powerup <type> <player>", NamedTextColor.RED));
-            return;
-        }
+        } else if (sender instanceof Player p) { target = p; }
+        else { sender.sendMessage(Component.text("Usage: /jglims powerup <type> <player>", NamedTextColor.RED)); return; }
         ItemStack powerUp = switch (args[1].toLowerCase()) {
             case "heart" -> powerUpManager.createHeartCrystal();
             case "soul" -> powerUpManager.createSoulFragment();
@@ -380,4 +436,6 @@ public class JGlimsPlugin extends JavaPlugin {
     public BossMasteryManager getBossMasteryManager() { return bossMasteryManager; }
     public EventManager getEventManager() { return eventManager; }
     public StructureManager getStructureManager() { return structureManager; }
+    public InfinityStoneManager getInfinityStoneManager() { return infinityStoneManager; }
+    public InfinityGauntletManager getInfinityGauntletManager() { return infinityGauntletManager; }
 }

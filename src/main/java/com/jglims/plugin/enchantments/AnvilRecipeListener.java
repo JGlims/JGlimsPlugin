@@ -2,6 +2,7 @@ package com.jglims.plugin.enchantments;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.legendary.LegendaryWeaponManager;
+import com.jglims.plugin.legendary.InfinityStoneManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -32,6 +33,7 @@ public class AnvilRecipeListener implements Listener {
     private final CustomEnchantManager enchantManager;
     private final LegendaryWeaponManager legendaryWeaponManager;
     private final Map<EnchantmentType, AnvilRecipe> recipes = new EnumMap<>(EnchantmentType.class);
+    private InfinityStoneManager infinityStoneManager;
     private final NamespacedKey superTierKey;
 
     public AnvilRecipeListener(JGlimsPlugin plugin, CustomEnchantManager enchantManager,
@@ -43,6 +45,10 @@ public class AnvilRecipeListener implements Listener {
         registerRecipes();
     }
 
+
+    public void setInfinityStoneManager(InfinityStoneManager infinityStoneManager) {
+        this.infinityStoneManager = infinityStoneManager;
+    }
     private void registerRecipes() {
         // ===================== SWORD =====================
         recipes.put(EnchantmentType.VAMPIRISM,       new AnvilRecipe(Enchantment.SHARPNESS, Material.NETHERITE_SCRAP, true, 5));
@@ -522,4 +528,18 @@ public class AnvilRecipeListener implements Listener {
     }
 
     private record AnvilRecipe(Enchantment requiredEnchant, Material ingredient, boolean levelMatches, int maxLevel) {}
+    // Infinity Stone catalyst materials for anvil forging
+    private Material getInfinityStoneCatalyst(String stoneType) {
+        if (stoneType == null) return null;
+        return switch (stoneType) {
+            case "POWER"   -> Material.CRYING_OBSIDIAN;      // Power = Crying Obsidian
+            case "TIME"    -> Material.CLOCK;                 // Time = Clock
+            case "SPACE"   -> Material.ENDER_EYE;            // Space = Eye of Ender
+            case "REALITY" -> Material.REDSTONE_BLOCK;       // Reality = Redstone Block
+            case "MIND"    -> Material.LAPIS_BLOCK;          // Mind = Lapis Block
+            case "SOUL"    -> Material.GHAST_TEAR;           // Soul = Ghast Tear
+            default -> null;
+        };
+    }
+
 }
