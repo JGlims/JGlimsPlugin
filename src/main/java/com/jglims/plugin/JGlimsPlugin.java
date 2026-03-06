@@ -7,6 +7,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.jglims.plugin.abyss.AbyssDimensionManager;
+import com.jglims.plugin.abyss.AbyssDragonBoss;
 import com.jglims.plugin.blessings.BlessingListener;
 import com.jglims.plugin.blessings.BlessingManager;
 import com.jglims.plugin.config.ConfigManager;
@@ -92,6 +94,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private PowerUpManager powerUpManager;
     private EventManager eventManager;
     private StructureManager structureManager;
+    private AbyssDimensionManager abyssDimensionManager;
+    private AbyssDragonBoss abyssDragonBoss;
     private InfinityStoneManager infinityStoneManager;
     private InfinityGauntletManager infinityGauntletManager;
 
@@ -123,6 +127,9 @@ public class JGlimsPlugin extends JavaPlugin {
         infinityGauntletManager = new InfinityGauntletManager(this, infinityStoneManager);
         powerUpManager = new PowerUpManager(this);
         structureManager = new StructureManager(this);
+        abyssDimensionManager = new AbyssDimensionManager(this);
+        abyssDimensionManager.initialize();
+        abyssDragonBoss = new AbyssDragonBoss(this, abyssDimensionManager);
         eventManager = new EventManager(this);
         eventManager.initialize();
 
@@ -176,6 +183,8 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(eventManager.getNetherStorm(), this);
         pm.registerEvents(eventManager.getPiglinUprising(), this);
         pm.registerEvents(eventManager.getVoidCollapse(), this);
+        pm.registerEvents(abyssDimensionManager, this);
+        pm.registerEvents(abyssDragonBoss, this);
         pm.registerEvents(eventManager.getPillagerWarParty(), this);
         pm.registerEvents(eventManager.getPillagerSiege(), this);
         pm.registerEvents(eventManager.getEndRift(), this);
@@ -436,6 +445,8 @@ public class JGlimsPlugin extends JavaPlugin {
     public BossMasteryManager getBossMasteryManager() { return bossMasteryManager; }
     public EventManager getEventManager() { return eventManager; }
     public StructureManager getStructureManager() { return structureManager; }
+    public AbyssDimensionManager getAbyssDimensionManager() { return abyssDimensionManager; }
+    public AbyssDragonBoss getAbyssDragonBoss() { return abyssDragonBoss; }
     public InfinityStoneManager getInfinityStoneManager() { return infinityStoneManager; }
     public InfinityGauntletManager getInfinityGauntletManager() { return infinityGauntletManager; }
 }

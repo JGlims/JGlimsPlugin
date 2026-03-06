@@ -84,9 +84,17 @@ public enum LegendaryWeapon {
     RIVERS_OF_BLOOD("rivers_of_blood", "Rivers of Blood", Material.DIAMOND_SWORD, 19, 30056, LegendaryTier.MYTHIC, "rivers_of_blood", "Corpse Piler", "Blood Tsunami", 10, 40),
     DRAGON_SLAYING_BLADE("dragon_slaying_blade", "Dragon Slaying Blade", Material.DIAMOND_SWORD, 20, 30057, LegendaryTier.MYTHIC, "dragon_slaying_blade", "Dragon Pierce", "Slayer's Fury", 12, 50),
     STOP_SIGN("stop_sign", "Stop Sign", Material.DIAMOND_AXE, 18, 30058, LegendaryTier.MYTHIC, "stop_sign", "Full Stop", "Road Rage", 10, 35),
-    CREATION_SPLITTER("creation_splitter", "Creation Splitter", Material.DIAMOND_SWORD, 22, 30059, LegendaryTier.MYTHIC, "creation_splitter", "Reality Cleave", "Genesis Break", 15, 60);
+    CREATION_SPLITTER("creation_splitter", "Creation Splitter", Material.DIAMOND_SWORD, 22, 30059, LegendaryTier.MYTHIC, "creation_splitter", "Reality Cleave", "Genesis Break", 15, 60),
 
-    // ABYSSAL TIER - Weapons #60-63 added in Phase 16
+    // ================================================================
+    // ABYSSAL TIER (damage 22-30, PCD 12-18s, ACD 45-90s, 200 particles)
+    // ================================================================
+    REQUIEM_AWAKENED("requiem_awakened", "Requiem of the Ninth Abyss (Awakened)", Material.DIAMOND_SWORD, 28, 30060, LegendaryTier.ABYSSAL, "requiem_awakened", "Abyssal Devour", "Void Collapse", 14, 75),
+    EXCALIBUR_AWAKENED("excalibur_awakened", "True Excalibur (Awakened)", Material.DIAMOND_SWORD, 26, 30061, LegendaryTier.ABYSSAL, "excalibur_awakened", "Divine Annihilation", "Sacred Realm", 13, 70),
+    CREATION_SPLITTER_AWAKENED("creation_splitter_awakened", "Creation Splitter (Awakened)", Material.DIAMOND_SWORD, 30, 30062, LegendaryTier.ABYSSAL, "creation_splitter_awakened", "Reality Shatter", "Big Bang", 18, 90),
+    WHISPERWIND_AWAKENED("whisperwind_awakened", "Whisperwind (Awakened)", Material.DIAMOND_SWORD, 24, 30063, LegendaryTier.ABYSSAL, "whisperwind_awakened", "Silent Storm", "Phantom Cyclone", 12, 60);
+
+
 
     private final String id;
     private final String displayName;

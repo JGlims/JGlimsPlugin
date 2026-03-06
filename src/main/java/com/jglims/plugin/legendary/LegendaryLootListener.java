@@ -27,6 +27,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.loot.LootTable;
 
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.abyss.AbyssDimensionManager;
 import com.jglims.plugin.mobs.BloodMoonManager;
 
 import net.kyori.adventure.text.Component;
@@ -268,6 +269,17 @@ public class LegendaryLootListener implements Listener {
                             .append(Component.text(" (DMG " + w.getBaseDamage() + ")", NamedTextColor.GRAY)));
                 }
                 p.sendMessage(Component.empty());
+            }
+            // Drop Abyssal Key (100% guaranteed)
+            AbyssDimensionManager adm = plugin.getAbyssDimensionManager();
+            if (adm != null) {
+                chest.getInventory().setItem(22, adm.createAbyssalKey());
+                plugin.getLogger().info("Abyssal Key placed in Dragon death chest.");
+                for (Player pk : Bukkit.getOnlinePlayers()) {
+                    pk.sendMessage(Component.text("  \u2726 An ", NamedTextColor.GRAY)
+                            .append(Component.text("Abyssal Key", net.kyori.adventure.text.format.TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD))
+                            .append(Component.text(" was found in the chest!", NamedTextColor.GRAY)));
+                }
             }
             plugin.getLogger().info("Dragon death chest placed with " + selected.size() + " MYTHIC weapons.");
         }, 5L);
