@@ -35,13 +35,15 @@ import net.kyori.adventure.text.format.TextDecoration;
 
 /**
  * LegendaryLootListener - boss drops and structure chest legendary injection.
- * v3.0.0 Phase 8c - Rewritten for 5-tier drop tables.
+ * v3.2.0 Phase 10 - Added weapons #45-59 to drop tables.
  */
 public class LegendaryLootListener implements Listener {
 
     private final JGlimsPlugin plugin;
     private final LegendaryWeaponManager weaponManager;
     private final BloodMoonManager bloodMoonManager;
+
+    // ── BOSS DROP POOLS ──
 
     private static final LegendaryWeapon[] ELDER_GUARDIAN_POOL = {
             LegendaryWeapon.OCEANS_RAGE
@@ -58,12 +60,29 @@ public class LegendaryLootListener implements Listener {
             LegendaryWeapon.SOLSTICE
     };
 
+    // Ender Dragon death chest: original MYTHIC + new MYTHIC dragon-drop weapons
     private static final LegendaryWeapon[] DRAGON_DEATH_CHEST_POOL = {
+            // Original MYTHIC
             LegendaryWeapon.PHOENIXS_GRACE, LegendaryWeapon.TRUE_EXCALIBUR,
             LegendaryWeapon.REQUIEM_NINTH_ABYSS, LegendaryWeapon.ZENITH,
             LegendaryWeapon.PHANTOMGUARD, LegendaryWeapon.VALHAKYRA,
             LegendaryWeapon.DRAGON_SWORD, LegendaryWeapon.SOUL_COLLECTOR,
-            LegendaryWeapon.NOCTURNE
+            LegendaryWeapon.NOCTURNE,
+            // Phase 10: new MYTHIC #45-59 (dragon drops)
+            LegendaryWeapon.DIVINE_AXE_RHITTA,
+            LegendaryWeapon.EDGE_ASTRAL_PLANE,
+            LegendaryWeapon.HEAVENLY_PARTISAN,
+            LegendaryWeapon.MJOLNIR,
+            LegendaryWeapon.RIVERS_OF_BLOOD
+    };
+
+    // End Rift boss pool (Phase 10)
+    private static final LegendaryWeapon[] END_RIFT_POOL = {
+            LegendaryWeapon.TENGENS_BLADE,
+            LegendaryWeapon.SOUL_DEVOURER,
+            LegendaryWeapon.STAR_EDGE,
+            LegendaryWeapon.CREATION_SPLITTER,
+            LegendaryWeapon.STOP_SIGN
     };
 
     private static final LegendaryWeapon[] BLOOD_MOON_RARE_POOL = {
@@ -75,13 +94,22 @@ public class LegendaryLootListener implements Listener {
             LegendaryWeapon.DEMONS_BLOOD_BLADE
     };
 
+    // ── STRUCTURE LOOT ──
+
     private record StructureLoot(String lootTableContains, double chance, LegendaryWeapon[] pool) {}
 
     private static final StructureLoot[] STRUCTURE_LOOT = {
+            // End City chests: original MYTHIC + new MYTHIC end-city weapons
             new StructureLoot("end_city", 0.15, new LegendaryWeapon[]{
                     LegendaryWeapon.VALHAKYRA, LegendaryWeapon.PHANTOMGUARD,
                     LegendaryWeapon.ZENITH, LegendaryWeapon.DRAGON_SWORD,
-                    LegendaryWeapon.SOUL_COLLECTOR, LegendaryWeapon.NOCTURNE}),
+                    LegendaryWeapon.SOUL_COLLECTOR, LegendaryWeapon.NOCTURNE,
+                    // Phase 10: new End City drops
+                    LegendaryWeapon.YORU,
+                    LegendaryWeapon.FALLEN_GODS_SPEAR,
+                    LegendaryWeapon.NATURE_SWORD,
+                    LegendaryWeapon.THOUSAND_DEMON_DAGGERS,
+                    LegendaryWeapon.DRAGON_SLAYING_BLADE}),
             new StructureLoot("nether_bridge", 0.12, new LegendaryWeapon[]{
                     LegendaryWeapon.MURAMASA, LegendaryWeapon.ACIDIC_CLEAVER}),
             new StructureLoot("bastion", 0.12, new LegendaryWeapon[]{
@@ -127,6 +155,8 @@ public class LegendaryLootListener implements Listener {
         this.bloodMoonManager = bloodMoonManager;
     }
 
+    // ── STRUCTURE CHEST INJECTION ──
+
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onLootGenerate(LootGenerateEvent event) {
         LootTable lootTable = event.getLootTable();
@@ -149,6 +179,8 @@ public class LegendaryLootListener implements Listener {
         }
     }
 
+    // ── BOSS DEATH DROPS ──
+
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
@@ -156,6 +188,9 @@ public class LegendaryLootListener implements Listener {
         if (entity instanceof ElderGuardian) { dropFromPool(event, ELDER_GUARDIAN_POOL, 1, 1, "Elder Guardian"); return; }
         if (entity instanceof Warden) { dropFromPool(event, WARDEN_POOL, 1, 2, "Warden"); return; }
         if (entity instanceof Wither) { dropFromPool(event, WITHER_POOL, 1, 2, "Wither"); return; }
+        // End Rift boss drops (checked via custom name tag)
+        if (isEndRiftBoss(entity)) { dropFromPool(event, END_RIFT_POOL, 1, 2, "End Rift Dragon"); return; }
+        // Blood Moon King
         if (bloodMoonManager.isBloodMoonKing(entity)) {
             ThreadLocalRandom rand = ThreadLocalRandom.current();
             LegendaryWeapon rareWeapon = BLOOD_MOON_RARE_POOL[rand.nextInt(BLOOD_MOON_RARE_POOL.length)];
@@ -167,6 +202,20 @@ public class LegendaryLootListener implements Listener {
                 if (epicItem != null) { event.getDrops().add(epicItem); announceWeaponDrop(epicWeapon, "Blood Moon King", entity.getLocation()); }
             }
         }
+    }
+
+    /**
+     * Checks if the entity is an End Rift boss.
+     * Uses custom name tag to identify - End Rift bosses are tagged "End Rift Dragon"
+     * when spawned by the End Rift event system (Phase 12+).
+     * For now this acts as a forward-compatible hook.
+     */
+    private boolean isEndRiftBoss(LivingEntity entity) {
+        Component name = entity.customName();
+        if (name == null) return false;
+        // Adventure API plain text serialization
+        String plain = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(name);
+        return plain.contains("End Rift Dragon");
     }
 
     private void dropFromPool(EntityDeathEvent event, LegendaryWeapon[] pool, int min, int max, String bossName) {
@@ -181,6 +230,8 @@ public class LegendaryLootListener implements Listener {
         }
     }
 
+    // ── DRAGON DEATH CHEST ──
+
     private void handleDragonDeathChest(LivingEntity dragon) {
         Location loc = dragon.getLocation();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -193,7 +244,7 @@ public class LegendaryLootListener implements Listener {
                 return;
             }
             ThreadLocalRandom rand = ThreadLocalRandom.current();
-            int count = rand.nextInt(2, 4);
+            int count = rand.nextInt(2, 4); // 2-3 weapons
             List<LegendaryWeapon> pool = new ArrayList<>(Arrays.asList(DRAGON_DEATH_CHEST_POOL));
             List<LegendaryWeapon> selected = new ArrayList<>();
             for (int i = 0; i < count && !pool.isEmpty(); i++) {
@@ -204,9 +255,13 @@ public class LegendaryLootListener implements Listener {
                 ItemStack weaponItem = weaponManager.createWeapon(selected.get(i));
                 if (weaponItem != null) chest.getInventory().setItem(slots[i], weaponItem);
             }
+
+            // VFX
             loc.getWorld().spawnParticle(Particle.DRAGON_BREATH, chestLoc.clone().add(0.5, 1, 0.5), 100, 1, 2, 1, 0.05);
             loc.getWorld().spawnParticle(Particle.END_ROD, chestLoc.clone().add(0.5, 2, 0.5), 50, 0.5, 3, 0.5, 0.02);
             loc.getWorld().playSound(chestLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 1.0f);
+
+            // Broadcast
             for (Player p : Bukkit.getOnlinePlayers()) {
                 p.sendMessage(Component.empty());
                 p.sendMessage(Component.text("  \u2726 ", NamedTextColor.DARK_PURPLE)
@@ -236,6 +291,8 @@ public class LegendaryLootListener implements Listener {
             if (weaponItem != null) loc.getWorld().dropItemNaturally(loc, weaponItem);
         }
     }
+
+    // ── ANNOUNCEMENTS ──
 
     private void announceWeaponDrop(LegendaryWeapon weapon, String source, Location loc) {
         for (Player p : Bukkit.getOnlinePlayers()) {

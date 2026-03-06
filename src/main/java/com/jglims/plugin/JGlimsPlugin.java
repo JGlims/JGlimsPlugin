@@ -24,9 +24,13 @@ import com.jglims.plugin.legendary.LegendaryTier;
 import com.jglims.plugin.legendary.LegendaryWeapon;
 import com.jglims.plugin.legendary.LegendaryWeaponManager;
 import com.jglims.plugin.mobs.BloodMoonManager;
+import com.jglims.plugin.mobs.BossMasteryManager;
 import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.mobs.MobDifficultyManager;
+import com.jglims.plugin.powerups.PowerUpListener;
+import com.jglims.plugin.structures.StructureManager;
+import com.jglims.plugin.powerups.PowerUpManager;
 import com.jglims.plugin.utility.BestBuddiesListener;
 import com.jglims.plugin.utility.DropRateListener;
 import com.jglims.plugin.utility.EnchantTransferListener;
@@ -77,6 +81,9 @@ public class JGlimsPlugin extends JavaPlugin {
     private BloodMoonManager bloodMoonManager;
     private WeaponMasteryManager weaponMasteryManager;
     private GuildManager guildManager;
+    private BossMasteryManager bossMasteryManager;
+    private PowerUpManager powerUpManager;
+    private StructureManager structureManager;
 
     @Override
     public void onEnable() {
@@ -101,6 +108,8 @@ public class JGlimsPlugin extends JavaPlugin {
         battleShovelManager = new BattleShovelManager(this, configManager);
 
         legendaryWeaponManager = new LegendaryWeaponManager(this);
+        powerUpManager = new PowerUpManager(this);
+        structureManager = new StructureManager(this);
 
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
@@ -114,6 +123,7 @@ public class JGlimsPlugin extends JavaPlugin {
         bloodMoonManager = new BloodMoonManager(this, configManager);
         weaponMasteryManager = new WeaponMasteryManager(this, configManager);
         guildManager = new GuildManager(this, configManager);
+        bossMasteryManager = new BossMasteryManager(this);
 
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new AnvilRecipeListener(this, enchantManager, legendaryWeaponManager), this);
@@ -136,16 +146,23 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(weaponMasteryManager, this);
         pm.registerEvents(bloodMoonManager, this);
         pm.registerEvents(new GuildListener(this, guildManager), this);
+        pm.registerEvents(bossMasteryManager, this);
         pm.registerEvents(new WeaponAbilityListener(this, configManager, enchantManager, superToolManager, spearManager, battleShovelManager, guildManager), this);
         pm.registerEvents(new BestBuddiesListener(this, configManager), this);
         pm.registerEvents(new LegendaryAbilityListener(this, configManager, legendaryWeaponManager, guildManager), this);
         pm.registerEvents(new LegendaryLootListener(this, legendaryWeaponManager, bloodMoonManager), this);
+        pm.registerEvents(new PowerUpListener(this, powerUpManager), this);
+        pm.registerEvents(structureManager, this);
+        pm.registerEvents(structureManager.getBossManager(), this);
 
         for (LegendaryTier tier : LegendaryTier.values()) {
             LegendaryWeapon[] tierWeapons = LegendaryWeapon.byTier(tier);
             if (tierWeapons.length > 0) getLogger().info("  " + tier.getId() + ": " + tierWeapons.length + " weapons");
         }
         getLogger().info("Legendary weapon system loaded: " + LegendaryWeapon.values().length + " weapons across " + LegendaryTier.values().length + " tiers.");
+        getLogger().info("Power-up system loaded.");
+        getLogger().info("Boss mastery title system loaded.");
+        getLogger().info("Structure generation system loaded (" + com.jglims.plugin.structures.StructureType.values().length + " structure types).");
 
         if (configManager.isPaleGardenFogEnabled()) new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         if (configManager.isBloodMoonEnabled()) bloodMoonManager.startScheduler();
@@ -178,7 +195,7 @@ public class JGlimsPlugin extends JavaPlugin {
         if (!command.getName().equalsIgnoreCase("jglims")) return false;
         if (args.length == 0) {
             sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|help>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|powerup|bosstitles|help>", NamedTextColor.YELLOW));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -188,6 +205,8 @@ public class JGlimsPlugin extends JavaPlugin {
             case "sort" -> sender.sendMessage(Component.text("Inventory sorting is always active. Shift-click an empty slot in any container to sort!", NamedTextColor.GREEN));
             case "mastery" -> { if (sender instanceof Player player) weaponMasteryManager.showMastery(player); else sender.sendMessage(Component.text("Only players can view mastery.", NamedTextColor.RED)); }
             case "legendary" -> handleLegendaryCommand(sender, args);
+            case "powerup" -> handlePowerUpCommand(sender, args);
+            case "bosstitles" -> { if (sender instanceof Player player) bossMasteryManager.showBossTitles(player); else sender.sendMessage(Component.text("Only players can view boss titles.", NamedTextColor.RED)); }
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -196,8 +215,10 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims sort", NamedTextColor.YELLOW).append(Component.text(" - Sorting info", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims mastery", NamedTextColor.YELLOW).append(Component.text(" - Weapon mastery progress", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims legendary <id|list|tier>", NamedTextColor.YELLOW).append(Component.text(" - Give/list legendary weapons (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims powerup <type|stats> [player]", NamedTextColor.YELLOW).append(Component.text(" - Give power-ups / view stats (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims bosstitles", NamedTextColor.YELLOW).append(Component.text(" - View boss mastery titles", NamedTextColor.GRAY)));
             }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, help", NamedTextColor.RED));
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, powerup, bosstitles, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -239,6 +260,55 @@ public class JGlimsPlugin extends JavaPlugin {
         player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN).append(Component.text("[" + weapon.getTier().getId() + "] ", tierColor)).append(Component.text(weapon.getDisplayName(), tierColor).decorate(TextDecoration.BOLD)));
     }
 
+    private void handlePowerUpCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims powerup <heart|soul|titan|phoenix|keep|stats> [player]", NamedTextColor.YELLOW));
+            return;
+        }
+        // Stats subcommand
+        if (args[1].equalsIgnoreCase("stats")) {
+            Player target;
+            if (args.length >= 3) {
+                target = getServer().getPlayer(args[2]);
+                if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return; }
+            } else if (sender instanceof Player p) {
+                target = p;
+            } else {
+                sender.sendMessage(Component.text("Usage: /jglims powerup stats <player>", NamedTextColor.RED));
+                return;
+            }
+            powerUpManager.showPowerUpStats(target);
+            return;
+        }
+        // Give power-up item
+        Player target;
+        if (args.length >= 3) {
+            target = getServer().getPlayer(args[2]);
+            if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return; }
+        } else if (sender instanceof Player p) {
+            target = p;
+        } else {
+            sender.sendMessage(Component.text("Usage: /jglims powerup <type> <player>", NamedTextColor.RED));
+            return;
+        }
+        ItemStack powerUp = switch (args[1].toLowerCase()) {
+            case "heart" -> powerUpManager.createHeartCrystal();
+            case "soul" -> powerUpManager.createSoulFragment();
+            case "titan" -> powerUpManager.createTitanResolve();
+            case "phoenix" -> powerUpManager.createPhoenixFeather();
+            case "keep" -> powerUpManager.createKeepInventorer();
+            default -> null;
+        };
+        if (powerUp == null) {
+            sender.sendMessage(Component.text("Unknown power-up type: " + args[1], NamedTextColor.RED));
+            sender.sendMessage(Component.text("Types: heart, soul, titan, phoenix, keep, stats", NamedTextColor.YELLOW));
+            return;
+        }
+        target.getInventory().addItem(powerUp);
+        sender.sendMessage(Component.text("Gave power-up to " + target.getName() + "!", NamedTextColor.GREEN));
+    }
+
     public static JGlimsPlugin getInstance() { return instance; }
     public ConfigManager getConfigManager() { return configManager; }
     public CustomEnchantManager getEnchantManager() { return enchantManager; }
@@ -259,4 +329,7 @@ public class JGlimsPlugin extends JavaPlugin {
     public WeaponMasteryManager getWeaponMasteryManager() { return weaponMasteryManager; }
     public BloodMoonManager getBloodMoonManager() { return bloodMoonManager; }
     public GuildManager getGuildManager() { return guildManager; }
+    public PowerUpManager getPowerUpManager() { return powerUpManager; }
+    public BossMasteryManager getBossMasteryManager() { return bossMasteryManager; }
+    public StructureManager getStructureManager() { return structureManager; }
 }
