@@ -30,6 +30,7 @@ import org.bukkit.util.Vector;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.format.TextColor;
 
 /**
  * LegendaryAltAbilities - all 59 alternate (crouch+right-click) ability implementations.
