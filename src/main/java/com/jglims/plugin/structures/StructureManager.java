@@ -513,7 +513,7 @@ public class StructureManager implements Listener {
         b.fillBox(-10, 1, -10, -5, 4, -5, Material.BLACKSTONE);
         b.fillBox(-9, 1, -9, -6, 3, -6, Material.AIR);
         // Chains and lanterns
-        b.setBlock(0, 7, -21, Material.CHAIN);
+        b.setBlock(0, 7, -21, Material.IRON_CHAIN);
         b.setBlock(0, 6, -21, Material.LANTERN);
         b.placeChest(-8, 1, -7);
         b.placeChest(10, 1, 10);

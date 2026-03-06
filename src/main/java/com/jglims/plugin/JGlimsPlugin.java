@@ -29,6 +29,7 @@ import com.jglims.plugin.mobs.BossEnhancer;
 import com.jglims.plugin.mobs.KingMobManager;
 import com.jglims.plugin.mobs.MobDifficultyManager;
 import com.jglims.plugin.powerups.PowerUpListener;
+import com.jglims.plugin.events.EventManager;
 import com.jglims.plugin.structures.StructureManager;
 import com.jglims.plugin.powerups.PowerUpManager;
 import com.jglims.plugin.utility.BestBuddiesListener;
@@ -83,6 +84,7 @@ public class JGlimsPlugin extends JavaPlugin {
     private GuildManager guildManager;
     private BossMasteryManager bossMasteryManager;
     private PowerUpManager powerUpManager;
+    private EventManager eventManager;
     private StructureManager structureManager;
 
     @Override
@@ -110,6 +112,8 @@ public class JGlimsPlugin extends JavaPlugin {
         legendaryWeaponManager = new LegendaryWeaponManager(this);
         powerUpManager = new PowerUpManager(this);
         structureManager = new StructureManager(this);
+        eventManager = new EventManager(this);
+        eventManager.initialize();
 
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
@@ -154,6 +158,9 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(new PowerUpListener(this, powerUpManager), this);
         pm.registerEvents(structureManager, this);
         pm.registerEvents(structureManager.getBossManager(), this);
+        pm.registerEvents(eventManager.getNetherStorm(), this);
+        pm.registerEvents(eventManager.getPiglinUprising(), this);
+        pm.registerEvents(eventManager.getVoidCollapse(), this);
 
         for (LegendaryTier tier : LegendaryTier.values()) {
             LegendaryWeapon[] tierWeapons = LegendaryWeapon.byTier(tier);
@@ -331,5 +338,6 @@ public class JGlimsPlugin extends JavaPlugin {
     public GuildManager getGuildManager() { return guildManager; }
     public PowerUpManager getPowerUpManager() { return powerUpManager; }
     public BossMasteryManager getBossMasteryManager() { return bossMasteryManager; }
+    public EventManager getEventManager() { return eventManager; }
     public StructureManager getStructureManager() { return structureManager; }
 }
