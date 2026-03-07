@@ -36,7 +36,7 @@ public class PowerUpManager {
 
     public static final int MAX_HEART_CRYSTALS = 40;
     public static final int MAX_SOUL_FRAGMENTS = 100;
-    public static final double SOUL_FRAGMENT_DAMAGE_PERCENT = 0.75;
+    public static final double SOUL_FRAGMENT_DAMAGE_PERCENT = 1.0;
     public static final int MAX_TITAN_RESOLVE = 5;
     public static final int MAX_VITALITY_SHARDS = 10;
     public static final double VITALITY_SHARD_DR_PERCENT = 5.0;
@@ -79,7 +79,7 @@ public class PowerUpManager {
         meta.displayName(Component.text("Soul Fragment", TextColor.color(160, 50, 255)).decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(
             Component.text(""),
-            Component.text("Permanently grants +0.75% damage", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("Permanently grants +1.0% damage", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
             Component.text("Auto-consumed on pickup", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false),
             Component.text("Max: " + MAX_SOUL_FRAGMENTS + " (+" + (int)(MAX_SOUL_FRAGMENTS * SOUL_FRAGMENT_DAMAGE_PERCENT) + "% total)", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.ITALIC, false)
         ));
@@ -343,7 +343,7 @@ public class PowerUpManager {
         int titan = pdc.getOrDefault(KEY_TITAN_RESOLVE, PersistentDataType.INTEGER, 0);
         int vitality = pdc.getOrDefault(KEY_VITALITY_SHARDS, PersistentDataType.INTEGER, 0);
         double dr = (titan * 2.0 + vitality * VITALITY_SHARD_DR_PERCENT) / 100.0;
-        return Math.min(dr, 0.70);
+        return Math.min(dr, 0.75);
     }
 
     public boolean hasKeepInventory(Player player) {
