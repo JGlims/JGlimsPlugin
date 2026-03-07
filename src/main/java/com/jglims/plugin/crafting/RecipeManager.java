@@ -29,6 +29,8 @@ import com.jglims.plugin.weapons.SickleManager;
 import com.jglims.plugin.weapons.SpearManager;
 import com.jglims.plugin.weapons.SuperToolManager;
 import com.jglims.plugin.legendary.InfinityStoneManager;
+import com.jglims.plugin.legendary.LegendaryArmorManager;
+import com.jglims.plugin.legendary.LegendaryArmorSet;
 import com.jglims.plugin.legendary.InfinityGauntletManager;
 
 import net.kyori.adventure.text.Component;
@@ -51,6 +53,7 @@ public class RecipeManager implements Listener {
     private final SpearManager spearManager;
     private final InfinityStoneManager infinityStoneManager;
     private final InfinityGauntletManager infinityGauntletManager;
+    private final LegendaryArmorManager legendaryArmorManager;
 
     public RecipeManager(JGlimsPlugin plugin, SickleManager sickleManager,
                          BattleAxeManager battleAxeManager, BattleBowManager battleBowManager,
@@ -58,7 +61,8 @@ public class RecipeManager implements Listener {
                          BattleSwordManager battleSwordManager, BattlePickaxeManager battlePickaxeManager,
                          BattleTridentManager battleTridentManager, BattleSpearManager battleSpearManager,
                          BattleShovelManager battleShovelManager, SpearManager spearManager,
-                         InfinityStoneManager infinityStoneManager, InfinityGauntletManager infinityGauntletManager) {
+                         InfinityStoneManager infinityStoneManager, InfinityGauntletManager infinityGauntletManager,
+                         LegendaryArmorManager legendaryArmorManager) {
         this.plugin = plugin;
         this.sickleManager = sickleManager;
         this.battleAxeManager = battleAxeManager;
@@ -73,6 +77,7 @@ public class RecipeManager implements Listener {
         this.spearManager = spearManager;
         this.infinityStoneManager = infinityStoneManager;
         this.infinityGauntletManager = infinityGauntletManager;
+        this.legendaryArmorManager = legendaryArmorManager;
     }
 
     public void registerAllRecipes() {
@@ -95,6 +100,7 @@ public class RecipeManager implements Listener {
 
         registerSuperToolRecipes();
         registerInfinityGauntlet();
+        registerCraftableArmor();
 
         plugin.getLogger().info("All custom crafting recipes registered (v1.4.0 — added Infinity Gauntlet — fixed Sword/Pickaxe/Shovel Super recipes).");
     }
@@ -468,7 +474,61 @@ public class RecipeManager implements Listener {
         plugin.getServer().addRecipe(recipe);
         plugin.getLogger().info("Registered Infinity Gauntlet crafting recipe.");
     }
+    // =================== CRAFTABLE ARMOR (Phase 15) ===================
+    private void registerCraftableArmor() {
+        if (legendaryArmorManager == null) return;
+        // Reinforced Leather: Leather + String
+        registerArmorSet("reinforced_leather", LegendaryArmorSet.REINFORCED_LEATHER, Material.LEATHER, Material.STRING);
+        // Copper Armor: Copper Ingot + Chain
+        registerArmorSet("copper_armor", LegendaryArmorSet.COPPER_ARMOR, Material.COPPER_INGOT, Material.IRON_BARS);
+        // Chainmail Reinforced: Iron Nugget + Chain
+        registerArmorSet("chainmail_reinforced", LegendaryArmorSet.CHAINMAIL_REINFORCED, Material.IRON_NUGGET, Material.IRON_BARS);
+        // Amethyst Armor: Amethyst Shard + Iron Ingot
+        registerArmorSet("amethyst_armor", LegendaryArmorSet.AMETHYST_ARMOR, Material.AMETHYST_SHARD, Material.IRON_INGOT);
+        // Bone Armor: Bone + Iron Ingot
+        registerArmorSet("bone_armor", LegendaryArmorSet.BONE_ARMOR, Material.BONE, Material.IRON_INGOT);
+        // Sculk Armor: Sculk + Echo Shard
+        registerArmorSet("sculk_armor", LegendaryArmorSet.SCULK_ARMOR, Material.SCULK, Material.ECHO_SHARD);
+        plugin.getLogger().info("Registered 6 craftable armor sets (24 recipes).");
+    }
 
+    private void registerArmorSet(String prefix, LegendaryArmorSet set, Material primary, Material accent) {
+        // Helmet: APA / P P
+        ItemStack helmet = legendaryArmorManager.createArmorPiece(set, LegendaryArmorSet.ArmorSlot.HELMET);
+        NamespacedKey hKey = new NamespacedKey(plugin, prefix + "_helmet");
+        ShapedRecipe hRecipe = new ShapedRecipe(hKey, helmet);
+        hRecipe.shape("APA", "P P");
+        hRecipe.setIngredient('A', accent);
+        hRecipe.setIngredient('P', primary);
+        plugin.getServer().addRecipe(hRecipe);
+
+        // Chestplate: P P / APA / PPP
+        ItemStack chest = legendaryArmorManager.createArmorPiece(set, LegendaryArmorSet.ArmorSlot.CHESTPLATE);
+        NamespacedKey cKey = new NamespacedKey(plugin, prefix + "_chestplate");
+        ShapedRecipe cRecipe = new ShapedRecipe(cKey, chest);
+        cRecipe.shape("P P", "APA", "PPP");
+        cRecipe.setIngredient('A', accent);
+        cRecipe.setIngredient('P', primary);
+        plugin.getServer().addRecipe(cRecipe);
+
+        // Leggings: APA / P P / P P
+        ItemStack legs = legendaryArmorManager.createArmorPiece(set, LegendaryArmorSet.ArmorSlot.LEGGINGS);
+        NamespacedKey lKey = new NamespacedKey(plugin, prefix + "_leggings");
+        ShapedRecipe lRecipe = new ShapedRecipe(lKey, legs);
+        lRecipe.shape("APA", "P P", "P P");
+        lRecipe.setIngredient('A', accent);
+        lRecipe.setIngredient('P', primary);
+        plugin.getServer().addRecipe(lRecipe);
+
+        // Boots: A A / P P
+        ItemStack boots = legendaryArmorManager.createArmorPiece(set, LegendaryArmorSet.ArmorSlot.BOOTS);
+        NamespacedKey bKey = new NamespacedKey(plugin, prefix + "_boots");
+        ShapedRecipe bRecipe = new ShapedRecipe(bKey, boots);
+        bRecipe.shape("A A", "P P");
+        bRecipe.setIngredient('A', accent);
+        bRecipe.setIngredient('P', primary);
+        plugin.getServer().addRecipe(bRecipe);
+    }
 
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {

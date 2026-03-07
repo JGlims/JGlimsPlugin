@@ -146,7 +146,7 @@ public class JGlimsPlugin extends JavaPlugin {
                 battleBowManager, battleMaceManager, superToolManager,
                 battleSwordManager, battlePickaxeManager, battleTridentManager,
                 battleSpearManager, battleShovelManager, spearManager,
-                infinityStoneManager, infinityGauntletManager);
+                infinityStoneManager, infinityGauntletManager, legendaryArmorManager);
         recipeManager.registerAllRecipes();
         VanillaRecipeRemover.remove(this);
 
