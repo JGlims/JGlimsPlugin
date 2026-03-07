@@ -1,4 +1,4 @@
-package com.jglims.plugin.menu;
+﻿package com.jglims.plugin.menu;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.legendary.*;
