@@ -1,21 +1,25 @@
 name: JGlimsPlugin
-version: 1.4.0
+version: 2.0.0
 main: com.jglims.plugin.JGlimsPlugin
 api-version: 1.21
 author: JGlims
 description: >-
-  Custom enchantments, battle weapons, super tools, legendary weapons (44),
-  sickles, blessings, mob difficulty, inventory sorting, weapon mastery,
-  blood moon events, guilds, and much more.
+  Custom enchantments, battle weapons, super tools, 63 legendary weapons,
+  13 armor sets, 7 power-ups, infinity gauntlet, 64 enchantments,
+  blood moon events, guilds, quests, structures, abyss dimension, and more.
 
 commands:
   jglims:
     description: JGlimsPlugin admin commands
-    usage: /jglims <reload|stats|enchants|sort|mastery|legendary|help>
+    usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|menu|guia|help>
     permission: jglims.admin
   guild:
     description: Guild management commands
     usage: /guild <create|invite|join|leave|kick|disband|info|list>
+  guia:
+    description: Receive the JGlims guide books (Portuguese)
+    usage: /guia
+    aliases: [guide]
 
 permissions:
   jglims.admin:

@@ -64,6 +64,9 @@ import com.jglims.plugin.weapons.SuperToolManager;
 import com.jglims.plugin.weapons.WeaponAbilityListener;
 import com.jglims.plugin.weapons.WeaponMasteryManager;
 
+import com.jglims.plugin.menu.CreativeMenuManager;
+import com.jglims.plugin.menu.GuideBookManager;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -88,6 +91,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private SuperToolManager superToolManager;
     private LegendaryWeaponManager legendaryWeaponManager;
     private LegendaryArmorManager legendaryArmorManager;
+    private CreativeMenuManager creativeMenuManager;
+    private GuideBookManager guideBookManager;
     private RecipeManager recipeManager;
     private MobDifficultyManager mobDifficultyManager;
     private KingMobManager kingMobManager;
@@ -141,6 +146,8 @@ public class JGlimsPlugin extends JavaPlugin {
         eventManager.initialize();
         questManager = new QuestManager(this);
         npcWizardManager = new NpcWizardManager(this);
+        creativeMenuManager = new CreativeMenuManager(this);
+        guideBookManager = new GuideBookManager(this);
 
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
@@ -203,6 +210,8 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(questManager, this);
         pm.registerEvents(new QuestProgressListener(this, questManager), this);
         pm.registerEvents(npcWizardManager, this);
+        pm.registerEvents(creativeMenuManager, this);
+        pm.registerEvents(guideBookManager, this);
 
         getLogger().info("Legendary armor system loaded: " + LegendaryArmorSet.values().length + " sets.");
         for (LegendaryTier tier : LegendaryTier.values()) {
@@ -250,10 +259,15 @@ public class JGlimsPlugin extends JavaPlugin {
             }
             return true;
         }
+        if (command.getName().equalsIgnoreCase("guia")) {
+            if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED)); return true; }
+            guideBookManager.giveAllVolumes(player);
+            return true;
+        }
         if (!command.getName().equalsIgnoreCase("jglims")) return false;
         if (args.length == 0) {
             sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|help>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|menu|guia|help>", NamedTextColor.YELLOW));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -279,10 +293,14 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims powerup <type|stats> [player]", NamedTextColor.YELLOW).append(Component.text(" - Give power-ups / view stats (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims bosstitles", NamedTextColor.YELLOW).append(Component.text(" - View boss mastery titles", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims quests", NamedTextColor.YELLOW).append(Component.text(" - View quest progress", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims menu", NamedTextColor.YELLOW).append(Component.text(" - Creative item menu (GUI)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims guia", NamedTextColor.YELLOW).append(Component.text(" - Receive guide books (PT-BR)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
             }
             case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, quests, help", NamedTextColor.RED));
+            case "menu" -> { if (sender instanceof Player player) creativeMenuManager.openMainMenu(player); else sender.sendMessage(Component.text("Only players can open the menu.", NamedTextColor.RED)); }
+            case "guia" -> { if (sender instanceof Player player) guideBookManager.giveAllVolumes(player); else sender.sendMessage(Component.text("Only players can receive the guide.", NamedTextColor.RED)); }
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, menu, guia, quests, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -475,4 +493,6 @@ public class JGlimsPlugin extends JavaPlugin {
     public RoamingBossManager getRoamingBossManager() { return roamingBossManager; }
     public QuestManager getQuestManager() { return questManager; }
     public NpcWizardManager getNpcWizardManager() { return npcWizardManager; }
+    public CreativeMenuManager getCreativeMenuManager() { return creativeMenuManager; }
+    public GuideBookManager getGuideBookManager() { return guideBookManager; }
 }

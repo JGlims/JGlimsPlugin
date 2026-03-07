@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Manages the 6 Infinity Stone fragments and finished Infinity Stones.
- * Fragments drop during Blood Moon (0.1% per mob kill) — secret, undocumented.
+ * Fragments drop during Blood Moon (0.1% per mob kill) â€” secret, undocumented.
  * Finished stones are crafted: Fragment + Nether Star in anvil (handled by AnvilRecipeListener).
  * Phase 22.
  */
@@ -53,6 +53,14 @@ public class InfinityStoneManager {
         public TextColor getColor() { return color; }
         public Material getMaterial() { return material; }
         public int getCustomModelData() { return customModelData; }
+
+        public static StoneType fromId(String id) {
+            if (id == null) return null;
+            for (StoneType st : values()) {
+                if (st.id.equalsIgnoreCase(id)) return st;
+            }
+            return null;
+        }
     }
 
     public InfinityStoneManager(JGlimsPlugin plugin) {
