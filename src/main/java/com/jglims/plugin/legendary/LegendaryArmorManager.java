@@ -48,7 +48,8 @@ public class LegendaryArmorManager {
                 .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("[" + set.getTier().getId() + " Armor]", tierColor)
+        String tierTag = set.isCraftable() ? "Craftable" : set.getTier().getId();
+        lore.add(Component.text("[" + tierTag + " Armor]", tierColor)
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
         lore.add(Component.text("Passive: ", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
@@ -61,9 +62,16 @@ public class LegendaryArmorManager {
         lore.add(Component.text("Set: " + set.getDisplayName(), tierColor).decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
 
-        meta.setUnbreakable(true);
-        meta.addEnchant(Enchantment.UNBREAKING, 10, true);
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+        // Craftable sets are breakable; legendary sets are unbreakable
+        if (!set.isCraftable()) {
+            meta.setUnbreakable(true);
+            meta.addEnchant(Enchantment.UNBREAKING, 10, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+        } else {
+            meta.addEnchant(Enchantment.UNBREAKING, 3, true);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
+        }
+
         meta.setCustomModelData(set.getCmdForSlot(slot));
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -77,6 +85,7 @@ public class LegendaryArmorManager {
             case BOOTS -> EquipmentSlotGroup.FEET;
         };
 
+        // === Defense distribution ===
         double quarter = set.getTotalDefense() / 4.0;
         double actualDef = switch (slot) {
             case HELMET -> Math.floor(quarter);
@@ -89,6 +98,7 @@ public class LegendaryArmorManager {
                 new AttributeModifier(new NamespacedKey(plugin, "la_def_" + set.getId() + "_" + slot.name().toLowerCase()),
                         actualDef, AttributeModifier.Operation.ADD_NUMBER, eslot));
 
+        // === Armor toughness by tier ===
         if (set.getTier().isAtLeast(LegendaryTier.MYTHIC)) {
             meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS,
                     new AttributeModifier(new NamespacedKey(plugin, "la_tough_" + set.getId() + "_" + slot.name().toLowerCase()),
@@ -97,25 +107,168 @@ public class LegendaryArmorManager {
             meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS,
                     new AttributeModifier(new NamespacedKey(plugin, "la_tough_" + set.getId() + "_" + slot.name().toLowerCase()),
                             2.0, AttributeModifier.Operation.ADD_NUMBER, eslot));
+        } else if (set.getTier().isAtLeast(LegendaryTier.RARE)) {
+            meta.addAttributeModifier(Attribute.ARMOR_TOUGHNESS,
+                    new AttributeModifier(new NamespacedKey(plugin, "la_tough_" + set.getId() + "_" + slot.name().toLowerCase()),
+                            1.0, AttributeModifier.Operation.ADD_NUMBER, eslot));
         }
 
-        // Dragon Knight chestplate: +4 max HP
-        if (set == LegendaryArmorSet.DRAGON_KNIGHT && slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
-            meta.addAttributeModifier(Attribute.MAX_HEALTH,
-                    new AttributeModifier(new NamespacedKey(plugin, "la_hp_dragon_knight"),
-                            4.0, AttributeModifier.Operation.ADD_NUMBER, eslot));
-        }
-
-        // Dragon Knight leggings: 50% knockback resistance
-        if (set == LegendaryArmorSet.DRAGON_KNIGHT && slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
-            meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE,
-                    new AttributeModifier(new NamespacedKey(plugin, "la_kb_dragon_knight"),
-                            0.5, AttributeModifier.Operation.ADD_NUMBER, eslot));
-        }
+        // === Per-set attribute bonuses ===
+        applySetAttributes(meta, set, slot, eslot);
 
         item.setItemMeta(meta);
         return item;
     }
+
+    private void applySetAttributes(ItemMeta meta, LegendaryArmorSet set, LegendaryArmorSet.ArmorSlot slot, EquipmentSlotGroup eslot) {
+        switch (set) {
+            // ── CRAFTABLE SETS ──
+
+            case REINFORCED_LEATHER -> {
+                // Chestplate: +2 max HP
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 2.0, eslot);
+                }
+                // Leggings: +5% movement speed
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.05, eslot);
+                }
+            }
+            case COPPER_ARMOR -> {
+                // Leggings: +10% mining speed via attack speed (proxy)
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.03, eslot);
+                }
+            }
+            case CHAINMAIL_REINFORCED -> {
+                // Full set concept: +15% KB resist spread across pieces
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addKBResist(meta, set, 0.08, eslot);
+                }
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addKBResist(meta, set, 0.07, eslot);
+                }
+            }
+            case AMETHYST_ARMOR -> {
+                // Chestplate: +2 HP (harmonic core)
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 2.0, eslot);
+                }
+            }
+            case BONE_ARMOR -> {
+                // Chestplate: +2 HP
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 2.0, eslot);
+                }
+            }
+            case SCULK_ARMOR -> {
+                // Leggings: +5% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.05, eslot);
+                }
+            }
+
+            // ── LEGENDARY SETS ──
+
+            case SHADOW_STALKER -> {
+                // Leggings: +8% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.08, eslot);
+                }
+            }
+            case BLOOD_MOON -> {
+                // Chestplate: +4 HP
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 4.0, eslot);
+                }
+                // Leggings: +10% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.10, eslot);
+                }
+            }
+            case NATURES_EMBRACE -> {
+                // Chestplate: +4 HP (Living Bark)
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 4.0, eslot);
+                }
+                // Leggings: +20% KB resist (Root Grip)
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addKBResist(meta, set, 0.20, eslot);
+                }
+            }
+            case FROST_WARDEN -> {
+                // Chestplate: +4 HP
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 4.0, eslot);
+                }
+                // Leggings: +10% speed on ice (base +5%)
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.05, eslot);
+                }
+            }
+            case VOID_WALKER -> {
+                // Chestplate: +4 HP
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 4.0, eslot);
+                }
+                // Leggings: +10% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addSpeed(meta, set, 0.10, eslot);
+                }
+            }
+            case DRAGON_KNIGHT -> {
+                // Chestplate: +8 max HP (Dragon Heart)
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 8.0, eslot);
+                }
+                // Leggings: 60% knockback resistance (Dragon Scales)
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addKBResist(meta, set, 0.60, eslot);
+                }
+                // Boots: +10% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.BOOTS) {
+                    addSpeed(meta, set, 0.10, eslot);
+                }
+            }
+            case ABYSSAL_PLATE -> {
+                // Chestplate: +10 max HP (Soul Furnace)
+                if (slot == LegendaryArmorSet.ArmorSlot.CHESTPLATE) {
+                    addHP(meta, set, 10.0, eslot);
+                }
+                // Leggings: 80% knockback resistance (Abyssal Stride)
+                if (slot == LegendaryArmorSet.ArmorSlot.LEGGINGS) {
+                    addKBResist(meta, set, 0.80, eslot);
+                }
+                // Boots: +15% speed
+                if (slot == LegendaryArmorSet.ArmorSlot.BOOTS) {
+                    addSpeed(meta, set, 0.15, eslot);
+                }
+            }
+            default -> {}
+        }
+    }
+
+    // === Attribute helper methods ===
+
+    private void addHP(ItemMeta meta, LegendaryArmorSet set, double amount, EquipmentSlotGroup eslot) {
+        meta.addAttributeModifier(Attribute.MAX_HEALTH,
+                new AttributeModifier(new NamespacedKey(plugin, "la_hp_" + set.getId()),
+                        amount, AttributeModifier.Operation.ADD_NUMBER, eslot));
+    }
+
+    private void addKBResist(ItemMeta meta, LegendaryArmorSet set, double amount, EquipmentSlotGroup eslot) {
+        meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE,
+                new AttributeModifier(new NamespacedKey(plugin, "la_kb_" + set.getId()),
+                        amount, AttributeModifier.Operation.ADD_NUMBER, eslot));
+    }
+
+    private void addSpeed(ItemMeta meta, LegendaryArmorSet set, double amount, EquipmentSlotGroup eslot) {
+        meta.addAttributeModifier(Attribute.MOVEMENT_SPEED,
+                new AttributeModifier(new NamespacedKey(plugin, "la_spd_" + set.getId()),
+                        amount, AttributeModifier.Operation.MULTIPLY_SCALAR_1, eslot));
+    }
+
+    // === Identification methods ===
 
     public LegendaryArmorSet identifySet(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
