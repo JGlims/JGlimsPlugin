@@ -44,7 +44,7 @@ final class LegendaryAltAbilities {
         this.ctx = ctx;
     }
 
-    // ── #1 OCEAN'S RAGE: Riptide Surge — launch forward in water ──
+    // â”€â”€ #1 OCEAN'S RAGE: Riptide Surge â€” launch forward in water â”€â”€
     void holdOceansRage(Player p) {
         p.setVelocity(p.getLocation().getDirection().multiply(3.0));
         p.playSound(p.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 2.0f, 1.0f);
@@ -61,7 +61,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2248 RIPTIDE SURGE! \u2248", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
     }
 
-    // ── #2 AQUATIC SACRED BLADE: Depth Pressure — 10-block Slowness + Mining Fatigue ──
+    // â”€â”€ #2 AQUATIC SACRED BLADE: Depth Pressure â€” 10-block Slowness + Mining Fatigue â”€â”€
     void holdAquaticSacredBlade(Player p) {
         for (LivingEntity e : ctx.getNearbyEnemies(p.getLocation(), 10.0, p)) {
             e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 2));
@@ -72,16 +72,16 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2248 Depth Pressure! Enemies weakened", NamedTextColor.DARK_AQUA));
     }
 
-    // ── #3 TRUE EXCALIBUR: Divine Shield — 5s invulnerability + Strength II ──
+    // â”€â”€ #3 TRUE EXCALIBUR: Divine Shield â€” 5s invulnerability + Strength II â”€â”€
     void holdTrueExcalibur(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4)); // Resistance V = invulnerable
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 1));
         p.playSound(p.getLocation(), Sound.ITEM_TOTEM_USE, 1.0f, 1.2f);
-        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation(), 50, 1, 2, 1, 0.3);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation(), 30, 1, 2, 1, 0.3);
         p.sendActionBar(Component.text("\u2726 DIVINE SHIELD! 5s invulnerable + Strength II", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #4 REQUIEM: Abyss Gate — Summon 3 wither skeletons for 15s ──
+    // â”€â”€ #4 REQUIEM: Abyss Gate â€” Summon 3 wither skeletons for 15s â”€â”€
     void holdRequiemNinthAbyss(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.5f);
         for (int i = 0; i < 3; i++) {
@@ -97,7 +97,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 ABYSS GATE! 3 Wither Skeletons summoned", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
     }
 
-    // ── #5 ROYAL CHAKRAM: Spinning Shield — 3s projectile deflection + 50% DR ──
+    // â”€â”€ #5 ROYAL CHAKRAM: Spinning Shield â€” 3s projectile deflection + 50% DR â”€â”€
     void holdRoyalChakram(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 2)); // ~50% DR
         p.playSound(p.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1.5f, 1.2f);
@@ -114,7 +114,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u25C6 Spinning Shield! 3s defense", NamedTextColor.GOLD));
     }
 
-    // ── #6 BERSERKER'S GREATAXE: Blood Rage — +50% dmg, +30% speed, -30% def 10s ──
+    // â”€â”€ #6 BERSERKER'S GREATAXE: Blood Rage â€” +50% dmg, +30% speed, -30% def 10s â”€â”€
     void holdBerserkersGreataxe(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 2));
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 200, 1));
@@ -123,7 +123,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 BLOOD RAGE! +Str III +Speed II for 10s", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #7 ACIDIC CLEAVER: Corrosive Aura — 6-block 1 heart/s for 8s ──
+    // â”€â”€ #7 ACIDIC CLEAVER: Corrosive Aura â€” 6-block 1 heart/s for 8s â”€â”€
     void holdAcidicCleaver(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_LLAMA_SPIT, 1.0f, 0.3f);
         new BukkitRunnable() {
@@ -145,7 +145,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2622 Corrosive Aura! 8s drain", NamedTextColor.GREEN));
     }
 
-    // ── #8 BLACK IRON GREATSWORD: Iron Fortress — Absorption IV + Resistance II 8s ──
+    // â”€â”€ #8 BLACK IRON GREATSWORD: Iron Fortress â€” Absorption IV + Resistance II 8s â”€â”€
     void holdBlackIronGreatsword(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 160, 3));
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 160, 1));
@@ -154,7 +154,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 IRON FORTRESS! Absorption IV + Resistance II", NamedTextColor.DARK_GRAY).decorate(TextDecoration.BOLD));
     }
 
-    // ── #9 MURAMASA: Bloodlust — each kill +2 dmg, stacks 5x, 20s ──
+    // â”€â”€ #9 MURAMASA: Bloodlust â€” each kill +2 dmg, stacks 5x, 20s â”€â”€
     void holdMuramasa(Player p) {
         UUID uid = p.getUniqueId();
         ctx.bloodlustStacks.put(uid, 0);
@@ -163,7 +163,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 Bloodlust active! Kill to stack damage", NamedTextColor.RED));
     }
 
-    // ── #10 PHOENIX'S GRACE: Rebirth Flame — revive at 50% HP within 60s ──
+    // â”€â”€ #10 PHOENIX'S GRACE: Rebirth Flame â€” revive at 50% HP within 60s â”€â”€
     void holdPhoenixsGrace(Player p) {
         UUID uid = p.getUniqueId();
         ctx.rebornReady.put(uid, true);
@@ -173,7 +173,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2600 Rebirth Flame ready! You will revive once within 60s", NamedTextColor.GOLD));
     }
 
-    // ── #11 SOUL COLLECTOR: Spirit Army — release stored souls as projectiles ──
+    // â”€â”€ #11 SOUL COLLECTOR: Spirit Army â€” release stored souls as projectiles â”€â”€
     void holdSoulCollector(Player p) {
         int souls = ctx.soulCount.getOrDefault(p.getUniqueId(), 0);
         if (souls <= 0) { p.sendActionBar(Component.text("No souls stored! Kill enemies first", NamedTextColor.RED)); return; }
@@ -204,7 +204,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 Spirit Army! " + souls + " souls released", NamedTextColor.DARK_PURPLE));
     }
 
-    // ── #12 AMETHYST SHURIKEN: Shadow Step — teleport behind target + crit ──
+    // â”€â”€ #12 AMETHYST SHURIKEN: Shadow Step â€” teleport behind target + crit â”€â”€
     void holdAmethystShuriken(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 10.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -218,7 +218,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Shadow Step! Critical hit!", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
     }
 
-    // ── #13 VALHAKYRA: Wings of Valor — 8s slow-fall + Strength I ──
+    // â”€â”€ #13 VALHAKYRA: Wings of Valor â€” 8s slow-fall + Strength I â”€â”€
     void holdValhakyra(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 160, 0));
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 0));
@@ -227,7 +227,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Wings of Valor! Slow-fall + Strength I", NamedTextColor.GOLD));
     }
 
-    // ── #14 WINDREAPER: Cyclone — 4s tornado pulls enemies + 4 dmg/s ──
+    // â”€â”€ #14 WINDREAPER: Cyclone â€” 4s tornado pulls enemies + 4 dmg/s â”€â”€
     void holdWindreaper(Player p) {
         Location center = p.getLocation().clone();
         p.playSound(center, Sound.ENTITY_BREEZE_WIND_BURST, 2.0f, 0.5f);
@@ -254,7 +254,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2601 Cyclone! 4s tornado", NamedTextColor.WHITE));
     }
 
-    // ── #15 PHANTOMGUARD: Phase Shift — 3s intangibility ──
+    // â”€â”€ #15 PHANTOMGUARD: Phase Shift â€” 3s intangibility â”€â”€
     void holdPhantomguard(Player p) {
         ctx.phaseShiftActive.put(p.getUniqueId(), true);
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 60, 4)); // invuln
@@ -268,7 +268,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 PHASE SHIFT! 3s intangible", NamedTextColor.GRAY).decorate(TextDecoration.BOLD));
     }
 
-    // ── #16 MOONLIGHT: Eclipse — 6s Blindness + Weakness to enemies in 15 blocks ──
+    // â”€â”€ #16 MOONLIGHT: Eclipse â€” 6s Blindness + Weakness to enemies in 15 blocks â”€â”€
     void holdMoonlight(Player p) {
         for (LivingEntity e : ctx.getNearbyEnemies(p.getLocation(), 15.0, p)) {
             e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 120, 0));
@@ -279,13 +279,13 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u263D ECLIPSE! All enemies blinded + weakened", NamedTextColor.DARK_PURPLE).decorate(TextDecoration.BOLD));
     }
 
-    // ── #17 ZENITH: Ascension — 10s Flight + 50% damage ──
+    // â”€â”€ #17 ZENITH: Ascension â€” 10s Flight + 50% damage â”€â”€
     void holdZenith(Player p) {
         p.setAllowFlight(true);
         p.setFlying(true);
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 2));
         p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 1.0f);
-        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation(), 50, 1, 2, 1, 0.5);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation(), 30, 1, 2, 1, 0.5);
         Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
             if (p.getGameMode() != GameMode.CREATIVE && p.getGameMode() != GameMode.SPECTATOR) {
                 p.setFlying(false);
@@ -296,7 +296,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2726 ASCENSION! 10s Flight + Str III", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #18 SOLSTICE: Daybreak — Remove negatives + Regen IV 6s ──
+    // â”€â”€ #18 SOLSTICE: Daybreak â€” Remove negatives + Regen IV 6s â”€â”€
     void holdSolstice(Player p) {
         for (PotionEffect eff : p.getActivePotionEffects()) {
             PotionEffectType t = eff.getType();
@@ -313,7 +313,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2600 Daybreak! Cleansed + Regen IV", NamedTextColor.YELLOW));
     }
 
-    // ── #19 GRAND CLAYMORE: Colossus Stance — 6s KB-immune, +range, +40% dmg ──
+    // â”€â”€ #19 GRAND CLAYMORE: Colossus Stance â€” 6s KB-immune, +range, +40% dmg â”€â”€
     void holdGrandClaymore(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1));
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 120, 1));
@@ -323,7 +323,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 COLOSSUS STANCE! 6s KB-immune + Str II", NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
     }
 
-    // ── #20 CALAMITY BLADE: Doomsday — 8s double damage, -1 heart/s ──
+    // â”€â”€ #20 CALAMITY BLADE: Doomsday â€” 8s double damage, -1 heart/s â”€â”€
     void holdCalamityBlade(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 160, 3));
         p.playSound(p.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1.5f, 0.5f);
@@ -341,7 +341,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2622 DOOMSDAY! 8s Str IV but losing 1 heart/s", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #21 DRAGON SWORD: Draconic Roar — 8-block Fear + Weakness ──
+    // â”€â”€ #21 DRAGON SWORD: Draconic Roar â€” 8-block Fear + Weakness â”€â”€
     void holdDragonSword(Player p) {
         for (LivingEntity e : ctx.getNearbyEnemies(p.getLocation(), 8.0, p)) {
             Vector away = e.getLocation().toVector().subtract(p.getLocation().toVector()).normalize().multiply(1.5).setY(0.3);
@@ -353,7 +353,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 DRACONIC ROAR! Enemies fleeing", NamedTextColor.RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #22 TALONBRAND: Predator's Mark — Target takes +30% for 10s ──
+    // â”€â”€ #22 TALONBRAND: Predator's Mark â€” Target takes +30% for 10s â”€â”€
     void holdTalonbrand(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 10.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -365,7 +365,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Predator's Mark! Target takes +30% for 10s", NamedTextColor.DARK_RED));
     }
 
-    // ── #23 EMERALD GREATCLEAVER: Gem Barrier — Absorb next 3 hits, 15s ──
+    // â”€â”€ #23 EMERALD GREATCLEAVER: Gem Barrier â€” Absorb next 3 hits, 15s â”€â”€
     void holdEmeraldGreatcleaver(Player p) {
         ctx.gemBarrierCharges.put(p.getUniqueId(), 3);
         ctx.gemBarrierExpiry.put(p.getUniqueId(), System.currentTimeMillis() + 15000L);
@@ -374,7 +374,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2666 Gem Barrier! 3 hit charges for 15s", NamedTextColor.GREEN));
     }
 
-    // ── #24 DEMON'S BLOOD BLADE: Demonic Form — 10s +60% dmg + fire trail, -50% def ──
+    // â”€â”€ #24 DEMON'S BLOOD BLADE: Demonic Form â€” 10s +60% dmg + fire trail, -50% def â”€â”€
     void holdDemonsBloodBlade(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 3));
         p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.5f);
@@ -392,9 +392,9 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 DEMONIC FORM! 10s Str IV + fire trail", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ═══════════ UNCOMMON HOLD ABILITIES (20) ═══════════
+    // â•â•â•â•â•â•â•â•â•â•â• UNCOMMON HOLD ABILITIES (20) â•â•â•â•â•â•â•â•â•â•â•
 
-    // ── #25 NOCTURNE: Night Cloak — 6s Invis + next hit +8 bonus ──
+    // â”€â”€ #25 NOCTURNE: Night Cloak â€” 6s Invis + next hit +8 bonus â”€â”€
     void holdNocturne(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 120, 0));
         p.playSound(p.getLocation(), Sound.ENTITY_PHANTOM_AMBIENT, 1.0f, 0.5f);
@@ -402,7 +402,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u263D Night Cloak! Invisible + next hit +8 dmg", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #26 GRAVESCEPTER: Death's Grasp — Root target 3s ──
+    // â”€â”€ #26 GRAVESCEPTER: Death's Grasp â€” Root target 3s â”€â”€
     void holdGravescepter(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 8.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -412,7 +412,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 Death's Grasp! Target rooted 3s", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #27 LYCANBANE: Hunter's Sense — 10s Glowing on all within 20 blocks ──
+    // â”€â”€ #27 LYCANBANE: Hunter's Sense â€” 10s Glowing on all within 20 blocks â”€â”€
     void holdLycanbane(Player p) {
         List<LivingEntity> entities = ctx.getNearbyEnemies(p.getLocation(), 20.0, p);
         for (LivingEntity e : entities) {
@@ -423,7 +423,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Hunter's Sense! " + entities.size() + " entities revealed", NamedTextColor.WHITE));
     }
 
-    // ── #28 GLOOMSTEEL KATANA: Shadow Stance — 5s 25% dodge ──
+    // â”€â”€ #28 GLOOMSTEEL KATANA: Shadow Stance â€” 5s 25% dodge â”€â”€
     void holdGloomsteelKatana(Player p) {
         ctx.shadowStanceActive.put(p.getUniqueId(), true);
         ctx.shadowStanceExpiry.put(p.getUniqueId(), System.currentTimeMillis() + 5000L);
@@ -433,7 +433,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Shadow Stance! 25% dodge for 5s", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #29 VIRIDIAN CLEAVER: Overgrowth — vine DoT + root ──
+    // â”€â”€ #29 VIRIDIAN CLEAVER: Overgrowth â€” vine DoT + root â”€â”€
     void holdViridianCleaver(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 8.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -451,7 +451,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2618 Overgrowth! Target rooted + DoT", NamedTextColor.GREEN));
     }
 
-    // ── #30 CRESCENT EDGE: Crescent Guard — parry next melee hit, reflect 100% ──
+    // â”€â”€ #30 CRESCENT EDGE: Crescent Guard â€” parry next melee hit, reflect 100% â”€â”€
     void holdCrescentEdge(Player p) {
         ctx.crescentParryActive.put(p.getUniqueId(), true);
         p.playSound(p.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1.5f, 0.8f);
@@ -465,7 +465,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u263D Crescent Guard! Parry next hit", NamedTextColor.YELLOW));
     }
 
-    // ── #31 GRAVECLEAVER: Undying Rage — 8s: survive lethal at 1 HP once ──
+    // â”€â”€ #31 GRAVECLEAVER: Undying Rage â€” 8s: survive lethal at 1 HP once â”€â”€
     void holdGravecleaver(Player p) {
         UUID uid = p.getUniqueId();
         ctx.undyingRageActive.put(uid, true);
@@ -481,7 +481,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 UNDYING RAGE! Survive lethal hit once for 8s", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #32 AMETHYST GREATBLADE: Gem Resonance — 8s Strength I to allies in 10 blocks ──
+    // â”€â”€ #32 AMETHYST GREATBLADE: Gem Resonance â€” 8s Strength I to allies in 10 blocks â”€â”€
     void holdAmethystGreatblade(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 2.0f, 1.2f);
         p.getWorld().spawnParticle(Particle.END_ROD, p.getLocation().add(0, 1, 0), 30, 5, 2, 5, 0.02);
@@ -497,7 +497,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2666 Gem Resonance! Strength I to nearby allies", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ── #33 FLAMBERGE: Ember Shield — 5s: attackers take 4 fire dmg ──
+    // â”€â”€ #33 FLAMBERGE: Ember Shield â€” 5s: attackers take 4 fire dmg â”€â”€
     void holdFlamberge(Player p) {
         UUID uid = p.getUniqueId();
         ctx.emberShieldActive.put(uid, true);
@@ -522,7 +522,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2600 Ember Shield! 5s fire reflect", NamedTextColor.RED));
     }
 
-    // ── #34 CRYSTAL FROSTBLADE: Permafrost — 5-block AoE Slow II + Mining Fatigue 6s ──
+    // â”€â”€ #34 CRYSTAL FROSTBLADE: Permafrost â€” 5-block AoE Slow II + Mining Fatigue 6s â”€â”€
     void holdCrystalFrostblade(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_GLASS_BREAK, 1.5f, 0.5f);
         p.getWorld().spawnParticle(Particle.SNOWFLAKE, p.getLocation().add(0, 1, 0), 50, 2.5, 1.5, 2.5, 0.02);
@@ -534,7 +534,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2744 Permafrost! Enemies frozen", NamedTextColor.AQUA));
     }
 
-    // ── #35 DEMONSLAYER: Purifying Aura — 6s: undead in 8 blocks take 2 dmg/s ──
+    // â”€â”€ #35 DEMONSLAYER: Purifying Aura â€” 6s: undead in 8 blocks take 2 dmg/s â”€â”€
     void holdDemonslayer(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.5f, 1.5f);
         new BukkitRunnable() {
@@ -563,7 +563,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Purifying Aura! 6s undead burn", NamedTextColor.YELLOW));
     }
 
-    // ── #36 VENGEANCE: Grudge Mark — Target takes +20% dmg from you for 15s ──
+    // â”€â”€ #36 VENGEANCE: Grudge Mark â€” Target takes +20% dmg from you for 15s â”€â”€
     void holdVengeance(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 10.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -581,7 +581,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Grudge Mark! +20% dmg to target for 15s", NamedTextColor.RED));
     }
 
-    // ── #37 OCULUS: Third Eye — 10s Glowing on all entities in 30 blocks ──
+    // â”€â”€ #37 OCULUS: Third Eye â€” 10s Glowing on all entities in 30 blocks â”€â”€
     void holdOculus(Player p) {
         List<LivingEntity> entities = ctx.getNearbyEnemies(p.getLocation(), 30.0, p);
         for (LivingEntity e : entities) {
@@ -594,7 +594,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2609 Third Eye! " + entities.size() + " entities revealed + Night Vision", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ── #38 ANCIENT GREATSLAB: Stone Skin — 6s Resistance II + KB-immune ──
+    // â”€â”€ #38 ANCIENT GREATSLAB: Stone Skin â€” 6s Resistance II + KB-immune â”€â”€
     void holdAncientGreatslab(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 120, 1));
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0)); // weight feel
@@ -603,7 +603,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 Stone Skin! 6s Resistance II", NamedTextColor.GRAY));
     }
 
-    // ── #39 NEPTUNE'S FANG: Maelstrom — 6-block water vortex, pull + 3 dmg/s 5s ──
+    // â”€â”€ #39 NEPTUNE'S FANG: Maelstrom â€” 6-block water vortex, pull + 3 dmg/s 5s â”€â”€
     void holdNeptunesFang(Player p) {
         Location center = p.getLocation().clone();
         p.playSound(center, Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.5f);
@@ -635,7 +635,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2248 MAELSTROM! 5s water vortex", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
     }
 
-    // ── #40 TIDECALLER: Depth Ward — 8s Dolphin's Grace + Respiration + Drowned-immune ──
+    // â”€â”€ #40 TIDECALLER: Depth Ward â€” 8s Dolphin's Grace + Respiration + Drowned-immune â”€â”€
     void holdTidecaller(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 160, 0));
         p.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING, 160, 0));
@@ -645,7 +645,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2248 Depth Ward! 8s Dolphin's Grace + Water Breathing", NamedTextColor.AQUA));
     }
 
-    // ── #41 STORMFORK: Thunder Shield — 6s: attackers get lightning ──
+    // â”€â”€ #41 STORMFORK: Thunder Shield â€” 6s: attackers get lightning â”€â”€
     void holdStormfork(Player p) {
         UUID uid = p.getUniqueId();
         ctx.thunderShieldActive.put(uid, true);
@@ -670,17 +670,17 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u26A1 Thunder Shield! 6s lightning counter", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
     }
 
-    // ── #42 JADE REAPER: Emerald Harvest — 10s: kills drop 1-3 emeralds ──
+    // â”€â”€ #42 JADE REAPER: Emerald Harvest â€” 10s: kills drop 1-3 emeralds â”€â”€
     void holdJadeReaper(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.5f, 0.8f);
         p.getWorld().spawnParticle(Particle.COMPOSTER, p.getLocation().add(0, 1, 0), 20, 1, 1, 1, 0.05);
-        // Store activation time — checked in a kill listener
+        // Store activation time â€” checked in a kill listener
         // For simplicity, use a potion effect as a marker
         p.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 200, 0));
         p.sendActionBar(Component.text("\u2618 Emerald Harvest! Kills drop emeralds for 10s", NamedTextColor.GREEN));
     }
 
-    // ── #43 VINDICATOR: Rally Cry — 6s: allies in 8 blocks get Speed I + Strength I ──
+    // â”€â”€ #43 VINDICATOR: Rally Cry â€” 6s: allies in 8 blocks get Speed I + Strength I â”€â”€
     void holdVindicator(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_RAVAGER_CELEBRATE, 2.0f, 1.2f);
         p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 1, 0), 20, 2, 2, 2, 0.1);
@@ -699,7 +699,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2694 RALLY CRY! Allies buffed for 6s", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #44 SPIDER FANG: Wall Crawler — 8s levitation near blocks + Night Vision ──
+    // â”€â”€ #44 SPIDER FANG: Wall Crawler â€” 8s levitation near blocks + Night Vision â”€â”€
     void holdSpiderFang(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 160, 0));
         p.playSound(p.getLocation(), Sound.ENTITY_SPIDER_AMBIENT, 1.5f, 1.0f);
@@ -731,9 +731,9 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 Wall Crawler! 8s wall-climb (sneak near walls) + Night Vision", NamedTextColor.DARK_GREEN));
     }
 
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  HELPER METHODS
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     // #45 DIVINE AXE RHITTA ALT: Sunshine - buff: +50% damage for 10s, fire aura
     void altDivineAxeRhitta(Player p) {
@@ -791,8 +791,8 @@ final class LegendaryAltAbilities {
         p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
         Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
             Location land = p.getLocation();
-            p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, land, 5, 0, 0, 0, 0);
-            p.getWorld().spawnParticle(Particle.END_ROD, land, 80, 4, 1, 4, 0.2);
+            p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, land, 2, 0, 0, 0, 0);
+            p.getWorld().spawnParticle(Particle.END_ROD, land, 25, 4, 1, 4, 0.2);
             p.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);
             for (LivingEntity e : ctx.getNearbyEnemies(land, 8.0, p)) {
                 ctx.dealDamage(p, e, 20.0);
@@ -863,7 +863,7 @@ final class LegendaryAltAbilities {
                 Location strike = land.clone().add(Math.sin(i * 2.1) * 3, 0, Math.cos(i * 2.1) * 3);
                 p.getWorld().strikeLightningEffect(strike);
             }
-            p.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, land, 100, 4, 1, 4, 0.3);
+            p.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, land, 50, 4, 1, 4, 0.3);
             p.playSound(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.6f);
             for (LivingEntity e : ctx.getNearbyEnemies(land, 8.0, p)) {
                 ctx.dealDamage(p, e, 20.0);
@@ -904,7 +904,7 @@ final class LegendaryAltAbilities {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
         p.getWorld().spawnParticle(Particle.END_ROD, c.add(0, 2, 0), 100, 6, 3, 6, 0.3);
-        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 3, 0, 0, 0, 0);
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 2, 0, 0, 0, 0);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 12.0, p)) {
             ctx.dealDamage(p, e, 18.0);
             e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0));
@@ -969,8 +969,8 @@ final class LegendaryAltAbilities {
         p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
         p.playSound(c, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
         p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c.add(0, 2, 0), 8, 3, 2, 3, 0);
-        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, c, 100, 7, 3, 7, 0.8);
-        p.getWorld().spawnParticle(Particle.END_ROD, c, 80, 7, 5, 7, 0.2);
+        p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, c, 30, 7, 3, 7, 0.8);
+        p.getWorld().spawnParticle(Particle.END_ROD, c, 25, 7, 5, 7, 0.2);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 15.0, p)) {
             ctx.dealDamage(p, e, 30.0);
             e.setVelocity(e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(3.0).setY(1.5));
@@ -978,25 +978,25 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2726 GENESIS BREAK! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  ABYSSAL TIER ALTERNATE ABILITIES (4) — 200 particles per burst
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    //  ABYSSAL TIER ALTERNATE ABILITIES (4) â€” 200 particles per burst
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    // ── #60 REQUIEM AWAKENED: Void Collapse — 15-block singularity, 8s pull + DoT, 60 dmg final explosion ──
+    // â”€â”€ #60 REQUIEM AWAKENED: Void Collapse â€” 15-block singularity, 8s pull + DoT, 60 dmg final explosion â”€â”€
     void altRequiemAwakened(Player p) {
         Location target = p.getLocation().add(p.getLocation().getDirection().multiply(8));
         p.playSound(target, Sound.ENTITY_WARDEN_EMERGE, 2.0f, 0.3f);
         p.playSound(target, Sound.BLOCK_PORTAL_TRIGGER, 1.5f, 0.3f);
-        p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, target, 100, 2, 2, 2, 0.5);
+        p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, target, 30, 2, 2, 2, 0.5);
         final Location center = target.clone();
         new BukkitRunnable() {
             int ticks = 0;
             @Override public void run() {
                 if (ticks >= 160) {
                     // Final collapse explosion
-                    center.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 5, 0, 0, 0, 0);
-                    center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 200, 7, 5, 7, 0.3);
-                    center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center, 200, 8, 5, 8, 0.5);
+                    center.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 2, 0, 0, 0, 0);
+                    center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center, 30, 7, 5, 7, 0.3);
+                    center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center, 30, 8, 5, 8, 0.5);
                     center.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
                     center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
                     for (LivingEntity e : ctx.getNearbyEnemies(center, 15.0, p)) {
@@ -1036,7 +1036,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2620 VOID COLLAPSE! Reality tears apart!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
     }
 
-    // ── #61 EXCALIBUR AWAKENED: Sacred Realm — 12-block sanctuary dome, 10s, allies buffed, enemies burned ──
+    // â”€â”€ #61 EXCALIBUR AWAKENED: Sacred Realm â€” 12-block sanctuary dome, 10s, allies buffed, enemies burned â”€â”€
     void altExcaliburAwakened(Player p) {
         Location center = p.getLocation().clone();
         p.playSound(center, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 0.8f);
@@ -1089,7 +1089,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2726 SACRED REALM! The light protects! \u2726", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #62 CREATION SPLITTER AWAKENED: Big Bang — 5s channel, 20-block 100 dmg explosion, massive knockback ──
+    // â”€â”€ #62 CREATION SPLITTER AWAKENED: Big Bang â€” 5s channel, 20-block 100 dmg explosion, massive knockback â”€â”€
     void altCreationSplitterAwakened(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 0.3f);
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 127)); // root
@@ -1107,7 +1107,7 @@ final class LegendaryAltAbilities {
                 p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, p.getLocation().add(0, 2, 0), (int)(progress * 50), 0.5, 1, 0.5, 0.3);
                 if (tick % 20 == 0) {
                     p.playSound(p.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0f, 0.5f + (float)(progress * 1.5));
-                    p.getWorld().spawnParticle(Particle.FLASH, p.getLocation().add(0, 2, 0), 1, 0, 0, 0, 0);
+                    p.getWorld().spawnParticle(Particle.FLASH, p.getLocation().add(0, 1, 0), 1, 0, 0, 0, 0);
                 }
                 // Warning ring on ground
                 for (int i = 0; i < 72; i++) {
@@ -1127,7 +1127,7 @@ final class LegendaryAltAbilities {
             blast.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, blast.clone().add(0, 2, 0), 10, 5, 3, 5, 0);
             blast.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, blast.clone().add(0, 3, 0), 200, 10, 8, 10, 1.0);
             blast.getWorld().spawnParticle(Particle.END_ROD, blast.clone().add(0, 5, 0), 200, 12, 10, 12, 0.5);
-            blast.getWorld().spawnParticle(Particle.FLASH, blast.clone().add(0, 3, 0), 5, 0, 0, 0, 0);
+            blast.getWorld().spawnParticle(Particle.FLASH, blast.clone().add(0, 1, 0), 5, 0, 0, 0, 0);
             blast.getWorld().playSound(blast, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
             blast.getWorld().playSound(blast, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
             blast.getWorld().playSound(blast, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.3f);
@@ -1143,7 +1143,7 @@ final class LegendaryAltAbilities {
         p.sendActionBar(Component.text("\u2726 CHANNELING BIG BANG... DO NOT MOVE! \u2726", TextColor.color(255, 100, 0)).decorate(TextDecoration.BOLD));
     }
 
-    // ── #63 WHISPERWIND AWAKENED: Phantom Cyclone — 15-block homing tornado 12s, 10 dmg/s, pull 20 blocks, caster gets Speed III ──
+    // â”€â”€ #63 WHISPERWIND AWAKENED: Phantom Cyclone â€” 15-block homing tornado 12s, 10 dmg/s, pull 20 blocks, caster gets Speed III â”€â”€
     void altWhisperwindAwakened(Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 240, 2));
         Location tornadoLoc = p.getLocation().add(p.getLocation().getDirection().multiply(5));
@@ -1154,7 +1154,7 @@ final class LegendaryAltAbilities {
             Location loc = tornadoLoc.clone();
             @Override public void run() {
                 if (ticks >= 240) {
-                    loc.getWorld().spawnParticle(Particle.CLOUD, loc, 80, 4, 6, 4, 0.3);
+                    loc.getWorld().spawnParticle(Particle.CLOUD, loc, 40, 4, 6, 4, 0.3);
                     loc.getWorld().playSound(loc, Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 0.5f);
                     cancel();
                     return;
@@ -1170,7 +1170,7 @@ final class LegendaryAltAbilities {
                     Vector toTarget = nearest.getLocation().toVector().subtract(loc.toVector()).normalize().multiply(0.4);
                     loc.add(toTarget);
                 }
-                // Tornado particles — spiraling column
+                // Tornado particles â€” spiraling column
                 for (int h = 0; h < 10; h++) {
                     double angle = Math.toRadians(ticks * 8 + h * 36);
                     double r = 1.5 + h * 0.3;
@@ -1195,6 +1195,7 @@ final class LegendaryAltAbilities {
                     }
                     loc.getWorld().playSound(loc, Sound.ENTITY_BREEZE_SHOOT, 1.0f, 0.5f);
                 }
+                if (ticks >= 200) { cancel(); return; }
                 ticks++;
             }
         }.runTaskTimer(ctx.plugin, 0L, 1L);

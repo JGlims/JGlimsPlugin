@@ -48,7 +48,7 @@ import com.jglims.plugin.guilds.GuildManager;
 
 
 /**
- * WeaponAbilityListener — v1.3.1
+ * WeaponAbilityListener â€” v1.3.1
  *
  * CHANGES FROM v1.3.0:
  *   - All ability damage values increased ~30-50%
@@ -225,7 +225,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // PICKAXE — "Ore Pulse" / "Seismic Resonance" — COMPLETELY REVAMPED
+    // PICKAXE â€” "Ore Pulse" / "Seismic Resonance" â€” COMPLETELY REVAMPED
     // Now uses BlockDisplay entities with glowing outlines visible through walls!
     // ================================================================
 
@@ -236,7 +236,7 @@ public class WeaponAbilityListener implements Listener {
         if (isOnCooldown(player, abilityName)) { sendCooldownMessage(player, abilityName); return; }
         setCooldown(player, abilityName, cooldownSec);
 
-        // Both tiers detect ALL ores — difference is radius and duration
+        // Both tiers detect ALL ores â€” difference is radius and duration
         int oreRadius = isDefinitive ? 16 : 10;
         int debrisRadius = isDefinitive ? 48 : 24;
         int durationTicks = isDefinitive ? 500 : 300; // 25s / 15s
@@ -317,7 +317,7 @@ public class WeaponAbilityListener implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 2L);
 
-        // Spawn glowing BlockDisplay entities for each ore — ONLY visible to the caster
+        // Spawn glowing BlockDisplay entities for each ore â€” ONLY visible to the caster
         List<BlockDisplay> glowingDisplays = new ArrayList<>();
 
         for (Map.Entry<Location, OreType> entry : foundOres.entrySet()) {
@@ -419,7 +419,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SWORD — "Dash Strike" / "Dimensional Cleave" — DAMAGE INCREASED
+    // SWORD â€” "Dash Strike" / "Dimensional Cleave" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleSwordAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -430,7 +430,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Dash Strike — DAMAGE: 8 -> 12
+            // Dash Strike â€” DAMAGE: 8 -> 12
             player.setVelocity(player.getLocation().getDirection().multiply(2.2));
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.2f);
 
@@ -450,7 +450,7 @@ public class WeaponAbilityListener implements Listener {
             }.runTaskTimer(plugin, 0L, 2L);
 
         } else {
-            // Dimensional Cleave — DAMAGE: 15->22 per tick, 25->35 final
+            // Dimensional Cleave â€” DAMAGE: 15->22 per tick, 25->35 final
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 0.5f);
 
@@ -485,8 +485,8 @@ public class WeaponAbilityListener implements Listener {
             }.runTaskTimer(plugin, 0L, 2L);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 5, 0, 0, 0, 0);
-                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 150, 4, 3, 4, 0.6);
+                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, center, 2, 0, 0, 0, 0);
+                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, center, 30, 4, 3, 4, 0.6);
                 player.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.6f);
                 for (LivingEntity enemy : getNearbyEnemies(center, 10.0, player)) {
                     dealAbilityDamage(player, enemy, 35.0, true);
@@ -499,7 +499,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // AXE — "Bloodthirst" / "Ragnarok Cleave" — DAMAGE INCREASED
+    // AXE â€” "Bloodthirst" / "Ragnarok Cleave" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleAxeAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -510,7 +510,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Bloodthirst — now also grants Speed I
+            // Bloodthirst â€” now also grants Speed I
             player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1));
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 1));
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 0));
@@ -537,7 +537,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7c\u00a7l\u2620 BLOODTHIRST ACTIVE \u2620");
 
         } else {
-            // Ragnarok Cleave — DAMAGE: 20/16/12 -> 30/24/18
+            // Ragnarok Cleave â€” DAMAGE: 20/16/12 -> 30/24/18
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5f, 0.7f);
             player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
 
@@ -583,7 +583,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SHOVEL — "Earthen Wall" / "Tectonic Upheaval" — DAMAGE INCREASED
+    // SHOVEL â€” "Earthen Wall" / "Tectonic Upheaval" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleShovelAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -594,7 +594,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Earthen Wall — DAMAGE: 6 -> 10
+            // Earthen Wall â€” DAMAGE: 6 -> 10
             player.playSound(player.getLocation(), Sound.BLOCK_GRAVEL_BREAK, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.7f);
             player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 80, 1));
@@ -612,7 +612,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7e Earthen Wall \u2014 Enemies launched!");
 
         } else {
-            // Tectonic Upheaval — DAMAGE: 14 -> 20
+            // Tectonic Upheaval â€” DAMAGE: 14 -> 20
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_EMERGE, 2.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.3f);
             Location center = player.getLocation();
@@ -650,7 +650,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SICKLE — "Harvest Storm" / "Reaper's Scythe" (REVAMPED)
+    // SICKLE â€” "Harvest Storm" / "Reaper's Scythe" (REVAMPED)
     // ================================================================
 
     private void handleSickleAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -691,7 +691,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7a\u2620 Harvest Storm!");
 
         } else {
-            // REAPER'S SCYTHE — 3-phase revamp
+            // REAPER'S SCYTHE â€” 3-phase revamp
             player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_EMERGE, 1.0f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 2.0f);
@@ -865,7 +865,7 @@ public class WeaponAbilityListener implements Listener {
     }
 
     // ================================================================
-    // SPEAR — "Phantom Lunge" / "Spear of the Void" — DAMAGE INCREASED
+    // SPEAR â€” "Phantom Lunge" / "Spear of the Void" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleSpearAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -876,7 +876,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Phantom Lunge — DAMAGE: 8 -> 12
+            // Phantom Lunge â€” DAMAGE: 8 -> 12
             player.setVelocity(player.getLocation().getDirection().multiply(2.2));
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.3f);
             player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 1.0f, 1.5f);
@@ -904,7 +904,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7b\u27a4 Phantom Lunge!");
 
         } else {
-            // Spear of the Void — DAMAGE: 18->25 pierce, 10->15 detonation, 6->10 chain
+            // Spear of the Void â€” DAMAGE: 18->25 pierce, 10->15 detonation, 6->10 chain
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 1.5f, 0.5f);
 
@@ -964,8 +964,8 @@ public class WeaponAbilityListener implements Listener {
         World world = detonationLoc.getWorld();
 
         // Main detonation
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, detonationLoc, 3, 0, 0, 0, 0);
-        world.spawnParticle(Particle.SOUL_FIRE_FLAME, detonationLoc, 50, 2, 2, 2, 0.1);
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, detonationLoc, 2, 0, 0, 0, 0);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, detonationLoc, 30, 2, 2, 2, 0.1);
         world.spawnParticle(Particle.REVERSE_PORTAL, detonationLoc, 30, 1.5, 1.5, 1.5, 0.2);
         world.playSound(detonationLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
         world.playSound(detonationLoc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.2f);
@@ -993,7 +993,7 @@ public class WeaponAbilityListener implements Listener {
 
 
     // ================================================================
-    // BOW — "Arrow Storm" / "Celestial Volley" — DAMAGE INCREASED
+    // BOW â€” "Arrow Storm" / "Celestial Volley" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleBowAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -1004,7 +1004,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Arrow Storm — DAMAGE: 6 -> 9 per arrow, 5 waves x 3 arrows = 15
+            // Arrow Storm â€” DAMAGE: 6 -> 9 per arrow, 5 waves x 3 arrows = 15
             player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1.5f, 1.2f);
 
             new BukkitRunnable() {
@@ -1035,7 +1035,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7e\u27b3 Arrow Storm!");
 
         } else {
-            // Celestial Volley — DAMAGE: 10->15 per arrow, 8->12 AoE per wave
+            // Celestial Volley â€” DAMAGE: 10->15 per arrow, 8->12 AoE per wave
             // Target = where player is looking (30 blocks) or 20 blocks forward
             Location target = player.getTargetBlockExact(30) != null
                     ? player.getTargetBlockExact(30).getLocation().add(0.5, 1, 0.5)
@@ -1101,7 +1101,7 @@ public class WeaponAbilityListener implements Listener {
 
 
     // ================================================================
-    // CROSSBOW — "Chain Shot" / "Thunder Barrage" — DAMAGE INCREASED
+    // CROSSBOW â€” "Chain Shot" / "Thunder Barrage" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleCrossbowAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -1112,7 +1112,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Chain Shot — DAMAGE: 8 -> 12 initial + per chain
+            // Chain Shot â€” DAMAGE: 8 -> 12 initial + per chain
             player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.5f, 1.0f);
 
             Vector direction = player.getLocation().getDirection().normalize();
@@ -1175,7 +1175,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7b\u26a1 Chain Shot!");
 
         } else {
-            // Thunder Barrage — DAMAGE: 12->18 bolt, 14->20 AoE
+            // Thunder Barrage â€” DAMAGE: 12->18 bolt, 14->20 AoE
             player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 2.0f, 0.7f);
             player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.2f);
 
@@ -1213,9 +1213,9 @@ public class WeaponAbilityListener implements Listener {
 
             // Delayed AoE detonation at target
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, target, 3, 0, 0, 0, 0);
-                world.spawnParticle(Particle.ELECTRIC_SPARK, target, 50, 3, 2, 3, 0.2);
-                world.spawnParticle(Particle.FLASH, target, 2, 0, 0, 0, 0);
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, target, 2, 0, 0, 0, 0);
+                world.spawnParticle(Particle.ELECTRIC_SPARK, target, 25, 3, 2, 3, 0.2);
+                world.spawnParticle(Particle.FLASH, target, 1, 0, 0, 0, 0);
                 world.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 2.0f, 0.8f);
                 world.playSound(target, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.0f);
 
@@ -1246,7 +1246,7 @@ public class WeaponAbilityListener implements Listener {
 
 
     // ================================================================
-    // TRIDENT — "Tidal Surge" / "Poseidon's Wrath" — DAMAGE INCREASED
+    // TRIDENT â€” "Tidal Surge" / "Poseidon's Wrath" â€” DAMAGE INCREASED
     // ================================================================
 
     private void handleTridentAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -1257,7 +1257,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Tidal Surge — DAMAGE: 8 -> 12
+            // Tidal Surge â€” DAMAGE: 8 -> 12
             player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.8f);
             player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 1.5f, 1.0f);
 
@@ -1297,7 +1297,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a7b\u2248 Tidal Surge!");
 
         } else {
-            // Poseidon's Wrath — DAMAGE: 16/13/10 -> 24/18/14 waves, 10 -> 15 lightning
+            // Poseidon's Wrath â€” DAMAGE: 16/13/10 -> 24/18/14 waves, 10 -> 15 lightning
             player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.5f, 0.5f);
             player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.5f);
@@ -1361,7 +1361,7 @@ public class WeaponAbilityListener implements Listener {
 
 
     // ================================================================
-    // MACE — "Ground Slam" / "Meteor Strike" — DAMAGE INCREASED + SAFE
+    // MACE â€” "Ground Slam" / "Meteor Strike" â€” DAMAGE INCREASED + SAFE
     // ================================================================
 
     private void handleMaceAbility(Player player, ItemStack item, boolean isDefinitive) {
@@ -1372,7 +1372,7 @@ public class WeaponAbilityListener implements Listener {
         setCooldown(player, abilityName, cooldownSec);
 
         if (!isDefinitive) {
-            // Ground Slam — DAMAGE: 10 -> 15
+            // Ground Slam â€” DAMAGE: 10 -> 15
             player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.8f);
             player.playSound(player.getLocation(), Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.6f);
 
@@ -1406,7 +1406,7 @@ public class WeaponAbilityListener implements Listener {
             player.sendActionBar("\u00a76\u2693 Ground Slam!");
 
         } else {
-            // Meteor Strike — SAFE (Resistance 255) — DAMAGE: base 20 + 0.7/block fallen
+            // Meteor Strike â€” SAFE (Resistance 255) â€” DAMAGE: base 20 + 0.7/block fallen
             Location launchLoc = player.getLocation().clone();
             World world = player.getWorld();
 
@@ -1484,11 +1484,11 @@ public class WeaponAbilityListener implements Listener {
                             }.runTaskTimer(plugin, 0L, 1L);
 
                             // Impact particles
-                            world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 5, 0, 0, 0, 0);
-                            world.spawnParticle(Particle.LAVA, impactLoc, 80, 4, 1, 4, 0);
-                            world.spawnParticle(Particle.FLAME, impactLoc, 100, 5, 2, 5, 0.1);
-                            world.spawnParticle(Particle.SMOKE, impactLoc, 50, 3, 2, 3, 0.1);
-                            world.spawnParticle(Particle.TOTEM_OF_UNDYING, impactLoc, 60, 3, 3, 3, 0.5);
+                            world.spawnParticle(Particle.EXPLOSION_EMITTER, impactLoc, 2, 0, 0, 0, 0);
+                            world.spawnParticle(Particle.LAVA, impactLoc, 40, 4, 1, 4, 0);
+                            world.spawnParticle(Particle.FLAME, impactLoc, 50, 5, 2, 5, 0.1);
+                            world.spawnParticle(Particle.SMOKE, impactLoc, 25, 3, 2, 3, 0.1);
+                            world.spawnParticle(Particle.TOTEM_OF_UNDYING, impactLoc, 30, 3, 3, 3, 0.5);
 
                             // 4 simultaneous sounds
                             world.playSound(impactLoc, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.5f);

@@ -44,7 +44,7 @@ final class LegendaryPrimaryAbilities {
         this.ctx = ctx;
     }
 
-    // ── #1 OCEAN'S RAGE: Tidal Crash — 6-block AoE water blast, 15 dmg ──
+    // â”€â”€ #1 OCEAN'S RAGE: Tidal Crash â€” 6-block AoE water blast, 15 dmg â”€â”€
     void rcOceansRage(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_GENERIC_SPLASH, 2.0f, 0.6f);
@@ -59,7 +59,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2248 Tidal Crash! \u2248", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
     }
 
-    // ── #2 AQUATIC SACRED BLADE: Aqua Heal — 6 hearts + Conduit Power 30s ──
+    // â”€â”€ #2 AQUATIC SACRED BLADE: Aqua Heal â€” 6 hearts + Conduit Power 30s â”€â”€
     void rcAquaticSacredBlade(Player p) {
         double maxHp = p.getAttribute(Attribute.MAX_HEALTH).getValue();
         p.setHealth(Math.min(maxHp, p.getHealth() + 12.0));
@@ -70,7 +70,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2764 Aqua Heal! +6 hearts + Conduit Power", NamedTextColor.AQUA));
     }
 
-    // ── #3 TRUE EXCALIBUR: Holy Smite — Lightning + 20 dmg AoE 5 blocks ──
+    // â”€â”€ #3 TRUE EXCALIBUR: Holy Smite â€” Lightning + 20 dmg AoE 5 blocks â”€â”€
     void rcTrueExcalibur(Player p) {
         Location c = p.getLocation().add(p.getLocation().getDirection().multiply(3));
         p.getWorld().strikeLightningEffect(c);
@@ -82,7 +82,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 HOLY SMITE! \u2694", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
     }
 
-    // ── #4 REQUIEM: Soul Devour — Drain 8 hearts, heal self ──
+    // â”€â”€ #4 REQUIEM: Soul Devour â€” Drain 8 hearts, heal self â”€â”€
     void rcRequiemNinthAbyss(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target in range!", NamedTextColor.RED)); return; }
@@ -95,7 +95,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Soul Devoured! +8 hearts", NamedTextColor.DARK_PURPLE));
     }
 
-    // ── #5 ROYAL CHAKRAM: Chakram Throw — bounces 4 targets, 8 dmg each ──
+    // â”€â”€ #5 ROYAL CHAKRAM: Chakram Throw â€” bounces 4 targets, 8 dmg each â”€â”€
     void rcRoyalChakram(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 1.5f);
         List<LivingEntity> targets = ctx.getNearbyEnemies(p.getLocation(), 10.0, p);
@@ -112,12 +112,12 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u25C6 Chakram Throw! " + hits + " targets hit", NamedTextColor.GOLD));
     }
 
-    // ── #6 BERSERKER'S GREATAXE: Berserker Slam — 8-block AoE, 18 dmg ──
+    // â”€â”€ #6 BERSERKER'S GREATAXE: Berserker Slam â€” 8-block AoE, 18 dmg â”€â”€
     void rcBerserkersGreataxe(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.7f);
-        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 3, 0, 0, 0, 0);
-        p.getWorld().spawnParticle(Particle.BLOCK, c, 80, 4, 1, 4, 0.5, Material.NETHERRACK.createBlockData());
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 2, 0, 0, 0, 0);
+        p.getWorld().spawnParticle(Particle.BLOCK, c, 40, 4, 1, 4, 0.5, Material.NETHERRACK.createBlockData());
         for (LivingEntity e : ctx.getNearbyEnemies(c, 8.0, p)) {
             ctx.dealDamage(p, e, 18.0);
             e.setVelocity(new Vector(0, 1.2, 0));
@@ -125,7 +125,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 BERSERKER SLAM! \u2620", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #7 ACIDIC CLEAVER: Acid Splash — 5-block cone, Poison III 8s ──
+    // â”€â”€ #7 ACIDIC CLEAVER: Acid Splash â€” 5-block cone, Poison III 8s â”€â”€
     void rcAcidicCleaver(Player p) {
         Location c = p.getLocation().add(p.getLocation().getDirection().multiply(3));
         p.playSound(c, Sound.ENTITY_LLAMA_SPIT, 1.5f, 0.5f);
@@ -137,7 +137,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Acid Splash! Poison III applied", NamedTextColor.GREEN));
     }
 
-    // ── #8 BLACK IRON GREATSWORD: Dark Slash — 10-block line, 16 dmg ──
+    // â”€â”€ #8 BLACK IRON GREATSWORD: Dark Slash â€” 10-block line, 16 dmg â”€â”€
     void rcBlackIronGreatsword(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getLocation().add(0, 1, 0);
@@ -158,7 +158,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Dark Slash!", NamedTextColor.DARK_GRAY).decorate(TextDecoration.BOLD));
     }
 
-    // ── #9 MURAMASA: Crimson Flash — 8-block dash, 12 dmg along path ──
+    // â”€â”€ #9 MURAMASA: Crimson Flash â€” 8-block dash, 12 dmg along path â”€â”€
     void rcMuramasa(Player p) {
         p.setVelocity(p.getLocation().getDirection().multiply(2.5));
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 1.5f);
@@ -178,7 +178,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u26A1 Crimson Flash!", NamedTextColor.RED).decorate(TextDecoration.BOLD));
     }
 
-    // ── #10 PHOENIX'S GRACE: Phoenix Strike — Fire AoE 6b, 14 dmg + Fire ──
+    // â”€â”€ #10 PHOENIX'S GRACE: Phoenix Strike â€” Fire AoE 6b, 14 dmg + Fire â”€â”€
     void rcPhoenixsGrace(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_BLAZE_SHOOT, 2.0f, 0.8f);
@@ -191,7 +191,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2600 Phoenix Strike!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #11 SOUL COLLECTOR: Soul Harvest — kill stores soul, +10 bonus ──
+    // â”€â”€ #11 SOUL COLLECTOR: Soul Harvest â€” kill stores soul, +10 bonus â”€â”€
     void rcSoulCollector(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -207,7 +207,7 @@ final class LegendaryPrimaryAbilities {
         p.getWorld().spawnParticle(Particle.SOUL, target.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.05);
     }
 
-    // ── #12 AMETHYST SHURIKEN: Shuriken Barrage — 5 projectiles, 7 dmg ──
+    // â”€â”€ #12 AMETHYST SHURIKEN: Shuriken Barrage â€” 5 projectiles, 7 dmg â”€â”€
     void rcAmethystShuriken(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.5f, 2.0f);
         Vector baseDir = p.getLocation().getDirection().normalize();
@@ -234,14 +234,14 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u25C6 Shuriken Barrage!", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ── #13 VALHAKYRA: Valkyrie Dive — Leap 10 up, slam 20 dmg AoE ──
+    // â”€â”€ #13 VALHAKYRA: Valkyrie Dive â€” Leap 10 up, slam 20 dmg AoE â”€â”€
     void rcValhakyra(Player p) {
         p.setVelocity(new Vector(0, 2.5, 0));
         p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 1.2f);
         Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
             Location landing = p.getLocation();
-            p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, landing, 3, 0, 0, 0, 0);
-            p.getWorld().spawnParticle(Particle.CLOUD, landing, 50, 3, 1, 3, 0.1);
+            p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, landing, 2, 0, 0, 0, 0);
+            p.getWorld().spawnParticle(Particle.CLOUD, landing, 25, 3, 1, 3, 0.1);
             p.playSound(landing, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 2.0f, 0.6f);
             for (LivingEntity e : ctx.getNearbyEnemies(landing, 6.0, p)) {
                 ctx.dealDamage(p, e, 20.0);
@@ -251,7 +251,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 VALKYRIE DIVE! \u2694", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #14 WINDREAPER: Gale Slash — 8-block wind cone, 12 dmg + knockback ──
+    // â”€â”€ #14 WINDREAPER: Gale Slash â€” 8-block wind cone, 12 dmg + knockback â”€â”€
     void rcWindreaper(Player p) {
         Location c = p.getLocation().add(p.getLocation().getDirection().multiply(4));
         p.playSound(c, Sound.ENTITY_BREEZE_SHOOT, 2.0f, 0.8f);
@@ -264,7 +264,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2601 Gale Slash!", NamedTextColor.WHITE));
     }
 
-    // ── #15 PHANTOMGUARD: Spectral Cleave — through blocks, 10-block line, 14 dmg ──
+    // â”€â”€ #15 PHANTOMGUARD: Spectral Cleave â€” through blocks, 10-block line, 14 dmg â”€â”€
     void rcPhantomguard(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getEyeLocation();
@@ -287,7 +287,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Spectral Cleave!", NamedTextColor.GRAY));
     }
 
-    // ── #16 MOONLIGHT: Lunar Beam — 15-block ranged beam, 16 dmg ──
+    // â”€â”€ #16 MOONLIGHT: Lunar Beam â€” 15-block ranged beam, 16 dmg â”€â”€
     void rcMoonlight(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getEyeLocation();
@@ -308,13 +308,13 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u263D Lunar Beam!", NamedTextColor.YELLOW));
     }
 
-    // ── #17 ZENITH: Final Judgment — 360 AoE 8 blocks, 22 dmg ──
+    // â”€â”€ #17 ZENITH: Final Judgment â€” 360 AoE 8 blocks, 22 dmg â”€â”€
     void rcZenith(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 1.0f);
         p.playSound(c, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.5f);
         p.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, c.add(0, 1, 0), 200, 4, 3, 4, 0.8);
-        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 5, 2, 0, 2, 0);
+        p.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, c, 2, 2, 0, 2, 0);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 8.0, p)) {
             ctx.dealDamage(p, e, 22.0);
             Vector kb = e.getLocation().toVector().subtract(c.toVector()).normalize().multiply(2.0).setY(1.0);
@@ -323,7 +323,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2726 FINAL JUDGMENT! \u2726", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #18 SOLSTICE: Solar Flare — 10-block fire AoE, 15 dmg + blindness ──
+    // â”€â”€ #18 SOLSTICE: Solar Flare â€” 10-block fire AoE, 15 dmg + blindness â”€â”€
     void rcSolstice(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_BLAZE_SHOOT, 2.0f, 0.6f);
@@ -337,7 +337,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2600 Solar Flare!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #19 GRAND CLAYMORE: Titan Swing — 180 arc, 10-block, 18 dmg ──
+    // â”€â”€ #19 GRAND CLAYMORE: Titan Swing â€” 180 arc, 10-block, 18 dmg â”€â”€
     void rcGrandClaymore(Player p) {
         Location c = p.getLocation();
         Vector facing = c.getDirection().normalize();
@@ -354,11 +354,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 TITAN SWING! \u2694", NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
     }
 
-    // ── #20 CALAMITY BLADE: Cataclysm — 6-block AoE, 14 dmg + slowness ──
+    // â”€â”€ #20 CALAMITY BLADE: Cataclysm â€” 6-block AoE, 14 dmg + slowness â”€â”€
     void rcCalamityBlade(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_WARDEN_EMERGE, 1.5f, 0.8f);
-        p.getWorld().spawnParticle(Particle.BLOCK, c, 80, 3, 2, 3, 0.5, Material.STONE.createBlockData());
+        p.getWorld().spawnParticle(Particle.BLOCK, c, 40, 3, 2, 3, 0.5, Material.STONE.createBlockData());
         p.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, c.add(0, 1, 0), 30, 3, 2, 3, 0.05);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 6.0, p)) {
             ctx.dealDamage(p, e, 14.0);
@@ -367,11 +367,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2622 Cataclysm!", NamedTextColor.DARK_RED));
     }
 
-    // ── #21 DRAGON SWORD: Dragon Breath — 8-block fire cone, 12 dmg ──
+    // â”€â”€ #21 DRAGON SWORD: Dragon Breath â€” 8-block fire cone, 12 dmg â”€â”€
     void rcDragonSword(Player p) {
         Location c = p.getLocation().add(p.getLocation().getDirection().multiply(4));
         p.playSound(c, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.5f);
-        p.getWorld().spawnParticle(Particle.FLAME, c, 60, 4, 2, 4, 0.1);
+        p.getWorld().spawnParticle(Particle.FLAME, c, 30, 4, 2, 4, 0.1);
         p.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, c, 30, 3, 1, 3, 0.05);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 8.0, p)) {
             ctx.dealDamage(p, e, 12.0);
@@ -380,7 +380,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Dragon Breath!", NamedTextColor.RED));
     }
 
-    // ── #22 TALONBRAND: Talon Strike — Triple combo, 8 dmg x3 ──
+    // â”€â”€ #22 TALONBRAND: Talon Strike â€” Triple combo, 8 dmg x3 â”€â”€
     void rcTalonbrand(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -397,7 +397,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Talon Strike! x3 combo", NamedTextColor.DARK_RED));
     }
 
-    // ── #23 EMERALD GREATCLEAVER: Emerald Storm — 6-block AoE, 14 dmg + Poison ──
+    // â”€â”€ #23 EMERALD GREATCLEAVER: Emerald Storm â€” 6-block AoE, 14 dmg + Poison â”€â”€
     void rcEmeraldGreatcleaver(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 2.0f, 0.8f);
@@ -410,7 +410,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2666 Emerald Storm!", NamedTextColor.GREEN));
     }
 
-    // ── #24 DEMON'S BLOOD BLADE: Blood Rite — Sacrifice 3 hearts, 25 dmg ──
+    // â”€â”€ #24 DEMON'S BLOOD BLADE: Blood Rite â€” Sacrifice 3 hearts, 25 dmg â”€â”€
     void rcDemonsBloodBlade(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -424,11 +424,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Blood Rite! -3 hearts \u2192 25 damage!", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
     }
 
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     //  UNCOMMON TIER RIGHT-CLICK ABILITIES (20)
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    // ── #25 NOCTURNE: Shadow Slash — 6-block line, 10 dmg + Blindness ──
+    // â”€â”€ #25 NOCTURNE: Shadow Slash â€” 6-block line, 10 dmg + Blindness â”€â”€
     void rcNocturne(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getEyeLocation();
@@ -450,7 +450,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u263D Shadow Slash!", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #26 GRAVESCEPTER: Grave Rise — Summon 2 zombie allies, 12s ──
+    // â”€â”€ #26 GRAVESCEPTER: Grave Rise â€” Summon 2 zombie allies, 12s â”€â”€
     void rcGravescepter(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_ZOMBIE_VILLAGER_CONVERTED, 1.5f, 0.5f);
         for (int i = 0; i < 2; i++) {
@@ -467,7 +467,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Grave Rise! 2 undead summoned", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #27 LYCANBANE: Silver Strike — 14 dmg + clears buffs ──
+    // â”€â”€ #27 LYCANBANE: Silver Strike â€” 14 dmg + clears buffs â”€â”€
     void rcLycanbane(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -483,7 +483,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Silver Strike! Buffs purged!", NamedTextColor.WHITE));
     }
 
-    // ── #28 GLOOMSTEEL KATANA: Quick Draw — 5-block dash + 10 dmg ──
+    // â”€â”€ #28 GLOOMSTEEL KATANA: Quick Draw â€” 5-block dash + 10 dmg â”€â”€
     void rcGloomsteelKatana(Player p) {
         p.setVelocity(p.getLocation().getDirection().multiply(2.0));
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 2.0f, 2.0f);
@@ -496,11 +496,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u26A1 Quick Draw!", NamedTextColor.DARK_GRAY));
     }
 
-    // ── #29 VIRIDIAN CLEAVER: Verdant Slam — 5-block AoE, 12 dmg + Slow ──
+    // â”€â”€ #29 VIRIDIAN CLEAVER: Verdant Slam â€” 5-block AoE, 12 dmg + Slow â”€â”€
     void rcViridianCleaver(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ITEM_MACE_SMASH_GROUND, 1.5f, 0.9f);
-        p.getWorld().spawnParticle(Particle.COMPOSTER, c, 50, 2.5, 1, 2.5, 0.1);
+        p.getWorld().spawnParticle(Particle.COMPOSTER, c, 25, 2.5, 1, 2.5, 0.1);
         for (LivingEntity e : ctx.getNearbyEnemies(c, 5.0, p)) {
             ctx.dealDamage(p, e, 12.0);
             e.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1));
@@ -508,7 +508,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2618 Verdant Slam!", NamedTextColor.GREEN));
     }
 
-    // ── #30 CRESCENT EDGE: Lunar Cleave — 180 arc 6 blocks, 10 dmg ──
+    // â”€â”€ #30 CRESCENT EDGE: Lunar Cleave â€” 180 arc 6 blocks, 10 dmg â”€â”€
     void rcCrescentEdge(Player p) {
         Location c = p.getLocation();
         Vector facing = c.getDirection().normalize();
@@ -521,7 +521,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u263D Lunar Cleave!", NamedTextColor.YELLOW));
     }
 
-    // ── #31 GRAVECLEAVER: Bone Shatter — 15 dmg + armor reduction ──
+    // â”€â”€ #31 GRAVECLEAVER: Bone Shatter â€” 15 dmg + armor reduction â”€â”€
     void rcGravecleaver(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -532,7 +532,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Bone Shatter! Armor weakened!", NamedTextColor.GRAY));
     }
 
-    // ── #32 AMETHYST GREATBLADE: Crystal Burst — 4-block AoE, 9 dmg + Levitation ──
+    // â”€â”€ #32 AMETHYST GREATBLADE: Crystal Burst â€” 4-block AoE, 9 dmg + Levitation â”€â”€
     void rcAmethystGreatblade(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 2.0f, 1.0f);
@@ -544,7 +544,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2666 Crystal Burst!", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ── #33 FLAMBERGE: Flame Wave — 6-block cone, 10 dmg + Fire ──
+    // â”€â”€ #33 FLAMBERGE: Flame Wave â€” 6-block cone, 10 dmg + Fire â”€â”€
     void rcFlamberge(Player p) {
         Location c = p.getLocation().add(p.getLocation().getDirection().multiply(3));
         p.playSound(c, Sound.ENTITY_BLAZE_SHOOT, 1.5f, 1.0f);
@@ -556,7 +556,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2600 Flame Wave!", NamedTextColor.RED));
     }
 
-    // ── #34 CRYSTAL FROSTBLADE: Frost Spike — 8-block projectile, 10 dmg + Slow ──
+    // â”€â”€ #34 CRYSTAL FROSTBLADE: Frost Spike â€” 8-block projectile, 10 dmg + Slow â”€â”€
     void rcCrystalFrostblade(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getEyeLocation();
@@ -579,7 +579,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2744 Frost Spike!", NamedTextColor.AQUA));
     }
 
-    // ── #35 DEMONSLAYER: Holy Rend — +50% to Undead, 14 normal / 21 undead ──
+    // â”€â”€ #35 DEMONSLAYER: Holy Rend â€” +50% to Undead, 14 normal / 21 undead â”€â”€
     void rcDemonslayer(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.5f, 1.0f);
@@ -595,7 +595,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Holy Rend! +50% vs Undead", NamedTextColor.YELLOW));
     }
 
-    // ── #36 VENGEANCE: Retribution — Store damage for 8s, release as AoE ──
+    // â”€â”€ #36 VENGEANCE: Retribution â€” Store damage for 8s, release as AoE â”€â”€
     void rcVengeance(Player p) {
         UUID uid = p.getUniqueId();
         ctx.retributionDamageStored.put(uid, 0.0);
@@ -618,7 +618,7 @@ final class LegendaryPrimaryAbilities {
         }, 160L);
     }
 
-    // ── #37 OCULUS: All-Seeing Strike — teleport to nearest, 12 dmg ──
+    // â”€â”€ #37 OCULUS: All-Seeing Strike â€” teleport to nearest, 12 dmg â”€â”€
     void rcOculus(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 10.0);
         if (target == null) { p.sendActionBar(Component.text("No target within 10 blocks!", NamedTextColor.RED)); return; }
@@ -630,11 +630,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2609 All-Seeing Strike!", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ── #38 ANCIENT GREATSLAB: Seismic Slam — 6-block AoE, 11 dmg + launch ──
+    // â”€â”€ #38 ANCIENT GREATSLAB: Seismic Slam â€” 6-block AoE, 11 dmg + launch â”€â”€
     void rcAncientGreatslab(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ITEM_MACE_SMASH_GROUND, 2.0f, 0.7f);
-        p.getWorld().spawnParticle(Particle.BLOCK, c, 60, 3, 1, 3, 0.3, Material.STONE.createBlockData());
+        p.getWorld().spawnParticle(Particle.BLOCK, c, 30, 3, 1, 3, 0.3, Material.STONE.createBlockData());
         for (LivingEntity e : ctx.getNearbyEnemies(c, 6.0, p)) {
             ctx.dealDamage(p, e, 11.0);
             e.setVelocity(new Vector(0, 1.0, 0));
@@ -642,7 +642,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Seismic Slam!", NamedTextColor.GRAY));
     }
 
-    // ── #39 NEPTUNE'S FANG: Riptide Slash — pierce 4 entities, 8 dmg each ──
+    // â”€â”€ #39 NEPTUNE'S FANG: Riptide Slash â€” pierce 4 entities, 8 dmg each â”€â”€
     void rcNeptunesFang(Player p) {
         Vector dir = p.getLocation().getDirection().normalize();
         Location start = p.getEyeLocation();
@@ -667,7 +667,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2263 Riptide Slash!", NamedTextColor.AQUA));
     }
 
-    // ── #40 TIDECALLER: Tidal Spear — 12 dmg + knockback + Conduit ──
+    // â”€â”€ #40 TIDECALLER: Tidal Spear â€” 12 dmg + knockback + Conduit â”€â”€
     void rcTidecaller(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 8.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -680,7 +680,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2263 Tidal Spear! + Conduit Power", NamedTextColor.AQUA));
     }
 
-    // ── #41 STORMFORK: Lightning Javelin — lightning on impact, 14 dmg + AoE ──
+    // â”€â”€ #41 STORMFORK: Lightning Javelin â€” lightning on impact, 14 dmg + AoE â”€â”€
     void rcStormfork(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 10.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -693,7 +693,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u26A1 Lightning Javelin!", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD));
     }
 
-    // ── #42 JADE REAPER: Jade Crescent — 180 sweep 7b, 10 dmg + Poison ──
+    // â”€â”€ #42 JADE REAPER: Jade Crescent â€” 180 sweep 7b, 10 dmg + Poison â”€â”€
     void rcJadeReaper(Player p) {
         Location c = p.getLocation();
         Vector facing = c.getDirection().normalize();
@@ -709,7 +709,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2618 Jade Crescent!", NamedTextColor.GREEN));
     }
 
-    // ── #43 VINDICATOR: Executioner's Chop — +1 dmg per missing heart (max +10) ──
+    // â”€â”€ #43 VINDICATOR: Executioner's Chop â€” +1 dmg per missing heart (max +10) â”€â”€
     void rcVindicator(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 5.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -724,7 +724,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2694 Executioner's Chop! +" + String.format("%.0f", bonus) + " bonus dmg", NamedTextColor.DARK_RED));
     }
 
-    // ── #44 SPIDER FANG: Web Trap — cobweb projectile, root 3s + Poison ──
+    // â”€â”€ #44 SPIDER FANG: Web Trap â€” cobweb projectile, root 3s + Poison â”€â”€
     void rcSpiderFang(Player p) {
         LivingEntity target = ctx.getTargetEntity(p, 8.0);
         if (target == null) { p.sendActionBar(Component.text("No target!", NamedTextColor.RED)); return; }
@@ -735,8 +735,8 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 Web Trap! Target rooted + poisoned", NamedTextColor.DARK_GREEN));
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  HOLD ABILITIES — ALL 44 WEAPONS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    //  HOLD ABILITIES â€” ALL 44 WEAPONS
 
     // #45 DIVINE AXE RHITTA: Cruel Sun - massive fire AoE 10 blocks, 24 dmg
     void rcDivineAxeRhitta(Player p) {
@@ -1001,11 +1001,11 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2726 REALITY CLEAVE! \u2726", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  ABYSSAL TIER PRIMARY ABILITIES (4) — 200 particles per burst
-    // ════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    //  ABYSSAL TIER PRIMARY ABILITIES (4) â€” 200 particles per burst
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    // ── #60 REQUIEM AWAKENED: Abyssal Devour — 12-block AoE soul drain, 40 dmg, full lifesteal, chain explosions ──
+    // â”€â”€ #60 REQUIEM AWAKENED: Abyssal Devour â€” 12-block AoE soul drain, 40 dmg, full lifesteal, chain explosions â”€â”€
     void rcRequiemAwakened(Player p) {
         Location c = p.getLocation();
         p.playSound(c, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0f, 0.3f);
@@ -1043,7 +1043,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 ABYSSAL DEVOUR! " + enemies.size() + " souls consumed!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
     }
 
-    // ── #61 EXCALIBUR AWAKENED: Divine Annihilation — 15-block chain beam, 35 dmg × 8 targets, lightning, heals 4/hit, holy explosion ──
+    // â”€â”€ #61 EXCALIBUR AWAKENED: Divine Annihilation â€” 15-block chain beam, 35 dmg Ã— 8 targets, lightning, heals 4/hit, holy explosion â”€â”€
     void rcExcaliburAwakened(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.5f);
         p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1.0f);
@@ -1057,8 +1057,8 @@ final class LegendaryPrimaryAbilities {
                 if (tick > 15) {
                     // Final holy explosion at beam end
                     Location end = start.clone().add(dir.clone().multiply(15));
-                    end.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, end, 100, 5, 3, 5, 0.5);
-                    end.getWorld().spawnParticle(Particle.END_ROD, end, 100, 5, 4, 5, 0.3);
+                    end.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, end, 30, 5, 3, 5, 0.5);
+                    end.getWorld().spawnParticle(Particle.END_ROD, end, 25, 5, 4, 5, 0.3);
                     end.getWorld().playSound(end, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 1.5f);
                     for (LivingEntity e : ctx.getNearbyEnemies(end, 10.0, p)) {
                         ctx.dealDamage(p, e, 25.0);
@@ -1085,12 +1085,12 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2726 DIVINE ANNIHILATION! \u2726", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
     }
 
-    // ── #62 CREATION SPLITTER AWAKENED: Reality Shatter — 3s charge, 80 true dmg 15-block line, launch + collapse ──
+    // â”€â”€ #62 CREATION SPLITTER AWAKENED: Reality Shatter â€” 3s charge, 80 true dmg 15-block line, launch + collapse â”€â”€
     void rcCreationSplitterAwakened(Player p) {
         p.playSound(p.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 2.0f, 0.3f);
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 127)); // root during charge
         p.setGlowing(true);
-        // Charge phase — escalating particles
+        // Charge phase â€” escalating particles
         new BukkitRunnable() {
             int tick = 0;
             @Override public void run() {
@@ -1117,14 +1117,14 @@ final class LegendaryPrimaryAbilities {
                 @Override public void run() {
                     if (tick > 15) { cancel(); return; }
                     Location point = start.clone().add(dir.clone().multiply(tick));
-                    p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, point, 40, 0.5, 0.5, 0.5, 0.2);
+                    p.getWorld().spawnParticle(Particle.REVERSE_PORTAL, point, 30, 0.5, 0.5, 0.5, 0.2);
                     p.getWorld().spawnParticle(Particle.SCULK_CHARGE_POP, point, 20, 0.3, 0.3, 0.3, 0.1);
                     p.getWorld().spawnParticle(Particle.SONIC_BOOM, point, 1, 0, 0, 0, 0);
                     for (LivingEntity e : ctx.getNearbyEnemies(point, 2.5, p)) {
                         if (launched.add(e.getUniqueId())) {
                             e.damage(80.0); // true damage, bypasses armor
                             e.setVelocity(new Vector(0, 4.0, 0)); // launch 20 blocks up
-                            e.getWorld().spawnParticle(Particle.REVERSE_PORTAL, e.getLocation(), 40, 0.5, 1, 0.5, 0.2);
+                            e.getWorld().spawnParticle(Particle.REVERSE_PORTAL, e.getLocation(), 30, 0.5, 1, 0.5, 0.2);
                         }
                     }
                     tick++;
@@ -1133,8 +1133,8 @@ final class LegendaryPrimaryAbilities {
             // Collapse phase after 2 seconds
             Bukkit.getScheduler().runTaskLater(ctx.plugin, () -> {
                 Location collapse = start.clone().add(dir.clone().multiply(8));
-                collapse.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, collapse, 5, 3, 2, 3, 0);
-                collapse.getWorld().spawnParticle(Particle.REVERSE_PORTAL, collapse, 100, 5, 5, 5, 0.5);
+                collapse.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, collapse, 2, 3, 2, 3, 0);
+                collapse.getWorld().spawnParticle(Particle.REVERSE_PORTAL, collapse, 30, 5, 5, 5, 0.5);
                 collapse.getWorld().playSound(collapse, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.3f);
                 for (LivingEntity e : ctx.getNearbyEnemies(collapse, 8.0, p)) {
                     ctx.dealDamage(p, e, 30.0);
@@ -1144,7 +1144,7 @@ final class LegendaryPrimaryAbilities {
         p.sendActionBar(Component.text("\u2620 CHARGING REALITY SHATTER... \u2620", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
     }
 
-    // ── #63 WHISPERWIND AWAKENED: Silent Storm — 30 invisible wind blades in 60 cone, 10 dmg each, pass through everything ──
+    // â”€â”€ #63 WHISPERWIND AWAKENED: Silent Storm â€” 30 invisible wind blades in 60 cone, 10 dmg each, pass through everything â”€â”€
     void rcWhisperwindAwakened(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 2.0f, 0.3f);
         p.playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 1.5f, 0.5f);

@@ -28,7 +28,7 @@ import org.bukkit.util.Vector;
 import java.util.*;
 
 /**
- * Roaming Boss Manager v2.0 — 6 world-roaming bosses.
+ * Roaming Boss Manager v2.0 â€” 6 world-roaming bosses.
  *
  * The Watcher:         Deep Dark, 800 HP, EPIC drops
  * Hellfire Drake:      Nether Wastes/Soul Sand Valley, 600 HP, EPIC drops
@@ -96,9 +96,9 @@ public class RoamingBossManager implements Listener {
         plugin.getLogger().info("Roaming boss scheduler started (The Watcher, Hellfire Drake, Frostbound Colossus, Jungle Predator, End Wraith, Abyssal Leviathan).");
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // THE WATCHER — Deep Dark biome
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // THE WATCHER â€” Deep Dark biome
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkWatcherSpawn() {
         if (activeWatcherUUID != null) {
@@ -160,9 +160,9 @@ public class RoamingBossManager implements Listener {
         plugin.getLogger().info("The Watcher spawned near " + nearPlayer.getName() + " at " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // HELLFIRE DRAKE — Nether
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // HELLFIRE DRAKE â€” Nether
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkHellfireDrakeSpawn() {
         if (activeHellfireDrakeUUID != null) {
@@ -252,9 +252,9 @@ public class RoamingBossManager implements Listener {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // FROSTBOUND COLOSSUS — Snowy Overworld biomes
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // FROSTBOUND COLOSSUS â€” Snowy Overworld biomes
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkFrostColossusSpawn() {
         if (activeFrostColossusUUID != null) {
@@ -322,7 +322,7 @@ public class RoamingBossManager implements Listener {
                     if (!nearby.isEmpty()) {
                         lastSpecialAttack.put(colossus.getUniqueId(), now);
                         Location bossLoc = colossus.getLocation();
-                        bossLoc.getWorld().spawnParticle(Particle.BLOCK, bossLoc, 60, 4, 0.5, 4, 0.1, Material.PACKED_ICE.createBlockData());
+                        bossLoc.getWorld().spawnParticle(Particle.BLOCK, bossLoc, 30, 4, 0.5, 4, 0.1, Material.PACKED_ICE.createBlockData());
                         bossLoc.getWorld().playSound(bossLoc, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.5f, 0.3f);
                         for (Player p : nearby) {
                             Vector kb = p.getLocation().toVector().subtract(bossLoc.toVector()).normalize().multiply(1.8).setY(0.9);
@@ -338,9 +338,9 @@ public class RoamingBossManager implements Listener {
         plugin.getLogger().info("Frostbound Colossus spawned near " + nearPlayer.getName() + " at " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // JUNGLE PREDATOR — Jungle biomes
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // JUNGLE PREDATOR â€” Jungle biomes
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkJunglePredatorSpawn() {
         if (activeJunglePredatorUUID != null) {
@@ -445,15 +445,16 @@ public class RoamingBossManager implements Listener {
                         p.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0, false, false));
                     }
                 }
+                if (predator.isDead() || !predator.isValid()) { cancel(); return; }
             }
         }.runTaskTimer(plugin, 40L, 40L);
 
         plugin.getLogger().info("Jungle Predator spawned near " + nearPlayer.getName() + " at " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // END WRAITH — The End
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // END WRAITH â€” The End
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkEndWraithSpawn() {
         if (activeEndWraithUUID != null) {
@@ -512,11 +513,11 @@ public class RoamingBossManager implements Listener {
                     Player target = findNearestPlayer(bossLoc, 50);
                     if (target != null) {
                         lastSpecialAttack.put(wraith.getUniqueId(), now);
-                        // Phase shift — teleport behind the target
+                        // Phase shift â€” teleport behind the target
                         Location behind = target.getLocation().add(target.getLocation().getDirection().multiply(-3).setY(3));
                         wraith.teleport(behind);
-                        bossLoc.getWorld().spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 40, 1, 1, 1, 0.1);
-                        wraith.getWorld().spawnParticle(Particle.REVERSE_PORTAL, behind, 40, 1, 1, 1, 0.1);
+                        bossLoc.getWorld().spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 30, 1, 1, 1, 0.1);
+                        wraith.getWorld().spawnParticle(Particle.REVERSE_PORTAL, behind, 30, 1, 1, 1, 0.1);
                         wraith.getWorld().playSound(behind, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
                         // Void beam after teleport
                         new BukkitRunnable() {
@@ -560,7 +561,7 @@ public class RoamingBossManager implements Listener {
                         clone.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
                         clone.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "END_WRAITH_CLONE");
                     }
-                    wraith.getWorld().spawnParticle(Particle.REVERSE_PORTAL, wraith.getLocation(), 80, 3, 2, 3, 0.1);
+                    wraith.getWorld().spawnParticle(Particle.REVERSE_PORTAL, wraith.getLocation(), 30, 3, 2, 3, 0.1);
                     wraith.getWorld().playSound(wraith.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 2.0f, 0.3f);
                 }
             }
@@ -569,9 +570,9 @@ public class RoamingBossManager implements Listener {
         plugin.getLogger().info("End Wraith spawned near " + nearPlayer.getName() + " at " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    // ABYSSAL LEVIATHAN — Abyss dimension
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // ABYSSAL LEVIATHAN â€” Abyss dimension
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void checkAbyssalLeviathanSpawn() {
         if (activeAbyssalLeviathanUUID != null) {
@@ -663,9 +664,9 @@ public class RoamingBossManager implements Listener {
         plugin.getLogger().info("Abyssal Leviathan spawned near " + nearPlayer.getName() + " at " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // EVENT HANDLERS
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     @EventHandler
     public void onRoamingBossDamaged(EntityDamageByEntityEvent event) {
@@ -717,7 +718,7 @@ public class RoamingBossManager implements Listener {
         lastSpecialAttack.remove(entity.getUniqueId());
     }
 
-    // ── Death loot handlers ──
+    // â”€â”€ Death loot handlers â”€â”€
 
     private void handleWatcherDeath(Location loc, EntityDeathEvent event, PowerUpManager pum, LegendaryWeaponManager wm) {
         if (random.nextDouble() < 0.30) loc.getWorld().dropItemNaturally(loc, pum.createHeartCrystal());
@@ -801,9 +802,9 @@ public class RoamingBossManager implements Listener {
         deathVFX(loc, Particle.EXPLOSION, Sound.ENTITY_ELDER_GUARDIAN_DEATH, "Abyssal Leviathan", TextColor.color(170, 0, 0), 120);
     }
 
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // UTILITIES
-    // ══════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     private void setupDespawnTimer(LivingEntity boss, Runnable onDespawn, String name) {
         new BukkitRunnable() {
@@ -865,7 +866,7 @@ public class RoamingBossManager implements Listener {
         }
     }
 
-    // ── Getters ──
+    // â”€â”€ Getters â”€â”€
     public boolean isWatcherAlive() { return activeWatcherUUID != null; }
     public boolean isHellfireDrakeAlive() { return activeHellfireDrakeUUID != null; }
     public boolean isFrostColossusAlive() { return activeFrostColossusUUID != null; }

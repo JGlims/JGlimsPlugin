@@ -301,7 +301,7 @@ public class LegendaryAbilityListener implements Listener {
                     victim.setHealth(1.0);
                     ctx.undyingRageActive.put(uid, false);
                     victim.sendActionBar(Component.text("UNDYING RAGE! ", NamedTextColor.DARK_RED).decorate(TextDecoration.BOLD));
-                    victim.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, victim.getLocation(), 50, 0.5, 1, 0.5, 0.3);
+                    victim.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, victim.getLocation(), 30, 0.5, 1, 0.5, 0.3);
                     victim.playSound(victim.getLocation(), Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
                 }
             }

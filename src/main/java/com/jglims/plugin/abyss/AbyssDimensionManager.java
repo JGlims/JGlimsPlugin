@@ -236,9 +236,9 @@ public class AbyssDimensionManager implements Listener {
         // VFX at portal
         Location portalLoc = clicked.getLocation().add(0.5, 0.5, 0.5);
         World world = clicked.getWorld();
-        world.spawnParticle(Particle.REVERSE_PORTAL, portalLoc, 200, 1, 2, 1, 0.5);
-        world.spawnParticle(Particle.DRAGON_BREATH, portalLoc, 100, 1, 1.5, 1, 0.1);
-        world.spawnParticle(Particle.WITCH, portalLoc, 50, 1, 2, 1, 0.3);
+        world.spawnParticle(Particle.REVERSE_PORTAL, portalLoc, 30, 1, 2, 1, 0.5);
+        world.spawnParticle(Particle.DRAGON_BREATH, portalLoc, 25, 1, 1.5, 1, 0.1);
+        world.spawnParticle(Particle.WITCH, portalLoc, 25, 1, 2, 1, 0.3);
         world.playSound(portalLoc, Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 0.5f);
         world.playSound(portalLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.8f, 0.3f);
 

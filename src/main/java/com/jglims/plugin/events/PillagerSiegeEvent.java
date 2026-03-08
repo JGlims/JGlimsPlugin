@@ -217,7 +217,7 @@ public class PillagerSiegeEvent implements Listener {
         // Wave announcement
         TextColor waveColor = wave >= BOSS_WAVE ? TextColor.color(255, 50, 50) : TextColor.color(200, 80, 40);
         for (Player p : currentWorld.getPlayers()) {
-            p.sendMessage(Component.text("\u26A0 Siege Wave " + wave + "/" + MAX_WAVES + " — ",  waveColor)
+            p.sendMessage(Component.text("\u26A0 Siege Wave " + wave + "/" + MAX_WAVES + " â€” ",  waveColor)
                 .append(Component.text(pillagerCount + " pillagers", NamedTextColor.DARK_RED))
                 .append(Component.text(vindicatorCount > 0 ? ", " + vindicatorCount + " vindicators" : "", NamedTextColor.RED))
                 .append(Component.text(ravagerCount > 0 ? ", " + ravagerCount + " ravagers" : "", TextColor.color(180, 60, 20)))
@@ -273,7 +273,7 @@ public class PillagerSiegeEvent implements Listener {
     private void doCommanderAI() {
         double hpPercent = commander.getHealth() / commander.getAttribute(Attribute.MAX_HEALTH).getBaseValue();
 
-        // Ground Slam — every 8 seconds, damages and launches nearby players
+        // Ground Slam â€” every 8 seconds, damages and launches nearby players
         if (commander.getTicksLived() % 160 == 0) {
             Location cLoc = commander.getLocation();
             currentWorld.spawnParticle(Particle.EXPLOSION, cLoc, 3, 2, 0.5, 2);
@@ -284,7 +284,7 @@ public class PillagerSiegeEvent implements Listener {
             }
         }
 
-        // Rally Cry — at 60% and 30% HP, heals and buffs nearby siege mobs
+        // Rally Cry â€” at 60% and 30% HP, heals and buffs nearby siege mobs
         if (hpPercent <= 0.6 && !commander.getScoreboardTags().contains("rally1")) {
             commander.addScoreboardTag("rally1");
             doRallyCry("The Commander rallies the troops!", 1);
@@ -361,8 +361,8 @@ public class PillagerSiegeEvent implements Listener {
         }
 
         // Death VFX
-        currentWorld.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 1, 1, 1);
-        currentWorld.spawnParticle(Particle.SMOKE, loc, 80, 4, 4, 4, 0.1);
+        currentWorld.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 1, 1, 1);
+        currentWorld.spawnParticle(Particle.SMOKE, loc, 40, 4, 4, 4, 0.1);
         currentWorld.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
         currentWorld.strikeLightningEffect(loc);
 

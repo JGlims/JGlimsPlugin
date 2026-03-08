@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Manages the Thanos Glove, Infinity Gauntlet, and Thanos boss.
- * Phase 22 — README Section K.
+ * Phase 22 â€” README Section K.
  *
  * Thanos Glove: drops from Thanos boss (100%).
  * Infinity Gauntlet: crafted from Thanos Glove + all 6 finished Infinity Stones.
@@ -51,7 +51,7 @@ public class InfinityGauntletManager implements Listener {
         KEY_THANOS_BOSS = new NamespacedKey(plugin, "thanos_boss");
     }
 
-    // ── Item creation ──
+    // â”€â”€ Item creation â”€â”€
 
     public ItemStack createThanosGlove() {
         ItemStack item = new ItemStack(Material.GOLDEN_CHESTPLATE);
@@ -109,7 +109,7 @@ public class InfinityGauntletManager implements Listener {
         return item;
     }
 
-    // ── Identification ──
+    // â”€â”€ Identification â”€â”€
 
     public boolean isThanosGlove(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -125,7 +125,7 @@ public class InfinityGauntletManager implements Listener {
         return entity.getPersistentDataContainer().has(KEY_THANOS_BOSS, PersistentDataType.BYTE);
     }
 
-    // ── The Snap ──
+    // â”€â”€ The Snap â”€â”€
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -226,7 +226,7 @@ public class InfinityGauntletManager implements Listener {
                 world.spawnParticle(Particle.DUST, loc.clone().add(0, 2, 0), 100, 5, 5, 5, 0,
                         new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 215, 0), 3.0f));
                 world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc.clone().add(0, 1, 0), 50, 1, 2, 1, 0.5);
-                world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 1, 1, 1);
+                world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 1, 1, 1);
 
                 // Sound
                 for (Player p : world.getPlayers()) {
@@ -257,7 +257,7 @@ public class InfinityGauntletManager implements Listener {
         }.runTaskLater(plugin, 20L);
     }
 
-    // ── Thanos Boss Death ──
+    // â”€â”€ Thanos Boss Death â”€â”€
 
     @EventHandler
     public void onThanosDeath(EntityDeathEvent event) {
@@ -277,10 +277,10 @@ public class InfinityGauntletManager implements Listener {
         loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.GOLD_BLOCK, 8 + ThreadLocalRandom.current().nextInt(8)));
 
         // VFX
-        loc.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 150, 3, 3, 3, 0.5);
-        loc.getWorld().spawnParticle(Particle.DUST, loc, 80, 3, 3, 3, 0,
+        loc.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 30, 3, 3, 3, 0.5);
+        loc.getWorld().spawnParticle(Particle.DUST, loc, 40, 3, 3, 3, 0,
                 new Particle.DustOptions(org.bukkit.Color.fromRGB(150, 0, 255), 2.0f));
-        loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 5, 2, 2, 2);
+        loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 2, 2, 2);
         loc.getWorld().playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.5f);
 
         // Broadcast
@@ -296,7 +296,7 @@ public class InfinityGauntletManager implements Listener {
         plugin.getLogger().info("Thanos boss defeated! Thanos Glove dropped.");
     }
 
-    // ── Thanos Boss Spawning (called by StructureBossManager) ──
+    // â”€â”€ Thanos Boss Spawning (called by StructureBossManager) â”€â”€
 
     /**
      * Configure an entity as the Thanos boss. Called by StructureBossManager
@@ -380,7 +380,7 @@ public class InfinityGauntletManager implements Listener {
                             p.playSound(bLoc, Sound.ENTITY_WITHER_AMBIENT, 1.0f, 0.3f);
                         }
                     }
-                    world.spawnParticle(Particle.DUST, bLoc, 100, 3, 3, 3, 0,
+                    world.spawnParticle(Particle.DUST, bLoc, 50, 3, 3, 3, 0,
                             new Particle.DustOptions(org.bukkit.Color.fromRGB(150, 0, 255), 2.0f));
                 }
 
@@ -432,6 +432,7 @@ public class InfinityGauntletManager implements Listener {
                 world.spawnParticle(Particle.DUST, bLoc.clone().add(0, 1.5, 0), 5, 0.5, 1, 0.5, 0,
                         new Particle.DustOptions(org.bukkit.Color.fromRGB(150, 0, 255), 1.0f));
                 world.spawnParticle(Particle.ENCHANT, bLoc.clone().add(0, 2, 0), 3, 0.5, 0.5, 0.5);
+                if (boss.isDead() || !boss.isValid()) { cancel(); return; }
             }
         }.runTaskTimer(plugin, 10L, 10L);
     }

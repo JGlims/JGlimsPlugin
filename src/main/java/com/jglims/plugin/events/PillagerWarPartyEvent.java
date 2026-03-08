@@ -201,7 +201,7 @@ public class PillagerWarPartyEvent implements Listener {
     }
 
     private void doPartyAI() {
-        // Captain phase 2 at 50% HP — speed and damage boost
+        // Captain phase 2 at 50% HP â€” speed and damage boost
         if (captain != null && !captain.isDead()) {
             double hpPercent = captain.getHealth() / captain.getAttribute(Attribute.MAX_HEALTH).getBaseValue();
             if (hpPercent <= 0.5 && !captain.getScoreboardTags().contains("phase2")) {
@@ -217,7 +217,7 @@ public class PillagerWarPartyEvent implements Listener {
                 }
             }
 
-            // Captain aura — particles
+            // Captain aura â€” particles
             Location bLoc = captain.getLocation();
             currentWorld.spawnParticle(Particle.ANGRY_VILLAGER, bLoc.add(0, 2, 0), 5, 1, 0.5, 1);
         }
@@ -262,7 +262,7 @@ public class PillagerWarPartyEvent implements Listener {
 
         // Death VFX
         currentWorld.spawnParticle(Particle.EXPLOSION, loc, 5, 2, 2, 2);
-        currentWorld.spawnParticle(Particle.SMOKE, loc, 50, 3, 3, 3, 0.05);
+        currentWorld.spawnParticle(Particle.SMOKE, loc, 25, 3, 3, 3, 0.05);
         currentWorld.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.7f);
 
         // Announce
@@ -305,7 +305,7 @@ public class PillagerWarPartyEvent implements Listener {
         plugin.getLogger().info("Pillager War Party event ended in " + currentWorld.getName());
     }
 
-    // ── Utility ──
+    // â”€â”€ Utility â”€â”€
 
     private void enhancePillager(Pillager p, double hp, double damage) {
         if (p.getAttribute(Attribute.MAX_HEALTH) != null) {

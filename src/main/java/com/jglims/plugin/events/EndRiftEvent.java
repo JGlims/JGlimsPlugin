@@ -352,7 +352,7 @@ public class EndRiftEvent implements Listener {
         }
 
         // Spawn particles at wave start
-        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, center, 200, 5, 5, 5, 0.3);
+        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, center, 30, 5, 5, 5, 0.3);
         riftWorld.spawnParticle(Particle.EXPLOSION, center, 3, 3, 3, 3);
     }
 
@@ -390,7 +390,7 @@ public class EndRiftEvent implements Listener {
         }
 
         // Spawn as a Wither (we cannot spawn a second EnderDragon cleanly in the overworld,
-        // so we use a Wither reskinned/renamed as the End Rift Dragon — same boss bar behavior)
+        // so we use a Wither reskinned/renamed as the End Rift Dragon â€” same boss bar behavior)
         boss = riftWorld.spawn(spawnLoc, Wither.class, w -> {
             w.customName(Component.text("\u2620 End Rift Dragon \u2620", TextColor.color(120, 0, 200))
                     .decorate(TextDecoration.BOLD));
@@ -412,9 +412,9 @@ public class EndRiftEvent implements Listener {
         boss.setRemoveWhenFarAway(false);
 
         // Massive spawn VFX
-        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 300, 5, 5, 5, 0.5);
-        riftWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 150, 3, 3, 3, 0.1);
-        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, spawnLoc, 5, 2, 2, 2);
+        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 30, 5, 5, 5, 0.5);
+        riftWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 25, 3, 3, 3, 0.1);
+        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, spawnLoc, 2, 2, 2, 2);
         riftWorld.playSound(spawnLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.4f);
 
         // Broadcast boss spawn
@@ -504,7 +504,7 @@ public class EndRiftEvent implements Listener {
             return;
         }
 
-        // Rift mob death — small XP bonus
+        // Rift mob death â€” small XP bonus
         if (entity.getPersistentDataContainer().has(KEY_RIFT_MOB, PersistentDataType.BYTE)) {
             event.setDroppedExp(event.getDroppedExp() * 2);
             // Small chance to drop ender pearls
@@ -547,10 +547,10 @@ public class EndRiftEvent implements Listener {
         }
 
         // Massive VFX
-        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, loc, 500, 5, 5, 5, 0.5);
-        riftWorld.spawnParticle(Particle.DRAGON_BREATH, loc, 200, 3, 3, 3, 0.2);
-        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 8, 3, 3, 3);
-        riftWorld.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 100, 2, 4, 2, 0.5);
+        riftWorld.spawnParticle(Particle.REVERSE_PORTAL, loc, 30, 5, 5, 5, 0.5);
+        riftWorld.spawnParticle(Particle.DRAGON_BREATH, loc, 25, 3, 3, 3, 0.2);
+        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 3, 3, 3);
+        riftWorld.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 30, 2, 4, 2, 0.5);
         riftWorld.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.5f);
         riftWorld.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 1.0f);
 
@@ -660,7 +660,7 @@ public class EndRiftEvent implements Listener {
         }
 
         // Final collapse VFX
-        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, riftCenter.clone().add(0, 5, 0), 10, 5, 5, 5);
+        riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, riftCenter.clone().add(0, 2, 0), 10, 5, 5, 5);
         riftWorld.playSound(riftCenter, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
     }
 

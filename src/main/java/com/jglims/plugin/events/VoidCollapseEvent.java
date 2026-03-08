@@ -134,7 +134,7 @@ public class VoidCollapseEvent implements Listener {
             public void run() {
                 if (boss == null || boss.isDead() || !active) { cancel(); return; }
                 Location bossLoc = boss.getLocation();
-                currentWorld.spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 40, 2, 2, 2, 0.1);
+                currentWorld.spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 30, 2, 2, 2, 0.1);
                 currentWorld.spawnParticle(Particle.WITCH, bossLoc, 15, 1.5, 1.5, 1.5, 0.02);
 
                 // Void beam: every 3 seconds, Wither + slow nearest player
@@ -175,7 +175,7 @@ public class VoidCollapseEvent implements Listener {
         eventManager.dropMiscLoot(loc, 12, 25);
         loc.getWorld().dropItemNaturally(loc, new ItemStack(Material.ENDER_PEARL, 8 + random.nextInt(8)));
 
-        currentWorld.spawnParticle(Particle.REVERSE_PORTAL, loc, 100, 3, 3, 3, 0.2);
+        currentWorld.spawnParticle(Particle.REVERSE_PORTAL, loc, 30, 3, 3, 3, 0.2);
         currentWorld.spawnParticle(Particle.EXPLOSION, loc, 5, 2, 2, 2);
         currentWorld.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 1.5f, 0.5f);
 

@@ -255,7 +255,7 @@ public class NetherStormEvent implements Listener {
 
         // Death effects
         currentWorld.spawnParticle(Particle.EXPLOSION, loc, 5, 2, 2, 2);
-        currentWorld.spawnParticle(Particle.LAVA, loc, 60, 3, 3, 3);
+        currentWorld.spawnParticle(Particle.LAVA, loc, 30, 3, 3, 3);
         currentWorld.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
 
         boss = null;

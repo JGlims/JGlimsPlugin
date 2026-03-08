@@ -28,7 +28,7 @@ import org.bukkit.util.Vector;
 import java.util.*;
 
 /**
- * Abyss Dragon Boss — the ultimate boss of the Abyss dimension.
+ * Abyss Dragon Boss â€” the ultimate boss of the Abyss dimension.
  *
  * Spawns on the central island when a player first enters (or respawns after 30 min).
  * Uses a Wither entity as base (cannot spawn a second EnderDragon on non-End worlds cleanly).
@@ -118,8 +118,8 @@ public class AbyssDragonBoss implements Listener {
         boss.getPersistentDataContainer().set(KEY_ABYSS_DRAGON, PersistentDataType.BYTE, (byte) 1);
 
         // VFX
-        abyssWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 300, 5, 5, 5, 0.3);
-        abyssWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 200, 5, 5, 5, 0.5);
+        abyssWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 25, 5, 5, 5, 0.3);
+        abyssWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 30, 5, 5, 5, 0.5);
 
         // Start boss attack loop
         new BukkitRunnable() {
@@ -169,7 +169,7 @@ public class AbyssDragonBoss implements Listener {
                 p.setVelocity(p.getVelocity().add(pull));
                 p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1, true, false));
             }
-            world.spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 100, 8, 4, 8, 0.3);
+            world.spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 30, 8, 4, 8, 0.3);
             for (Player p : nearby) {
                 p.playSound(bossLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.3f);
             }
@@ -210,7 +210,7 @@ public class AbyssDragonBoss implements Listener {
                 p.damage(6.0, boss);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 60, 1, true, false));
             }
-            world.spawnParticle(Particle.DRAGON_BREATH, bossLoc, 80, 6, 3, 6, 0.2);
+            world.spawnParticle(Particle.DRAGON_BREATH, bossLoc, 25, 6, 3, 6, 0.2);
         }
 
         // Ambient particles
@@ -274,10 +274,10 @@ public class AbyssDragonBoss implements Listener {
         world.dropItemNaturally(loc, new ItemStack(Material.EXPERIENCE_BOTTLE, 32));
 
         // Massive VFX
-        world.spawnParticle(Particle.REVERSE_PORTAL, loc, 500, 8, 8, 8, 0.5);
-        world.spawnParticle(Particle.DRAGON_BREATH, loc, 300, 5, 5, 5, 0.2);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 10, 5, 5, 5);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 200, 3, 5, 3, 0.5);
+        world.spawnParticle(Particle.REVERSE_PORTAL, loc, 30, 8, 8, 8, 0.5);
+        world.spawnParticle(Particle.DRAGON_BREATH, loc, 25, 5, 5, 5, 0.2);
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 5, 5, 5);
+        world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 30, 3, 5, 3, 0.5);
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.3f);
         world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 1.0f);
 
