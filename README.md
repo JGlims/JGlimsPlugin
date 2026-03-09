@@ -1685,3 +1685,46 @@ phase is implemented:
 | 13th | Phase 32 (Fishing) | 2 | ~1,500 | Nothing |
 | 14th | Phase 33 (Guild Wars) | 3 | ~2,000 | Existing guild system |
 | 15th | Phase 34 (Challenge Modes) | 2 | ~1,500 | Nothing |
+
+
+
+
+
+Full Repository Audit — JGlimsPlugin (commit a6a016e, 2026-03-08)
+CONFIRMED IMPLEMENTED (all registered in onEnable, all have real code)
+Legendary Weapons: 63 weapons across 5 tiers — 20 COMMON, 8 RARE, 7 EPIC, 24 MYTHIC (9 original + 15 new #45-59), 4 ABYSSAL (awakened). The LegendaryTier.java standalone enum is done with COMMON through ABYSSAL, particle budgets, cooldown multipliers, and validation methods. LegendaryPrimaryAbilities.java (70 KB) and LegendaryAltAbilities.java (73 KB) hold all 63 weapons' ability implementations.
+
+Structures: 39 structure types in StructureType.java — 25 overworld (Ruined Colosseum, Druid's Grove, Shrek House, Mage Tower, Gigantic Castle, Fortress, Camping Small/Large, Ultra Village, two Witch Houses, Allay Sanctuary, Volcano, Ancient Temple, Abandoned House, House-Tree, Dungeon Deep, Thanos Temple, Pillager Fortress/Airship, Frost Dungeon, Bandit Hideout, Sunken Ruins, Cursed Graveyard, Sky Altar), 7 nether (Crimson Citadel, Soul Sanctum, Basalt Spire, Nether Dungeon, Piglin Palace, Wither Sanctum, Blaze Colosseum), 5 end (Void Shrine, Ender Monastery, Dragon's Hoard, End Rift Arena, Dragon Death Chest), 3 abyss (Abyssal Castle, Void Nexus, Shattered Cathedral). StructureManager.java (50 KB), StructureBuilder.java (9 KB), StructureLootPopulator.java (9 KB), and StructureBossManager.java (15 KB) are all present with full logic.
+
+Mini-Bosses: 30+ structure bosses spawned via StructureBossManager — each StructureType with hasBoss=true has a dedicated spawn method. Specialized bosses include Frost Warden (Stray), Drowned Warlord, Grave Revenant, Wither Priest, Infernal Champion, Abyssal Overlord, Void Arbiter, and Fallen Archbishop. Generic bosses use Iron Golem, Zombie, Evoker, Vindicator, PiglinBrute, Pillager, Witch, Phantom, MagmaCube, Husk, Hoglin, WitherSkeleton, Blaze, and Enderman.
+
+Roaming Bosses: 6 world-roaming bosses in RoamingBossManager.java (57 KB) — The Watcher (Deep Dark, 800 HP), Hellfire Drake (Nether, 600 HP), Frostbound Colossus (Snow, 700 HP), Jungle Predator (Jungle, 500 HP), End Wraith (End, 900 HP, with shadow clones at 50% HP), Abyssal Leviathan (Abyss, 1200 HP). All have custom AI, special attacks, death loot, and despawn timers.
+
+Events: EventManager.java orchestrates 6 events — NetherStormEvent.java (11 KB), PiglinUprisingEvent.java (9 KB), VoidCollapseEvent.java (9 KB), PillagerWarPartyEvent.java (15 KB), PillagerSiegeEvent.java (19 KB), EndRiftEvent.java (30 KB). Periodic scheduler checks dimension/biome/time conditions.
+
+Armor Sets: 13 sets in LegendaryArmorSet.java (16 KB) — 6 craftable (Reinforced Leather, Copper, Chainmail Reinforced, Amethyst, Bone, Sculk) and 7 legendary drops (Shadow Stalker, Blood Moon, Nature's Embrace, Frost Warden, Void Walker, Dragon Knight, Abyssal Plate). Each has 4 pieces with custom_model_data, passives per slot, and set bonuses. LegendaryArmorManager.java (15 KB) creates pieces; LegendaryArmorListener.java (39 KB) applies passive effects.
+
+Quests: QuestManager.java (28 KB) — 6 quest lines (Hunter, Miner, Explorer, Nether Trials, Dragon Slayer, Abyssal Descent), each with 3 stages, NPC villagers, progress tracking via PersistentDataContainer, and rewards (weapons, Heart Crystals, Soul Fragments, Phoenix Feathers). QuestProgressListener.java (3 KB) hooks kill/mine/move events.
+
+Abyss Dimension: AbyssDimensionManager.java (12 KB) — custom world world_abyss using AbyssChunkGenerator.java (7 KB), purpur portal frame activation with Abyssal Key (Echo Shard), teleportation with VFX. AbyssDragonBoss.java (14 KB) is the Abyss Dragon boss.
+
+Infinity Gauntlet: InfinityGauntletManager.java (23 KB) — Thanos boss with 800 HP, 2-phase AI (ground slam, energy beam), guaranteed Thanos Glove drop. Gauntlet snap kills 50% of loaded hostile mobs, 5-min cooldown. InfinityStoneManager.java (8 KB) handles 6 stones (fragments + finished).
+
+Other Systems: Enchantments (64 custom, EnchantmentEffectListener 69 KB), Blessings, Guilds, Blood Moon, King Mobs, Mob Difficulty, Boss Mastery Titles, Power-ups (Heart Crystal, Soul Fragment, Titan's Resolve, Phoenix Feather, KeepInventorer, Vitality Shard, Berserker Mark), NPC Wizard, Creative Menu, Guide Book (PT-BR), 11 battle weapon types, Recipe Manager (35 KB), Pale Garden Fog.
+
+What's Actually Missing / Next Steps
+Now that the code audit is done, here's what should be the real priority:
+
+Priority 1 — Verify weapon textures work in-game. The server resource pack (7.84 MB, SHA-1 1b115ef012cdcd34491f4482b4e220303bf2c3db) is deployed and TPS is 20.0. You need to join the server, accept the pack, and confirm that /jglims legendary <id> gives weapons with correct custom textures. Do the custom_model_data values (30001–30063 for weapons, 40001–40002 for gauntlet items, 30101–30264 for armor) actually render the textures from the merged resource pack? Which packs provided the weapon textures — Blades of Majestica (36 items) and nongko's Fantasy Weapons (20 items) cover 56 items, but you have 63 weapons + 4 abyssal + gauntlet items + 52 armor pieces. That's 119+ items needing textures. Are they all mapped?
+
+Priority 2 — Custom mini-boss textures. You mentioned wanting custom textures for mini-bosses. Currently bosses get their visual identity from equipment (vanilla armor/weapons) + name + glow + particles, not custom entity textures. To add unique visuals, you'd equip them with custom_model_data items (like a custom helmet or weapon skin). This requires creating the textures, adding them to the resource pack, and updating StructureBossManager to equip items with those CMD values.
+
+Priority 3 — Features you mentioned wanting to add (from conversation history):
+
+Thanos Gauntlet updates: more epic lighting, revert to glove state after snap, apply Weakness V + Slowness II to user, move Thanos Temple to End Cities
+New PvP legendary items: Hollow Purple, Wand of Wands, King's Haki
+Aether dimension (mid-game)
+Lunar dimension (end-game, post-Dragon)
+More structures, mini-bosses, and loot across all biomes
+README status section
+What should we tackle first? I'd recommend joining the server right now, running /jglims legendary true_excalibur and a few other weapons, and telling me which ones render their textures correctly and which show as plain diamond swords. That'll tell us exactly what texture work is needed before we move forward

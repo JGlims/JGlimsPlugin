@@ -17,6 +17,8 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import java.util.List;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -67,7 +69,9 @@ public class InfinityGauntletManager implements Listener {
                 Component.text("in a crafting table.", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_THANOS_GLOVE, PersistentDataType.BYTE, (byte) 1);
-        meta.setCustomModelData(40001);
+        CustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+            cmdComp.setStrings(List.of("thanos_glove"));
+            meta.setCustomModelDataComponent(cmdComp);
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
         item.setItemMeta(meta);
@@ -102,7 +106,9 @@ public class InfinityGauntletManager implements Listener {
                         .append(Component.text("Mind", TextColor.color(255, 255, 0)))
         ));
         meta.getPersistentDataContainer().set(KEY_INFINITY_GAUNTLET, PersistentDataType.BYTE, (byte) 1);
-        meta.setCustomModelData(40002);
+        CustomModelDataComponent cmdComp2 = meta.getCustomModelDataComponent();
+            cmdComp2.setStrings(List.of("infinity_gauntlet"));
+            meta.setCustomModelDataComponent(cmdComp2);
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
         item.setItemMeta(meta);
