@@ -1728,3 +1728,464 @@ Lunar dimension (end-game, post-Dragon)
 More structures, mini-bosses, and loot across all biomes
 README status section
 What should we tackle first? I'd recommend joining the server right now, running /jglims legendary true_excalibur and a few other weapons, and telling me which ones render their textures correctly and which show as plain diamond swords. That'll tell us exactly what texture work is needed before we move forward
+
+
+
+
+
+JGlimsPlugin — Complete Project Summary & State Report
+Date: March 9, 2026
+
+PROJECT OVERVIEW
+JGlimsPlugin is a custom Minecraft Paper plugin (version 2.0.0) for a survival/RPG-style server. It adds legendary weapons, legendary armor sets, infinity gauntlet mechanics, infinity stones, power-ups, custom mini-boss encounters, a Blood Moon event, an Abyss dimension, and a villager party event. The server runs Paper 1.21.11-126 on an Oracle Cloud ARM64 instance using the itzg/minecraft-server:latest Docker image.
+
+SERVER INFRASTRUCTURE
+Remote Server:
+
+IP: 144.22.198.184
+OS: Ubuntu 24.04 (ARM64 / aarch64)
+Docker: version 28.2.2
+Docker Compose: v2.37.1 (installed during this session via apt-get install docker-compose-v2)
+SSH Key: C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key
+SSH User: ubuntu@144.22.198.184
+Minecraft directory: /home/ubuntu/minecraft-server
+Data volume mount: ./data:/data
+Container name: mc-crossplay
+Container image: itzg/minecraft-server:latest
+Java version on server: Java 25 (OpenJDK 64-Bit Server VM 25.0.2+10-LTS, Eclipse Adoptium Temurin)
+Paper version: Paper 1.21.11-126-main@3f5728e (built 2026-02-28)
+Memory: 8GB allocated
+Ports: 25565/tcp (Java), 19132/udp (Bedrock via Geyser)
+Online mode: disabled (for crossplay)
+Game mode: creative
+Max players: 15
+View distance: 10, Simulation distance: 6
+Installed Plugins on Server:
+
+JGlimsPlugin 2.0.0 (our plugin)
+Geyser-Spigot 2.9.4-SNAPSHOT (Bedrock crossplay)
+floodgate 2.2.5-SNAPSHOT (Bedrock auth)
+SkinsRestorer 15.10.2
+Chunky 1.4.40 (chunk pre-generation)
+Docker Compose Configuration (/home/ubuntu/minecraft-server/docker-compose.yml):
+
+Resource pack URL: https://github.com/JGlims/JGlimsPlugin/releases/download/v2.2.0/JGlimsResourcePack-v2.1-server.zip
+Resource pack SHA-1: 6b824f117a1b1062f868b47e5248f428f5eabf14
+Resource pack enforce: TRUE
+Resource pack prompt: "JGlims Server requires a resource pack for custom weapons"
+.env file: empty (all config is inline in docker-compose.yml)
+server.properties (key fields):
+
+require-resource-pack=true
+resource-pack=https://github.com/JGlims/JGlimsPlugin/releases/download/v2.2.0/JGlimsResourcePack-v2.1-server.zip
+resource-pack-sha1=6b824f117a1b1062f868b47e5248f428f5eabf14
+resource-pack-id=a7e3f2b1-1c4d-4a8e-9f6b-2d5e8c1a3b7f
+resource-pack-prompt=JGlims Server requires a resource pack for custom weapons
+NOTE: The resource-pack-prompt field causes a JSON parse warning on startup ("MalformedJsonException") because it's not wrapped in JSON quotes. This is cosmetic and does not prevent the server from running.
+LOCAL DEVELOPMENT ENVIRONMENT
+OS: Windows (PowerShell 5.x based on the Set-Content -Encoding error — not PowerShell 7)
+IDE: Visual Studio Code
+Project root: C:\Users\jgmel\Documents\projects\JGlimsPlugin
+Plugin source: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin\src\main\java\com\jglims\plugin
+Build system: Gradle (via .\gradlew build)
+Build output JAR: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin\build\libs\JGlimsPlugin-2.0.0.jar (670 KB)
+Resource pack ZIP: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsResourcePack-v2.1-server.zip (7.85 MB, ~4380 files)
+Resource pack SHA-1: 6b824f117a1b1062f868b47e5248f428f5eabf14
+GitHub repo: JGlims/JGlimsPlugin (private)
+GitHub release: v2.2.0 at https://github.com/JGlims/JGlimsPlugin/releases/tag/v2.2.0
+GitHub CLI: installed at C:\Program Files\GitHub CLI\gh.exe (v2.87.3), authenticated as JGlims, SSH protocol. NOTE: gh is NOT in PATH — must invoke as & "C:\Program Files\GitHub CLI\gh.exe".
+Temp/working directories used during this session: C:\Users\jgmel\Documents\projects\JGlimsPlugin\_diag, C:\Users\jgmel\Documents\projects\JGlimsPlugin\_fixPack, C:\Users\jgmel\Documents\projects\JGlimsPlugin\_packFix
+RESOURCE PACK STRUCTURE
+The resource pack is located at JGlimsResourcePack-v2.1-server.zip and contains:
+
+pack.mcmeta:
+
+Copy{
+  "pack": {
+    "pack_format": 46,
+    "description": "JGlims Server Resource Pack v2.2 - Custom weapons, armor, bosses & items"
+  }
+}
+pack_format 46 corresponds to Minecraft 1.21.4.
+
+Directory Structure:
+
+assets/minecraft/
+├── items/                    (67+ item definition JSONs)
+├── models/
+│   ├── block/                (1227 files — vanilla block model overrides)
+│   └── item/                 (251 model files at root level — OLD copies)
+│       ├── armor/            (52 model files)
+│       ├── infinity/         (8 model files)
+│       ├── powerups/         (7 model files)
+│       └── weapons/          (208 model files)
+├── textures/
+│   ├── item/                 (831 PNG texture files at root level)
+│   │   ├── armor/            (armor textures)
+│   │   ├── infinity/         (infinity stone/gauntlet textures)
+│   │   ├── powerups/         (power-up textures)
+│   │   ├── swords/           (some sword textures)
+│   │   └── weapons/          (weapon textures — referenced by models in weapons/ subfolder)
+│   ├── colormap/
+│   ├── entity/
+│   ├── environment/
+│   ├── font/
+│   ├── gui/
+│   ├── models/armor/         (armor overlay textures)
+│   └── trims/items/          (trim textures)
+└── ...
+CRITICAL NOTE about model file duplication: There are 251 model JSON files at models/item/ (root level) AND 208 model JSON files at models/item/weapons/. Many weapon models exist in BOTH locations. The root-level copies reference textures as "item/excalibur_ani" (pointing to textures/item/excalibur_ani.png), while the weapons/ subfolder copies reference textures as "item/weapons/excalibur_ani" (pointing to textures/item/weapons/excalibur_ani.png). The item definition JSONs currently point to the weapons/ subfolder versions (e.g., "minecraft:item/weapons/excalibur"), and the texture cross-check confirmed all textures exist for those models.
+
+Item Definition Files (in assets/minecraft/items/): These are the JSON files that tell Minecraft which model to render based on custom_model_data component strings. Currently generated files include:
+
+diamond_sword.json — 40 weapon cases (the main weapon file)
+diamond_axe.json — 10 weapon cases
+diamond_hoe.json — 1 case (jade_reaper -> jadehalberd)
+mace.json — 1 case (mjolnir)
+trident.json — 1 case (stormbringer for Ocean's Rage) with special trident fallback
+bow.json — 0 custom cases currently (whisperwind and phantom_bow were in old version but may have been lost)
+crossbow.json — exists but unclear if it has custom cases
+netherite_helmet.json — 17 cases (13 armor sets + 4 aliases for _armor suffix sets)
+netherite_chestplate.json — 17 cases
+netherite_leggings.json — 17 cases
+netherite_boots.json — 17 cases
+golden_chestplate.json — 2 cases (infinity_gauntlet, thanos_glove)
+amethyst_shard.json — 13 cases (7 power-ups + 6 infinity stones)
+purple_dye.json, blue_dye.json, red_dye.json, orange_dye.json, green_dye.json, yellow_dye.json — 1 case each for infinity stones
+Various vanilla item overrides (chainmail, copper, iron, stone, wooden, leather, golden, diamond, netherite weapons/armor/tools)
+PLUGIN JAVA ARCHITECTURE
+Key Source Files:
+
+LegendaryWeapon.java — Enum defining all 63 legendary weapons. Each entry contains:
+
+id (String) — internal identifier (e.g., "true_excalibur")
+displayName (String) — shown to players (e.g., "True Excalibur")
+baseMaterial (Material) — the vanilla item type (DIAMOND_SWORD, DIAMOND_AXE, MACE, TRIDENT, DIAMOND_HOE, BOW)
+baseDamage (int)
+customModelData (int) — OLD integer CMD value (30001-30063), NO LONGER USED for rendering but still in the enum
+tier (LegendaryTier) — COMMON, RARE, EPIC, MYTHIC, ABYSSAL
+textureName (String) — THE CRITICAL FIELD — this is the string that gets set as CustomModelDataComponent strings and must match the "when" value in the item definition JSON
+primaryAbilityName, altAbilityName (Strings)
+primaryCooldown, altCooldown (ints)
+LegendaryWeaponManager.java — Creates weapon ItemStacks. CORRECTLY UPDATED to use string-based CMD:
+
+CopyCustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+cmd.setStrings(List.of(weapon.getTextureName()));
+meta.setCustomModelDataComponent(cmd);
+Imports: org.bukkit.inventory.meta.components.CustomModelDataComponent and java.util.List.
+
+LegendaryArmorSet.java — Enum defining 13 armor sets:
+
+REINFORCED_LEATHER (id: "reinforced_leather") — COMMON
+COPPER_ARMOR (id: "copper_armor") — COMMON
+CHAINMAIL_REINFORCED (id: "chainmail_reinforced") — COMMON
+AMETHYST_ARMOR (id: "amethyst_armor") — COMMON
+BONE_ARMOR (id: "bone_armor") — COMMON
+SCULK_ARMOR (id: "sculk_armor") — RARE
+SHADOW_STALKER (id: "shadow_stalker") — RARE
+BLOOD_MOON (id: "blood_moon") — EPIC
+NATURES_EMBRACE (id: "natures_embrace") — EPIC
+FROST_WARDEN (id: "frost_warden") — EPIC
+VOID_WALKER (id: "void_walker") — MYTHIC
+DRAGON_KNIGHT (id: "dragon_knight") — MYTHIC
+ABYSSAL_PLATE (id: "abyssal_plate") — ABYSSAL
+LegendaryArmorManager.java — Creates armor ItemStacks. UPDATED to use string-based CMD:
+
+CopyCustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+String slotSuffix = switch (slot) {
+    case HELMET -> "_helmet";
+    case CHESTPLATE -> "_chestplate";
+    case LEGGINGS -> "_leggings";
+    case BOOTS -> "_boots";
+};
+cmdComp.setStrings(List.of(set.getId().replace(" ", "_").toLowerCase() + slotSuffix));
+meta.setCustomModelDataComponent(cmdComp);
+This generates CMD strings like "blood_moon_helmet", "void_walker_chestplate", "copper_armor_boots", etc.
+
+ARMOR NAME MISMATCH: Four sets have IDs ending in _armor (copper_armor, amethyst_armor, bone_armor, sculk_armor) but their model files are named without _armor (copper_helmet, amethyst_chestplate, etc.). The item definition JSONs were updated to include BOTH variants as when cases (e.g., both "copper_helmet" and "copper_armor_helmet" point to the same model).
+
+InfinityGauntletManager.java — Creates Thanos Glove (golden chestplate) and Infinity Gauntlet. CORRECTLY UPDATED to use string-based CMD:
+
+CopyCustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+cmdComp.setStrings(List.of("thanos_glove"));
+meta.setCustomModelDataComponent(cmdComp);
+And similarly List.of("infinity_gauntlet") for the full gauntlet.
+
+InfinityStoneManager.java — Creates 6 infinity stones using DYE materials. UPDATED from integer CMD to string-based:
+
+CopyCustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+cmdComp.setStrings(List.of("infinity_stone_" + type.getId()));
+meta.setCustomModelDataComponent(cmdComp);
+Stone types and their materials:
+
+POWER — Material.PURPLE_DYE → CMD string "infinity_stone_power"
+SPACE — Material.BLUE_DYE → CMD string "infinity_stone_space"
+REALITY — Material.RED_DYE → CMD string "infinity_stone_reality"
+SOUL — Material.ORANGE_DYE → CMD string "infinity_stone_soul"
+TIME — Material.GREEN_DYE → CMD string "infinity_stone_time"
+MIND — Material.YELLOW_DYE → CMD string "infinity_stone_mind"
+NOTE: Stones use DYE materials, not AMETHYST_SHARD. Item definition JSONs were created for each dye color (purple_dye.json, blue_dye.json, etc.) in addition to amethyst_shard.json which has the stones as fallback entries.
+
+PowerUpManager.java — Manages power-up items. Status of CMD update: UNKNOWN — was not explicitly checked or modified during this session. May still use integer CMD.
+
+COMPLETE WEAPON TEXTURE NAME MAPPING
+This is the exact mapping from LegendaryWeapon.java enum textureName field → the model file used in the item definition JSON. The when value in the JSON must match the textureName exactly:
+
+Enum Name	textureName	Base Material	Model Path	Status
+AMETHYST_SHURIKEN	amethyst_shuriken	DIAMOND_SWORD	minecraft:item/weapons/amethyst_shuriken	OK
+GRAVESCEPTER	revenants_gravescepter	DIAMOND_SWORD	minecraft:item/weapons/revenants_gravescepter	OK
+LYCANBANE	lycanbane	DIAMOND_SWORD	minecraft:item/weapons/lycanbane	OK
+GLOOMSTEEL_KATANA	gloomsteel_katana	DIAMOND_SWORD	minecraft:item/weapons/gloomsteel_katana	OK
+VIRIDIAN_CLEAVER	viridian_greataxe	DIAMOND_AXE	minecraft:item/weapons/viridian_greataxe	OK
+CRESCENT_EDGE	crescent_greataxe	DIAMOND_AXE	minecraft:item/weapons/crescent_greataxe	OK
+GRAVECLEAVER	revenants_gravecleaver	DIAMOND_SWORD	minecraft:item/weapons/revenants_gravecleaver	OK
+AMETHYST_GREATBLADE	amethyst_greatblade	DIAMOND_SWORD	minecraft:item/weapons/amethyst_greatblade	OK
+FLAMBERGE	flamberge	DIAMOND_SWORD	minecraft:item/weapons/flamberge	OK
+CRYSTAL_FROSTBLADE	crystal_frostblade	DIAMOND_SWORD	minecraft:item/weapons/crystal_frostblade	OK
+DEMONSLAYER	demonslayers_greatsword	DIAMOND_SWORD	minecraft:item/weapons/demonslayers_greatsword	OK
+VENGEANCE	vengeance_blade	DIAMOND_SWORD	minecraft:item/weapons/vengeance_blade	OK
+OCULUS	oculus	DIAMOND_SWORD	minecraft:item/weapons/oculus	OK
+ANCIENT_GREATSLAB	ancient_greatslab	DIAMOND_SWORD	minecraft:item/weapons/ancient_greatslab	OK
+NEPTUNES_FANG	neptunes_fang	TRIDENT	NO MODEL	MISSING
+TIDECALLER	tidecaller	TRIDENT	NO MODEL	MISSING
+STORMFORK	stormfork	TRIDENT	NO MODEL	MISSING
+JADE_REAPER	jadehalberd	DIAMOND_HOE	minecraft:item/weapons/jadehalberd	OK
+VINDICATOR	vindicator	DIAMOND_AXE	minecraft:item/weapons/vindicator	OK
+SPIDER_FANG	spider_sword	DIAMOND_SWORD	minecraft:item/weapons/spider_sword	OK
+OCEANS_RAGE	stormbringer	TRIDENT	minecraft:item/weapons/stormbringer	OK
+AQUATIC_SACRED_BLADE	aquantic_sacred_blade	DIAMOND_SWORD	minecraft:item/weapons/aquantic_sacred_blade	OK
+ROYAL_CHAKRAM	royalchakram	DIAMOND_SWORD	minecraft:item/weapons/royalchakram	OK
+ACIDIC_CLEAVER	treacherous_cleaver	DIAMOND_AXE	minecraft:item/weapons/treacherous_cleaver	OK
+MURAMASA	muramasa	DIAMOND_SWORD	minecraft:item/weapons/muramasa	OK
+WINDREAPER	windreaper	DIAMOND_SWORD	minecraft:item/weapons/windreaper	OK
+MOONLIGHT	moonlight	DIAMOND_SWORD	minecraft:item/weapons/moonlight	OK
+TALONBRAND	talonbrand	DIAMOND_SWORD	minecraft:item/weapons/talonbrand	OK
+BERSERKERS_GREATAXE	berserkers_greataxe	DIAMOND_AXE	minecraft:item/weapons/berserkers_greataxe	OK
+BLACK_IRON_GREATSWORD	black_iron_greatsword	DIAMOND_SWORD	minecraft:item/weapons/black_iron_greatsword	OK
+SOLSTICE	solstice	DIAMOND_SWORD	minecraft:item/weapons/solstice	OK
+GRAND_CLAYMORE	grand_claymore	DIAMOND_SWORD	minecraft:item/weapons/grand_claymore	OK
+CALAMITY_BLADE	calamity_blade	DIAMOND_AXE	minecraft:item/weapons/calamity_blade	OK
+EMERALD_GREATCLEAVER	emerald_greatcleaver	DIAMOND_AXE	minecraft:item/weapons/emerald_greatcleaver	OK
+DEMONS_BLOOD_BLADE	demons_blood_blade	DIAMOND_SWORD	minecraft:item/weapons/demons_blood_blade	OK
+TRUE_EXCALIBUR	excalibur	DIAMOND_SWORD	minecraft:item/weapons/excalibur	OK
+REQUIEM_NINTH_ABYSS	requiem_of_hell	DIAMOND_SWORD	minecraft:item/weapons/requiem_of_hell	OK
+PHOENIXS_GRACE	gilded_phoenix_greataxe	DIAMOND_AXE	minecraft:item/weapons/gilded_phoenix_greataxe	OK
+SOUL_COLLECTOR	soul_collector	DIAMOND_SWORD	minecraft:item/weapons/soul_collector	OK
+VALHAKYRA	valhakyra	DIAMOND_SWORD	minecraft:item/weapons/valhakyra	OK
+PHANTOMGUARD	phantomguard_greatsword	DIAMOND_SWORD	minecraft:item/weapons/phantomguard_greatsword	OK
+ZENITH	zenith	DIAMOND_SWORD	minecraft:item/weapons/zenith	OK
+DRAGON_SWORD	dragon_sword	DIAMOND_SWORD	minecraft:item/weapons/dragon_sword	OK
+NOCTURNE	nocturne	DIAMOND_SWORD	minecraft:item/weapons/nocturne	OK
+DIVINE_AXE_RHITTA	divine_axe_rhitta	DIAMOND_AXE	minecraft:item/weapons/divineaxerhitta (fuzzy match)	OK
+YORU	yoru	DIAMOND_SWORD	minecraft:item/weapons/yoru	OK
+TENGENS_BLADE	tengens_blade	DIAMOND_SWORD	minecraft:item/weapons/tengensblade (fuzzy match)	OK
+EDGE_ASTRAL_PLANE	edge_astral_plane	DIAMOND_SWORD	NO MODEL	MISSING
+FALLEN_GODS_SPEAR	fallen_gods_spear	DIAMOND_SWORD	NO MODEL	MISSING
+NATURE_SWORD	nature_sword	DIAMOND_SWORD	minecraft:item/weapons/nature_sword	OK
+HEAVENLY_PARTISAN	heavenly_partisan	DIAMOND_SWORD	minecraft:item/weapons/heavenly_partisan	OK
+SOUL_DEVOURER	soul_devourer	DIAMOND_SWORD	minecraft:item/weapons/soul_devourer	OK
+MJOLNIR	mjolnir	MACE	minecraft:item/weapons/mjolnir	OK
+THOUSAND_DEMON_DAGGERS	thousand_demon_daggers	DIAMOND_SWORD	minecraft:item/weapons/thousanddemondaggers (fuzzy match)	OK
+STAR_EDGE	star_edge	DIAMOND_SWORD	NO MODEL	MISSING
+RIVERS_OF_BLOOD	rivers_of_blood	DIAMOND_SWORD	minecraft:item/weapons/riversofblood (fuzzy match)	OK
+DRAGON_SLAYING_BLADE	dragon_slaying_blade	DIAMOND_SWORD	minecraft:item/weapons/dragonslayingblade (fuzzy match)	OK
+STOP_SIGN	stop_sign	DIAMOND_AXE	minecraft:item/weapons/stop_sign	OK
+CREATION_SPLITTER	creation_splitter	DIAMOND_SWORD	minecraft:item/weapons/creationsplitter (fuzzy match)	OK
+REQUIEM_AWAKENED	requiem_awakened	DIAMOND_SWORD	NO MODEL	MISSING
+EXCALIBUR_AWAKENED	excalibur_awakened	DIAMOND_SWORD	NO MODEL	MISSING
+CREATION_SPLITTER_AWAKENED	creation_splitter_awakened	DIAMOND_SWORD	NO MODEL	MISSING
+WHISPERWIND_AWAKENED	whisperwind_awakened	DIAMOND_SWORD	NO MODEL	MISSING
+Weapons with MISSING models (9 total):
+
+neptunes_fang (trident)
+tidecaller (trident)
+stormfork (trident)
+edge_astral_plane (diamond_sword)
+fallen_gods_spear (diamond_sword)
+star_edge (diamond_sword)
+requiem_awakened (diamond_sword — ABYSSAL tier)
+excalibur_awakened (diamond_sword — ABYSSAL tier)
+creation_splitter_awakened (diamond_sword — ABYSSAL tier)
+whisperwind_awakened (diamond_sword — ABYSSAL tier, but weapon base is BOW in original? Actually the enum says DIAMOND_SWORD)
+Weapons with FUZZY model matches (model file name doesn't have underscores):
+
+divine_axe_rhitta → divineaxerhitta
+tengens_blade → tengensblade
+thousand_demon_daggers → thousanddemondaggers
+rivers_of_blood → riversofblood
+dragon_slaying_blade → dragonslayingblade
+creation_splitter → creationsplitter
+HOW MINECRAFT 1.21.4+ CUSTOM MODEL DATA WORKS
+In Minecraft 1.21.4+, the old overrides system in model JSON files was replaced with item model definitions — separate JSON files in assets/<namespace>/items/.
+
+The system works as follows:
+
+An item definition JSON (e.g., assets/minecraft/items/diamond_sword.json) uses type: "minecraft:select" with property: "minecraft:custom_model_data" to choose which model to render based on the custom_model_data component's strings list.
+
+Each case has a "when" string value and a "model" object pointing to the actual 3D model file.
+
+A "fallback" model is shown when no case matches (typically the vanilla item model).
+
+The Java plugin sets the string on the item via:
+
+CopyCustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+cmd.setStrings(List.of("my_texture_name"));
+meta.setCustomModelDataComponent(cmd);
+The "when" string in the item definition JSON must exactly match the string set by the plugin.
+
+In-game give command: /give @p diamond_sword[minecraft:custom_model_data={strings:["excalibur"]}]
+
+Correct item definition JSON format:
+
+Copy{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "cases": [
+      {
+        "when": "excalibur",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/weapons/excalibur"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond_sword"
+    }
+  }
+}
+IMPORTANT: The fallback references to vanilla models (e.g., minecraft:item/diamond_sword) do NOT need to exist in the resource pack — they exist in the game's built-in assets. The "79 missing model references" error from our verification script was a false alarm for this reason.
+
+Key References:
+
+Minecraft Wiki — Items model definition: https://minecraft.wiki/w/Items_model_definition
+GitHub guide (Simplexity): https://github.com/Simplexity-Development/Custom_Model_Data_Guide
+Paper Javadocs — CustomModelDataComponent: https://jd.papermc.io/paper/1.21.4/org/bukkit/inventory/meta/components/CustomModelDataComponent.html
+SpigotMC discussion: https://www.spigotmc.org/threads/custommodeldata-1-21-4.688770/
+YouTube tutorials: https://www.youtube.com/watch?v=eGjDxMrwpRk, https://www.youtube.com/watch?v=K39U55l4-O0
+WHAT WE DID IN THIS SESSION (Chronological)
+Phase 1: Initial Setup & Understanding
+Reviewed the existing resource pack structure and item definition files
+Identified that the pack was using pack_format 46 and had 4,374 files (2,141 PNG, 2,112 JSON)
+Identified missing textures for several weapons and armor pieces
+Searched for and learned how Minecraft 1.21.4's new item model definition system works
+Searched for Paper's CustomModelDataComponent API
+Phase 2: First Attempt at Fix
+Created a PowerShell script to regenerate item definition JSONs using custom_model_data string cases
+Updated Java files (LegendaryWeaponManager.java, LegendaryArmorManager.java, InfinityGauntletManager.java) to use string-based CMD
+Built the plugin (successful with warnings)
+Rebuilt the resource pack (SHA-1: 1d9c92ccd83ffeed11cd6ceb7a52fc5a8fe725fa)
+Phase 3: Deployment Struggles
+Attempted to deploy via SSH but encountered multiple issues:
+Initially tried to copy files to /opt/minecraft which didn't exist (actual path: /home/ubuntu/minecraft-server)
+Discovered the .env file was empty (config is inline in docker-compose.yml)
+Discovered server.properties and docker-compose.yml had DIFFERENT resource pack URLs and SHA-1 values
+PowerShell variable interpolation issues caused sed commands to fail when sent via SSH
+docker compose vs docker-compose command not found issues
+Eventually installed Docker Compose v2 plugin via apt-get install docker-compose-v2
+Created multiple bash deploy scripts (deploy.sh, deploy2.sh, deploy3.sh, deploy_final.sh) uploaded via SCP
+Container mc-crossplay was removed during a failed restart attempt and had to be recreated
+Installed GitHub CLI (gh) v2.87.3 via winget
+Had to use full path "C:\Program Files\GitHub CLI\gh.exe" as it wasn't in PATH
+Authenticated via browser OAuth
+Created GitHub release v2.2.0 and uploaded the resource pack ZIP
+Phase 4: Textures Still Not Working — Diagnosis
+Ran comprehensive diagnostic script to inspect the actual pack contents
+Discovered the ROOT CAUSE: The when values in the item definition JSONs did NOT match the textureName values from the LegendaryWeapon Java enum
+Example: JSON had "when": "storm_breaker" but the plugin sends textureName = "stormbringer"
+Example: JSON had "when": "true_excalibur" but the plugin sends textureName = "excalibur"
+The previous script had used display-name-based or ID-based strings instead of the actual textureName field
+Phase 5: Complete Fix
+Wrote a comprehensive fix script that:
+Parsed the Java enum to extract the EXACT textureName and baseMaterial for each weapon
+Matched textureName to model files in the resource pack (with fuzzy matching for names without underscores)
+Regenerated ALL item definition JSONs using the correct textureName as when values
+Fixed LegendaryArmorManager.java — replaced meta.setCustomModelData(set.getCmdForSlot(slot)) with string-based CMD using set.getId() + slotSuffix
+Fixed InfinityStoneManager.java — replaced integer CMD with "infinity_stone_" + type.getId()
+Created item definition JSONs for DYE materials (for infinity stones)
+Repackaged the resource pack
+Phase 6: Build Errors & Fixes
+BOM (Byte Order Mark) error: PowerShell's Set-Content -Encoding UTF8 on Windows 5.x adds a UTF-8 BOM (EF BB BF) to files. Java's compiler rejects this. Fixed by reading raw bytes, stripping the first 3 BOM bytes, and writing back.
+Duplicate imports: The script added import java.util.List; when it already existed. Fixed by deduplicating import lines. (The Set-Content -Encoding ([System.Text.UTF8Encoding]::new($false)) syntax doesn't work in PowerShell 5.x — it requires -Encoding UTF8 but that adds BOM. Used [System.IO.File]::WriteAllBytes() instead.)
+Armor name mismatches: 4 sets (copper_armor, amethyst_armor, bone_armor, sculk_armor) generate CMD strings like copper_armor_helmet but model files are named copper_helmet. Fixed by adding alias when cases in the item definition JSONs.
+Phase 7: Final Deployment
+Built plugin successfully (7 deprecation warnings, 0 errors)
+Uploaded JAR and resource pack to server via SCP
+Updated GitHub release v2.2.0 with new resource pack (using --clobber to replace)
+Created and executed deploy_final.sh on the server which:
+Copied files to correct locations
+Updated SHA-1 in both docker-compose.yml and server.properties
+Restarted Docker container
+Server started successfully with JGlimsPlugin 2.0.0 loaded
+Resource pack URL and SHA-1 verified correct on both config files
+CURRENT STATUS & REMAINING PROBLEMS
+CRITICAL: Textures STILL showing as vanilla items
+After all the fixes, custom weapon textures still do not render — items show as plain diamond swords, maces, etc. The resource pack is being served, the plugin loads, the SHA-1 matches, the item definition JSONs have correct structure, the model files exist, the texture files exist, and the Java code sets string-based CMD. Something is still wrong and needs further investigation.
+
+Possible remaining causes to investigate:
+
+The resource pack might not be downloading/applying to the client. Need to verify in Minecraft's resource pack settings whether the server pack is listed and enabled. Check F3 debug screen.
+The when values might still not match at runtime. Need to verify by running /give @p diamond_sword[minecraft:custom_model_data={strings:["excalibur"]}] directly in-game to test if the resource pack works independently of the plugin.
+The server might be overwriting server.properties on startup — the itzg/minecraft-server Docker image generates server.properties from environment variables in docker-compose.yml. If the env var format is wrong (e.g., RESOURCE_PACK: with a colon instead of RESOURCE_PACK=), the values might get reset. The docker-compose.yml uses YAML colon syntax which IS correct for that image.
+The SHA-1 might not match the file served by GitHub. GitHub might serve the file with different bytes (e.g., compression differences). The client would reject a pack with mismatched SHA-1.
+The old integer setCustomModelData() calls might be conflicting — the LegendaryWeapon.java enum still has the old customModelData int field and getCustomModelData() method, and some other code path might still be calling the old method somewhere.
+PowerUpManager.java was never checked or updated — it might still use integer CMD.
+The bow.json and crossbow.json might not have been regenerated with the new fix script since no BOW-type weapons were parsed from the enum (WHISPERWIND_AWAKENED has Material.DIAMOND_SWORD despite being conceptually a bow weapon).
+The fallback for trident.json might be causing issues — the trident requires a special model type with minecraft:trident and trident_in_hand model. With only 1 case (stormbringer) and the other 3 trident weapons missing models, the trident definition might be malformed.
+Client-side caching — the client might have cached the old resource pack. Need to delete the server resource pack cache from .minecraft/server-resource-packs/.
+Performance Issue: Villager Party Event Lag
+The villager party event caused noticeable input lag — attacks registered several seconds after clicking
+FPS was reportedly fine (client-side rendering OK), suggesting server-side TPS lag
+The server is running on an ARM64 instance with 8GB memory, simulation distance 6, view distance 10
+Likely cause: too many entities spawned during the event, or the event logic doing expensive operations every tick
+Need to investigate: check TPS during event, reduce mob spawn count, optimize event tick handlers
+Missing Model/Texture Files (need to be created)
+9 weapons have no model files and need 3D models + textures created in Blockbench:
+
+neptunes_fang, tidecaller, stormfork (trident weapons)
+edge_astral_plane, fallen_gods_spear, star_edge (diamond sword weapons)
+requiem_awakened, excalibur_awakened, creation_splitter_awakened, whisperwind_awakened (ABYSSAL tier awakened variants)
+Custom Boss Textures (Future Goal)
+Goal: Give each custom boss a unique visual appearance
+Current approach considered: Custom player-head textures on invisible armor stands or mobs
+OptiFine/CEM approach requires client-side mods (not viable for server-only)
+Entity Texture Features (ETF) mod: https://modrinth.com/mod/entitytexturefeatures — also client-side
+Server-side approach: Equip bosses with custom-textured player heads, make base entity invisible
+This is a future feature, not blocking the current texture issue
+NEXT STEPS (Priority Order)
+Debug why textures aren't rendering — Run /give @p diamond_sword[minecraft:custom_model_data={strings:["excalibur"]}] directly in-game to test if the resource pack's item definitions work independent of the plugin. If this works, the problem is in the Java code. If it doesn't, the problem is in the resource pack or its delivery.
+
+Check client resource pack status — Press F3 in-game and verify the server resource pack is loaded. Also check Options > Resource Packs to see if it appears. Try manually deleting .minecraft/server-resource-packs/ to clear the cache.
+
+Verify the SHA-1 matches what GitHub serves — Download the file from the GitHub release URL and compute its SHA-1 locally to confirm it matches 6b824f117a1b1062f868b47e5248f428f5eabf14.
+
+Check PowerUpManager.java — Verify it uses string-based CMD, not integer.
+
+Fix the villager party lag — Investigate server TPS, reduce entity counts, optimize event handlers.
+
+Create missing weapon models — Use Blockbench to create models for the 9-10 missing weapons.
+
+Add custom boss textures — Implement the player-head approach for custom boss visuals.
+
+KNOWN ISSUES SUMMARY
+Issue	Status	Details
+Custom textures not rendering	UNSOLVED	Items show vanilla textures despite correct pack structure and Java code
+Villager party lag	UNSOLVED	Server-side TPS drops during event, attacks delayed
+BOM in Java files	FIXED	PowerShell UTF8 encoding adds BOM; stripped manually
+Duplicate Java imports	FIXED	Deduplication applied
+Integer vs String CMD	PARTIALLY FIXED	WeaponManager, ArmorManager, GauntletManager, StoneManager updated; PowerUpManager unknown
+Item JSON when mismatch	FIXED	JSONs now generated from Java enum textureName values
+Armor name mismatch	FIXED	Alias cases added for _armor suffix sets
+Docker Compose missing	FIXED	Installed docker-compose-v2 package
+Server path confusion	FIXED	Confirmed /home/ubuntu/minecraft-server not /opt/minecraft
+SSH/PowerShell escaping	FIXED	Using SCP'd bash scripts instead of inline commands
+GitHub CLI not in PATH	WORKAROUND	Using full path "C:\Program Files\GitHub CLI\gh.exe"
+server.properties JSON warning	COSMETIC	resource-pack-prompt not valid JSON; doesn't affect functionality
+9 missing weapon models	KNOWN	Need Blockbench models created
+Custom boss textures	PLANNED	Future feature using player-head approach
+
+
+
+REMEMBER THAT WE PLAN TO HAVE MORE LEGENDARY ITEMS, MORE LEGENDARY WEAPONS (LIKE MAGIC ONES), MORE DIMENSIONS, MORE MINI BOSSES, MORE EVENTS, MORE FEATURES, MORE POWERS, MORE STRUCTURES, MORE EVERYTHING

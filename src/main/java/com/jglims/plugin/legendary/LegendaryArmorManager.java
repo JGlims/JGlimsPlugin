@@ -74,7 +74,16 @@ public class LegendaryArmorManager {
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
         }
 
-        meta.setCustomModelData(set.getCmdForSlot(slot));
+        // String-based CMD for 1.21.4+ item model definitions
+        CustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+        String slotSuffix = switch (slot) {
+            case HELMET -> "_helmet";
+            case CHESTPLATE -> "_chestplate";
+            case LEGGINGS -> "_leggings";
+            case BOOTS -> "_boots";
+        };
+        cmdComp.setStrings(List.of(set.getId().replace(" ", "_").toLowerCase() + slotSuffix));
+        meta.setCustomModelDataComponent(cmdComp);
 
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(armorSetKey, PersistentDataType.STRING, set.getId());
@@ -124,7 +133,7 @@ public class LegendaryArmorManager {
 
     private void applySetAttributes(ItemMeta meta, LegendaryArmorSet set, LegendaryArmorSet.ArmorSlot slot, EquipmentSlotGroup eslot) {
         switch (set) {
-            // ── CRAFTABLE SETS ──
+            // â”€â”€ CRAFTABLE SETS â”€â”€
 
             case REINFORCED_LEATHER -> {
                 // Chestplate: +2 max HP
@@ -170,7 +179,7 @@ public class LegendaryArmorManager {
                 }
             }
 
-            // ── LEGENDARY SETS ──
+            // â”€â”€ LEGENDARY SETS â”€â”€
 
             case SHADOW_STALKER -> {
                 // Leggings: +8% speed

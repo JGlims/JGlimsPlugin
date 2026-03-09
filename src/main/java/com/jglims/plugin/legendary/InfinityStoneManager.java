@@ -10,13 +10,15 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import java.util.List;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
 /**
  * Manages the 6 Infinity Stone fragments and finished Infinity Stones.
- * Fragments drop during Blood Moon (0.1% per mob kill) â€” secret, undocumented.
+ * Fragments drop during Blood Moon (0.1% per mob kill) Ã¢â‚¬â€ secret, undocumented.
  * Finished stones are crafted: Fragment + Nether Star in anvil (handled by AnvilRecipeListener).
  * Phase 22.
  */
@@ -87,7 +89,9 @@ public class InfinityStoneManager {
         ));
         meta.getPersistentDataContainer().set(KEY_STONE_TYPE, PersistentDataType.STRING, type.getId());
         meta.getPersistentDataContainer().set(KEY_STONE_FINISHED, PersistentDataType.BYTE, (byte) 0);
-        meta.setCustomModelData(type.getCustomModelData());
+        CustomModelDataComponent cmdComp = meta.getCustomModelDataComponent();
+        cmdComp.setStrings(List.of("infinity_stone_" + type.getId()));
+        meta.setCustomModelDataComponent(cmdComp);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -110,7 +114,9 @@ public class InfinityStoneManager {
         ));
         meta.getPersistentDataContainer().set(KEY_STONE_TYPE, PersistentDataType.STRING, type.getId());
         meta.getPersistentDataContainer().set(KEY_STONE_FINISHED, PersistentDataType.BYTE, (byte) 1);
-        meta.setCustomModelData(type.getCustomModelData() + 100); // finished = +100 CMD offset
+        CustomModelDataComponent cmdComp2 = meta.getCustomModelDataComponent();
+        cmdComp2.setStrings(List.of("infinity_stone_" + type.getId()));
+        meta.setCustomModelDataComponent(cmdComp2); // finished = +100 CMD offset
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
