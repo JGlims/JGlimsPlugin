@@ -60,39 +60,39 @@ public enum LegendaryWeapon {
     // MYTHIC TIER (damage 16-22, PCD 10-15s, ACD 30-60s, 100 particles)
     // ================================================================
     // -- Original 44 promoted to MYTHIC --
-    TRUE_EXCALIBUR("true_excalibur", "True Excalibur", Material.DIAMOND_SWORD, 20, 30003, LegendaryTier.MYTHIC, "excalibur", "Holy Smite", "Divine Shield", 10, 45),
-    REQUIEM_NINTH_ABYSS("requiem_ninth_abyss", "Requiem of the Ninth Abyss", Material.DIAMOND_SWORD, 20, 30004, LegendaryTier.MYTHIC, "requiem_of_hell", "Soul Devour", "Abyss Gate", 12, 60),
-    PHOENIXS_GRACE("phoenixs_grace", "Phoenix's Grace", Material.DIAMOND_AXE, 20, 30010, LegendaryTier.MYTHIC, "gilded_phoenix_greataxe", "Phoenix Strike", "Rebirth Flame", 10, 60),
-    SOUL_COLLECTOR("soul_collector", "Soul Collector", Material.DIAMOND_SWORD, 19, 30011, LegendaryTier.MYTHIC, "soul_collector", "Soul Harvest", "Spirit Army", 10, 30),
-    VALHAKYRA("valhakyra", "Valhakyra", Material.DIAMOND_SWORD, 18, 30013, LegendaryTier.MYTHIC, "valhakyra", "Valkyrie Dive", "Wings of Valor", 12, 45),
-    PHANTOMGUARD("phantomguard", "Phantomguard Greatsword", Material.DIAMOND_SWORD, 19, 30015, LegendaryTier.MYTHIC, "phantomguard_greatsword", "Spectral Cleave", "Phase Shift", 10, 35),
-    ZENITH("zenith", "Zenith", Material.DIAMOND_SWORD, 22, 30017, LegendaryTier.MYTHIC, "zenith", "Final Judgment", "Ascension", 15, 60),
-    DRAGON_SWORD("dragon_sword", "Dragon Sword", Material.DIAMOND_SWORD, 18, 30021, LegendaryTier.MYTHIC, "dragon_sword", "Dragon Breath", "Draconic Roar", 10, 45),
-    NOCTURNE("nocturne", "Nocturne", Material.DIAMOND_SWORD, 18, 30025, LegendaryTier.MYTHIC, "nocturne", "Shadow Slash", "Night Cloak", 10, 40),
+    TRUE_EXCALIBUR("true_excalibur", "True Excalibur", Material.DIAMOND_SWORD, 24, 30003, LegendaryTier.MYTHIC, "excalibur", "Holy Smite", "Divine Shield", 7, 30),
+    REQUIEM_NINTH_ABYSS("requiem_ninth_abyss", "Requiem of the Ninth Abyss", Material.DIAMOND_SWORD, 24, 30004, LegendaryTier.MYTHIC, "requiem_of_hell", "Soul Devour", "Abyss Gate", 8, 40),
+    PHOENIXS_GRACE("phoenixs_grace", "Phoenix's Grace", Material.DIAMOND_AXE, 24, 30010, LegendaryTier.MYTHIC, "gilded_phoenix_greataxe", "Phoenix Strike", "Rebirth Flame", 7, 40),
+    SOUL_COLLECTOR("soul_collector", "Soul Collector", Material.DIAMOND_SWORD, 23, 30011, LegendaryTier.MYTHIC, "soul_collector", "Soul Harvest", "Spirit Army", 7, 22),
+    VALHAKYRA("valhakyra", "Valhakyra", Material.DIAMOND_SWORD, 22, 30013, LegendaryTier.MYTHIC, "valhakyra", "Valkyrie Dive", "Wings of Valor", 8, 30),
+    PHANTOMGUARD("phantomguard", "Phantomguard Greatsword", Material.DIAMOND_SWORD, 23, 30015, LegendaryTier.MYTHIC, "phantomguard_greatsword", "Spectral Cleave", "Phase Shift", 7, 25),
+    ZENITH("zenith", "Zenith", Material.DIAMOND_SWORD, 26, 30017, LegendaryTier.MYTHIC, "zenith", "Final Judgment", "Ascension", 10, 40),
+    DRAGON_SWORD("dragon_sword", "Dragon Sword", Material.DIAMOND_SWORD, 22, 30021, LegendaryTier.MYTHIC, "dragon_sword", "Dragon Breath", "Draconic Roar", 7, 30),
+    NOCTURNE("nocturne", "Nocturne", Material.DIAMOND_SWORD, 22, 30025, LegendaryTier.MYTHIC, "nocturne", "Shadow Slash", "Night Cloak", 7, 28),
     // -- NEW MYTHIC #45-59 (Phase 9) --
-    DIVINE_AXE_RHITTA("divine_axe_rhitta", "Divine Axe Rhitta", Material.DIAMOND_AXE, 22, 30045, LegendaryTier.MYTHIC, "divine_axe_rhitta", "Cruel Sun", "Sunshine", 12, 50),
-    YORU("yoru", "Yoru", Material.DIAMOND_SWORD, 20, 30046, LegendaryTier.MYTHIC, "yoru", "World's Strongest Slash", "Dark Mirror", 14, 55),
-    TENGENS_BLADE("tengens_blade", "Tengen's Blade", Material.DIAMOND_SWORD, 19, 30047, LegendaryTier.MYTHIC, "tengens_blade", "Sound Breathing", "Constant Flux", 10, 40),
-    EDGE_ASTRAL_PLANE("edge_astral_plane", "Edge of the Astral Plane", Material.DIAMOND_SWORD, 21, 30048, LegendaryTier.MYTHIC, "edge_astral_plane", "Astral Rend", "Planar Shift", 13, 60),
-    FALLEN_GODS_SPEAR("fallen_gods_spear", "Fallen God's Spear", Material.DIAMOND_SWORD, 20, 30049, LegendaryTier.MYTHIC, "fallen_gods_spear", "Divine Impale", "Heaven's Fall", 11, 50),
-    NATURE_SWORD("nature_sword", "Nature Sword", Material.DIAMOND_SWORD, 18, 30050, LegendaryTier.MYTHIC, "nature_sword", "Gaia's Wrath", "Overgrowth Surge", 10, 40),
-    HEAVENLY_PARTISAN("heavenly_partisan", "Heavenly Partisan", Material.DIAMOND_SWORD, 19, 30051, LegendaryTier.MYTHIC, "heavenly_partisan", "Holy Lance", "Celestial Judgment", 11, 45),
-    SOUL_DEVOURER("soul_devourer", "Soul Devourer", Material.DIAMOND_SWORD, 20, 30052, LegendaryTier.MYTHIC, "soul_devourer", "Soul Rip", "Devouring Maw", 12, 50),
-    MJOLNIR("mjolnir", "Mjolnir", Material.MACE, 22, 30053, LegendaryTier.MYTHIC, "mjolnir", "Thunderstrike", "Bifrost Slam", 14, 55),
-    THOUSAND_DEMON_DAGGERS("thousand_demon_daggers", "Thousand Demon Daggers", Material.DIAMOND_SWORD, 18, 30054, LegendaryTier.MYTHIC, "thousand_demon_daggers", "Demon Barrage", "Infernal Dance", 10, 35),
-    STAR_EDGE("star_edge", "Star Edge", Material.DIAMOND_SWORD, 20, 30055, LegendaryTier.MYTHIC, "star_edge", "Cosmic Slash", "Supernova", 13, 55),
-    RIVERS_OF_BLOOD("rivers_of_blood", "Rivers of Blood", Material.DIAMOND_SWORD, 19, 30056, LegendaryTier.MYTHIC, "rivers_of_blood", "Corpse Piler", "Blood Tsunami", 10, 40),
-    DRAGON_SLAYING_BLADE("dragon_slaying_blade", "Dragon Slaying Blade", Material.DIAMOND_SWORD, 20, 30057, LegendaryTier.MYTHIC, "dragon_slaying_blade", "Dragon Pierce", "Slayer's Fury", 12, 50),
-    STOP_SIGN("stop_sign", "Stop Sign", Material.DIAMOND_AXE, 18, 30058, LegendaryTier.MYTHIC, "stop_sign", "Full Stop", "Road Rage", 10, 35),
-    CREATION_SPLITTER("creation_splitter", "Creation Splitter", Material.DIAMOND_SWORD, 22, 30059, LegendaryTier.MYTHIC, "creation_splitter", "Reality Cleave", "Genesis Break", 15, 60),
+    DIVINE_AXE_RHITTA("divine_axe_rhitta", "Divine Axe Rhitta", Material.DIAMOND_AXE, 26, 30045, LegendaryTier.MYTHIC, "divine_axe_rhitta", "Cruel Sun", "Sunshine", 8, 35),
+    YORU("yoru", "Yoru", Material.DIAMOND_SWORD, 24, 30046, LegendaryTier.MYTHIC, "yoru", "World's Strongest Slash", "Dark Mirror", 9, 38),
+    TENGENS_BLADE("tengens_blade", "Tengen's Blade", Material.DIAMOND_SWORD, 23, 30047, LegendaryTier.MYTHIC, "tengens_blade", "Sound Breathing", "Constant Flux", 7, 28),
+    EDGE_ASTRAL_PLANE("edge_astral_plane", "Edge of the Astral Plane", Material.DIAMOND_SWORD, 25, 30048, LegendaryTier.MYTHIC, "edge_astral_plane", "Astral Rend", "Planar Shift", 9, 40),
+    FALLEN_GODS_SPEAR("fallen_gods_spear", "Fallen God's Spear", Material.DIAMOND_SWORD, 24, 30049, LegendaryTier.MYTHIC, "fallen_gods_spear", "Divine Impale", "Heaven's Fall", 8, 35),
+    NATURE_SWORD("nature_sword", "Nature Sword", Material.DIAMOND_SWORD, 22, 30050, LegendaryTier.MYTHIC, "nature_sword", "Gaia's Wrath", "Overgrowth Surge", 7, 28),
+    HEAVENLY_PARTISAN("heavenly_partisan", "Heavenly Partisan", Material.DIAMOND_SWORD, 23, 30051, LegendaryTier.MYTHIC, "heavenly_partisan", "Holy Lance", "Celestial Judgment", 8, 30),
+    SOUL_DEVOURER("soul_devourer", "Soul Devourer", Material.DIAMOND_SWORD, 24, 30052, LegendaryTier.MYTHIC, "soul_devourer", "Soul Rip", "Devouring Maw", 8, 35),
+    MJOLNIR("mjolnir", "Mjolnir", Material.MACE, 26, 30053, LegendaryTier.MYTHIC, "mjolnir", "Thunderstrike", "Bifrost Slam", 9, 38),
+    THOUSAND_DEMON_DAGGERS("thousand_demon_daggers", "Thousand Demon Daggers", Material.DIAMOND_SWORD, 22, 30054, LegendaryTier.MYTHIC, "thousand_demon_daggers", "Demon Barrage", "Infernal Dance", 7, 25),
+    STAR_EDGE("star_edge", "Star Edge", Material.DIAMOND_SWORD, 24, 30055, LegendaryTier.MYTHIC, "star_edge", "Cosmic Slash", "Supernova", 9, 38),
+    RIVERS_OF_BLOOD("rivers_of_blood", "Rivers of Blood", Material.DIAMOND_SWORD, 23, 30056, LegendaryTier.MYTHIC, "rivers_of_blood", "Corpse Piler", "Blood Tsunami", 7, 28),
+    DRAGON_SLAYING_BLADE("dragon_slaying_blade", "Dragon Slaying Blade", Material.DIAMOND_SWORD, 24, 30057, LegendaryTier.MYTHIC, "dragon_slaying_blade", "Dragon Pierce", "Slayer's Fury", 8, 35),
+    STOP_SIGN("stop_sign", "Stop Sign", Material.DIAMOND_AXE, 22, 30058, LegendaryTier.MYTHIC, "stop_sign", "Full Stop", "Road Rage", 7, 25),
+    CREATION_SPLITTER("creation_splitter", "Creation Splitter", Material.DIAMOND_SWORD, 26, 30059, LegendaryTier.MYTHIC, "creation_splitter", "Reality Cleave", "Genesis Break", 10, 40),
 
     // ================================================================
     // ABYSSAL TIER (damage 22-30, PCD 12-18s, ACD 45-90s, 200 particles)
     // ================================================================
-    REQUIEM_AWAKENED("requiem_awakened", "Requiem of the Ninth Abyss (Awakened)", Material.DIAMOND_SWORD, 28, 30060, LegendaryTier.ABYSSAL, "requiem_awakened", "Abyssal Devour", "Void Collapse", 14, 75),
-    EXCALIBUR_AWAKENED("excalibur_awakened", "True Excalibur (Awakened)", Material.DIAMOND_SWORD, 26, 30061, LegendaryTier.ABYSSAL, "excalibur_awakened", "Divine Annihilation", "Sacred Realm", 13, 70),
-    CREATION_SPLITTER_AWAKENED("creation_splitter_awakened", "Creation Splitter (Awakened)", Material.DIAMOND_SWORD, 30, 30062, LegendaryTier.ABYSSAL, "creation_splitter_awakened", "Reality Shatter", "Big Bang", 18, 90),
-    WHISPERWIND_AWAKENED("whisperwind_awakened", "Whisperwind (Awakened)", Material.DIAMOND_SWORD, 24, 30063, LegendaryTier.ABYSSAL, "whisperwind_awakened", "Silent Storm", "Phantom Cyclone", 12, 60);
+    REQUIEM_AWAKENED("requiem_awakened", "Requiem of the Ninth Abyss (Awakened)", Material.DIAMOND_SWORD, 34, 30060, LegendaryTier.ABYSSAL, "requiem_awakened", "Abyssal Devour", "Void Collapse", 9, 50),
+    EXCALIBUR_AWAKENED("excalibur_awakened", "True Excalibur (Awakened)", Material.DIAMOND_SWORD, 32, 30061, LegendaryTier.ABYSSAL, "excalibur_awakened", "Divine Annihilation", "Sacred Realm", 8, 45),
+    CREATION_SPLITTER_AWAKENED("creation_splitter_awakened", "Creation Splitter (Awakened)", Material.DIAMOND_SWORD, 36, 30062, LegendaryTier.ABYSSAL, "creation_splitter_awakened", "Reality Shatter", "Big Bang", 12, 60),
+    WHISPERWIND_AWAKENED("whisperwind_awakened", "Whisperwind (Awakened)", Material.DIAMOND_SWORD, 30, 30063, LegendaryTier.ABYSSAL, "whisperwind_awakened", "Silent Storm", "Phantom Cyclone", 8, 40);
 
 
 
