@@ -349,7 +349,7 @@ public class PillagerWarPartyEvent implements Listener {
         ItemMeta meta = book.getItemMeta();
         if (meta == null) return;
 
-        CustomEnchantManager cem = plugin.getCustomEnchantManager();
+        CustomEnchantManager cem = plugin.getEnchantManager();
         NamespacedKey key = cem.getKey(enchant);
         meta.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.INTEGER, level);
 

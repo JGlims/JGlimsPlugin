@@ -369,7 +369,7 @@ public class LegendaryLootListener implements Listener {
         ItemMeta meta = book.getItemMeta();
         if (meta == null) return null;
 
-        CustomEnchantManager cem = plugin.getCustomEnchantManager();
+        CustomEnchantManager cem = plugin.getEnchantManager();
         NamespacedKey key = cem.getKey(enchant);
         meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, level);
 
