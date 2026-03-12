@@ -5,30 +5,29 @@ import net.kyori.adventure.text.format.TextColor;
 
 /**
  * LegendaryTier - standalone 5-tier enum for all legendary items.
- * Replaces the old inner enum LegendaryWeapon.LegendaryTier (LEGENDARY/UNCOMMON).
- * v3.0.0 Phase 8c
+ * v3.2.0 Phase 10 - Updated ranges for reduced cooldowns and increased damage.
  */
 public enum LegendaryTier {
 
     COMMON(
         "COMMON", "\u2726 COMMON \u2726", NamedTextColor.WHITE,
-        10, 13, 5, 8, 15, 25, 10, 1.0
+        12, 15, 3, 6, 10, 18, 10, 1.0
     ),
     RARE(
         "RARE", "\u2726 RARE \u2726", NamedTextColor.GREEN,
-        12, 15, 7, 10, 20, 30, 25, 0.95
+        14, 17, 5, 7, 14, 22, 25, 0.95
     ),
     EPIC(
         "EPIC", "\u2726 EPIC \u2726", NamedTextColor.DARK_PURPLE,
-        14, 17, 8, 12, 25, 45, 50, 0.9
+        17, 20, 5, 8, 18, 30, 50, 0.9
     ),
     MYTHIC(
         "MYTHIC", "\u2726 MYTHIC \u2726", NamedTextColor.GOLD,
-        16, 22, 10, 15, 30, 60, 100, 0.85
+        20, 30, 5, 10, 15, 40, 100, 0.85
     ),
     ABYSSAL(
         "ABYSSAL", "\u2726 ABYSSAL \u2726", TextColor.color(170, 0, 0),
-        22, 30, 12, 18, 45, 90, 200, 0.8
+        28, 40, 5, 12, 28, 50, 200, 0.8
     );
 
     private final String id;
