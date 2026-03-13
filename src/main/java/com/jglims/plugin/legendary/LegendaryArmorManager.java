@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.legendary;
+package com.jglims.plugin.legendary;
 
 import java.util.ArrayList;
 import java.util.List;
