@@ -1,4 +1,4 @@
-package com.jglims.plugin.legendary;
+﻿package com.jglims.plugin.legendary;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +19,8 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import com.jglims.plugin.JGlimsPlugin;
+import org.bukkit.inventory.meta.components.EquippableComponent;
+import org.bukkit.inventory.EquipmentSlot;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -85,6 +87,18 @@ public class LegendaryArmorManager {
         cmdComp.setStrings(List.of(set.getId().replace(" ", "_").toLowerCase() + slotSuffix));
         meta.setCustomModelDataComponent(cmdComp);
 
+        // Set equippable component with custom asset_id for worn texture
+        EquippableComponent equip = meta.getEquippable();
+        EquipmentSlot eqSlot = switch (slot) {
+            case HELMET -> EquipmentSlot.HEAD;
+            case CHESTPLATE -> EquipmentSlot.CHEST;
+            case LEGGINGS -> EquipmentSlot.LEGS;
+            case BOOTS -> EquipmentSlot.FEET;
+        };
+        equip.setSlot(eqSlot);
+        equip.setModel(NamespacedKey.minecraft(set.getId().replace(" ", "_").toLowerCase()));
+        meta.setEquippable(equip);
+
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(armorSetKey, PersistentDataType.STRING, set.getId());
         pdc.set(armorSlotKey, PersistentDataType.STRING, slot.name());
@@ -133,7 +147,7 @@ public class LegendaryArmorManager {
 
     private void applySetAttributes(ItemMeta meta, LegendaryArmorSet set, LegendaryArmorSet.ArmorSlot slot, EquipmentSlotGroup eslot) {
         switch (set) {
-            // â”€â”€ CRAFTABLE SETS â”€â”€
+            // Ã¢â€â‚¬Ã¢â€â‚¬ CRAFTABLE SETS Ã¢â€â‚¬Ã¢â€â‚¬
 
             case REINFORCED_LEATHER -> {
                 // Chestplate: +2 max HP
@@ -179,7 +193,7 @@ public class LegendaryArmorManager {
                 }
             }
 
-            // â”€â”€ LEGENDARY SETS â”€â”€
+            // Ã¢â€â‚¬Ã¢â€â‚¬ LEGENDARY SETS Ã¢â€â‚¬Ã¢â€â‚¬
 
             case SHADOW_STALKER -> {
                 // Leggings: +8% speed
@@ -332,3 +346,4 @@ public class LegendaryArmorManager {
     public NamespacedKey getArmorSetKey() { return armorSetKey; }
     public NamespacedKey getArmorSlotKey() { return armorSlotKey; }
 }
+

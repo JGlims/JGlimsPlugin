@@ -1,4 +1,4 @@
-package com.jglims.plugin.menu;
+﻿package com.jglims.plugin.menu;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.legendary.*;
@@ -75,6 +75,16 @@ public class CreativeMenuManager implements Listener {
                 "Manopla + 6 pedras", "cat_infinity", NamedTextColor.DARK_AQUA));
 
         // Row 5: info
+        // Row 4
+        inv.setItem(28, buildCategoryIcon(Material.GOLDEN_APPLE, "Blessings",
+                "3 blessings permanentes", "cat_blessings", NamedTextColor.GOLD));
+        inv.setItem(30, buildCategoryIcon(Material.BOW, "Battle Tools",
+                "Bow, Crossbow, Mace, Trident", "cat_battletools", NamedTextColor.YELLOW));
+        inv.setItem(32, buildCategoryIcon(Material.ECHO_SHARD, "Abyssal Key",
+                "Chave para o Abyss", "cat_abyssal_key", NamedTextColor.DARK_RED));
+        inv.setItem(34, buildCategoryIcon(Material.DIAMOND_HOE, "Sickles & Spears",
+                "Foices e Lanças de batalha", "cat_sickles", NamedTextColor.GREEN));
+
         inv.setItem(40, buildInfoIcon(Material.BOOK, "Guia do Servidor",
                 "Use /guia para receber o livro-guia completo!"));
 
@@ -308,6 +318,63 @@ public class CreativeMenuManager implements Listener {
                     player.sendMessage(Component.text("Recebeu power-up!", NamedTextColor.GREEN));
                 }
             }
+            case "give_blessing" -> {
+                if (category == null) return;
+                com.jglims.plugin.crafting.RecipeManager rm = null; // blessings are crafted, give the result material
+                ItemStack bl = switch (category) {
+                    case "c_bless" -> {
+                        ItemStack b = new ItemStack(Material.GLISTERING_MELON_SLICE);
+                        ItemMeta bm = b.getItemMeta();
+                        bm.displayName(Component.text("C's Bless", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+                        bm.getPersistentDataContainer().set(new NamespacedKey(plugin, "c_bless_item"), PersistentDataType.BYTE, (byte) 1);
+                        b.setItemMeta(bm);
+                        yield b;
+                    }
+                    case "ami_bless" -> {
+                        ItemStack b = new ItemStack(Material.GOLDEN_CARROT);
+                        ItemMeta bm = b.getItemMeta();
+                        bm.displayName(Component.text("Ami's Bless", NamedTextColor.RED).decorate(TextDecoration.BOLD));
+                        bm.getPersistentDataContainer().set(new NamespacedKey(plugin, "ami_bless_item"), PersistentDataType.BYTE, (byte) 1);
+                        b.setItemMeta(bm);
+                        yield b;
+                    }
+                    case "la_bless" -> {
+                        ItemStack b = new ItemStack(Material.GOLDEN_APPLE);
+                        ItemMeta bm = b.getItemMeta();
+                        bm.displayName(Component.text("La's Bless", NamedTextColor.BLUE).decorate(TextDecoration.BOLD));
+                        bm.getPersistentDataContainer().set(new NamespacedKey(plugin, "la_bless_item"), PersistentDataType.BYTE, (byte) 1);
+                        b.setItemMeta(bm);
+                        yield b;
+                    }
+                    default -> null;
+                };
+                if (bl != null) {
+                    player.getInventory().addItem(bl);
+                    player.sendMessage(Component.text("Recebeu blessing!", NamedTextColor.GREEN));
+                }
+            }
+            case "give_battletool" -> {
+                if (category == null) return;
+                ItemStack bt = switch (category) {
+                    case "battle_bow" -> plugin.getBattleBowManager().createBattleBow();
+                    case "battle_crossbow" -> plugin.getBattleBowManager().createBattleCrossbow();
+                    case "battle_mace" -> plugin.getBattleMaceManager().createBattleMace();
+                    case "battle_trident" -> plugin.getBattleTridentManager().createBattleTrident();
+                    default -> null;
+                };
+                if (bt != null) {
+                    player.getInventory().addItem(bt);
+                    player.sendMessage(Component.text("Recebeu battle tool!", NamedTextColor.GREEN));
+                }
+            }
+            case "give_abyssal_key" -> {
+                player.getInventory().addItem(plugin.getAbyssDimensionManager().createAbyssalKey());
+                player.sendMessage(Component.text("Recebeu Abyssal Key!", NamedTextColor.DARK_RED));
+            }
+            case "give_sickle" -> {
+                // Sickles and spears — handled in the page
+                player.sendMessage(Component.text("Use a pagina de sickles!", NamedTextColor.YELLOW));
+            }
             case "give_infinity" -> {
                 if (category == null) return;
                 if (category.equals("glove")) {
@@ -326,6 +393,81 @@ public class CreativeMenuManager implements Listener {
         }
     }
 
+    // ========== BLESSINGS PAGE ==========
+
+    public void openBlessingsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Blessings", NamedTextColor.GOLD)));
+
+        ItemStack cBless = new ItemStack(Material.GLISTERING_MELON_SLICE);
+        ItemMeta cm = cBless.getItemMeta();
+        cm.displayName(Component.text("C's Bless", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+        cm.lore(List.of(Component.text("+1 coração por uso (max 10)", NamedTextColor.GRAY)));
+        cm.getPersistentDataContainer().set(new NamespacedKey(plugin, "c_bless_item"), PersistentDataType.BYTE, (byte) 1);
+        cBless.setItemMeta(cm);
+
+        ItemStack amiBless = new ItemStack(Material.GOLDEN_CARROT);
+        ItemMeta am = amiBless.getItemMeta();
+        am.displayName(Component.text("Ami's Bless", NamedTextColor.RED).decorate(TextDecoration.BOLD));
+        am.lore(List.of(Component.text("+2% dano corpo a corpo por uso (max 10)", NamedTextColor.GRAY)));
+        am.getPersistentDataContainer().set(new NamespacedKey(plugin, "ami_bless_item"), PersistentDataType.BYTE, (byte) 1);
+        amiBless.setItemMeta(am);
+
+        ItemStack laBless = new ItemStack(Material.GOLDEN_APPLE);
+        ItemMeta lm = laBless.getItemMeta();
+        lm.displayName(Component.text("La's Bless", NamedTextColor.BLUE).decorate(TextDecoration.BOLD));
+        lm.lore(List.of(Component.text("+2 pontos de armadura por uso (max 10)", NamedTextColor.GRAY)));
+        lm.getPersistentDataContainer().set(new NamespacedKey(plugin, "la_bless_item"), PersistentDataType.BYTE, (byte) 1);
+        laBless.setItemMeta(lm);
+
+        inv.setItem(11, tagForMenu(cBless, "give_blessing", "c_bless"));
+        inv.setItem(13, tagForMenu(amiBless, "give_blessing", "ami_bless"));
+        inv.setItem(15, tagForMenu(laBless, "give_blessing", "la_bless"));
+
+        inv.setItem(18, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    // ========== BATTLE TOOLS PAGE ==========
+
+    public void openBattleToolsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Battle Tools", NamedTextColor.YELLOW)));
+
+        inv.setItem(10, tagForMenu(plugin.getBattleBowManager().createBattleBow(), "give_battletool", "battle_bow"));
+        inv.setItem(12, tagForMenu(plugin.getBattleBowManager().createBattleCrossbow(), "give_battletool", "battle_crossbow"));
+        inv.setItem(14, tagForMenu(plugin.getBattleMaceManager().createBattleMace(), "give_battletool", "battle_mace"));
+        inv.setItem(16, tagForMenu(plugin.getBattleTridentManager().createBattleTrident(), "give_battletool", "battle_trident"));
+
+        inv.setItem(18, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    // ========== SICKLES & SPEARS PAGE ==========
+
+    public void openSicklesPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Sickles & Spears", NamedTextColor.GREEN)));
+
+        // Will be populated when sickle/spear managers have create methods exposed
+        inv.setItem(13, buildInfoIcon(Material.DIAMOND_HOE, "Em breve!", "Sickles e spears serao adicionados aqui"));
+
+        inv.setItem(18, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    private void giveAbyssalKey(Player player) {
+        if (!player.isOp()) {
+            player.sendMessage(Component.text("Voce precisa ser OP!", NamedTextColor.RED));
+            return;
+        }
+        player.getInventory().addItem(plugin.getAbyssDimensionManager().createAbyssalKey());
+        player.sendMessage(Component.text("Recebeu Abyssal Key!", NamedTextColor.DARK_RED));
+    }
+
     // ========== HELPERS ==========
 
     private void handleCategoryClick(Player player, String cat) {
@@ -338,6 +480,10 @@ public class CreativeMenuManager implements Listener {
             case "cat_armor" -> openArmorPage(player);
             case "cat_powerups" -> openPowerUpsPage(player);
             case "cat_infinity" -> openInfinityPage(player);
+            case "cat_blessings" -> openBlessingsPage(player);
+            case "cat_battletools" -> openBattleToolsPage(player);
+            case "cat_abyssal_key" -> giveAbyssalKey(player);
+            case "cat_sickles" -> openSicklesPage(player);
         }
     }
 
