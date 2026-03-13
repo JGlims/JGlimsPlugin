@@ -8,10 +8,13 @@ import java.util.UUID;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import com.jglims.plugin.JGlimsPlugin;
@@ -21,6 +24,7 @@ import com.jglims.plugin.guilds.GuildManager;
 /**
  * LegendaryAbilityContext - shared state and utility methods for legendary abilities.
  * Phase 8d - rule A.17 file-size split.
+ * Phase 11 - particle throttle, task tracking, summon cap for lag reduction.
  */
 final class LegendaryAbilityContext {
 
@@ -52,6 +56,13 @@ final class LegendaryAbilityContext {
     final Map<UUID, Long> gemBarrierExpiry = new HashMap<>();
     final Map<UUID, Boolean> shadowStanceActive = new HashMap<>();
     final Map<UUID, Long> shadowStanceExpiry = new HashMap<>();
+
+    // -- Phase 11: Lag reduction fields --
+    private final Map<UUID, Long> lastParticleBurst = new HashMap<>();
+    private static final long PARTICLE_COOLDOWN_MS = 100L;
+    private final Map<UUID, Map<String, BukkitTask>> activeTasks = new HashMap<>();
+    private final Map<UUID, List<Entity>> summonedEntities = new HashMap<>();
+    private static final int MAX_SUMMONS_PER_PLAYER = 6;
 
     LegendaryAbilityContext(JGlimsPlugin plugin, ConfigManager config,
                             LegendaryWeaponManager weaponManager, GuildManager guildManager) {
@@ -106,5 +117,65 @@ final class LegendaryAbilityContext {
         double x = v.getX() * cos - v.getZ() * sin;
         double z = v.getX() * sin + v.getZ() * cos;
         return v.setX(x).setZ(z);
+    }
+
+    // -- Phase 11: Particle throttle --
+    void spawnThrottled(World world, Particle particle, Location loc,
+                        int count, double dx, double dy, double dz, double speed,
+                        Player source) {
+        UUID uid = source.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long last = lastParticleBurst.get(uid);
+        if (last != null && (now - last) < PARTICLE_COOLDOWN_MS) {
+            count = Math.max(1, count / 4);
+        }
+        lastParticleBurst.put(uid, now);
+        world.spawnParticle(particle, loc, count, dx, dy, dz, speed);
+    }
+
+    // -- Phase 11: Task tracking --
+    void trackTask(Player p, String abilityName, BukkitTask task) {
+        Map<String, BukkitTask> playerTasks = activeTasks.computeIfAbsent(
+                p.getUniqueId(), k -> new HashMap<>());
+        BukkitTask old = playerTasks.get(abilityName);
+        if (old != null && !old.isCancelled()) {
+            old.cancel();
+        }
+        playerTasks.put(abilityName, task);
+    }
+
+    // -- Phase 11: Summon cap --
+    void trackSummon(Player p, Entity entity) {
+        List<Entity> list = summonedEntities.computeIfAbsent(
+                p.getUniqueId(), k -> new ArrayList<>());
+        list.removeIf(e -> e.isDead() || !e.isValid());
+        if (list.size() >= MAX_SUMMONS_PER_PLAYER) {
+            Entity oldest = list.remove(0);
+            if (!oldest.isDead()) {
+                oldest.remove();
+            }
+        }
+        list.add(entity);
+    }
+
+    // -- Phase 11: Cleanup on player quit --
+    void cleanupPlayer(UUID uid) {
+        lastParticleBurst.remove(uid);
+        Map<String, BukkitTask> tasks = activeTasks.remove(uid);
+        if (tasks != null) {
+            for (BukkitTask t : tasks.values()) {
+                if (t != null && !t.isCancelled()) {
+                    t.cancel();
+                }
+            }
+        }
+        List<Entity> summons = summonedEntities.remove(uid);
+        if (summons != null) {
+            for (Entity e : summons) {
+                if (!e.isDead()) {
+                    e.remove();
+                }
+            }
+        }
     }
 }

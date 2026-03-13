@@ -120,13 +120,20 @@ public class AbyssDimensionManager implements Listener {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
 
-        // Check if the clicked block is inside a valid purpur portal frame
-        // or is a purpur block that forms part of a portal frame
-        if (clicked.getType() == Material.PURPUR_BLOCK || clicked.getType() == Material.AIR) {
-            if (isValidPurpurPortalFrame(clicked)) {
-                event.setCancelled(true);
-                activateAbyssPortal(player, clicked);
-            }
+        // Accept clicking on purpur frame blocks OR air inside the frame
+        Material clickedType = clicked.getType();
+        if (clickedType != Material.PURPUR_BLOCK && clickedType != Material.AIR 
+                && clickedType != Material.CAVE_AIR && clickedType != Material.VOID_AIR) return;
+
+        // Also check the block on the clicked face (the air block adjacent to the purpur)
+        Block target = clicked;
+        if (clickedType == Material.PURPUR_BLOCK && event.getBlockFace() != null) {
+            target = clicked.getRelative(event.getBlockFace());
+        }
+
+        if (isValidPurpurPortalFrame(clicked) || isValidPurpurPortalFrame(target)) {
+            event.setCancelled(true);
+            activateAbyssPortal(player, clicked);
         }
     }
 
