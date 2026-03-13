@@ -255,29 +255,29 @@ Resource pack pack_format: 75
 Item JSON files in assets/minecraft/items/*.json use string-based custom_model_data
 File-size limit per source file: ~120 KB; split if exceeding
 END OF DEFINITIVE SUMMARY v10.0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (ALL OF THE LEGENDARY WEAPONS HAVE WORKING TEXTURES AND ABILITIES, THATS DONE).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 PLUS SECTION (MORE INFORMATION): 
 JGLIMSPLUGIN — PLUS SECTION (Addendum to Project Summary v10.0)
 Compiled: 2026-03-13 | Covers all missing detail from the main summary
