@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -68,6 +69,9 @@ public class PowerUpManager {
             Component.text("Max: " + MAX_HEART_CRYSTALS + " (+" + (MAX_HEART_CRYSTALS * 2) + " extra HP, 100 total). Visual cap: 20 hearts", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "heart_crystal");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("heart_crystal"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -84,6 +88,9 @@ public class PowerUpManager {
             Component.text("Max: " + MAX_SOUL_FRAGMENTS + " (+" + (int)(MAX_SOUL_FRAGMENTS * SOUL_FRAGMENT_DAMAGE_PERCENT) + "% total)", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "soul_fragment");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("soul_fragment"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -101,6 +108,9 @@ public class PowerUpManager {
             Component.text("Max: " + MAX_TITAN_RESOLVE + " (50% KB resist + 10% DR)", NamedTextColor.DARK_RED).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "titan_resolve");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("titan_resolve"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -117,6 +127,9 @@ public class PowerUpManager {
             Component.text("Stackable - each feather = 1 revive", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "phoenix_feather");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("phoenix_feather"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -133,6 +146,9 @@ public class PowerUpManager {
             Component.text("One-time use - permanent effect", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "keep_inventorer");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("keep_inventorer"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -149,6 +165,9 @@ public class PowerUpManager {
             Component.text("Max: " + MAX_VITALITY_SHARDS + " (" + (int)(MAX_VITALITY_SHARDS * VITALITY_SHARD_DR_PERCENT) + "% total DR)", TextColor.color(50, 220, 180)).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "vitality_shard");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("vitality_shard"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -165,6 +184,9 @@ public class PowerUpManager {
             Component.text("Max: " + MAX_BERSERKER_MARKS + " (" + (int)(MAX_BERSERKER_MARKS * BERSERKER_MARK_SPEED_PERCENT) + "% total speed)", TextColor.color(255, 80, 20)).decoration(TextDecoration.ITALIC, false)
         ));
         meta.getPersistentDataContainer().set(KEY_POWERUP_TYPE, PersistentDataType.STRING, "berserker_mark");
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setStrings(java.util.List.of("berserker_mark"));
+        meta.setCustomModelDataComponent(cmd);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
