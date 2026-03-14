@@ -1113,7 +1113,7 @@ final class LegendaryAltAbilities {
                 for (int i = 0; i < 72; i++) {
                     double angle = Math.toRadians(i * 5);
                     Location ring = p.getLocation().add(Math.cos(angle) * 20, 0.1, Math.sin(angle) * 20);
-                    p.getWorld().spawnParticle(Particle.DUST, ring, 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(255, 50, 50), 2.0f));
+                    p.getWorld().spawnParticle(Particle.DUST, ring, 1, new Particle.DustOptions(Color.fromRGB(255, 50, 50), 2.0f));
                 }
                 tick++;
             }
