@@ -365,7 +365,7 @@ public class AbyssDragonBoss implements Listener {
         if (arenaCenter == null) return;
         Location lootLoc = arenaCenter.clone().add(0, 1, 0);
 
-        // Core drops
+        // Core drops - vanilla items only, no manager calls
         world.dropItemNaturally(lootLoc, new ItemStack(Material.NETHER_STAR, 3));
         world.dropItemNaturally(lootLoc, new ItemStack(Material.EXPERIENCE_BOTTLE, 64));
         world.dropItemNaturally(lootLoc, new ItemStack(Material.NETHERITE_INGOT, 4));
@@ -374,45 +374,10 @@ public class AbyssDragonBoss implements Listener {
         world.dropItemNaturally(lootLoc, new ItemStack(Material.TOTEM_OF_UNDYING, 2));
         world.dropItemNaturally(lootLoc, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 8));
         world.dropItemNaturally(lootLoc, new ItemStack(Material.END_CRYSTAL, 4));
-
-        // Legendary weapons from plugin managers (safe calls)
-        try {
-            if (plugin.getLegendaryWeaponManager() != null) {
-                // Use the manager's existing methods to create weapons
-                // Drop 2 ABYSSAL or MYTHIC tier weapons
-                for (int i = 0; i < 2; i++) {
-                    try {
-                        // LegendaryWeaponManager.createWeaponItem(LegendaryWeapon) is the standard method
-                        com.jglims.plugin.legendary.LegendaryWeapon[] abyssalWeapons =
-                            com.jglims.plugin.legendary.LegendaryWeapon.values();
-                        List<com.jglims.plugin.legendary.LegendaryWeapon> highTier = new ArrayList<>();
-                        for (com.jglims.plugin.legendary.LegendaryWeapon lw : abyssalWeapons) {
-                            String tierName = lw.getTier().name();
-                            if (tierName.equals("ABYSSAL") || tierName.equals("MYTHIC")) {
-                                highTier.add(lw);
-                            }
-                        }
-                        if (!highTier.isEmpty()) {
-                            com.jglims.plugin.legendary.LegendaryWeapon chosen =
-                                highTier.get(random.nextInt(highTier.size()));
-                            ItemStack weapon = plugin.getLegendaryWeaponManager().createWeaponItem(chosen);
-                            if (weapon != null) {
-                                world.dropItemNaturally(lootLoc, weapon);
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
-            }
-        } catch (Exception ignored) {}
-
-        try {
-            if (plugin.getPowerUpManager() != null) {
-                // Drop power-up items using known item types
-                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createHeartCrystal());
-                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createSoulFragment());
-                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createPhoenixFeather());
-            }
-        } catch (Exception ignored) {}
+        world.dropItemNaturally(lootLoc, new ItemStack(Material.NETHERITE_SWORD, 1));
+        world.dropItemNaturally(lootLoc, new ItemStack(Material.NETHERITE_CHESTPLATE, 1));
+        world.dropItemNaturally(lootLoc, new ItemStack(Material.DIAMOND_BLOCK, 8));
+        world.dropItemNaturally(lootLoc, new ItemStack(Material.EMERALD_BLOCK, 8));
 
         // XP orbs
         for (int i = 0; i < 20; i++) {
