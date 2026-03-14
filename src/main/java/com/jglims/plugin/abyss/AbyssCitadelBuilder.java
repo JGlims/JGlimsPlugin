@@ -4,745 +4,186 @@ import com.jglims.plugin.JGlimsPlugin;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-
 import java.util.Random;
 
 public class AbyssCitadelBuilder {
-
     private final JGlimsPlugin plugin;
     private final World world;
-    private final Random random = new Random(42);
+    private final Random rng = new Random(42);
+    private static final Material W1 = Material.DEEPSLATE_BRICKS;
+    private static final Material W2 = Material.DEEPSLATE_TILES;
+    private static final Material WA = Material.POLISHED_DEEPSLATE;
+    private static final Material FP = Material.DEEPSLATE_TILES;
+    private static final Material FA = Material.POLISHED_BLACKSTONE;
+    private static final Material PIL = Material.POLISHED_DEEPSLATE;
+    private static final Material STR = Material.DEEPSLATE_BRICK_STAIRS;
+    private static final Material OBS = Material.OBSIDIAN;
+    private static final Material CRY = Material.CRYING_OBSIDIAN;
+    private static final Material AME = Material.AMETHYST_BLOCK;
+    private static final Material IB = Material.IRON_BARS;
+    private static final Material SL = Material.SOUL_LANTERN;
+    private static final Material SF = Material.SOUL_CAMPFIRE;
+    private static final Material ES = Material.END_STONE_BRICKS;
+    private static final Material BK = Material.BEDROCK;
+    private static final Material BA = Material.BARRIER;
+    private static final Material CH;
+    static { Material r; try{r=Material.valueOf("CHAIN");}catch(Exception e){r=Material.IRON_BARS;} CH=r; }
+    private static final int OH = 70, OWH = 25, KH = 30, KWH = 35, KF = 4, FH = 7, TS = 9, TH = 45, AR = 30, AD = 20;
+    private int sY;
 
-    // ── Material palette ──────────────────────────────────────
-    private static final Material WALL_PRIMARY = Material.DEEPSLATE_BRICKS;
-    private static final Material WALL_SECONDARY = Material.DEEPSLATE_TILES;
-    private static final Material WALL_ACCENT = Material.POLISHED_DEEPSLATE;
-    private static final Material FLOOR_PRIMARY = Material.DEEPSLATE_TILES;
-    private static final Material FLOOR_ACCENT = Material.POLISHED_BLACKSTONE;
-    private static final Material PILLAR = Material.POLISHED_DEEPSLATE;
-    private static final Material STAIRS_MAT = Material.DEEPSLATE_BRICK_STAIRS;
-    private static final Material DARK_ACCENT = Material.OBSIDIAN;
-    private static final Material GLOW_BLOCK = Material.CRYING_OBSIDIAN;
-    private static final Material CRYSTAL = Material.AMETHYST_BLOCK;
-    private static final Material IRON_BARS_MAT = Material.IRON_BARS;
-    private static final Material SOUL_LANTERN_MAT = Material.SOUL_LANTERN;
-    private static final Material SOUL_FIRE_MAT = Material.SOUL_CAMPFIRE;
-    private static final Material END_STONE_MAT = Material.END_STONE_BRICKS;
-    private static final Material BEDROCK_MAT = Material.BEDROCK;
-    private static final Material BARRIER_MAT = Material.BARRIER;
-    private static final Material CHAIN_MAT;
-
-    static {
-        Material resolved;
-        try {
-            resolved = Material.valueOf("CHAIN");
-        } catch (Exception e) {
-            resolved = Material.IRON_BARS;
-        }
-        CHAIN_MAT = resolved;
-    }
-
-    // ── Dimensions ────────────────────────────────────────────
-    private static final int OUTER_HALF = 70;
-    private static final int OUTER_WALL_H = 25;
-    private static final int KEEP_HALF = 30;
-    private static final int KEEP_WALL_H = 35;
-    private static final int KEEP_FLOORS = 4;
-    private static final int FLOOR_HEIGHT = 7;
-    private static final int TOWER_SIZE = 9;
-    private static final int TOWER_HEIGHT = 45;
-    private static final int ARENA_RADIUS = 30;
-    private static final int ARENA_DEPTH = 20;
-    private static final int GATE_WIDTH = 11;
-    private static final int GATE_HEIGHT = 15;
-
-    private int surfaceY;
-
-    public AbyssCitadelBuilder(JGlimsPlugin plugin, World world) {
-        this.plugin = plugin;
-        this.world = world;
-    }
+    public AbyssCitadelBuilder(JGlimsPlugin plugin, World world) { this.plugin = plugin; this.world = world; }
 
     public void build() {
-        long start = System.currentTimeMillis();
-        surfaceY = findSurface();
-        plugin.getLogger().info("[Citadel] Building at Y=" + surfaceY);
-
-        buildFoundation();
-        buildOuterWalls();
-        buildCornerTowers();
-        buildGrandSouthGate();
-        buildCourtyard();
-        buildInnerKeep();
-        buildKeepFloors();
-        buildGrandStaircase();
-        buildArena();
-        buildArenaStairwell();
-        buildArenaBarriers();
-        buildWingCorridors();
-        buildWingRooms();
-        buildDecorations();
-        buildApproachPath();
-
-        long elapsed = System.currentTimeMillis() - start;
-        plugin.getLogger().info("[Citadel] Complete in " + elapsed + "ms");
+        long start = System.currentTimeMillis(); sY = findSurface();
+        plugin.getLogger().info("[Citadel] Building at Y=" + sY);
+        buildFoundation(); buildOuterWalls(); buildCornerTowers(); buildGrandSouthGate();
+        buildCourtyard(); buildInnerKeep(); buildKeepFloors(); buildGrandStaircase();
+        buildArena(); buildArenaStairwell(); buildArenaBarriers();
+        buildWingCorridors(); buildWingRooms(); buildDecorations(); buildApproachPath();
+        plugin.getLogger().info("[Citadel] Complete in " + (System.currentTimeMillis()-start) + "ms");
     }
-
-    // ── Foundation ────────────────────────────────────────────
 
     private void buildFoundation() {
         plugin.getLogger().info("[Citadel] Laying foundation...");
-        for (int x = -OUTER_HALF - 2; x <= OUTER_HALF + 2; x++) {
-            for (int z = -OUTER_HALF - 2; z <= OUTER_HALF + 2; z++) {
-                int terrainY = findTerrainY(x, z);
-                for (int y = terrainY; y <= surfaceY; y++) {
-                    Material mat = (y == surfaceY) ? FLOOR_PRIMARY : WALL_PRIMARY;
-                    set(x, y, z, mat);
-                }
-                for (int y = surfaceY + 1; y <= surfaceY + KEEP_WALL_H + 15; y++) {
-                    Block b = world.getBlockAt(x, y, z);
-                    if (b.getType().isSolid() && b.getType() != BEDROCK_MAT) {
-                        b.setType(Material.AIR);
-                    }
-                }
-            }
+        for(int x=-OH-2;x<=OH+2;x++)for(int z=-OH-2;z<=OH+2;z++){
+            int ty=findTerrainY(x,z);
+            for(int y=ty;y<=sY;y++) s(x,y,z,y==sY?FP:W1);
+            for(int y=sY+1;y<=sY+KWH+15;y++){Block b=world.getBlockAt(x,y,z);if(b.getType().isSolid()&&b.getType()!=BK)b.setType(Material.AIR);}
         }
     }
-
-    // ── Outer walls ───────────────────────────────────────────
 
     private void buildOuterWalls() {
         plugin.getLogger().info("[Citadel] Building outer walls...");
-        int base = surfaceY;
-        int top = base + OUTER_WALL_H;
-
-        for (int y = base; y <= top; y++) {
-            Material wallMat = (y % 3 == 0) ? WALL_ACCENT : WALL_PRIMARY;
-            for (int x = -OUTER_HALF; x <= OUTER_HALF; x++) {
-                set(x, y, -OUTER_HALF, wallMat);
-                set(x, y, OUTER_HALF, wallMat);
-            }
-            for (int z = -OUTER_HALF; z <= OUTER_HALF; z++) {
-                set(-OUTER_HALF, y, z, wallMat);
-                set(OUTER_HALF, y, z, wallMat);
-            }
-        }
-
-        for (int x = -OUTER_HALF; x <= OUTER_HALF; x += 2) {
-            set(x, top + 1, -OUTER_HALF, WALL_SECONDARY);
-            set(x, top + 1, OUTER_HALF, WALL_SECONDARY);
-        }
-        for (int z = -OUTER_HALF; z <= OUTER_HALF; z += 2) {
-            set(-OUTER_HALF, top + 1, z, WALL_SECONDARY);
-            set(OUTER_HALF, top + 1, z, WALL_SECONDARY);
-        }
-
-        for (int i = -OUTER_HALF + 7; i <= OUTER_HALF - 7; i += 14) {
-            buildButtress(i, base, -OUTER_HALF, 0, -1);
-            buildButtress(i, base, OUTER_HALF, 0, 1);
-            buildButtress(-OUTER_HALF, base, i, -1, 0);
-            buildButtress(OUTER_HALF, base, i, 1, 0);
-        }
+        int top=sY+OWH;
+        for(int y=sY;y<=top;y++){Material m=y%3==0?WA:W1;for(int x=-OH;x<=OH;x++){s(x,y,-OH,m);s(x,y,OH,m);}for(int z=-OH;z<=OH;z++){s(-OH,y,z,m);s(OH,y,z,m);}}
+        for(int x=-OH;x<=OH;x+=2){s(x,top+1,-OH,W2);s(x,top+1,OH,W2);}
+        for(int z=-OH;z<=OH;z+=2){s(-OH,top+1,z,W2);s(OH,top+1,z,W2);}
+        for(int i=-OH+7;i<=OH-7;i+=14){bb(i,sY,-OH,0,-1);bb(i,sY,OH,0,1);bb(-OH,sY,i,-1,0);bb(OH,sY,i,1,0);}
     }
-
-    private void buildButtress(int bx, int by, int bz, int dx, int dz) {
-        for (int y = 0; y < OUTER_WALL_H - 2; y++) {
-            int depth = Math.max(1, (OUTER_WALL_H - 2 - y) / 5);
-            for (int d = 1; d <= depth; d++) {
-                set(bx + dx * d, by + y, bz + dz * d, WALL_PRIMARY);
-            }
-        }
-    }
-
-    // ── Corner towers ─────────────────────────────────────────
+    private void bb(int bx,int by,int bz,int dx,int dz){for(int y=0;y<OWH-2;y++){int d=Math.max(1,(OWH-2-y)/5);for(int i=1;i<=d;i++)s(bx+dx*i,by+y,bz+dz*i,W1);}}
 
     private void buildCornerTowers() {
         plugin.getLogger().info("[Citadel] Building corner towers...");
-        buildTower(-OUTER_HALF, surfaceY, -OUTER_HALF);
-        buildTower(OUTER_HALF - TOWER_SIZE + 1, surfaceY, -OUTER_HALF);
-        buildTower(-OUTER_HALF, surfaceY, OUTER_HALF - TOWER_SIZE + 1);
-        buildTower(OUTER_HALF - TOWER_SIZE + 1, surfaceY, OUTER_HALF - TOWER_SIZE + 1);
+        bt(-OH,sY,-OH);bt(OH-TS+1,sY,-OH);bt(-OH,sY,OH-TS+1);bt(OH-TS+1,sY,OH-TS+1);
     }
-
-    private void buildTower(int tx, int ty, int tz) {
-        for (int y = 0; y < TOWER_HEIGHT; y++) {
-            Material mat = (y % 4 == 0) ? WALL_ACCENT : WALL_PRIMARY;
-            for (int x = 0; x < TOWER_SIZE; x++) {
-                for (int z = 0; z < TOWER_SIZE; z++) {
-                    boolean edge = (x == 0 || x == TOWER_SIZE - 1 || z == 0 || z == TOWER_SIZE - 1);
-                    if (edge) {
-                        set(tx + x, ty + y, tz + z, mat);
-                    } else if (y % FLOOR_HEIGHT == 0) {
-                        set(tx + x, ty + y, tz + z, FLOOR_PRIMARY);
-                    }
-                }
-            }
-        }
-        for (int r = TOWER_SIZE / 2; r >= 0; r--) {
-            int y = ty + TOWER_HEIGHT + (TOWER_SIZE / 2 - r);
-            int cx = tx + TOWER_SIZE / 2;
-            int cz = tz + TOWER_SIZE / 2;
-            for (int x = -r; x <= r; x++) {
-                for (int z = -r; z <= r; z++) {
-                    set(cx + x, y, cz + z, WALL_SECONDARY);
-                }
-            }
-        }
-        set(tx + TOWER_SIZE / 2, ty + TOWER_HEIGHT + TOWER_SIZE / 2 + 1, tz + TOWER_SIZE / 2, SOUL_LANTERN_MAT);
+    private void bt(int tx,int ty,int tz){
+        for(int y=0;y<TH;y++){Material m=y%4==0?WA:W1;for(int x=0;x<TS;x++)for(int z=0;z<TS;z++){boolean e=x==0||x==TS-1||z==0||z==TS-1;if(e)s(tx+x,ty+y,tz+z,m);else if(y%FH==0)s(tx+x,ty+y,tz+z,FP);}}
+        for(int r=TS/2;r>=0;r--){int y=ty+TH+(TS/2-r);int cx=tx+TS/2,cz=tz+TS/2;for(int x=-r;x<=r;x++)for(int z=-r;z<=r;z++)s(cx+x,y,cz+z,W2);}
+        s(tx+TS/2,ty+TH+TS/2+1,tz+TS/2,SL);
+        for(int y=3;y<TH-2;y+=FH){s(tx+TS/2,ty+y,tz,Material.AIR);s(tx+TS/2,ty+y,tz+TS-1,Material.AIR);s(tx,ty+y,tz+TS/2,Material.AIR);s(tx+TS-1,ty+y,tz+TS/2,Material.AIR);}
     }
-
-    // ── Grand south gate ──────────────────────────────────────
 
     private void buildGrandSouthGate() {
         plugin.getLogger().info("[Citadel] Building grand south gate...");
-        int base = surfaceY;
-        int gateHalfW = GATE_WIDTH / 2;
-        int gz = OUTER_HALF;
-
-        for (int x = -gateHalfW + 1; x <= gateHalfW - 1; x++) {
-            for (int y = base + 1; y < base + GATE_HEIGHT; y++) {
-                set(x, y, gz, Material.AIR);
-            }
-        }
-
-        for (int y = base; y <= base + GATE_HEIGHT + 3; y++) {
-            Material mat = (y % 3 == 0) ? DARK_ACCENT : PILLAR;
-            for (int dx = 0; dx < 3; dx++) {
-                set(-gateHalfW - 1 + dx, y, gz, mat);
-                set(-gateHalfW - 1 + dx, y, gz + 1, mat);
-                set(gateHalfW - 1 + dx, y, gz, mat);
-                set(gateHalfW - 1 + dx, y, gz + 1, mat);
-            }
-        }
-
-        for (int x = -gateHalfW + 1; x <= gateHalfW - 1; x++) {
-            for (int dy = 0; dy < 3; dy++) {
-                set(x, base + GATE_HEIGHT + dy, gz, WALL_ACCENT);
-            }
-        }
-
-        for (int x = -gateHalfW + 1; x <= gateHalfW - 1; x++) {
-            set(x, base + GATE_HEIGHT - 1, gz, IRON_BARS_MAT);
-            set(x, base + GATE_HEIGHT - 2, gz, IRON_BARS_MAT);
-        }
-
-        set(-gateHalfW - 2, base + GATE_HEIGHT + 4, gz, SOUL_FIRE_MAT);
-        set(gateHalfW + 2, base + GATE_HEIGHT + 4, gz, SOUL_FIRE_MAT);
-
-        for (int x = -gateHalfW + 2; x <= gateHalfW - 2; x += 3) {
-            for (int dy = 1; dy <= 3; dy++) {
-                set(x, base + GATE_HEIGHT - 2 - dy, gz, CHAIN_MAT);
-            }
-        }
-
-        for (int dy = 0; dy < 4; dy++) {
-            set(-gateHalfW - 1, base + GATE_HEIGHT - dy, gz - 1, Material.PURPLE_WOOL);
-            set(gateHalfW + 1, base + GATE_HEIGHT - dy, gz - 1, Material.PURPLE_WOOL);
-        }
-
-        for (int x = -gateHalfW; x <= gateHalfW; x++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                set(x, base, gz + dz, FLOOR_ACCENT);
-            }
-        }
+        int gw=5,gz=OH;
+        for(int x=-gw+1;x<=gw-1;x++)for(int y=sY+1;y<sY+15;y++)s(x,y,gz,Material.AIR);
+        for(int y=sY;y<=sY+18;y++){Material m=y%3==0?OBS:PIL;for(int dx=0;dx<3;dx++){s(-gw-1+dx,y,gz,m);s(-gw-1+dx,y,gz+1,m);s(gw-1+dx,y,gz,m);s(gw-1+dx,y,gz+1,m);}}
+        for(int x=-gw+1;x<=gw-1;x++)for(int dy=0;dy<3;dy++)s(x,sY+15+dy,gz,WA);
+        for(int x=-gw+1;x<=gw-1;x++){s(x,sY+14,gz,IB);s(x,sY+13,gz,IB);}
+        s(-gw-2,sY+19,gz,SF);s(gw+2,sY+19,gz,SF);
+        for(int x=-gw+2;x<=gw-2;x+=3)for(int dy=1;dy<=3;dy++)s(x,sY+13-dy,gz,CH);
+        for(int dy=0;dy<4;dy++){s(-gw-1,sY+15-dy,gz-1,Material.PURPLE_WOOL);s(gw+1,sY+15-dy,gz-1,Material.PURPLE_WOOL);}
+        for(int x=-gw;x<=gw;x++)for(int dz=-2;dz<=2;dz++)s(x,sY,gz+dz,FA);
     }
-
-    // ── Courtyard ─────────────────────────────────────────────
 
     private void buildCourtyard() {
         plugin.getLogger().info("[Citadel] Building courtyard...");
-        int base = surfaceY;
-        for (int x = -OUTER_HALF + 2; x <= OUTER_HALF - 2; x++) {
-            for (int z = -OUTER_HALF + 2; z <= OUTER_HALF - 2; z++) {
-                if (Math.abs(x) <= KEEP_HALF + 2 && Math.abs(z) <= KEEP_HALF + 2) continue;
-                Material mat;
-                int dist = Math.abs(x) + Math.abs(z);
-                if (dist % 7 == 0) mat = GLOW_BLOCK;
-                else if ((x + z) % 3 == 0) mat = FLOOR_ACCENT;
-                else mat = FLOOR_PRIMARY;
-                set(x, base, z, mat);
-                for (int y = base + 1; y <= base + 4; y++) {
-                    Block b = world.getBlockAt(x, y, z);
-                    if (b.getType() != Material.AIR) b.setType(Material.AIR);
-                }
-            }
-        }
-
-        for (int x = -OUTER_HALF + 10; x <= OUTER_HALF - 10; x += 15) {
-            for (int z = -OUTER_HALF + 10; z <= OUTER_HALF - 10; z += 15) {
-                if (Math.abs(x) <= KEEP_HALF + 5 && Math.abs(z) <= KEEP_HALF + 5) continue;
-                for (int y = 0; y <= 5; y++) {
-                    set(x, base + y, z, PILLAR);
-                }
-                set(x, base + 6, z, SOUL_LANTERN_MAT);
-            }
-        }
+        for(int x=-OH+2;x<=OH-2;x++)for(int z=-OH+2;z<=OH-2;z++){if(Math.abs(x)<=KH+2&&Math.abs(z)<=KH+2)continue;Material m;int d=Math.abs(x)+Math.abs(z);if(d%7==0)m=CRY;else if((x+z)%3==0)m=FA;else m=FP;s(x,sY,z,m);for(int y=sY+1;y<=sY+4;y++){Block b=world.getBlockAt(x,y,z);if(b.getType()!=Material.AIR)b.setType(Material.AIR);}}
+        for(int x=-OH+10;x<=OH-10;x+=15)for(int z=-OH+10;z<=OH-10;z+=15){if(Math.abs(x)<=KH+5&&Math.abs(z)<=KH+5)continue;for(int y=0;y<=5;y++)s(x,sY+y,z,PIL);s(x,sY+6,z,SL);}
     }
-
-    // ── Inner keep ────────────────────────────────────────────
 
     private void buildInnerKeep() {
         plugin.getLogger().info("[Citadel] Building inner keep...");
-        int base = surfaceY;
-        int top = base + KEEP_WALL_H;
-
-        for (int y = base; y <= top; y++) {
-            Material wallMat = (y % 4 == 0) ? WALL_ACCENT : WALL_PRIMARY;
-            for (int x = -KEEP_HALF; x <= KEEP_HALF; x++) {
-                set(x, y, -KEEP_HALF, wallMat);
-                set(x, y, KEEP_HALF, wallMat);
-            }
-            for (int z = -KEEP_HALF; z <= KEEP_HALF; z++) {
-                set(-KEEP_HALF, y, z, wallMat);
-                set(KEEP_HALF, y, z, wallMat);
-            }
-        }
-
-        for (int x = -KEEP_HALF; x <= KEEP_HALF; x += 2) {
-            set(x, top + 1, -KEEP_HALF, WALL_SECONDARY);
-            set(x, top + 1, KEEP_HALF, WALL_SECONDARY);
-        }
-        for (int z = -KEEP_HALF; z <= KEEP_HALF; z += 2) {
-            set(-KEEP_HALF, top + 1, z, WALL_SECONDARY);
-            set(KEEP_HALF, top + 1, z, WALL_SECONDARY);
-        }
-
-        for (int x = -2; x <= 2; x++) {
-            for (int y = base + 1; y <= base + 7; y++) {
-                set(x, y, KEEP_HALF, Material.AIR);
-            }
-        }
-        for (int x = -3; x <= 3; x++) {
-            set(x, base + 8, KEEP_HALF, WALL_ACCENT);
-        }
+        int top=sY+KWH;
+        for(int y=sY;y<=top;y++){Material m=y%4==0?WA:W1;for(int x=-KH;x<=KH;x++){s(x,y,-KH,m);s(x,y,KH,m);}for(int z=-KH;z<=KH;z++){s(-KH,y,z,m);s(KH,y,z,m);}}
+        for(int x=-KH;x<=KH;x+=2){s(x,top+1,-KH,W2);s(x,top+1,KH,W2);}
+        for(int z=-KH;z<=KH;z+=2){s(-KH,top+1,z,W2);s(KH,top+1,z,W2);}
+        for(int x=-2;x<=2;x++)for(int y=sY+1;y<=sY+7;y++)s(x,y,KH,Material.AIR);
+        for(int x=-3;x<=3;x++)s(x,sY+8,KH,WA);
     }
-
-    // ── Keep floors ───────────────────────────────────────────
 
     private void buildKeepFloors() {
         plugin.getLogger().info("[Citadel] Building keep floors...");
-        int base = surfaceY;
-
-        for (int floor = 0; floor < KEEP_FLOORS; floor++) {
-            int floorY = base + (floor * FLOOR_HEIGHT);
-
-            for (int x = -KEEP_HALF + 1; x <= KEEP_HALF - 1; x++) {
-                for (int z = -KEEP_HALF + 1; z <= KEEP_HALF - 1; z++) {
-                    Material mat = ((x + z) % 2 == 0) ? FLOOR_PRIMARY : FLOOR_ACCENT;
-                    set(x, floorY, z, mat);
-                }
-            }
-
-            for (int x = -KEEP_HALF + 1; x <= KEEP_HALF - 1; x++) {
-                for (int z = -KEEP_HALF + 1; z <= KEEP_HALF - 1; z++) {
-                    for (int y = floorY + 1; y < floorY + FLOOR_HEIGHT; y++) {
-                        set(x, y, z, Material.AIR);
-                    }
-                }
-            }
-
-            for (int x = -KEEP_HALF + 5; x <= KEEP_HALF - 5; x += 10) {
-                for (int z = -KEEP_HALF + 5; z <= KEEP_HALF - 5; z += 10) {
-                    for (int y = floorY; y < floorY + FLOOR_HEIGHT; y++) {
-                        set(x, y, z, PILLAR);
-                    }
-                }
-            }
-
-            if (floor < KEEP_FLOORS - 1) {
-                int ceilY = floorY + FLOOR_HEIGHT - 1;
-                for (int x = -KEEP_HALF + 1; x <= KEEP_HALF - 1; x += 5) {
-                    for (int z = -KEEP_HALF + 1; z <= KEEP_HALF - 1; z += 5) {
-                        set(x, ceilY, z, SOUL_LANTERN_MAT);
-                    }
-                }
-            }
-
-            buildFloorRooms(floor, floorY);
+        for(int fl=0;fl<KF;fl++){int fy=sY+(fl*FH);
+            for(int x=-KH+1;x<=KH-1;x++)for(int z=-KH+1;z<=KH-1;z++){s(x,fy,z,(x+z)%2==0?FP:FA);for(int y=fy+1;y<fy+FH;y++)s(x,y,z,Material.AIR);}
+            for(int x=-KH+5;x<=KH-5;x+=10)for(int z=-KH+5;z<=KH-5;z+=10)for(int y=fy;y<fy+FH;y++)s(x,y,z,PIL);
+            if(fl<KF-1)for(int x=-KH+1;x<=KH-1;x+=5)for(int z=-KH+1;z<=KH-1;z+=5)s(x,fy+FH-1,z,SL);
+            bfr(fl,fy);
         }
     }
-
-    private void buildFloorRooms(int floor, int floorY) {
-        int topY = floorY + FLOOR_HEIGHT - 1;
-        switch (floor) {
-            case 0:
-                buildRoom(-KEEP_HALF + 2, floorY, -KEEP_HALF + 2, KEEP_HALF - 2, topY, -2, true);
-                buildRoom(-KEEP_HALF + 2, floorY, 3, -5, topY, KEEP_HALF - 2, true);
-                buildRoom(5, floorY, 3, KEEP_HALF - 2, topY, KEEP_HALF - 2, true);
-                break;
-            case 1:
-                buildRoom(-KEEP_HALF + 2, floorY, -KEEP_HALF + 2, -2, topY, KEEP_HALF - 2, true);
-                buildRoom(2, floorY, -KEEP_HALF + 2, KEEP_HALF - 2, topY, KEEP_HALF - 2, true);
-                break;
-            case 2:
-                buildRoom(-KEEP_HALF + 2, floorY, -KEEP_HALF + 2, KEEP_HALF - 2, topY, KEEP_HALF - 2, false);
-                set(0, floorY + 1, -KEEP_HALF + 4, Material.POLISHED_BLACKSTONE_STAIRS);
-                set(-1, floorY + 1, -KEEP_HALF + 4, DARK_ACCENT);
-                set(1, floorY + 1, -KEEP_HALF + 4, DARK_ACCENT);
-                for (int dy = 1; dy <= 4; dy++) {
-                    set(-2, floorY + dy, -KEEP_HALF + 4, PILLAR);
-                    set(2, floorY + dy, -KEEP_HALF + 4, PILLAR);
-                }
-                break;
-            case 3:
-                buildRoom(-KEEP_HALF + 2, floorY, -KEEP_HALF + 2, KEEP_HALF - 2, topY, KEEP_HALF - 2, false);
-                set(0, floorY + 1, 0, CRYSTAL);
-                set(0, floorY + 2, 0, CRYSTAL);
-                set(0, floorY + 3, 0, Material.END_ROD);
-                set(-1, floorY + 1, -1, CRYSTAL);
-                set(1, floorY + 1, -1, CRYSTAL);
-                set(-1, floorY + 1, 1, CRYSTAL);
-                set(1, floorY + 1, 1, CRYSTAL);
-                break;
-        }
+    private void bfr(int fl,int fy){int ty=fy+FH-1;switch(fl){case 0:br(-KH+2,fy,-KH+2,KH-2,ty,-2,true);br(-KH+2,fy,3,-5,ty,KH-2,true);br(5,fy,3,KH-2,ty,KH-2,true);break;case 1:br(-KH+2,fy,-KH+2,-2,ty,KH-2,true);br(2,fy,-KH+2,KH-2,ty,KH-2,true);break;case 2:br(-KH+2,fy,-KH+2,KH-2,ty,KH-2,false);s(0,fy+1,-KH+4,Material.POLISHED_BLACKSTONE_STAIRS);s(-1,fy+1,-KH+4,OBS);s(1,fy+1,-KH+4,OBS);for(int dy=1;dy<=4;dy++){s(-2,fy+dy,-KH+4,PIL);s(2,fy+dy,-KH+4,PIL);}break;case 3:br(-KH+2,fy,-KH+2,KH-2,ty,KH-2,false);s(0,fy+1,0,AME);s(0,fy+2,0,AME);s(0,fy+3,0,Material.END_ROD);s(-1,fy+1,-1,AME);s(1,fy+1,-1,AME);s(-1,fy+1,1,AME);s(1,fy+1,1,AME);break;}}
+    private void br(int x1,int y1,int z1,int x2,int y2,int z2,boolean loot){
+        for(int y=y1+1;y<=y2;y++){for(int x=x1;x<=x2;x++){s(x,y,z1,W2);s(x,y,z2,W2);}for(int z=z1;z<=z2;z++){s(x1,y,z,W2);s(x2,y,z,W2);}}
+        int mx=(x1+x2)/2,mz=(z1+z2)/2;for(int dy=1;dy<=3;dy++){s(mx,y1+dy,z2,Material.AIR);if(mx+1<=x2)s(mx+1,y1+dy,z2,Material.AIR);s(x1,y1+dy,mz,Material.AIR);s(x1,y1+dy,mz+1,Material.AIR);}
+        s(mx,y2-1,mz,SL);if(loot){s(x1+2,y1+1,z1+2,Material.CHEST);s(x2-2,y1+1,z2-2,Material.CHEST);}
     }
-
-    private void buildRoom(int x1, int y1, int z1, int x2, int y2, int z2, boolean addLoot) {
-        for (int y = y1 + 1; y <= y2; y++) {
-            for (int x = x1; x <= x2; x++) {
-                set(x, y, z1, WALL_SECONDARY);
-                set(x, y, z2, WALL_SECONDARY);
-            }
-            for (int z = z1; z <= z2; z++) {
-                set(x1, y, z, WALL_SECONDARY);
-                set(x2, y, z, WALL_SECONDARY);
-            }
-        }
-
-        int midX = (x1 + x2) / 2;
-        int midZ = (z1 + z2) / 2;
-        for (int dy = 1; dy <= 3; dy++) {
-            set(midX, y1 + dy, z2, Material.AIR);
-            if (midX + 1 <= x2) set(midX + 1, y1 + dy, z2, Material.AIR);
-            set(x1, y1 + dy, midZ, Material.AIR);
-            set(x1, y1 + dy, midZ + 1, Material.AIR);
-        }
-
-        set(midX, y2 - 1, midZ, SOUL_LANTERN_MAT);
-
-        if (addLoot) {
-            set(x1 + 2, y1 + 1, z1 + 2, Material.CHEST);
-            set(x2 - 2, y1 + 1, z2 - 2, Material.CHEST);
-        }
-    }
-
-    // ── Grand staircase ───────────────────────────────────────
 
     private void buildGrandStaircase() {
         plugin.getLogger().info("[Citadel] Building grand staircase...");
-        int base = surfaceY;
-        int sx = KEEP_HALF - 6;
-        int sz = 0;
-
-        for (int floor = 0; floor < KEEP_FLOORS - 1; floor++) {
-            int startY = base + (floor * FLOOR_HEIGHT);
-            int endY = startY + FLOOR_HEIGHT;
-
-            for (int step = 0; step < FLOOR_HEIGHT; step++) {
-                int z = sz - 3 + step;
-                set(sx, startY + step + 1, z, STAIRS_MAT);
-                set(sx + 1, startY + step + 1, z, STAIRS_MAT);
-                set(sx - 1, startY + step + 2, z, IRON_BARS_MAT);
-                for (int dy = 1; dy <= 3; dy++) {
-                    set(sx, startY + step + 1 + dy, z, Material.AIR);
-                    set(sx + 1, startY + step + 1 + dy, z, Material.AIR);
-                }
-            }
-
-            for (int x = sx - 1; x <= sx + 2; x++) {
-                for (int z2 = sz - 4; z2 <= sz - 3; z2++) {
-                    set(x, endY, z2, FLOOR_PRIMARY);
-                }
-            }
-        }
+        int sx=KH-6;for(int fl=0;fl<KF-1;fl++){int sy=sY+(fl*FH);for(int st=0;st<FH;st++){int z=-3+st;s(sx,sy+st+1,z,STR);s(sx+1,sy+st+1,z,STR);s(sx-1,sy+st+2,z,IB);for(int dy=1;dy<=3;dy++){s(sx,sy+st+1+dy,z,Material.AIR);s(sx+1,sy+st+1+dy,z,Material.AIR);}}}
     }
-
-    // ── Arena ─────────────────────────────────────────────────
 
     private void buildArena() {
         plugin.getLogger().info("[Citadel] Building arena...");
-        int arenaY = surfaceY - ARENA_DEPTH;
-
-        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
-            for (int z = -ARENA_RADIUS; z <= ARENA_RADIUS; z++) {
-                if (x * x + z * z > ARENA_RADIUS * ARENA_RADIUS) continue;
-                set(x, arenaY, z, BEDROCK_MAT);
-                for (int y = arenaY + 1; y < surfaceY; y++) {
-                    set(x, y, z, Material.AIR);
-                }
-            }
-        }
-
-        for (int y = arenaY; y <= arenaY + ARENA_DEPTH + 5; y++) {
-            for (int angle = 0; angle < 360; angle++) {
-                double rad = Math.toRadians(angle);
-                int x = (int) Math.round(ARENA_RADIUS * Math.cos(rad));
-                int z = (int) Math.round(ARENA_RADIUS * Math.sin(rad));
-                set(x, y, z, BEDROCK_MAT);
-            }
-        }
-
-        for (int x = -3; x <= 3; x++) {
-            for (int z = -3; z <= 3; z++) {
-                if (x * x + z * z <= 9) {
-                    set(x, arenaY + 1, z, DARK_ACCENT);
-                }
-            }
-        }
-        set(0, arenaY + 2, 0, Material.LODESTONE);
-
-        for (int angle = 0; angle < 360; angle += 20) {
-            double rad = Math.toRadians(angle);
-            int x = (int) Math.round((ARENA_RADIUS - 2) * Math.cos(rad));
-            int z = (int) Math.round((ARENA_RADIUS - 2) * Math.sin(rad));
-            set(x, arenaY + 1, z, SOUL_FIRE_MAT);
-        }
-
-        for (int x = -ARENA_RADIUS + 2; x <= ARENA_RADIUS - 2; x += 5) {
-            for (int z = -ARENA_RADIUS + 2; z <= ARENA_RADIUS - 2; z += 5) {
-                if (x * x + z * z < (ARENA_RADIUS - 2) * (ARENA_RADIUS - 2)) {
-                    set(x, arenaY, z, GLOW_BLOCK);
-                }
-            }
-        }
+        int ay=sY-AD;
+        for(int x=-AR;x<=AR;x++)for(int z=-AR;z<=AR;z++){if(x*x+z*z>AR*AR)continue;s(x,ay,z,BK);for(int y=ay+1;y<sY;y++)s(x,y,z,Material.AIR);}
+        for(int y=ay;y<=ay+AD+5;y++)for(int a=0;a<360;a++){double r=Math.toRadians(a);s((int)Math.round(AR*Math.cos(r)),y,(int)Math.round(AR*Math.sin(r)),BK);}
+        for(int x=-3;x<=3;x++)for(int z=-3;z<=3;z++)if(x*x+z*z<=9)s(x,ay+1,z,OBS);
+        s(0,ay+2,0,Material.LODESTONE);
+        for(int a=0;a<360;a+=20){double r=Math.toRadians(a);s((int)Math.round((AR-2)*Math.cos(r)),ay+1,(int)Math.round((AR-2)*Math.sin(r)),SF);}
+        for(int x=-AR+2;x<=AR-2;x+=5)for(int z=-AR+2;z<=AR-2;z+=5)if(x*x+z*z<(AR-2)*(AR-2))s(x,ay,z,CRY);
     }
-
-    // ── Arena barriers ────────────────────────────────────────
 
     private void buildArenaBarriers() {
         plugin.getLogger().info("[Citadel] Building arena barriers...");
-        int arenaY = surfaceY - ARENA_DEPTH;
-
-        for (int y = arenaY + ARENA_DEPTH + 6; y <= arenaY + ARENA_DEPTH + 25; y++) {
-            for (int angle = 0; angle < 360; angle++) {
-                double rad = Math.toRadians(angle);
-                int x = (int) Math.round((ARENA_RADIUS + 1) * Math.cos(rad));
-                int z = (int) Math.round((ARENA_RADIUS + 1) * Math.sin(rad));
-                set(x, y, z, BARRIER_MAT);
-            }
-        }
-
-        for (int x = -ARENA_RADIUS - 1; x <= ARENA_RADIUS + 1; x++) {
-            for (int z = -ARENA_RADIUS - 1; z <= ARENA_RADIUS + 1; z++) {
-                if (x * x + z * z <= (ARENA_RADIUS + 1) * (ARENA_RADIUS + 1)) {
-                    set(x, arenaY + ARENA_DEPTH + 25, z, BARRIER_MAT);
-                }
-            }
-        }
-
-        for (int angle = 0; angle < 360; angle += 15) {
-            double rad = Math.toRadians(angle);
-            int x = (int) Math.round((ARENA_RADIUS - 1) * Math.cos(rad));
-            int z = (int) Math.round((ARENA_RADIUS - 1) * Math.sin(rad));
-            int spikeH = 3 + random.nextInt(4);
-            for (int dy = 1; dy <= spikeH; dy++) {
-                set(x, arenaY + dy, z, END_STONE_MAT);
-            }
-            set(x, arenaY + spikeH + 1, z, Material.POINTED_DRIPSTONE);
-        }
+        int ay=sY-AD;
+        for(int y=ay+AD+6;y<=ay+AD+25;y++)for(int a=0;a<360;a++){double r=Math.toRadians(a);s((int)Math.round((AR+1)*Math.cos(r)),y,(int)Math.round((AR+1)*Math.sin(r)),BA);}
+        for(int x=-AR-1;x<=AR+1;x++)for(int z=-AR-1;z<=AR+1;z++)if(x*x+z*z<=(AR+1)*(AR+1))s(x,ay+AD+25,z,BA);
+        for(int a=0;a<360;a+=15){double r=Math.toRadians(a);int x=(int)Math.round((AR-1)*Math.cos(r)),z=(int)Math.round((AR-1)*Math.sin(r));int h=3+rng.nextInt(4);for(int dy=1;dy<=h;dy++)s(x,ay+dy,z,ES);s(x,ay+h+1,z,Material.POINTED_DRIPSTONE);}
     }
-
-    // ── Arena stairwell ───────────────────────────────────────
 
     private void buildArenaStairwell() {
         plugin.getLogger().info("[Citadel] Building arena stairwell...");
-        int base = surfaceY;
-        int arenaY = surfaceY - ARENA_DEPTH;
-        int sx = -2;
-        int ex = 2;
-        int sz = -KEEP_HALF + 3;
-
-        for (int x = sx; x <= ex; x++) {
-            for (int z = sz; z <= sz + 3; z++) {
-                set(x, base, z, Material.AIR);
-            }
-        }
-
-        for (int y = base; y > arenaY; y--) {
-            int step = base - y;
-            int zOff = step % 8;
-            boolean goingNorth = (step / 8) % 2 == 0;
-            int targetZ = goingNorth ? (sz + zOff) : (sz + 7 - zOff);
-
-            for (int x = sx; x <= ex; x++) {
-                set(x, y, targetZ, STAIRS_MAT);
-                set(sx - 1, y, targetZ, WALL_PRIMARY);
-                set(ex + 1, y, targetZ, WALL_PRIMARY);
-                for (int dy = 1; dy <= 3; dy++) {
-                    set(x, y + dy, targetZ, Material.AIR);
-                }
-            }
-
-            if (step % 4 == 0) {
-                set(sx - 1, y + 2, targetZ, SOUL_LANTERN_MAT);
-            }
-        }
-
-        for (int x = sx; x <= ex; x++) {
-            for (int dy = 1; dy <= 4; dy++) {
-                set(x, arenaY + dy, ARENA_RADIUS - 1, Material.AIR);
-            }
-        }
+        int ay=sY-AD,sx=-2,ex=2,sz=-KH+3;
+        for(int x=sx;x<=ex;x++)for(int z=sz;z<=sz+3;z++)s(x,sY,z,Material.AIR);
+        for(int y=sY;y>ay;y--){int st=sY-y,zo=st%8;boolean gn=(st/8)%2==0;int tz=gn?(sz+zo):(sz+7-zo);for(int x=sx;x<=ex;x++){s(x,y,tz,STR);s(sx-1,y,tz,W1);s(ex+1,y,tz,W1);for(int dy=1;dy<=3;dy++)s(x,y+dy,tz,Material.AIR);}if(st%4==0)s(sx-1,y+2,tz,SL);}
+        for(int x=sx;x<=ex;x++)for(int dy=1;dy<=4;dy++)s(x,ay+dy,AR-1,Material.AIR);
     }
-
-    // ── Wing corridors ────────────────────────────────────────
 
     private void buildWingCorridors() {
         plugin.getLogger().info("[Citadel] Building wing corridors...");
-        int base = surfaceY;
-        int corridorH = 5;
-
-        for (int z = -KEEP_HALF + 5; z <= KEEP_HALF - 5; z++) {
-            for (int y = base; y <= base + corridorH; y++) {
-                set(KEEP_HALF + 1, y, z, WALL_PRIMARY);
-                set(KEEP_HALF + 5, y, z, WALL_PRIMARY);
-                if (y == base) {
-                    for (int x = KEEP_HALF + 2; x <= KEEP_HALF + 4; x++) set(x, y, z, FLOOR_PRIMARY);
-                } else {
-                    for (int x = KEEP_HALF + 2; x <= KEEP_HALF + 4; x++) set(x, y, z, Material.AIR);
-                }
-            }
-            for (int x = KEEP_HALF + 1; x <= KEEP_HALF + 5; x++) set(x, base + corridorH + 1, z, WALL_SECONDARY);
-        }
-
-        for (int z = -KEEP_HALF + 5; z <= KEEP_HALF - 5; z++) {
-            for (int y = base; y <= base + corridorH; y++) {
-                set(-KEEP_HALF - 1, y, z, WALL_PRIMARY);
-                set(-KEEP_HALF - 5, y, z, WALL_PRIMARY);
-                if (y == base) {
-                    for (int x = -KEEP_HALF - 4; x <= -KEEP_HALF - 2; x++) set(x, y, z, FLOOR_PRIMARY);
-                } else {
-                    for (int x = -KEEP_HALF - 4; x <= -KEEP_HALF - 2; x++) set(x, y, z, Material.AIR);
-                }
-            }
-            for (int x = -KEEP_HALF - 5; x <= -KEEP_HALF - 1; x++) set(x, base + corridorH + 1, z, WALL_SECONDARY);
-        }
-
-        for (int dy = 1; dy <= 3; dy++) {
-            set(KEEP_HALF, base + dy, 0, Material.AIR);
-            set(-KEEP_HALF, base + dy, 0, Material.AIR);
-        }
-
-        for (int z = -KEEP_HALF + 7; z <= KEEP_HALF - 7; z += 5) {
-            set(KEEP_HALF + 3, base + corridorH, z, SOUL_LANTERN_MAT);
-            set(-KEEP_HALF - 3, base + corridorH, z, SOUL_LANTERN_MAT);
-        }
+        int ch=5;
+        for(int z=-KH+5;z<=KH-5;z++){for(int y=sY;y<=sY+ch;y++){s(KH+1,y,z,W1);s(KH+5,y,z,W1);if(y==sY)for(int x=KH+2;x<=KH+4;x++)s(x,y,z,FP);else for(int x=KH+2;x<=KH+4;x++)s(x,y,z,Material.AIR);}for(int x=KH+1;x<=KH+5;x++)s(x,sY+ch+1,z,W2);}
+        for(int z=-KH+5;z<=KH-5;z++){for(int y=sY;y<=sY+ch;y++){s(-KH-1,y,z,W1);s(-KH-5,y,z,W1);if(y==sY)for(int x=-KH-4;x<=-KH-2;x++)s(x,y,z,FP);else for(int x=-KH-4;x<=-KH-2;x++)s(x,y,z,Material.AIR);}for(int x=-KH-5;x<=-KH-1;x++)s(x,sY+ch+1,z,W2);}
+        for(int dy=1;dy<=3;dy++){s(KH,sY+dy,0,Material.AIR);s(-KH,sY+dy,0,Material.AIR);}
+        for(int z=-KH+7;z<=KH-7;z+=5){s(KH+3,sY+ch,z,SL);s(-KH-3,sY+ch,z,SL);}
     }
-
-    // ── Wing rooms ────────────────────────────────────────────
 
     private void buildWingRooms() {
         plugin.getLogger().info("[Citadel] Building wing rooms...");
-        int base = surfaceY;
-
-        for (int i = 0; i < 4; i++) {
-            int rz = -KEEP_HALF + 8 + (i * 12);
-            int rx = KEEP_HALF + 6;
-            buildWingRoom(rx, base, rz, rx + 10, base + 5, rz + 10);
-            for (int dy = 1; dy <= 3; dy++) set(KEEP_HALF + 5, base + dy, rz + 5, Material.AIR);
-        }
-
-        for (int i = 0; i < 4; i++) {
-            int rz = -KEEP_HALF + 8 + (i * 12);
-            int rx = -KEEP_HALF - 16;
-            buildWingRoom(rx, base, rz, rx + 10, base + 5, rz + 10);
-            for (int dy = 1; dy <= 3; dy++) set(-KEEP_HALF - 5, base + dy, rz + 5, Material.AIR);
-        }
+        for(int i=0;i<4;i++){int rz=-KH+8+(i*12),rx=KH+6;bwr(rx,sY,rz,rx+10,sY+5,rz+10);for(int dy=1;dy<=3;dy++)s(KH+5,sY+dy,rz+5,Material.AIR);}
+        for(int i=0;i<4;i++){int rz=-KH+8+(i*12),rx=-KH-16;bwr(rx,sY,rz,rx+10,sY+5,rz+10);for(int dy=1;dy<=3;dy++)s(-KH-5,sY+dy,rz+5,Material.AIR);}
     }
-
-    private void buildWingRoom(int x1, int y1, int z1, int x2, int y2, int z2) {
-        for (int y = y1; y <= y2; y++) {
-            for (int x = x1; x <= x2; x++) {
-                set(x, y, z1, WALL_PRIMARY);
-                set(x, y, z2, WALL_PRIMARY);
-            }
-            for (int z = z1; z <= z2; z++) {
-                set(x1, y, z, WALL_PRIMARY);
-                set(x2, y, z, WALL_PRIMARY);
-            }
-        }
-        for (int x = x1 + 1; x < x2; x++) {
-            for (int z = z1 + 1; z < z2; z++) {
-                set(x, y1, z, FLOOR_PRIMARY);
-                for (int y = y1 + 1; y < y2; y++) set(x, y, z, Material.AIR);
-            }
-        }
-        for (int x = x1; x <= x2; x++) {
-            for (int z = z1; z <= z2; z++) set(x, y2, z, WALL_SECONDARY);
-        }
-        int mx = (x1 + x2) / 2;
-        int mz = (z1 + z2) / 2;
-        set(mx, y2 - 1, mz, SOUL_LANTERN_MAT);
-        set(x1 + 2, y1 + 1, z1 + 2, Material.CHEST);
-        set(x2 - 2, y1 + 1, z2 - 2, Material.CHEST);
+    private void bwr(int x1,int y1,int z1,int x2,int y2,int z2){
+        for(int y=y1;y<=y2;y++){for(int x=x1;x<=x2;x++){s(x,y,z1,W1);s(x,y,z2,W1);}for(int z=z1;z<=z2;z++){s(x1,y,z,W1);s(x2,y,z,W1);}}
+        for(int x=x1+1;x<x2;x++)for(int z=z1+1;z<z2;z++){s(x,y1,z,FP);for(int y=y1+1;y<y2;y++)s(x,y,z,Material.AIR);}
+        for(int x=x1;x<=x2;x++)for(int z=z1;z<=z2;z++)s(x,y2,z,W2);
+        s((x1+x2)/2,y2-1,(z1+z2)/2,SL);s(x1+2,y1+1,z1+2,Material.CHEST);s(x2-2,y1+1,z2-2,Material.CHEST);
     }
-
-    // ── Decorations ───────────────────────────────────────────
 
     private void buildDecorations() {
         plugin.getLogger().info("[Citadel] Adding decorations...");
-        int base = surfaceY;
-
-        int[][] keepCorners = {{-KEEP_HALF, KEEP_HALF}, {KEEP_HALF, KEEP_HALF},
-                {-KEEP_HALF, -KEEP_HALF}, {KEEP_HALF, -KEEP_HALF}};
-        for (int[] pos : keepCorners) {
-            for (int dy = 0; dy < 3; dy++) {
-                set(pos[0], base + KEEP_WALL_H + 2 + dy, pos[1], Material.END_ROD);
-            }
-        }
-
-        for (int i = 0; i < 20; i++) {
-            int x = -OUTER_HALF + 5 + random.nextInt(OUTER_HALF * 2 - 10);
-            int z = -OUTER_HALF + 5 + random.nextInt(OUTER_HALF * 2 - 10);
-            if (Math.abs(x) < KEEP_HALF + 5 && Math.abs(z) < KEEP_HALF + 5) continue;
-            set(x, base + 1, z, Material.AMETHYST_CLUSTER);
-        }
-
-        for (int x = -OUTER_HALF + 7; x <= OUTER_HALF - 7; x += 14) {
-            for (int dy = 0; dy < 3; dy++) {
-                set(x, base + OUTER_WALL_H - dy, -OUTER_HALF + 1, Material.PURPLE_WOOL);
-                set(x, base + OUTER_WALL_H - dy, OUTER_HALF - 1, Material.PURPLE_WOOL);
-            }
-        }
+        int[][] kc={{-KH,KH},{KH,KH},{-KH,-KH},{KH,-KH}};for(int[] p:kc)for(int dy=0;dy<3;dy++)s(p[0],sY+KWH+2+dy,p[1],Material.END_ROD);
+        for(int i=0;i<20;i++){int x=-OH+5+rng.nextInt(OH*2-10),z=-OH+5+rng.nextInt(OH*2-10);if(Math.abs(x)<KH+5&&Math.abs(z)<KH+5)continue;s(x,sY+1,z,Material.AMETHYST_CLUSTER);}
+        for(int x=-OH+7;x<=OH-7;x+=14)for(int dy=0;dy<3;dy++){s(x,sY+OWH-dy,-OH+1,Material.PURPLE_WOOL);s(x,sY+OWH-dy,OH-1,Material.PURPLE_WOOL);}
     }
-
-    // ── Approach path ─────────────────────────────────────────
 
     private void buildApproachPath() {
         plugin.getLogger().info("[Citadel] Building approach path...");
-        int base = surfaceY;
-
-        for (int z = OUTER_HALF; z <= 90; z++) {
-            for (int x = -3; x <= 3; x++) {
-                int terrainY = findTerrainY(x, z);
-                for (int y = terrainY; y <= base; y++) {
-                    set(x, y, z, (Math.abs(x) <= 1) ? FLOOR_ACCENT : FLOOR_PRIMARY);
-                }
-                if (Math.abs(x) == 3 && z % 8 == 0) {
-                    for (int dy = 1; dy <= 4; dy++) set(x, base + dy, z, PILLAR);
-                    set(x, base + 5, z, SOUL_LANTERN_MAT);
-                }
-            }
-        }
+        for(int z=OH;z<=90;z++)for(int x=-3;x<=3;x++){int ty=findTerrainY(x,z);for(int y=ty;y<=sY;y++)s(x,y,z,Math.abs(x)<=1?FA:FP);if(Math.abs(x)==3&&z%8==0){for(int dy=1;dy<=4;dy++)s(x,sY+dy,z,PIL);s(x,sY+5,z,SL);}}
     }
 
-    // ── Helpers ────────────────────────────────────────────────
-
-    private void set(int x, int y, int z, Material material) {
-        world.getBlockAt(x, y, z).setType(material);
-    }
-
-    private int findSurface() {
-        for (int y = 120; y > 1; y--) {
-            if (world.getBlockAt(0, y, 0).getType().isSolid()) return y;
-        }
-        return 55;
-    }
-
-    private int findTerrainY(int x, int z) {
-        for (int y = 120; y > 1; y--) {
-            if (world.getBlockAt(x, y, z).getType().isSolid()) return y;
-        }
-        return 50;
-    }
+    private void s(int x,int y,int z,Material m){world.getBlockAt(x,y,z).setType(m);}
+    private int findSurface(){for(int y=120;y>1;y--)if(world.getBlockAt(0,y,0).getType().isSolid())return y;return 55;}
+    private int findTerrainY(int x,int z){for(int y=120;y>1;y--)if(world.getBlockAt(x,y,z).getType().isSolid())return y;return 50;}
 }
