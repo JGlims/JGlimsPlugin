@@ -23,16 +23,19 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
 import java.util.*;
 
 /**
- * Abyss Dragon Boss — Dual boss fight on the bedrock arena.
- * Phase 1: Ender Dragon (immune to all but arrows/melee on perch)
- * Phase 2 (at 50%): Abyss Herald (Wither) joins the fight
- * Both must die. On final death: End portal + Dragon Egg + ABYSSAL loot.
- * Boss spawns ONLY when a player steps onto the arena floor.
+ * Abyss Dragon Boss — Phase 3 Rework.
+ * 
+ * Dual boss fight on the BEDROCK arena.
+ * Phase 1: Ender Dragon (1000 HP, custom attacks, aggressive)
+ * Phase 2 (at 40% HP): Abyss Herald (Wither, 1000 HP) joins
+ * Both must die. On final death: exit portal + Dragon Egg + ABYSSAL loot.
+ * 
+ * Boss ONLY spawns when a player steps on BEDROCK in the arena area.
+ * Vanilla dragons are continuously removed by AbyssDimensionManager.
  */
 public class AbyssDragonBoss implements Listener {
 
@@ -43,13 +46,17 @@ public class AbyssDragonBoss implements Listener {
     private final Random random = new Random();
 
     private EnderDragon dragonBoss;
-    private LivingEntity heraldBoss;
+    private Wither heraldBoss;
     private boolean active = false;
     private boolean heraldSpawned = false;
     private int tickCounter = 0;
     private long lastKillTime = 0;
     private int bossesAlive = 0;
+    private BukkitRunnable attackTask;
     private static final long RESPAWN_COOLDOWN_MS = 30 * 60 * 1000L;
+    private static final double DRAGON_MAX_HP = 1000;
+    private static final double HERALD_MAX_HP = 1000;
+    private static final double HERALD_SPAWN_THRESHOLD = 0.40; // 40% HP
 
     public AbyssDragonBoss(JGlimsPlugin plugin, AbyssDimensionManager dimensionManager) {
         this.plugin = plugin;
@@ -58,7 +65,6 @@ public class AbyssDragonBoss implements Listener {
         this.KEY_ABYSS_HERALD = new NamespacedKey(plugin, "abyss_herald");
     }
 
-    /** Detect player stepping on the arena to trigger the boss. */
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         if (active) return;
@@ -68,16 +74,15 @@ public class AbyssDragonBoss implements Listener {
         if (System.currentTimeMillis() - lastKillTime < RESPAWN_COOLDOWN_MS) return;
 
         Location loc = player.getLocation();
-        // Arena is at baseY + 50 (keep height). Check if player is on the arena level.
-        int arenaY = abyssWorld.getHighestBlockYAt(0, 0); // top of the citadel center
-        // Player must be within 30 blocks of center and near arena Y
+        // Check if standing on BEDROCK within arena radius (30 blocks from center)
+        Block below = loc.clone().subtract(0, 1, 0).getBlock();
+        if (below.getType() != Material.BEDROCK) return;
+
         double dist = Math.sqrt(loc.getX() * loc.getX() + loc.getZ() * loc.getZ());
-        if (dist < 28 && Math.abs(loc.getY() - arenaY) < 5) {
-            // Check block below is bedrock (arena floor)
-            if (player.getLocation().subtract(0, 1, 0).getBlock().getType() == Material.BEDROCK) {
-                startBossFight(abyssWorld);
-            }
-        }
+        if (dist > 32) return; // outside arena
+
+        plugin.getLogger().info("[Abyss] Player " + player.getName() + " stepped on arena bedrock! Starting boss fight...");
+        startBossFight(abyssWorld);
     }
 
     private void startBossFight(World abyssWorld) {
@@ -86,138 +91,238 @@ public class AbyssDragonBoss implements Listener {
         tickCounter = 0;
         bossesAlive = 1;
 
-        int arenaY = abyssWorld.getHighestBlockYAt(0, 0) + 5;
-        if (arenaY < 90) arenaY = 110;
+        // Find arena Y: scan for bedrock platform
+        int arenaY = 110;
+        for (int y = 150; y > 50; y--) {
+            if (abyssWorld.getBlockAt(0, y, 0).getType() == Material.BEDROCK) {
+                arenaY = y;
+                break;
+            }
+        }
+        int spawnY = arenaY + 15;
 
-        plugin.getLogger().info("[Abyss] BOSS FIGHT STARTING! Spawning Abyss Dragon at Y=" + arenaY);
+        plugin.getLogger().info("[Abyss] BOSS FIGHT! Arena Y=" + arenaY + ", Dragon spawns at Y=" + spawnY);
 
-        // Remove any existing vanilla ender dragons
+        // Remove ALL existing ender dragons and withers
         for (EnderDragon d : abyssWorld.getEntitiesByClass(EnderDragon.class)) d.remove();
         for (Wither w : abyssWorld.getEntitiesByClass(Wither.class)) w.remove();
 
-        Location spawnLoc = new Location(abyssWorld, 0.5, arenaY, 0.5);
+        Location spawnLoc = new Location(abyssWorld, 0.5, spawnY, 0.5);
 
-        // Announce
+        // Dramatic announcement
         for (Player p : abyssWorld.getPlayers()) {
             p.showTitle(net.kyori.adventure.title.Title.title(
                 Component.text("\u2620 ABYSS DRAGON \u2620", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD),
-                Component.text("The guardian of the Abyss awakens!", NamedTextColor.DARK_RED),
-                net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(500), java.time.Duration.ofSeconds(4), java.time.Duration.ofMillis(1000))));
+                Component.text("The eternal guardian awakens!", NamedTextColor.DARK_RED),
+                net.kyori.adventure.title.Title.Times.times(
+                    java.time.Duration.ofMillis(500), java.time.Duration.ofSeconds(4), java.time.Duration.ofMillis(1000))));
             p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.2f);
             p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.5f);
+            p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0, false, false));
         }
 
-        // Spawn the Ender Dragon
+        // Spawn Ender Dragon with 1000 HP
         dragonBoss = abyssWorld.spawn(spawnLoc, EnderDragon.class, dragon -> {
-            dragon.customName(Component.text("\u2620 Abyss Dragon \u2620", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+            dragon.customName(Component.text("\u2620 Abyss Dragon \u2620", TextColor.color(170, 0, 0))
+                    .decorate(TextDecoration.BOLD));
             dragon.setCustomNameVisible(true);
             dragon.getPersistentDataContainer().set(KEY_ABYSS_DRAGON, PersistentDataType.BYTE, (byte) 1);
+            dragon.setGlowing(true);
         });
 
-        // Buff the dragon
         if (dragonBoss.getAttribute(Attribute.MAX_HEALTH) != null) {
-            dragonBoss.getAttribute(Attribute.MAX_HEALTH).setBaseValue(600);
-            dragonBoss.setHealth(600);
+            dragonBoss.getAttribute(Attribute.MAX_HEALTH).setBaseValue(DRAGON_MAX_HP);
+            dragonBoss.setHealth(DRAGON_MAX_HP);
         }
 
-        abyssWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 50, 8, 8, 8, 0.3);
-        abyssWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 50, 8, 8, 8, 0.5);
+        // Spawn VFX
+        abyssWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 80, 10, 10, 10, 0.3);
+        abyssWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 60, 10, 10, 10, 0.5);
+        abyssWorld.spawnParticle(Particle.EXPLOSION_EMITTER, spawnLoc, 3, 5, 5, 5);
 
         // Attack loop
-        new BukkitRunnable() {
+        attackTask = new BukkitRunnable() {
             @Override
             public void run() {
                 if (!active) { cancel(); return; }
                 tickCounter += 20;
-                doCustomAttacks();
+                doAttacks();
                 checkPhase2();
             }
-        }.runTaskTimer(plugin, 60L, 20L);
+        };
+        attackTask.runTaskTimer(plugin, 60L, 20L);
     }
 
     private void checkPhase2() {
         if (heraldSpawned) return;
         if (dragonBoss == null || dragonBoss.isDead()) return;
-        if (dragonBoss.getHealth() <= 300) { // 50% HP
+        if (dragonBoss.getHealth() <= DRAGON_MAX_HP * HERALD_SPAWN_THRESHOLD) {
             heraldSpawned = true;
             bossesAlive = 2;
             World abyssWorld = dimensionManager.getAbyssWorld();
             if (abyssWorld == null) return;
 
-            int arenaY = abyssWorld.getHighestBlockYAt(0, 0) + 3;
-            Location heraldLoc = new Location(abyssWorld, 10.5, arenaY, 10.5);
+            int arenaY = 110;
+            for (int y = 150; y > 50; y--) {
+                if (abyssWorld.getBlockAt(0, y, 0).getType() == Material.BEDROCK) { arenaY = y; break; }
+            }
+
+            Location heraldLoc = new Location(abyssWorld, 15.5, arenaY + 5, 15.5);
 
             for (Player p : abyssWorld.getPlayers()) {
                 p.showTitle(net.kyori.adventure.title.Title.title(
                     Component.text("\u2620 ABYSS HERALD \u2620", TextColor.color(100, 0, 170)).decorate(TextDecoration.BOLD),
-                    Component.text("The Herald joins the battle!", NamedTextColor.DARK_PURPLE),
-                    net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(300), java.time.Duration.ofSeconds(3), java.time.Duration.ofMillis(500))));
+                    Component.text("A dark herald answers the dragon's call!", NamedTextColor.DARK_PURPLE),
+                    net.kyori.adventure.title.Title.Times.times(
+                        java.time.Duration.ofMillis(300), java.time.Duration.ofSeconds(3), java.time.Duration.ofMillis(500))));
                 p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 2.0f, 0.3f);
+                p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 40, 0, false, false));
             }
 
             heraldBoss = abyssWorld.spawn(heraldLoc, Wither.class, w -> {
-                w.customName(Component.text("\u2620 Abyss Herald \u2620", TextColor.color(100, 0, 170)).decorate(TextDecoration.BOLD));
+                w.customName(Component.text("\u2620 Abyss Herald \u2620", TextColor.color(100, 0, 170))
+                        .decorate(TextDecoration.BOLD));
                 w.setCustomNameVisible(true);
                 w.getPersistentDataContainer().set(KEY_ABYSS_HERALD, PersistentDataType.BYTE, (byte) 1);
+                w.setGlowing(true);
             });
 
             if (heraldBoss.getAttribute(Attribute.MAX_HEALTH) != null) {
-                heraldBoss.getAttribute(Attribute.MAX_HEALTH).setBaseValue(800);
-                heraldBoss.setHealth(800);
+                heraldBoss.getAttribute(Attribute.MAX_HEALTH).setBaseValue(HERALD_MAX_HP);
+                heraldBoss.setHealth(HERALD_MAX_HP);
             }
-            heraldBoss.setGlowing(true);
-            plugin.getLogger().info("[Abyss] Abyss Herald spawned (Phase 2)!");
+
+            abyssWorld.spawnParticle(Particle.REVERSE_PORTAL, heraldLoc, 60, 5, 5, 5, 0.5);
+            plugin.getLogger().info("[Abyss] Abyss Herald spawned (Phase 2)! 1000 HP");
         }
     }
 
-    private void doCustomAttacks() {
+    private void doAttacks() {
         World world = dimensionManager.getAbyssWorld();
         if (world == null) return;
         List<Player> nearby = new ArrayList<>();
         for (Player p : world.getPlayers()) {
-            double dist = Math.sqrt(p.getLocation().getX() * p.getLocation().getX() + p.getLocation().getZ() * p.getLocation().getZ());
-            if (dist < 60) nearby.add(p);
+            double dist = Math.sqrt(p.getLocation().getX() * p.getLocation().getX()
+                    + p.getLocation().getZ() * p.getLocation().getZ());
+            if (dist < 80) nearby.add(p);
         }
         if (nearby.isEmpty()) return;
 
-        // Lightning barrage every 5s
-        if (tickCounter % 100 == 0) {
-            for (int i = 0; i < 4; i++) {
+        // Lightning barrage every 4s (more frequent)
+        if (tickCounter % 80 == 0) {
+            for (int i = 0; i < 5; i++) {
                 Player t = nearby.get(random.nextInt(nearby.size()));
-                world.strikeLightning(t.getLocation().add(random.nextGaussian() * 4, 0, random.nextGaussian() * 4));
+                Location strike = t.getLocation().add(
+                        random.nextGaussian() * 3, 0, random.nextGaussian() * 3);
+                world.strikeLightning(strike);
             }
         }
-        // Summon Enderman minions every 15s
-        if (tickCounter % 300 == 0) {
-            for (int i = 0; i < 3; i++) {
-                Location sLoc = new Location(world, random.nextGaussian() * 15, world.getHighestBlockYAt(0, 0) + 1, random.nextGaussian() * 15);
+
+        // Void Breath every 3s — damage + wither effect
+        if (tickCounter % 60 == 0 && dragonBoss != null && !dragonBoss.isDead()) {
+            for (Player p : nearby) {
+                if (p.getLocation().distance(dragonBoss.getLocation()) < 25) {
+                    p.damage(8.0, dragonBoss);
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 60, 1, false, true));
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 40, 0, false, false));
+                    // Particle beam from dragon to player
+                    Location from = dragonBoss.getLocation();
+                    Location to = p.getLocation().add(0, 1, 0);
+                    int steps = 20;
+                    for (int s = 0; s < steps; s++) {
+                        double t = s / (double) steps;
+                        Location point = from.clone().add(
+                                (to.getX() - from.getX()) * t,
+                                (to.getY() - from.getY()) * t,
+                                (to.getZ() - from.getZ()) * t);
+                        world.spawnParticle(Particle.DRAGON_BREATH, point, 2, 0.1, 0.1, 0.1, 0.01);
+                    }
+                }
+            }
+        }
+
+        // Summon Enderman minions every 12s
+        if (tickCounter % 240 == 0) {
+            int arenaY = findArenaY(world);
+            for (int i = 0; i < 4; i++) {
+                Location sLoc = new Location(world,
+                        random.nextGaussian() * 18, arenaY + 1, random.nextGaussian() * 18);
                 Enderman m = world.spawn(sLoc, Enderman.class);
-                if (m.getAttribute(Attribute.MAX_HEALTH) != null) { m.getAttribute(Attribute.MAX_HEALTH).setBaseValue(80); m.setHealth(80); }
+                if (m.getAttribute(Attribute.MAX_HEALTH) != null) {
+                    m.getAttribute(Attribute.MAX_HEALTH).setBaseValue(100);
+                    m.setHealth(100);
+                }
                 m.customName(Component.text("Abyss Spawn", TextColor.color(100, 0, 0)));
                 m.setCustomNameVisible(true);
+                m.setGlowing(true);
                 if (!nearby.isEmpty()) m.setTarget(nearby.get(random.nextInt(nearby.size())));
             }
         }
-        // Wither Skeleton wave every 20s
-        if (tickCounter % 400 == 0) {
-            for (int i = 0; i < 4; i++) {
-                Location sLoc = new Location(world, random.nextGaussian() * 12, world.getHighestBlockYAt(0, 0) + 1, random.nextGaussian() * 12);
+
+        // Wither Skeleton wave every 16s
+        if (tickCounter % 320 == 0) {
+            int arenaY = findArenaY(world);
+            for (int i = 0; i < 5; i++) {
+                Location sLoc = new Location(world,
+                        random.nextGaussian() * 14, arenaY + 1, random.nextGaussian() * 14);
                 WitherSkeleton ws = world.spawn(sLoc, WitherSkeleton.class);
                 ws.customName(Component.text("Abyssal Guard", TextColor.color(80, 0, 80)));
                 ws.setCustomNameVisible(true);
+                if (ws.getAttribute(Attribute.MAX_HEALTH) != null) {
+                    ws.getAttribute(Attribute.MAX_HEALTH).setBaseValue(60);
+                    ws.setHealth(60);
+                }
             }
         }
+
+        // Herald special: Void Pull every 6s when Phase 2
+        if (heraldSpawned && heraldBoss != null && !heraldBoss.isDead() && tickCounter % 120 == 0) {
+            for (Player p : nearby) {
+                if (p.getLocation().distance(heraldBoss.getLocation()) < 30) {
+                    org.bukkit.util.Vector pull = heraldBoss.getLocation().toVector()
+                            .subtract(p.getLocation().toVector()).normalize().multiply(1.5);
+                    p.setVelocity(pull);
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1, false, false));
+                    world.spawnParticle(Particle.REVERSE_PORTAL, p.getLocation(), 20, 1, 1, 1, 0.3);
+                }
+            }
+        }
+
+        // Enrage: extra damage when dragon < 20%
+        if (dragonBoss != null && !dragonBoss.isDead() && dragonBoss.getHealth() < DRAGON_MAX_HP * 0.2) {
+            if (tickCounter % 40 == 0) {
+                for (Player p : nearby) {
+                    if (p.getLocation().distance(dragonBoss.getLocation()) < 20) {
+                        p.damage(6.0, dragonBoss);
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 2, false, true));
+                    }
+                }
+                world.spawnParticle(Particle.DRAGON_BREATH,
+                        dragonBoss.getLocation(), 40, 12, 5, 12, 0.1);
+            }
+        }
+
         // Ambient particles
-        Location center = new Location(world, 0, world.getHighestBlockYAt(0, 0) + 5, 0);
-        world.spawnParticle(Particle.DRAGON_BREATH, center, 20, 10, 5, 10, 0.05);
-        world.spawnParticle(Particle.REVERSE_PORTAL, center, 15, 8, 3, 8, 0.05);
+        int arenaY = findArenaY(world);
+        Location center = new Location(world, 0, arenaY + 5, 0);
+        world.spawnParticle(Particle.DRAGON_BREATH, center, 15, 12, 5, 12, 0.03);
+        world.spawnParticle(Particle.REVERSE_PORTAL, center, 10, 8, 3, 8, 0.03);
+    }
+
+    private int findArenaY(World world) {
+        for (int y = 150; y > 50; y--) {
+            if (world.getBlockAt(0, y, 0).getType() == Material.BEDROCK) return y;
+        }
+        return 110;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onBossDamage(EntityDamageByEntityEvent event) {
         if (!active) return;
-        if (event.getEntity().equals(dragonBoss) || (heraldBoss != null && event.getEntity().equals(heraldBoss))) {
-            event.setDamage(event.getDamage() * 0.75); // 25% DR
+        boolean isDragon = event.getEntity().equals(dragonBoss);
+        boolean isHerald = heraldBoss != null && event.getEntity().equals(heraldBoss);
+        if (isDragon || isHerald) {
+            event.setDamage(event.getDamage() * 0.80); // 20% DR (less than before, dragon is beefier)
         }
     }
 
@@ -229,17 +334,34 @@ public class AbyssDragonBoss implements Listener {
         if (!isDragon && !isHerald) return;
 
         event.getDrops().clear();
-
+        event.setDroppedExp(0);
         bossesAlive--;
+
         String bossName = isDragon ? "Abyss Dragon" : "Abyss Herald";
-        plugin.getLogger().info("[Abyss] " + bossName + " defeated! Bosses remaining: " + bossesAlive);
+        plugin.getLogger().info("[Abyss] " + bossName + " defeated! Remaining: " + bossesAlive);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage(Component.text("  \u2620 " + bossName + " has fallen!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+            p.sendMessage(Component.text("  \u2620 " + bossName + " has fallen!", TextColor.color(170, 0, 0))
+                    .decorate(TextDecoration.BOLD));
+        }
+
+        // Partial drops per boss
+        Location dropLoc = entity.getLocation();
+        World world = entity.getWorld();
+        if (isDragon) {
+            // Dragon drops some loot immediately
+            world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHER_STAR, 2));
+            world.dropItemNaturally(dropLoc, new ItemStack(Material.EXPERIENCE_BOTTLE, 32));
+            // XP
+            event.setDroppedExp(8000);
+        }
+        if (isHerald) {
+            world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHERITE_INGOT, 3 + random.nextInt(3)));
+            event.setDroppedExp(6000);
         }
 
         if (bossesAlive <= 0) {
-            onAllBossesDefeated(entity.getLocation(), entity.getWorld());
+            onAllBossesDefeated(dropLoc, world);
         }
     }
 
@@ -248,21 +370,22 @@ public class AbyssDragonBoss implements Listener {
         lastKillTime = System.currentTimeMillis();
         dragonBoss = null;
         heraldBoss = null;
+        if (attackTask != null) attackTask.cancel();
 
         plugin.getLogger().info("[Abyss] ALL BOSSES DEFEATED! Spawning rewards...");
 
-        // ── ABYSSAL Loot (guaranteed) ──
+        // ── ABYSSAL Loot ──
         LegendaryWeaponManager wm = plugin.getLegendaryWeaponManager();
         LegendaryWeapon[] abyssalPool = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
-        int count = 2 + random.nextInt(2); // 2-3 ABYSSAL weapons
+        int abyssalCount = 2 + random.nextInt(2); // 2-3
         List<LegendaryWeapon> pool = new ArrayList<>(Arrays.asList(abyssalPool));
         List<LegendaryWeapon> dropped = new ArrayList<>();
-        for (int i = 0; i < count && !pool.isEmpty(); i++) {
+        for (int i = 0; i < abyssalCount && !pool.isEmpty(); i++) {
             LegendaryWeapon w = pool.remove(random.nextInt(pool.size()));
             ItemStack item = wm.createWeapon(w);
             if (item != null) { world.dropItemNaturally(loc, item); dropped.add(w); }
         }
-        // Also drop 1-2 MYTHIC
+        // 1-2 MYTHIC weapons
         LegendaryWeapon[] mythicPool = LegendaryWeapon.byTier(LegendaryTier.MYTHIC);
         for (int i = 0; i < 1 + random.nextInt(2) && mythicPool.length > 0; i++) {
             LegendaryWeapon w = mythicPool[random.nextInt(mythicPool.length)];
@@ -274,44 +397,49 @@ public class AbyssDragonBoss implements Listener {
         PowerUpManager pum = plugin.getPowerUpManager();
         world.dropItemNaturally(loc, pum.createHeartCrystal());
         world.dropItemNaturally(loc, pum.createHeartCrystal());
+        world.dropItemNaturally(loc, pum.createHeartCrystal());
+        world.dropItemNaturally(loc, pum.createPhoenixFeather());
         world.dropItemNaturally(loc, pum.createPhoenixFeather());
         world.dropItemNaturally(loc, pum.createKeepInventorer());
-        for (int i = 0; i < 8; i++) world.dropItemNaturally(loc, pum.createSoulFragment());
+        for (int i = 0; i < 10; i++) world.dropItemNaturally(loc, pum.createSoulFragment());
+        world.dropItemNaturally(loc, pum.createTitanResolve());
         world.dropItemNaturally(loc, pum.createTitanResolve());
         world.dropItemNaturally(loc, pum.createBerserkerMark());
+        world.dropItemNaturally(loc, pum.createBerserkerMark());
+        world.dropItemNaturally(loc, pum.createVitalityShard());
 
         // Materials
-        world.dropItemNaturally(loc, new ItemStack(Material.NETHERITE_INGOT, 5 + random.nextInt(5)));
-        world.dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 32 + random.nextInt(32)));
-        world.dropItemNaturally(loc, new ItemStack(Material.NETHER_STAR, 3));
+        world.dropItemNaturally(loc, new ItemStack(Material.NETHERITE_INGOT, 8 + random.nextInt(8)));
+        world.dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 48 + random.nextInt(32)));
+        world.dropItemNaturally(loc, new ItemStack(Material.NETHER_STAR, 5));
         world.dropItemNaturally(loc, new ItemStack(Material.EXPERIENCE_BOTTLE, 64));
+        world.dropItemNaturally(loc, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 5 + random.nextInt(5)));
+        world.dropItemNaturally(loc, new ItemStack(Material.TOTEM_OF_UNDYING, 3));
 
         // ── Dragon Egg ──
         world.getBlockAt(loc.getBlockX(), loc.getBlockY() + 1, loc.getBlockZ()).setType(Material.DRAGON_EGG);
-        plugin.getLogger().info("[Abyss] Dragon Egg placed!");
 
-        // ── End Portal (exit) ──
-        int portalY = world.getHighestBlockYAt(loc.getBlockX(), loc.getBlockZ()) + 1;
+        // ── Exit Portal (3x3 END_PORTAL with bedrock frame) ──
+        int arenaY = findArenaY(world);
+        int portalZ = 8; // offset from center
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                world.getBlockAt(loc.getBlockX() + dx, portalY, loc.getBlockZ() + dz + 5).setType(Material.END_PORTAL);
+                world.getBlockAt(dx, arenaY + 1, portalZ + dz).setType(Material.END_PORTAL);
             }
         }
-        // Bedrock frame around portal
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) == 2 || Math.abs(dz) == 2) {
-                    world.getBlockAt(loc.getBlockX() + dx, portalY, loc.getBlockZ() + dz + 5).setType(Material.BEDROCK);
+                    world.getBlockAt(dx, arenaY + 1, portalZ + dz).setType(Material.BEDROCK);
                 }
             }
         }
-        plugin.getLogger().info("[Abyss] Exit portal created!");
 
         // Massive VFX
-        world.spawnParticle(Particle.REVERSE_PORTAL, loc, 60, 10, 10, 10, 0.5);
-        world.spawnParticle(Particle.DRAGON_BREATH, loc, 40, 8, 8, 8, 0.2);
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 5, 5, 5, 5);
-        world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 50, 5, 8, 5, 0.5);
+        world.spawnParticle(Particle.REVERSE_PORTAL, loc, 100, 12, 12, 12, 0.5);
+        world.spawnParticle(Particle.DRAGON_BREATH, loc, 60, 10, 10, 10, 0.2);
+        world.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 8, 8, 8, 8);
+        world.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 80, 8, 12, 8, 0.5);
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.3f);
         world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 1.0f);
 
@@ -319,7 +447,8 @@ public class AbyssDragonBoss implements Listener {
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendMessage(Component.empty());
             p.sendMessage(Component.text("  \u2726 ", TextColor.color(170, 0, 0))
-                .append(Component.text("THE ABYSS HAS BEEN CONQUERED!", TextColor.color(255, 50, 50)).decorate(TextDecoration.BOLD)));
+                .append(Component.text("THE ABYSS HAS BEEN CONQUERED!", TextColor.color(255, 50, 50))
+                    .decorate(TextDecoration.BOLD)));
             p.sendMessage(Component.text("  ABYSSAL Drops:", NamedTextColor.GRAY));
             for (LegendaryWeapon w : dropped) {
                 p.sendMessage(Component.text("    \u25B6 ", NamedTextColor.DARK_GRAY)
@@ -329,6 +458,11 @@ public class AbyssDragonBoss implements Listener {
             }
             p.sendMessage(Component.text("  + Dragon Egg, Exit Portal, Power-Ups, Materials", NamedTextColor.GOLD));
             p.sendMessage(Component.empty());
+            p.showTitle(net.kyori.adventure.title.Title.title(
+                Component.text("\u2726 ABYSS CONQUERED \u2726", TextColor.color(255, 215, 0)).decorate(TextDecoration.BOLD),
+                Component.text("The darkness has been vanquished!", NamedTextColor.GOLD),
+                net.kyori.adventure.title.Title.Times.times(
+                    java.time.Duration.ofMillis(500), java.time.Duration.ofSeconds(5), java.time.Duration.ofMillis(1000))));
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
         }
     }

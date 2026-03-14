@@ -518,10 +518,19 @@ public class JGlimsPlugin extends JavaPlugin {
             case "tp" -> {
                 World abyss = abyssDimensionManager.getAbyssWorld();
                 if (abyss == null) { player.sendMessage(Component.text("Abyss world not loaded!", NamedTextColor.RED)); return; }
-                Location dest = new Location(abyss, 0.5, 0, 75.5);
-                int safeY = abyss.getHighestBlockYAt(0, 75) + 1;
-                if (safeY < 30) safeY = 60;
-                dest.setY(safeY);
+                // Land on the grand gate path outside the south wall (z=85)
+                int safeY = 60;
+                for (int sy = 120; sy > 30; sy--) {
+                    org.bukkit.Material belowMat = abyss.getBlockAt(0, sy - 1, 85).getType();
+                    org.bukkit.Material atMat = abyss.getBlockAt(0, sy, 85).getType();
+                    org.bukkit.Material aboveMat = abyss.getBlockAt(0, sy + 1, 85).getType();
+                    if (belowMat.isSolid() && !atMat.isSolid() && !aboveMat.isSolid()) {
+                        safeY = sy;
+                        break;
+                    }
+                }
+                Location dest = new Location(abyss, 0.5, safeY, 85.5);
+                dest.setYaw(0);
                 player.teleport(dest);
                 player.sendMessage(Component.text("Teleported to the Abyss citadel gate.", TextColor.color(170, 0, 0)));
             }
