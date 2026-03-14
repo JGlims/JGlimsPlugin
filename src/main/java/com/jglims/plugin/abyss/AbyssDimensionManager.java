@@ -247,8 +247,8 @@ public class AbyssDimensionManager implements Listener {
         // Delayed teleport — land at the citadel gate entrance
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             // Gate is at z=35 (just outside the south wall gate at z=30)
-            Location dest = new Location(abyssWorld, 0.5, 0, 35.5);
-            int safeY = abyssWorld.getHighestBlockYAt(0, 35) + 1;
+            Location dest = new Location(abyssWorld, 0.5, 0, 75.5);
+            int safeY = abyssWorld.getHighestBlockYAt(0, 75) + 1;
             if (safeY < 30) safeY = 60; // citadel fallback
             dest.setY(safeY);
 

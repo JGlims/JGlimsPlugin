@@ -1,6 +1,8 @@
 package com.jglims.plugin.abyss;
 
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.legendary.*;
+import com.jglims.plugin.powerups.PowerUpManager;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -12,25 +14,23 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Random;
 
 /**
- * Builds the Abyssal Citadel — the endgame mega-structure at the center of the Abyss.
- *
- * Layout (centered at 0, surfaceY, 0):
- * - Main Keep: 41x41 base, 40 blocks tall, 3 floors
- * - 4 Corner Towers: 9x9 base, 55 blocks tall
- * - Entrance Gate with grand staircase
- * - Arena on the roof (25x25) for the Dragon fight
- * - Interior: hallways, rooms with loot chests, spawner rooms
- * - Outer walls connecting the towers (perimeter 61x61)
- *
- * Total footprint: ~61x61 blocks, height ~60 blocks above ground
- * Materials: Deepslate Bricks, Polished Deepslate, Purpur, Obsidian, End Stone Bricks
+ * Abyssal Citadel — Phase 2 Mega Build.
+ * 
+ * Footprint: ~141x141 blocks, height ~80 blocks.
+ * Outer Walls: 140x140 perimeter, 15 blocks tall with walkways.
+ * 8 Corner/Mid Towers: 7-block radius, 70 blocks tall with cone roofs.
+ * Inner Keep: 61x61, 50 blocks tall, 4 floors of 12 blocks each.
+ * 4 Wings connecting outer wall to keep (N/S/E/W), each 15 wide x 40 long, 2 floors.
+ * Bedrock Arena on keep roof: 30-block radius circle.
+ * 30+ rooms with endgame loot (MYTHIC/ABYSSAL weapons, power-ups, enchant books).
+ * Wither Skeleton + Enderman spawners throughout.
+ * Grand courtyard between outer wall and keep with gardens and statues.
  */
 public class AbyssCitadelBuilder {
 
     private final JGlimsPlugin plugin;
     private final Random random = new Random();
 
-    // Palette
     private static final Material WALL = Material.DEEPSLATE_BRICKS;
     private static final Material WALL2 = Material.POLISHED_DEEPSLATE;
     private static final Material FLOOR = Material.DEEPSLATE_TILES;
@@ -41,464 +41,513 @@ public class AbyssCitadelBuilder {
     private static final Material LIGHT = Material.END_ROD;
     private static final Material GLASS = Material.MAGENTA_STAINED_GLASS;
     private static final Material BRICK = Material.END_STONE_BRICKS;
-    private static final Material SLAB_TOP = Material.DEEPSLATE_BRICK_SLAB;
-    private static final Material STAIR = Material.DEEPSLATE_BRICK_STAIRS;
     private static final Material FENCE = Material.NETHER_BRICK_FENCE;
     private static final Material CRYING = Material.CRYING_OBSIDIAN;
-    private static final Material BEACON_BLOCK = Material.BEACON;
+    private static final Material BEDROCK = Material.BEDROCK;
 
     public AbyssCitadelBuilder(JGlimsPlugin plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Build the entire citadel. Called once after world creation.
-     * Runs synchronously in chunks to avoid lag (scheduled over multiple ticks).
-     */
     public void buildCitadel(World world) {
-        // Find surface Y at center
         int baseY = world.getHighestBlockYAt(0, 0);
-        if (baseY < 30) baseY = 55; // fallback
-        baseY += 1; // build on top of terrain
-
-        plugin.getLogger().info("Building Abyssal Citadel at Y=" + baseY + "...");
+        if (baseY < 30) baseY = 55;
+        baseY += 1;
+        plugin.getLogger().info("[Citadel] Building at Y=" + baseY + ", clearing 141x141 area...");
         final int y = baseY;
 
-        // Build everything synchronously (world is fresh, no players yet)
-        buildFoundation(world, y);
+        clearArea(world, y);
         buildOuterWalls(world, y);
-        buildCornerTowers(world, y);
-        buildMainKeep(world, y);
+        buildTowers(world, y);
+        buildInnerKeep(world, y);
+        buildWings(world, y);
         buildArena(world, y);
-        buildInteriorRooms(world, y);
+        buildCourtyard(world, y);
+        buildKeepRooms(world, y);
+        buildWingRooms(world, y);
         buildGateEntrance(world, y);
-        buildDecorations(world, y);
 
-        plugin.getLogger().info("Abyssal Citadel complete! Base Y=" + y
-                + ", footprint 61x61, height ~60 blocks");
+        plugin.getLogger().info("[Citadel] Complete! 141x141, ~80 blocks tall, 30+ rooms");
     }
 
-    // ── Foundation: clear and flatten the center area ──
-    private void buildFoundation(World world, int baseY) {
-        for (int x = -32; x <= 32; x++) {
-            for (int z = -32; z <= 32; z++) {
-                // Clear above
-                for (int y = baseY; y < baseY + 65; y++) {
-                    world.getBlockAt(x, y, z).setType(Material.AIR);
-                }
-                // Foundation slab
+    private void clearArea(World world, int baseY) {
+        for (int x = -75; x <= 75; x++) {
+            for (int z = -75; z <= 75; z++) {
+                for (int cy = baseY; cy < baseY + 85; cy++) world.getBlockAt(x, cy, z).setType(Material.AIR);
                 world.getBlockAt(x, baseY - 1, z).setType(FLOOR);
                 world.getBlockAt(x, baseY - 2, z).setType(WALL);
             }
         }
     }
 
-    // ── Outer walls: 61x61 perimeter, 12 blocks tall ──
-    private void buildOuterWalls(World world, int baseY) {
-        int half = 30; // -30 to +30
-        int wallH = 12;
-
-        for (int y = baseY; y < baseY + wallH; y++) {
-            for (int i = -half; i <= half; i++) {
-                // North wall (z = -half)
-                setWallBlock(world, i, y, -half, baseY, wallH);
-                // South wall (z = +half)
-                setWallBlock(world, i, y, half, baseY, wallH);
-                // West wall (x = -half)
-                setWallBlock(world, -half, y, i, baseY, wallH);
-                // East wall (x = +half)
-                setWallBlock(world, half, y, i, baseY, wallH);
+    // ── Outer Walls: 140x140, 15 tall ──
+    private void buildOuterWalls(World world, int y) {
+        int h = 70; // half width
+        int wallH = 15;
+        for (int wy = y; wy < y + wallH; wy++) {
+            int relY = wy - y;
+            for (int i = -h; i <= h; i++) {
+                Material mat = (relY == 0 || relY == wallH - 1) ? WALL2 : (relY % 4 == 0 ? ACCENT : WALL);
+                world.getBlockAt(i, wy, -h).setType(mat);
+                world.getBlockAt(i, wy, h).setType(mat);
+                world.getBlockAt(-h, wy, i).setType(mat);
+                world.getBlockAt(h, wy, i).setType(mat);
             }
         }
-
-        // Battlements on top
-        for (int i = -half; i <= half; i += 2) {
-            world.getBlockAt(i, baseY + wallH, -half).setType(WALL);
-            world.getBlockAt(i, baseY + wallH, half).setType(WALL);
-            world.getBlockAt(-half, baseY + wallH, i).setType(WALL);
-            world.getBlockAt(half, baseY + wallH, i).setType(WALL);
+        // Battlements + lights
+        for (int i = -h; i <= h; i += 2) {
+            world.getBlockAt(i, y + wallH, -h).setType(WALL);
+            world.getBlockAt(i, y + wallH, h).setType(WALL);
+            world.getBlockAt(-h, y + wallH, i).setType(WALL);
+            world.getBlockAt(h, y + wallH, i).setType(WALL);
         }
-
-        // Torches on battlements
-        for (int i = -half; i <= half; i += 6) {
-            world.getBlockAt(i, baseY + wallH + 1, -half).setType(LIGHT);
-            world.getBlockAt(i, baseY + wallH + 1, half).setType(LIGHT);
-            world.getBlockAt(-half, baseY + wallH + 1, i).setType(LIGHT);
-            world.getBlockAt(half, baseY + wallH + 1, i).setType(LIGHT);
+        for (int i = -h; i <= h; i += 8) {
+            world.getBlockAt(i, y + wallH + 1, -h).setType(LIGHT);
+            world.getBlockAt(i, y + wallH + 1, h).setType(LIGHT);
+            world.getBlockAt(-h, y + wallH + 1, i).setType(LIGHT);
+            world.getBlockAt(h, y + wallH + 1, i).setType(LIGHT);
+        }
+        // Walkway on top of outer wall
+        for (int i = -h + 1; i < h; i++) {
+            world.getBlockAt(i, y + wallH - 1, -h + 1).setType(FLOOR);
+            world.getBlockAt(i, y + wallH - 1, h - 1).setType(FLOOR);
+            world.getBlockAt(-h + 1, y + wallH - 1, i).setType(FLOOR);
+            world.getBlockAt(h - 1, y + wallH - 1, i).setType(FLOOR);
         }
     }
 
-    private void setWallBlock(World world, int x, int y, int z, int baseY, int wallH) {
-        int relY = y - baseY;
-        Material mat;
-        if (relY == 0 || relY == wallH - 1) mat = WALL2; // base and top trim
-        else if (relY % 4 == 0) mat = ACCENT; // purple stripe every 4 blocks
-        else mat = WALL;
-        world.getBlockAt(x, y, z).setType(mat);
+    // ── 8 Towers: 4 corners + 4 midpoints ──
+    private void buildTowers(World world, int y) {
+        int h = 70;
+        int[][] positions = {
+            {-h, -h}, {h, -h}, {-h, h}, {h, h},  // corners
+            {0, -h}, {0, h}, {-h, 0}, {h, 0}       // midpoints
+        };
+        for (int[] pos : positions) buildSingleTower(world, pos[0], y, pos[1], 7, 70);
     }
 
-    // ── 4 Corner Towers: 9x9 base, 55 blocks tall ──
-    private void buildCornerTowers(World world, int baseY) {
-        int[][] corners = {{-26, -26}, {26, -26}, {-26, 26}, {26, 26}};
-        int towerR = 4; // radius from center of tower
-        int towerH = 55;
-
-        for (int[] corner : corners) {
-            int tcx = corner[0];
-            int tcz = corner[1];
-
-            for (int y = baseY; y < baseY + towerH; y++) {
-                int relY = y - baseY;
-                for (int dx = -towerR; dx <= towerR; dx++) {
-                    for (int dz = -towerR; dz <= towerR; dz++) {
-                        double dist = Math.sqrt(dx * dx + dz * dz);
-                        // Circular tower
-                        if (dist <= towerR + 0.5) {
-                            if (dist >= towerR - 0.5) {
-                                // Wall
-                                Material mat = relY % 6 == 0 ? ACCENT : WALL;
-                                world.getBlockAt(tcx + dx, y, tcz + dz).setType(mat);
-                            } else if (relY % 15 == 0) {
-                                // Floor every 15 blocks
-                                world.getBlockAt(tcx + dx, y, tcz + dz).setType(FLOOR);
-                            }
-                            // Windows every 5 blocks on walls
-                            if (dist >= towerR - 0.5 && relY % 5 == 3 && Math.abs(dx) + Math.abs(dz) == towerR) {
-                                world.getBlockAt(tcx + dx, y, tcz + dz).setType(GLASS);
-                            }
+    private void buildSingleTower(World world, int cx, int baseY, int cz, int r, int height) {
+        for (int wy = baseY; wy < baseY + height; wy++) {
+            int relY = wy - baseY;
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    double dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist <= r + 0.5) {
+                        if (dist >= r - 0.5) {
+                            Material mat = relY % 6 == 0 ? ACCENT : WALL;
+                            world.getBlockAt(cx + dx, wy, cz + dz).setType(mat);
+                        } else if (relY % 15 == 0) {
+                            world.getBlockAt(cx + dx, wy, cz + dz).setType(FLOOR);
                         }
+                        if (dist >= r - 0.5 && relY % 5 == 3 && (dx == 0 || dz == 0) && Math.abs(dx) + Math.abs(dz) >= r - 1)
+                            world.getBlockAt(cx + dx, wy, cz + dz).setType(GLASS);
                     }
                 }
             }
-
-            // Pointed roof (cone)
-            for (int h = 0; h < 10; h++) {
-                double r = towerR * (1.0 - h / 10.0);
-                for (int dx = (int) -r; dx <= (int) r; dx++) {
-                    for (int dz = (int) -r; dz <= (int) r; dz++) {
-                        if (Math.sqrt(dx * dx + dz * dz) <= r) {
-                            world.getBlockAt(tcx + dx, baseY + towerH + h, tcz + dz).setType(ACCENT);
-                        }
-                    }
-                }
-            }
-            // Spire on top
-            for (int h = 0; h < 5; h++) {
-                world.getBlockAt(tcx, baseY + towerH + 10 + h, tcz).setType(ACCENT2);
-            }
-            world.getBlockAt(tcx, baseY + towerH + 15, tcz).setType(LIGHT);
-
-            // Loot chest in each tower at ground floor
-            Block chestBlock = world.getBlockAt(tcx, baseY + 1, tcz);
-            chestBlock.setType(Material.CHEST);
-            if (chestBlock.getState() instanceof Chest chest) {
-                fillLootChest(chest.getInventory(), 2);
-            }
         }
+        // Cone roof
+        for (int rh = 0; rh < 12; rh++) {
+            double cr = r * (1.0 - rh / 12.0);
+            for (int dx = (int)-cr; dx <= (int)cr; dx++)
+                for (int dz = (int)-cr; dz <= (int)cr; dz++)
+                    if (Math.sqrt(dx * dx + dz * dz) <= cr)
+                        world.getBlockAt(cx + dx, baseY + height + rh, cz + dz).setType(ACCENT);
+        }
+        for (int h = 0; h < 6; h++) world.getBlockAt(cx, baseY + height + 12 + h, cz).setType(ACCENT2);
+        world.getBlockAt(cx, baseY + height + 18, cz).setType(LIGHT);
+
+        // Loot + spawner per tower
+        placeChest(world, cx, baseY + 1, cz, 4);
+        placeSpawner(world, cx + 2, baseY + 1, cz, EntityType.WITHER_SKELETON);
     }
 
-    // ── Main Keep: 41x41, 40 tall, 3 floors ──
-    private void buildMainKeep(World world, int baseY) {
-        int half = 20; // -20 to +20
-        int keepH = 40;
-        int floorH = 13; // floor every 13 blocks
+    // ── Inner Keep: 61x61, 50 tall, 4 floors ──
+    private void buildInnerKeep(World world, int y) {
+        int kh = 30; // half = 30, so 61x61
+        int keepH = 50;
+        int floorH = 12;
 
-        // Outer walls of the keep
-        for (int y = baseY; y < baseY + keepH; y++) {
-            int relY = y - baseY;
-            for (int i = -half; i <= half; i++) {
+        for (int wy = y; wy < y + keepH; wy++) {
+            int relY = wy - y;
+            for (int i = -kh; i <= kh; i++) {
                 Material mat = relY % 5 == 0 ? ACCENT : WALL;
-                world.getBlockAt(i, y, -half).setType(mat);
-                world.getBlockAt(i, y, half).setType(mat);
-                world.getBlockAt(-half, y, i).setType(mat);
-                world.getBlockAt(half, y, i).setType(mat);
+                world.getBlockAt(i, wy, -kh).setType(mat);
+                world.getBlockAt(i, wy, kh).setType(mat);
+                world.getBlockAt(-kh, wy, i).setType(mat);
+                world.getBlockAt(kh, wy, i).setType(mat);
             }
-
-            // Floors
             if (relY > 0 && relY % floorH == 0) {
-                for (int x = -half + 1; x < half; x++) {
-                    for (int z = -half + 1; z < half; z++) {
-                        world.getBlockAt(x, y, z).setType(FLOOR);
-                    }
-                }
+                for (int x = -kh + 1; x < kh; x++)
+                    for (int z = -kh + 1; z < kh; z++)
+                        world.getBlockAt(x, wy, z).setType(FLOOR);
             }
         }
 
-        // Windows (3-tall windows on each face)
+        // Windows
         for (int face = 0; face < 4; face++) {
-            for (int w = -half + 4; w <= half - 4; w += 6) {
+            for (int w = -kh + 5; w <= kh - 5; w += 6) {
                 for (int wy = 0; wy < 3; wy++) {
-                    for (int floor = 0; floor < 3; floor++) {
-                        int fy = baseY + 3 + floor * floorH + wy;
+                    for (int fl = 0; fl < 4; fl++) {
+                        int fy = y + 3 + fl * floorH + wy;
                         switch (face) {
-                            case 0 -> world.getBlockAt(w, fy, -half).setType(GLASS);
-                            case 1 -> world.getBlockAt(w, fy, half).setType(GLASS);
-                            case 2 -> world.getBlockAt(-half, fy, w).setType(GLASS);
-                            case 3 -> world.getBlockAt(half, fy, w).setType(GLASS);
+                            case 0 -> world.getBlockAt(w, fy, -kh).setType(GLASS);
+                            case 1 -> world.getBlockAt(w, fy, kh).setType(GLASS);
+                            case 2 -> world.getBlockAt(-kh, fy, w).setType(GLASS);
+                            case 3 -> world.getBlockAt(kh, fy, w).setType(GLASS);
                         }
                     }
                 }
             }
         }
 
-        // Central grand pillar (4x4, full height)
-        for (int y = baseY; y < baseY + keepH; y++) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    world.getBlockAt(dx, y, dz).setType(PILLAR);
-                }
-            }
+        // Central grand pillar
+        for (int wy = y; wy < y + keepH; wy++) {
+            for (int dx = -2; dx <= 2; dx++)
+                for (int dz = -2; dz <= 2; dz++)
+                    if (Math.abs(dx) + Math.abs(dz) <= 3) world.getBlockAt(dx, wy, dz).setType(PILLAR);
         }
 
-        // Interior lighting
-        for (int floor = 0; floor < 3; floor++) {
-            int fy = baseY + 1 + floor * floorH;
-            for (int x = -half + 3; x < half; x += 5) {
-                for (int z = -half + 3; z < half; z += 5) {
+        // Lighting per floor
+        for (int fl = 0; fl < 4; fl++) {
+            int fy = y + 1 + fl * floorH;
+            for (int x = -kh + 4; x < kh; x += 6)
+                for (int z = -kh + 4; z < kh; z += 6)
                     world.getBlockAt(x, fy + floorH - 2, z).setType(LIGHT);
-                }
+        }
+
+        // Stairs in NW corner of keep, all floors
+        for (int fl = 0; fl < 3; fl++) {
+            int startY = y + 1 + fl * floorH;
+            for (int step = 0; step < floorH; step++) {
+                int sx = -kh + 3 + (step % 5);
+                int sz = -kh + 3 + (step / 5);
+                world.getBlockAt(sx, startY + step, sz).setType(Material.DEEPSLATE_BRICK_STAIRS);
+                world.getBlockAt(sx, startY + step + 1, sz).setType(Material.AIR);
+                world.getBlockAt(sx, startY + step + 2, sz).setType(Material.AIR);
             }
         }
 
-        // Stairs between floors (spiral in corner)
-        for (int floor = 0; floor < 2; floor++) {
-            int startY = baseY + 1 + floor * floorH;
-            int sx = -half + 2;
-            int sz = -half + 2;
-            for (int step = 0; step < floorH; step++) {
-                int stairX = sx + (step % 4 < 2 ? step % 4 : 1);
-                int stairZ = sz + (step % 4 >= 2 ? step % 4 - 2 : 0);
-                world.getBlockAt(sx + step % 3, startY + step, sz + step / 3 % 3).setType(STAIR);
-                // Clear above for headroom
-                world.getBlockAt(sx + step % 3, startY + step + 1, sz + step / 3 % 3).setType(Material.AIR);
-                world.getBlockAt(sx + step % 3, startY + step + 2, sz + step / 3 % 3).setType(Material.AIR);
+        // Keep entrances (4 faces)
+        for (int face = 0; face < 4; face++) {
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dy = 0; dy < 7; dy++) {
+                    switch (face) {
+                        case 0 -> world.getBlockAt(dx, y + dy, -kh).setType(Material.AIR);
+                        case 1 -> world.getBlockAt(dx, y + dy, kh).setType(Material.AIR);
+                        case 2 -> world.getBlockAt(-kh, y + dy, dx).setType(Material.AIR);
+                        case 3 -> world.getBlockAt(kh, y + dy, dx).setType(Material.AIR);
+                    }
+                }
             }
         }
     }
 
-    // ── Arena on the roof: 25x25 fighting area ──
-    private void buildArena(World world, int baseY) {
-        int arenaY = baseY + 40; // top of keep
-        int arenaR = 12;
+    // ── 4 Wings connecting outer wall to keep ──
+    private void buildWings(World world, int y) {
+        int outerH = 70, keepH = 30;
+        int wingW = 7; // half-width of wing corridor
+        int wingH = 12;
+        // North wing: z from -outerH to -keepH
+        buildWing(world, y, -wingW, wingW, -outerH + 1, -keepH, wingH);
+        // South wing: z from keepH to outerH
+        buildWing(world, y, -wingW, wingW, keepH, outerH - 1, wingH);
+        // West wing: x from -outerH to -keepH
+        buildWingZ(world, y, -outerH + 1, -keepH, -wingW, wingW, wingH);
+        // East wing: x from keepH to outerH
+        buildWingZ(world, y, keepH, outerH - 1, -wingW, wingW, wingH);
+    }
 
-        // Arena floor
+    private void buildWing(World world, int baseY, int x1, int x2, int z1, int z2, int h) {
+        // Floor, ceiling, walls
+        for (int x = x1; x <= x2; x++) {
+            for (int z = z1; z <= z2; z++) {
+                world.getBlockAt(x, baseY, z).setType(FLOOR);
+                world.getBlockAt(x, baseY + h, z).setType(FLOOR);
+                for (int wy = baseY + 1; wy < baseY + h; wy++) world.getBlockAt(x, wy, z).setType(Material.AIR);
+            }
+        }
+        for (int z = z1; z <= z2; z++) {
+            for (int wy = baseY; wy <= baseY + h; wy++) {
+                world.getBlockAt(x1, wy, z).setType(WALL);
+                world.getBlockAt(x2, wy, z).setType(WALL);
+            }
+        }
+        // Second floor
+        for (int x = x1 + 1; x < x2; x++)
+            for (int z = z1; z <= z2; z++)
+                world.getBlockAt(x, baseY + h / 2, z).setType(FLOOR);
+        // Lighting
+        for (int z = z1 + 2; z < z2; z += 4)
+            world.getBlockAt(0, baseY + h - 2, z).setType(LIGHT);
+        // Spawners along the wing
+        for (int z = z1 + 5; z < z2 - 5; z += 12)
+            placeSpawner(world, 0, baseY + 1, z, random.nextBoolean() ? EntityType.WITHER_SKELETON : EntityType.ENDERMAN);
+    }
+
+    private void buildWingZ(World world, int baseY, int x1, int x2, int z1, int z2, int h) {
+        for (int x = x1; x <= x2; x++) {
+            for (int z = z1; z <= z2; z++) {
+                world.getBlockAt(x, baseY, z).setType(FLOOR);
+                world.getBlockAt(x, baseY + h, z).setType(FLOOR);
+                for (int wy = baseY + 1; wy < baseY + h; wy++) world.getBlockAt(x, wy, z).setType(Material.AIR);
+            }
+        }
+        for (int x = x1; x <= x2; x++) {
+            for (int wy = baseY; wy <= baseY + h; wy++) {
+                world.getBlockAt(x, wy, z1).setType(WALL);
+                world.getBlockAt(x, wy, z2).setType(WALL);
+            }
+        }
+        for (int x = x1 + 1; x < x2; x++)
+            for (int z = z1 + 1; z < z2; z++)
+                world.getBlockAt(x, baseY + h / 2, z).setType(FLOOR);
+        for (int x = x1 + 2; x < x2; x += 4)
+            world.getBlockAt(x, baseY + h - 2, 0).setType(LIGHT);
+        for (int x = x1 + 5; x < x2 - 5; x += 12)
+            placeSpawner(world, x, baseY + 1, 0, random.nextBoolean() ? EntityType.WITHER_SKELETON : EntityType.ENDERMAN);
+    }
+
+    // ── BEDROCK Arena on keep roof ──
+    private void buildArena(World world, int baseY) {
+        int arenaY = baseY + 50;
+        int arenaR = 30;
         for (int x = -arenaR; x <= arenaR; x++) {
             for (int z = -arenaR; z <= arenaR; z++) {
                 double dist = Math.sqrt(x * x + z * z);
                 if (dist <= arenaR) {
-                    Material mat = dist < 4 ? CRYING : (dist < 8 ? DARK : FLOOR);
-                    world.getBlockAt(x, arenaY, z).setType(mat);
+                    world.getBlockAt(x, arenaY, z).setType(BEDROCK);
+                    // Clear 30 blocks above arena
+                    for (int dy = 1; dy <= 30; dy++) world.getBlockAt(x, arenaY + dy, z).setType(Material.AIR);
+                }
+                // Arena wall ring (bedrock, 5 tall)
+                if (dist >= arenaR - 0.5 && dist <= arenaR + 1.5) {
+                    for (int dy = 1; dy <= 5; dy++) world.getBlockAt(x, arenaY + dy, z).setType(BEDROCK);
                 }
             }
         }
-
-        // Arena walls (3 blocks high, open top)
-        for (int x = -arenaR; x <= arenaR; x++) {
-            for (int z = -arenaR; z <= arenaR; z++) {
-                double dist = Math.sqrt(x * x + z * z);
-                if (dist >= arenaR - 0.5 && dist <= arenaR + 0.5) {
-                    for (int dy = 1; dy <= 3; dy++) {
-                        world.getBlockAt(x, arenaY + dy, z).setType(WALL);
-                    }
-                    // Battlements
-                    if ((x + z) % 2 == 0) {
-                        world.getBlockAt(x, arenaY + 4, z).setType(WALL);
-                    }
-                }
-            }
+        // 4 obsidian pillars at cardinal points (like End)
+        int[][] pillars = {{0, -arenaR + 5}, {0, arenaR - 5}, {-arenaR + 5, 0}, {arenaR - 5, 0}};
+        for (int[] p : pillars) {
+            for (int dy = 1; dy <= 12; dy++) world.getBlockAt(p[0], arenaY + dy, p[1]).setType(DARK);
+            world.getBlockAt(p[0], arenaY + 13, p[1]).setType(CRYING);
+            world.getBlockAt(p[0], arenaY + 14, p[1]).setType(LIGHT);
         }
+        // Central dragon perch
+        for (int dy = 1; dy <= 15; dy++) world.getBlockAt(0, arenaY + dy, 0).setType(DARK);
+        world.getBlockAt(0, arenaY + 16, 0).setType(CRYING);
 
-        // 4 beacons at cardinal points of the arena
-        int[][] beaconPos = {{0, -arenaR + 2}, {0, arenaR - 2}, {-arenaR + 2, 0}, {arenaR - 2, 0}};
-        for (int[] bp : beaconPos) {
-            world.getBlockAt(bp[0], arenaY + 1, bp[1]).setType(LIGHT);
-            world.getBlockAt(bp[0], arenaY + 4, bp[1]).setType(LIGHT);
+        // Staircase from floor 4 to arena
+        int stairStart = baseY + 37; // floor 4 start
+        for (int step = 0; step < 14; step++) {
+            int sx = -28 + step;
+            world.getBlockAt(sx, stairStart + step, -28).setType(Material.DEEPSLATE_BRICK_STAIRS);
+            world.getBlockAt(sx, stairStart + step + 1, -28).setType(Material.AIR);
+            world.getBlockAt(sx, stairStart + step + 2, -28).setType(Material.AIR);
         }
-
-        // Dragon perch (obsidian pillar at center)
-        for (int dy = 1; dy <= 8; dy++) {
-            world.getBlockAt(0, arenaY + dy, 0).setType(DARK);
-        }
-        world.getBlockAt(0, arenaY + 9, 0).setType(CRYING);
     }
 
-    // ── Interior Rooms with loot ──
-    private void buildInteriorRooms(World world, int baseY) {
-        // Floor 1 rooms (y = baseY+1 to baseY+12)
-        buildRoom(world, -18, baseY + 1, -18, 8, 6, 8, "Armory", 3);
-        buildRoom(world, 10, baseY + 1, -18, 8, 6, 8, "Vault", 3);
-        buildRoom(world, -18, baseY + 1, 10, 8, 6, 8, "Library", 2);
-        buildRoom(world, 10, baseY + 1, 10, 8, 6, 8, "Treasury", 3);
+    // ── Courtyard features ──
+    private void buildCourtyard(World world, int y) {
+        // Obsidian statues at 4 points between keep and outer wall
+        int[][] statuePos = {{-50, 0}, {50, 0}, {0, -50}, {0, 50}};
+        for (int[] sp : statuePos) {
+            for (int dy = 0; dy < 10; dy++) world.getBlockAt(sp[0], y + dy, sp[1]).setType(DARK);
+            world.getBlockAt(sp[0], y + 10, sp[1]).setType(CRYING);
+            world.getBlockAt(sp[0], y + 11, sp[1]).setType(LIGHT);
+            // Base
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dz = -1; dz <= 1; dz++)
+                    world.getBlockAt(sp[0] + dx, y, sp[1] + dz).setType(PILLAR);
+        }
 
-        // Floor 2 rooms (y = baseY+14 to baseY+25)
-        buildRoom(world, -18, baseY + 14, -18, 8, 6, 8, "Spawner Hall", 4);
-        buildRoom(world, 10, baseY + 14, -18, 8, 6, 8, "Alchemy Lab", 2);
-        buildRoom(world, -18, baseY + 14, 10, 8, 6, 8, "Throne Room", 3);
-        buildRoom(world, 10, baseY + 14, 10, 8, 6, 8, "War Room", 2);
+        // Paths from outer gate to keep (cross pattern)
+        for (int i = -70; i <= 70; i++) {
+            for (int w = -1; w <= 1; w++) {
+                world.getBlockAt(i, y - 1, w).setType(FLOOR);
+                world.getBlockAt(w, y - 1, i).setType(FLOOR);
+            }
+        }
 
-        // Floor 3 rooms (y = baseY+27 to baseY+38)
-        buildRoom(world, -18, baseY + 27, -18, 8, 6, 8, "Observatory", 2);
-        buildRoom(world, 10, baseY + 27, -18, 8, 6, 8, "Dragon Hoard", 4);
-        buildRoom(world, -15, baseY + 27, -5, 30, 10, 10, "Grand Hall", 3);
+        // Ambient end rods scattered
+        for (int i = 0; i < 40; i++) {
+            int rx = -65 + random.nextInt(130), rz = -65 + random.nextInt(130);
+            double dist = Math.sqrt(rx * rx + rz * rz);
+            if (dist > 32 && dist < 68) world.getBlockAt(rx, y, rz).setType(LIGHT);
+        }
+    }
+
+    // ── Keep Rooms (4 floors x multiple rooms) ──
+    private void buildKeepRooms(World world, int y) {
+        int kh = 30;
+        int floorH = 12;
+        // Floor 1
+        buildRoom(world, -28, y + 1, -28, 12, 8, 12, "Armory", 5);
+        buildRoom(world, 16, y + 1, -28, 12, 8, 12, "Vault", 5);
+        buildRoom(world, -28, y + 1, 16, 12, 8, 12, "Library", 4);
+        buildRoom(world, 16, y + 1, 16, 12, 8, 12, "Treasury", 5);
+        buildRoom(world, -10, y + 1, -28, 20, 8, 10, "Great Hall", 4);
+        buildRoom(world, -10, y + 1, 18, 20, 8, 10, "Throne Room", 5);
+        // Floor 2
+        buildRoom(world, -28, y + 13, -28, 12, 8, 12, "Spawner Crypt", 5);
+        buildRoom(world, 16, y + 13, -28, 12, 8, 12, "Alchemy Lab", 4);
+        buildRoom(world, -28, y + 13, 16, 12, 8, 12, "War Room", 4);
+        buildRoom(world, 16, y + 13, 16, 12, 8, 12, "Infirmary", 3);
+        buildRoom(world, -10, y + 13, -28, 20, 8, 10, "Banquet Hall", 4);
+        buildRoom(world, -10, y + 13, 18, 20, 8, 10, "Chapel of Void", 5);
+        // Floor 3
+        buildRoom(world, -28, y + 25, -28, 12, 8, 12, "Observatory", 4);
+        buildRoom(world, 16, y + 25, -28, 12, 8, 12, "Dragon Hoard", 5);
+        buildRoom(world, -28, y + 25, 16, 12, 8, 12, "Prison", 3);
+        buildRoom(world, 16, y + 25, 16, 12, 8, 12, "Enchanting Chamber", 5);
+        buildRoom(world, -10, y + 25, -5, 20, 10, 10, "Grand Gallery", 5);
+        // Floor 4
+        buildRoom(world, -28, y + 37, -28, 12, 8, 12, "Dragon Egg Vault", 5);
+        buildRoom(world, 16, y + 37, -28, 12, 8, 12, "Abyssal Sanctum", 5);
+        buildRoom(world, -28, y + 37, 16, 12, 8, 12, "Ancient Archives", 5);
+        buildRoom(world, 16, y + 37, 16, 12, 8, 12, "Crystal Chamber", 5);
+    }
+
+    // ── Wing rooms ──
+    private void buildWingRooms(World world, int y) {
+        // North wing rooms
+        buildRoom(world, -5, y + 1, -65, 10, 6, 8, "North Guard Post", 3);
+        buildRoom(world, -5, y + 1, -50, 10, 6, 8, "North Armory", 4);
+        // South wing rooms
+        buildRoom(world, -5, y + 1, 42, 10, 6, 8, "South Guard Post", 3);
+        buildRoom(world, -5, y + 1, 57, 10, 6, 8, "South Vault", 4);
+        // West wing rooms
+        buildRoom(world, -65, y + 1, -5, 8, 6, 10, "West Barracks", 3);
+        buildRoom(world, -50, y + 1, -5, 8, 6, 10, "West Shrine", 4);
+        // East wing rooms
+        buildRoom(world, 57, y + 1, -5, 8, 6, 10, "East Barracks", 3);
+        buildRoom(world, 42, y + 1, -5, 8, 6, 10, "East Shrine", 4);
     }
 
     private void buildRoom(World world, int ox, int oy, int oz, int w, int h, int d, String name, int lootTier) {
-        // Floor and ceiling
         for (int x = ox; x < ox + w; x++) {
             for (int z = oz; z < oz + d; z++) {
                 world.getBlockAt(x, oy, z).setType(FLOOR);
                 world.getBlockAt(x, oy + h, z).setType(FLOOR);
-                // Clear interior
-                for (int y = oy + 1; y < oy + h; y++) {
-                    world.getBlockAt(x, y, z).setType(Material.AIR);
-                }
+                for (int wy = oy + 1; wy < oy + h; wy++) world.getBlockAt(x, wy, z).setType(Material.AIR);
             }
         }
-
-        // Walls (only if not already a keep wall)
-        for (int y = oy; y <= oy + h; y++) {
-            for (int x = ox; x < ox + w; x++) {
-                world.getBlockAt(x, y, oz).setType(WALL);
-                world.getBlockAt(x, y, oz + d - 1).setType(WALL);
-            }
-            for (int z = oz; z < oz + d; z++) {
-                world.getBlockAt(ox, y, z).setType(WALL);
-                world.getBlockAt(ox + w - 1, y, z).setType(WALL);
-            }
+        for (int wy = oy; wy <= oy + h; wy++) {
+            for (int x = ox; x < ox + w; x++) { world.getBlockAt(x, wy, oz).setType(WALL); world.getBlockAt(x, wy, oz + d - 1).setType(WALL); }
+            for (int z = oz; z < oz + d; z++) { world.getBlockAt(ox, wy, z).setType(WALL); world.getBlockAt(ox + w - 1, wy, z).setType(WALL); }
         }
-
-        // Door (clear 2x1 in one wall)
+        // Door
         world.getBlockAt(ox + w / 2, oy + 1, oz).setType(Material.AIR);
         world.getBlockAt(ox + w / 2, oy + 2, oz).setType(Material.AIR);
-
+        world.getBlockAt(ox + w / 2 + 1, oy + 1, oz).setType(Material.AIR);
+        world.getBlockAt(ox + w / 2 + 1, oy + 2, oz).setType(Material.AIR);
         // Lighting
         world.getBlockAt(ox + 1, oy + h - 1, oz + 1).setType(LIGHT);
         world.getBlockAt(ox + w - 2, oy + h - 1, oz + d - 2).setType(LIGHT);
+        if (w > 10) world.getBlockAt(ox + w / 2, oy + h - 1, oz + d / 2).setType(LIGHT);
 
-        // Loot chest
-        Block chestBlock = world.getBlockAt(ox + w / 2, oy + 1, oz + d - 2);
-        chestBlock.setType(Material.CHEST);
-        if (chestBlock.getState() instanceof Chest chest) {
-            fillLootChest(chest.getInventory(), lootTier);
+        // ENDGAME Loot chest
+        placeChest(world, ox + w / 2, oy + 1, oz + d - 2, lootTier);
+
+        // Spawner in certain rooms
+        if (name.contains("Spawner") || name.contains("Crypt") || name.contains("Guard") || name.contains("Barracks")) {
+            placeSpawner(world, ox + w / 2 + 2, oy + 1, oz + d / 2, EntityType.WITHER_SKELETON);
         }
-
-        // Spawner in spawner rooms
-        if (name.contains("Spawner")) {
-            Block spawnerBlock = world.getBlockAt(ox + w / 2, oy + 1, oz + d / 2);
-            spawnerBlock.setType(Material.SPAWNER);
-            if (spawnerBlock.getState() instanceof CreatureSpawner spawner) {
-                spawner.setSpawnedType(EntityType.ENDERMAN);
-                spawner.setDelay(200);
-                spawner.setMaxNearbyEntities(4);
-                spawner.setSpawnRange(4);
-                spawner.update();
-            }
+        if (name.contains("Prison") || name.contains("Sanctum")) {
+            placeSpawner(world, ox + w / 2 - 2, oy + 1, oz + d / 2, EntityType.ENDERMAN);
         }
     }
 
-    // ── Gate Entrance on south face ──
-    private void buildGateEntrance(World world, int baseY) {
-        // Grand entrance at z=30 (south outer wall), 5 wide x 7 tall
-        for (int x = -2; x <= 2; x++) {
-            for (int y = baseY; y < baseY + 7; y++) {
-                world.getBlockAt(x, y, 30).setType(Material.AIR);
-            }
-        }
+    private void buildGateEntrance(World world, int y) {
+        int h = 70;
+        // Grand south gate (7 wide x 10 tall)
+        for (int x = -3; x <= 3; x++)
+            for (int dy = 0; dy < 10; dy++)
+                world.getBlockAt(x, y + dy, h).setType(Material.AIR);
         // Archway
-        for (int x = -3; x <= 3; x++) {
-            world.getBlockAt(x, baseY + 7, 30).setType(ACCENT);
-        }
-        world.getBlockAt(-3, baseY + 7, 30).setType(ACCENT2);
-        world.getBlockAt(3, baseY + 7, 30).setType(ACCENT2);
-
+        for (int x = -4; x <= 4; x++) world.getBlockAt(x, y + 10, h).setType(ACCENT);
+        world.getBlockAt(-4, y + 10, h).setType(ACCENT2);
+        world.getBlockAt(4, y + 10, h).setType(ACCENT2);
         // Flanking pillars
-        for (int y = baseY; y < baseY + 10; y++) {
-            world.getBlockAt(-3, y, 31).setType(PILLAR);
-            world.getBlockAt(3, y, 31).setType(PILLAR);
-        }
-        world.getBlockAt(-3, baseY + 10, 31).setType(LIGHT);
-        world.getBlockAt(3, baseY + 10, 31).setType(LIGHT);
-
-        // Path leading to gate
-        for (int z = 31; z <= 40; z++) {
-            for (int x = -2; x <= 2; x++) {
-                world.getBlockAt(x, baseY - 1, z).setType(FLOOR);
-            }
-        }
-
-        // Keep entrance at z=20
-        for (int x = -2; x <= 2; x++) {
-            for (int y = baseY; y < baseY + 6; y++) {
-                world.getBlockAt(x, y, 20).setType(Material.AIR);
-            }
-        }
-        world.getBlockAt(-3, baseY + 6, 20).setType(ACCENT);
-        world.getBlockAt(3, baseY + 6, 20).setType(ACCENT);
-        for (int x = -2; x <= 2; x++) {
-            world.getBlockAt(x, baseY + 6, 20).setType(ACCENT);
-        }
+        for (int dy = 0; dy < 14; dy++) { world.getBlockAt(-5, y + dy, h + 1).setType(PILLAR); world.getBlockAt(5, y + dy, h + 1).setType(PILLAR); }
+        world.getBlockAt(-5, y + 14, h + 1).setType(LIGHT); world.getBlockAt(5, y + 14, h + 1).setType(LIGHT);
+        // Path
+        for (int z = h + 1; z <= h + 15; z++)
+            for (int x = -3; x <= 3; x++)
+                world.getBlockAt(x, y - 1, z).setType(FLOOR);
     }
 
-    // ── Decorations: banners, ambient blocks ──
-    private void buildDecorations(World world, int baseY) {
-        // Crying obsidian accents on outer wall corners
-        int half = 30;
-        for (int y = baseY; y < baseY + 12; y += 3) {
-            world.getBlockAt(-half, y, -half).setType(CRYING);
-            world.getBlockAt(half, y, -half).setType(CRYING);
-            world.getBlockAt(-half, y, half).setType(CRYING);
-            world.getBlockAt(half, y, half).setType(CRYING);
-        }
-
-        // Fence posts along walkway
-        for (int z = 31; z <= 40; z += 2) {
-            world.getBlockAt(-3, baseY, z).setType(FENCE);
-            world.getBlockAt(3, baseY, z).setType(FENCE);
-        }
+    // ── Endgame Loot System ──
+    private void placeChest(World world, int x, int y, int z, int tier) {
+        Block b = world.getBlockAt(x, y, z);
+        b.setType(Material.CHEST);
+        if (b.getState() instanceof Chest chest) fillEndgameLoot(chest.getInventory(), tier);
     }
 
-    // ── Loot generation ──
-    private void fillLootChest(Inventory inv, int tier) {
-        // Tier 1 = basic, 4 = amazing
-        int slots = 3 + tier * 2;
-        for (int i = 0; i < slots; i++) {
+    private void fillEndgameLoot(Inventory inv, int tier) {
+        int items = 4 + tier * 2;
+        for (int i = 0; i < items; i++) {
             int slot = random.nextInt(27);
-            ItemStack item = generateLootItem(tier);
+            ItemStack item = generateEndgameLoot(tier);
             if (item != null) inv.setItem(slot, item);
         }
     }
 
-    private ItemStack generateLootItem(int tier) {
-        return switch (tier) {
-            case 1 -> switch (random.nextInt(5)) {
-                case 0 -> new ItemStack(Material.IRON_INGOT, 4 + random.nextInt(8));
-                case 1 -> new ItemStack(Material.GOLD_INGOT, 3 + random.nextInt(6));
-                case 2 -> new ItemStack(Material.DIAMOND, 1 + random.nextInt(3));
-                case 3 -> new ItemStack(Material.ENDER_PEARL, 2 + random.nextInt(4));
-                default -> new ItemStack(Material.EXPERIENCE_BOTTLE, 4 + random.nextInt(8));
-            };
-            case 2 -> switch (random.nextInt(5)) {
-                case 0 -> new ItemStack(Material.DIAMOND, 3 + random.nextInt(6));
-                case 1 -> new ItemStack(Material.EMERALD, 5 + random.nextInt(10));
-                case 2 -> new ItemStack(Material.GOLDEN_APPLE, 2 + random.nextInt(3));
-                case 3 -> new ItemStack(Material.NETHERITE_SCRAP, 1 + random.nextInt(2));
-                default -> new ItemStack(Material.EXPERIENCE_BOTTLE, 8 + random.nextInt(16));
-            };
-            case 3 -> switch (random.nextInt(5)) {
-                case 0 -> new ItemStack(Material.DIAMOND, 6 + random.nextInt(10));
-                case 1 -> new ItemStack(Material.NETHERITE_INGOT, 1 + random.nextInt(2));
-                case 2 -> new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1);
-                case 3 -> new ItemStack(Material.NETHER_STAR, 1);
+    private ItemStack generateEndgameLoot(int tier) {
+        LegendaryWeaponManager wm = plugin.getLegendaryWeaponManager();
+        PowerUpManager pum = plugin.getPowerUpManager();
+
+        if (tier >= 5) {
+            // Top tier: ABYSSAL/MYTHIC weapons, best power-ups
+            return switch (random.nextInt(12)) {
+                case 0 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 1, 2 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.MYTHIC); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 3 -> pum.createHeartCrystal();
+                case 4 -> pum.createPhoenixFeather();
+                case 5 -> pum.createKeepInventorer();
+                case 6 -> pum.createTitanResolve();
+                case 7 -> pum.createBerserkerMark();
+                case 8 -> new ItemStack(Material.NETHERITE_INGOT, 3 + random.nextInt(5));
+                case 9 -> new ItemStack(Material.NETHER_STAR, 2 + random.nextInt(3));
+                case 10 -> new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 2 + random.nextInt(3));
                 default -> new ItemStack(Material.TOTEM_OF_UNDYING, 1);
             };
-            case 4 -> switch (random.nextInt(5)) {
-                case 0 -> new ItemStack(Material.NETHERITE_INGOT, 2 + random.nextInt(3));
-                case 1 -> new ItemStack(Material.NETHER_STAR, 1 + random.nextInt(2));
-                case 2 -> new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1 + random.nextInt(2));
-                case 3 -> new ItemStack(Material.DIAMOND_BLOCK, 2 + random.nextInt(4));
+        } else if (tier >= 4) {
+            return switch (random.nextInt(10)) {
+                case 0 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.MYTHIC); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 1 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.EPIC); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 2 -> pum.createHeartCrystal();
+                case 3 -> pum.createSoulFragment();
+                case 4 -> pum.createVitalityShard();
+                case 5 -> new ItemStack(Material.NETHERITE_INGOT, 2 + random.nextInt(3));
+                case 6 -> new ItemStack(Material.NETHER_STAR, 1 + random.nextInt(2));
+                case 7 -> new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1 + random.nextInt(2));
+                case 8 -> new ItemStack(Material.DIAMOND_BLOCK, 3 + random.nextInt(5));
                 default -> new ItemStack(Material.TOTEM_OF_UNDYING, 1);
             };
-            default -> new ItemStack(Material.DIAMOND, 1);
-        };
+        } else {
+            return switch (random.nextInt(8)) {
+                case 0 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.EPIC); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 1 -> { LegendaryWeapon[] pool = LegendaryWeapon.byTier(LegendaryTier.RARE); yield pool.length > 0 ? wm.createWeapon(pool[random.nextInt(pool.length)]) : null; }
+                case 2 -> pum.createSoulFragment();
+                case 3 -> new ItemStack(Material.DIAMOND, 8 + random.nextInt(12));
+                case 4 -> new ItemStack(Material.NETHERITE_SCRAP, 2 + random.nextInt(4));
+                case 5 -> new ItemStack(Material.GOLDEN_APPLE, 3 + random.nextInt(5));
+                case 6 -> new ItemStack(Material.EXPERIENCE_BOTTLE, 16 + random.nextInt(32));
+                default -> new ItemStack(Material.EMERALD, 10 + random.nextInt(20));
+            };
+        }
+    }
+
+    private void placeSpawner(World world, int x, int y, int z, EntityType type) {
+        Block b = world.getBlockAt(x, y, z);
+        b.setType(Material.SPAWNER);
+        if (b.getState() instanceof CreatureSpawner spawner) {
+            spawner.setSpawnedType(type);
+            spawner.setDelay(100);
+            spawner.setMaxNearbyEntities(6);
+            spawner.setSpawnRange(5);
+            spawner.setRequiredPlayerRange(16);
+            spawner.update();
+        }
     }
 }
