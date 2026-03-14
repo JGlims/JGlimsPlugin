@@ -518,12 +518,12 @@ public class JGlimsPlugin extends JavaPlugin {
             case "tp" -> {
                 World abyss = abyssDimensionManager.getAbyssWorld();
                 if (abyss == null) { player.sendMessage(Component.text("Abyss world not loaded!", NamedTextColor.RED)); return; }
-                Location dest = abyss.getSpawnLocation().clone().add(0.5, 0, 0.5);
-                int safeY = abyss.getHighestBlockYAt(dest.getBlockX(), dest.getBlockZ()) + 1;
-                if (safeY < 10) safeY = 66;
+                Location dest = new Location(abyss, 0.5, 0, 35.5);
+                int safeY = abyss.getHighestBlockYAt(0, 35) + 1;
+                if (safeY < 30) safeY = 60;
                 dest.setY(safeY);
                 player.teleport(dest);
-                player.sendMessage(Component.text("Teleported to the Abyss.", TextColor.color(170, 0, 0)));
+                player.sendMessage(Component.text("Teleported to the Abyss citadel gate.", TextColor.color(170, 0, 0)));
             }
             default -> sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp>", NamedTextColor.YELLOW));
         }

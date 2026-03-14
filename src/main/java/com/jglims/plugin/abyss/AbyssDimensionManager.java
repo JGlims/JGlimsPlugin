@@ -7,7 +7,7 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,21 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages the Abyss custom dimension.
+ * Manages the Abyss custom dimension with the Abyssal Citadel.
  *
- * Portal: A nether-portal-shaped frame (4 wide x 5 tall) built from PURPUR_BLOCK.
- * Activation: Right-click ANY purpur block in the frame with an Abyssal Key.
- * Teleportation: Player is teleported to the Abyss world at Y=65 above the central island.
- * Return: Players can build another purpur portal in the Abyss, or use /spawn.
+ * Portal: 4 wide x 5 tall PURPUR_BLOCK frame (Nether-portal shape).
+ * Activation: Right-click any purpur block in the frame with an Abyssal Key.
+ * Teleport: Player lands at the citadel gate entrance (0, surface, 35).
  */
 public class AbyssDimensionManager implements Listener {
 
     private final JGlimsPlugin plugin;
     private final NamespacedKey KEY_ABYSSAL_KEY;
     private World abyssWorld;
+    private boolean citadelBuilt = false;
 
     public static final String ABYSS_WORLD_NAME = "world_abyss";
-    private static final boolean DEBUG = false; // set true for portal debug logging
+    private static final boolean DEBUG = true; // enable for portal/teleport logging
 
     public AbyssDimensionManager(JGlimsPlugin plugin) {
         this.plugin = plugin;
@@ -46,30 +46,57 @@ public class AbyssDimensionManager implements Listener {
     /** Create or load the Abyss world. Called from onEnable(). */
     public void initialize() {
         abyssWorld = plugin.getServer().getWorld(ABYSS_WORLD_NAME);
+        boolean freshWorld = false;
+
         if (abyssWorld == null) {
-            plugin.getLogger().info("Creating Abyss dimension...");
+            plugin.getLogger().info("[Abyss] Creating Abyss dimension...");
             WorldCreator creator = new WorldCreator(ABYSS_WORLD_NAME);
             creator.environment(World.Environment.THE_END);
             creator.generator(new AbyssChunkGenerator());
             creator.generateStructures(false);
             abyssWorld = creator.createWorld();
-            if (abyssWorld != null) {
-                abyssWorld.setDifficulty(Difficulty.HARD);
-                abyssWorld.setSpawnLocation(0, 66, 0);
-                abyssWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                abyssWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                abyssWorld.setGameRule(GameRule.DO_MOB_SPAWNING, true);
-                abyssWorld.setGameRule(GameRule.KEEP_INVENTORY, false);
-                abyssWorld.setTime(18000);
-                // Kill any vanilla Ender Dragon that spawned (THE_END env auto-spawns one)
-                abyssWorld.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).forEach(org.bukkit.entity.Entity::remove);
-                // Build the Abyssal Citadel
+            freshWorld = true;
+        }
+
+        if (abyssWorld == null) {
+            plugin.getLogger().severe("[Abyss] FAILED to create/load Abyss world!");
+            return;
+        }
+
+        // Configure world settings
+        abyssWorld.setDifficulty(Difficulty.HARD);
+        abyssWorld.setSpawnLocation(0, 66, 0);
+        abyssWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        abyssWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        abyssWorld.setGameRule(GameRule.DO_MOB_SPAWNING, true);
+        abyssWorld.setGameRule(GameRule.KEEP_INVENTORY, false);
+        abyssWorld.setTime(18000);
+
+        // Remove any vanilla Ender Dragon (THE_END environment auto-spawns one)
+        int removed = 0;
+        for (EnderDragon dragon : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
+            dragon.remove();
+            removed++;
+        }
+        if (removed > 0) plugin.getLogger().info("[Abyss] Removed " + removed + " vanilla Ender Dragon(s).");
+
+        // Build citadel on fresh worlds
+        if (freshWorld) {
+            plugin.getLogger().info("[Abyss] Building Abyssal Citadel (first-time generation)...");
+            try {
                 new AbyssCitadelBuilder(plugin).buildCitadel(abyssWorld);
-                plugin.getLogger().info("Abyss dimension created: " + ABYSS_WORLD_NAME);
+                citadelBuilt = true;
+                plugin.getLogger().info("[Abyss] Citadel construction complete!");
+            } catch (Exception e) {
+                plugin.getLogger().severe("[Abyss] Citadel build FAILED: " + e.getMessage());
+                e.printStackTrace();
             }
         } else {
-            plugin.getLogger().info("Abyss dimension loaded: " + ABYSS_WORLD_NAME);
+            citadelBuilt = true; // assume it was built previously
+            plugin.getLogger().info("[Abyss] Abyss dimension loaded (citadel should already exist).");
         }
+
+        plugin.getLogger().info("[Abyss] Abyss dimension ready: " + ABYSS_WORLD_NAME);
     }
 
     /** Create an Abyssal Key item. */
@@ -106,16 +133,8 @@ public class AbyssDimensionManager implements Listener {
                 .getOrDefault(KEY_ABYSSAL_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
     }
 
-    /**
-     * Handle right-clicking a purpur block in a portal frame with an Abyssal Key.
-     *
-     * FIX (v7.0): Only check RIGHT_CLICK_BLOCK on PURPUR_BLOCK.
-     * Search for the portal frame origin by scanning around the clicked block
-     * in ALL directions (negative AND positive Y offsets).
-     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        // Only accept right-clicking a block
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
@@ -124,93 +143,47 @@ public class AbyssDimensionManager implements Listener {
 
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
-
-        // Only accept clicking directly on a PURPUR_BLOCK
         if (clicked.getType() != Material.PURPUR_BLOCK) return;
 
-        if (DEBUG) plugin.getLogger().info("[Abyss] Player " + player.getName()
+        if (DEBUG) plugin.getLogger().info("[Abyss] " + player.getName()
                 + " right-clicked purpur at " + clicked.getX() + "," + clicked.getY() + "," + clicked.getZ());
 
-        // Search around the clicked purpur block for a valid portal frame
         if (findPortalFrame(clicked)) {
             event.setCancelled(true);
             if (DEBUG) plugin.getLogger().info("[Abyss] Valid portal frame found! Activating...");
             activateAbyssPortal(player, clicked);
         } else {
-            if (DEBUG) plugin.getLogger().info("[Abyss] No valid portal frame found around clicked block.");
+            if (DEBUG) plugin.getLogger().info("[Abyss] No valid portal frame around clicked block.");
             player.sendMessage(Component.text("No valid Purpur portal frame detected.", NamedTextColor.RED));
             player.sendMessage(Component.text("Build a 4 wide x 5 tall frame from Purpur Blocks.", NamedTextColor.GRAY));
         }
     }
 
-    /**
-     * Search around a clicked purpur block for a valid 4x5 portal frame.
-     * The clicked block could be any of the 14 frame blocks, so we need to
-     * search for the bottom-left origin in a range that covers the full frame.
-     *
-     * Frame is 4 wide x 5 tall, so from any frame block:
-     *   X/Z offset: -3 to 0 (the clicked block could be the rightmost pillar)
-     *   Y offset:   -4 to 0 (the clicked block could be the top row)
-     */
     private boolean findPortalFrame(Block block) {
-        int bx = block.getX();
-        int by = block.getY();
-        int bz = block.getZ();
+        int bx = block.getX(), by = block.getY(), bz = block.getZ();
         World world = block.getWorld();
 
-        // Try every possible origin for both orientations
         for (int dy = -4; dy <= 0; dy++) {
             int oy = by + dy;
-
-            // X-oriented frame: origin scans along X axis
             for (int dx = -3; dx <= 0; dx++) {
-                if (isCompletePortalFrameX(world, bx + dx, oy, bz)) {
-                    if (DEBUG) plugin.getLogger().info("[Abyss] Found X-oriented frame at origin "
-                            + (bx + dx) + "," + oy + "," + bz);
-                    return true;
-                }
+                if (isCompletePortalFrameX(world, bx + dx, oy, bz)) return true;
             }
-
-            // Z-oriented frame: origin scans along Z axis
             for (int dz = -3; dz <= 0; dz++) {
-                if (isCompletePortalFrameZ(world, bx, oy, bz + dz)) {
-                    if (DEBUG) plugin.getLogger().info("[Abyss] Found Z-oriented frame at origin "
-                            + bx + "," + oy + "," + (bz + dz));
-                    return true;
-                }
+                if (isCompletePortalFrameZ(world, bx, oy, bz + dz)) return true;
             }
         }
         return false;
     }
 
-    /**
-     * Check for a complete purpur portal frame oriented along the X axis.
-     * Origin (ox, oy, oz) is the bottom-left corner of the frame.
-     *
-     * Frame shape (4w x 5h, viewed from south/+Z):
-     *   PPPP      <- oy+4 (top row)
-     *   P  P      <- oy+3
-     *   P  P      <- oy+2
-     *   P  P      <- oy+1
-     *   PPPP      <- oy   (bottom row)
-     *   ^  ^
-     *   ox ox+3
-     */
     private boolean isCompletePortalFrameX(World world, int ox, int oy, int oz) {
-        // Bottom row: 4 purpur blocks along X
         for (int x = 0; x < 4; x++) {
             if (world.getBlockAt(ox + x, oy, oz).getType() != Material.PURPUR_BLOCK) return false;
-        }
-        // Top row: 4 purpur blocks along X
-        for (int x = 0; x < 4; x++) {
             if (world.getBlockAt(ox + x, oy + 4, oz).getType() != Material.PURPUR_BLOCK) return false;
         }
-        // Left pillar (x=ox) and right pillar (x=ox+3): 3 blocks each (y+1 to y+3)
         for (int y = 1; y <= 3; y++) {
             if (world.getBlockAt(ox, oy + y, oz).getType() != Material.PURPUR_BLOCK) return false;
             if (world.getBlockAt(ox + 3, oy + y, oz).getType() != Material.PURPUR_BLOCK) return false;
         }
-        // Interior must be air (2 wide x 3 tall)
         for (int x = 1; x <= 2; x++) {
             for (int y = 1; y <= 3; y++) {
                 Material mat = world.getBlockAt(ox + x, oy + y, oz).getType();
@@ -220,12 +193,9 @@ public class AbyssDimensionManager implements Listener {
         return true;
     }
 
-    /** Same as X but oriented along the Z axis. */
     private boolean isCompletePortalFrameZ(World world, int ox, int oy, int oz) {
         for (int z = 0; z < 4; z++) {
             if (world.getBlockAt(ox, oy, oz + z).getType() != Material.PURPUR_BLOCK) return false;
-        }
-        for (int z = 0; z < 4; z++) {
             if (world.getBlockAt(ox, oy + 4, oz + z).getType() != Material.PURPUR_BLOCK) return false;
         }
         for (int y = 1; y <= 3; y++) {
@@ -274,15 +244,25 @@ public class AbyssDimensionManager implements Listener {
                         java.time.Duration.ofSeconds(2),
                         java.time.Duration.ofMillis(1000))));
 
-        // Delayed teleport (2 seconds)
+        // Delayed teleport — land at the citadel gate entrance
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            Location dest = new Location(abyssWorld, 0.5, 0, 35.5); // Gate entrance
+            // Gate is at z=35 (just outside the south wall gate at z=30)
+            Location dest = new Location(abyssWorld, 0.5, 0, 35.5);
             int safeY = abyssWorld.getHighestBlockYAt(0, 35) + 1;
-            if (safeY < 30) safeY = 60; // citadel floor fallback
+            if (safeY < 30) safeY = 60; // citadel fallback
             dest.setY(safeY);
+
+            if (DEBUG) plugin.getLogger().info("[Abyss] Teleporting " + player.getName()
+                    + " to gate: 0, " + safeY + ", 35");
+
             player.teleport(dest);
             player.playSound(player.getLocation(), Sound.BLOCK_END_PORTAL_SPAWN, 0.8f, 0.7f);
             player.sendMessage(Component.text("  You have entered the Abyss.", TextColor.color(170, 0, 0)));
+
+            // Remove any vanilla dragon that might have spawned
+            for (EnderDragon dragon : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
+                dragon.remove();
+            }
         }, 40L);
     }
 
@@ -290,4 +270,5 @@ public class AbyssDimensionManager implements Listener {
     public World getAbyssWorld() { return abyssWorld; }
     public NamespacedKey getKeyAbyssalKey() { return KEY_ABYSSAL_KEY; }
     public JGlimsPlugin getPlugin() { return plugin; }
+    public boolean isCitadelBuilt() { return citadelBuilt; }
 }
