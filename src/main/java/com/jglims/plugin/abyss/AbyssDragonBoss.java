@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.abyss;
+package com.jglims.plugin.abyss;
 
 import com.jglims.plugin.JGlimsPlugin;
 import net.kyori.adventure.text.Component;
@@ -8,10 +8,15 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Enderman;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Wither;
+import org.bukkit.entity.WitherSkeleton;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -22,25 +27,28 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 
 public class AbyssDragonBoss implements Listener {
 
     // ── Constants ─────────────────────────────────────────────
     private static final double DRAGON_MAX_HP = 1200.0;
-    private static final double DAMAGE_REDUCTION = 0.15; // 15% DR
+    private static final double DAMAGE_REDUCTION = 0.15;
     private static final int ARENA_RADIUS = 35;
     private static final int MAX_MINIONS = 6;
-    private static final long RESPAWN_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
+    private static final long RESPAWN_COOLDOWN_MS = 30L * 60L * 1000L;
 
-    // Attack timing (in ticks; loop runs every 40 ticks = 2s)
-    private static final int LIGHTNING_INTERVAL = 5;   // every 10s
-    private static final int BREATH_INTERVAL = 4;      // every 8s
-    private static final int MINION_INTERVAL = 8;      // every 16s
-    private static final int PHASE_CYCLE_INTERVAL = 3;  // every 6s
+    private static final int LIGHTNING_INTERVAL = 5;
+    private static final int BREATH_INTERVAL = 4;
+    private static final int MINION_INTERVAL = 8;
+    private static final int PHASE_CYCLE_INTERVAL = 3;
 
     // ── State ─────────────────────────────────────────────────
     private final JGlimsPlugin plugin;
+    private final AbyssDimensionManager dimensionManager;
     private EnderDragon dragon;
     private boolean active = false;
     private long lastFightEndTime = 0;
@@ -49,8 +57,8 @@ public class AbyssDragonBoss implements Listener {
     private Location arenaCenter;
     private int arenaY;
     private BukkitRunnable attackLoop;
+    private final Random random = new Random();
 
-    // Phase cycling for aggressive melee/souls-like combat
     private static final EnderDragon.Phase[] COMBAT_PHASES = {
             EnderDragon.Phase.CHARGE_PLAYER,
             EnderDragon.Phase.BREATH_ATTACK,
@@ -61,8 +69,9 @@ public class AbyssDragonBoss implements Listener {
     };
     private int currentPhaseIndex = 0;
 
-    public AbyssDragonBoss(JGlimsPlugin plugin) {
+    public AbyssDragonBoss(JGlimsPlugin plugin, AbyssDimensionManager dimensionManager) {
         this.plugin = plugin;
+        this.dimensionManager = dimensionManager;
     }
 
     // ── Arena detection ───────────────────────────────────────
@@ -74,14 +83,12 @@ public class AbyssDragonBoss implements Listener {
         World world = player.getWorld();
         if (!world.getName().equals("world_abyss")) return;
 
-        // Cooldown check
         if (System.currentTimeMillis() - lastFightEndTime < RESPAWN_COOLDOWN_MS && lastFightEndTime > 0) return;
 
-        Block below = player.getLocation().clone().subtract(0, 1, 0).getBlock();
+        Location loc = player.getLocation();
+        Block below = world.getBlockAt(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
         if (below.getType() != Material.BEDROCK) return;
 
-        // Must be near arena center (0, arenaY, 0)
-        Location loc = player.getLocation();
         if (Math.abs(loc.getX()) > ARENA_RADIUS && Math.abs(loc.getZ()) > ARENA_RADIUS) return;
 
         arenaY = findArenaY(world);
@@ -99,26 +106,21 @@ public class AbyssDragonBoss implements Listener {
         active = true;
         World world = trigger.getWorld();
 
-        // Clear any existing dragons/withers
         for (EnderDragon d : world.getEntitiesByClass(EnderDragon.class)) d.remove();
         for (Wither w : world.getEntitiesByClass(Wither.class)) w.remove();
         clearMinions(world);
 
-        // Spawn dragon above arena
         Location spawnLoc = arenaCenter.clone().add(0, 20, 0);
         dragon = world.spawn(spawnLoc, EnderDragon.class, d -> {
-            d.customName(Component.text("☠ Abyssal Dragon ☠", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
+            d.customName(Component.text("\u2620 Abyssal Dragon \u2620", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
             d.setCustomNameVisible(true);
             d.setGlowing(true);
             Objects.requireNonNull(d.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(DRAGON_MAX_HP);
             d.setHealth(DRAGON_MAX_HP);
-
-            // Confine: set podium to arena center so dragon circles around it
             d.setPodium(arenaCenter);
             d.setPhase(EnderDragon.Phase.CIRCLING);
         });
 
-        // Boss bar title
         Title.Times times = Title.Times.times(
                 Duration.ofMillis(300),
                 Duration.ofSeconds(3),
@@ -135,12 +137,10 @@ public class AbyssDragonBoss implements Listener {
             p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.7f);
         }
 
-        // Dramatic effects
         world.strikeLightningEffect(arenaCenter.clone().add(5, 0, 5));
         world.strikeLightningEffect(arenaCenter.clone().add(-5, 0, -5));
         world.spawnParticle(Particle.EXPLOSION, arenaCenter, 10, 3, 3, 3, 0);
 
-        // Start aggressive phase after 3 seconds (60 ticks)
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -150,7 +150,6 @@ public class AbyssDragonBoss implements Listener {
             }
         }.runTaskLater(plugin, 60L);
 
-        // Attack loop: every 40 ticks (2 seconds)
         attackTick = 0;
         phaseTick = 0;
         currentPhaseIndex = 0;
@@ -169,7 +168,7 @@ public class AbyssDragonBoss implements Listener {
                 doAmbientParticles(world);
             }
         };
-        attackLoop.runTaskTimer(plugin, 80L, 40L); // start after 4s, repeat every 2s
+        attackLoop.runTaskTimer(plugin, 80L, 40L);
     }
 
     // ── Attack logic ──────────────────────────────────────────
@@ -180,16 +179,14 @@ public class AbyssDragonBoss implements Listener {
         List<Player> nearby = getArenaPlayers(world);
         if (nearby.isEmpty()) return;
 
-        // Lightning strikes
         if (attackTick % LIGHTNING_INTERVAL == 0) {
             int strikes = hpPercent < 0.3 ? 4 : (hpPercent < 0.6 ? 3 : 2);
             for (int i = 0; i < strikes; i++) {
-                Player target = nearby.get(new Random().nextInt(nearby.size()));
+                Player target = nearby.get(random.nextInt(nearby.size()));
                 Location tLoc = target.getLocation().add(
-                        (Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4
+                        (random.nextDouble() - 0.5) * 4, 0, (random.nextDouble() - 0.5) * 4
                 );
                 world.strikeLightningEffect(tLoc);
-                // Deal damage in area
                 for (Player p : nearby) {
                     if (p.getLocation().distance(tLoc) < 3.0) {
                         p.damage(6.0);
@@ -198,7 +195,6 @@ public class AbyssDragonBoss implements Listener {
             }
         }
 
-        // Breath/void damage in area near dragon
         if (attackTick % BREATH_INTERVAL == 0) {
             Location dLoc = dragon.getLocation();
             world.spawnParticle(Particle.DRAGON_BREATH, dLoc, 80, 4, 2, 4, 0.02);
@@ -211,19 +207,16 @@ public class AbyssDragonBoss implements Listener {
             world.playSound(dLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.7f);
         }
 
-        // Minion spawn (capped at MAX_MINIONS)
         if (attackTick % MINION_INTERVAL == 0) {
             int currentMinions = countMinions(world);
             if (currentMinions < MAX_MINIONS) {
                 int toSpawn = Math.min(2, MAX_MINIONS - currentMinions);
                 for (int i = 0; i < toSpawn; i++) {
                     Location mLoc = arenaCenter.clone().add(
-                            (Math.random() - 0.5) * 20,
+                            (random.nextDouble() - 0.5) * 20,
                             1,
-                            (Math.random() - 0.5) * 20
+                            (random.nextDouble() - 0.5) * 20
                     );
-
-                    // Alternate between endermen and wither skeletons
                     if (i % 2 == 0) {
                         world.spawn(mLoc, Enderman.class, e -> {
                             e.customName(Component.text("Void Servant", NamedTextColor.DARK_PURPLE));
@@ -245,10 +238,8 @@ public class AbyssDragonBoss implements Listener {
             }
         }
 
-        // Enrage phase: below 20% HP — constant damage, pull players inward
         if (hpPercent < 0.20) {
             for (Player p : nearby) {
-                // Pull toward dragon
                 Vector pull = dragon.getLocation().toVector()
                         .subtract(p.getLocation().toVector()).normalize().multiply(0.3);
                 p.setVelocity(p.getVelocity().add(pull));
@@ -260,40 +251,30 @@ public class AbyssDragonBoss implements Listener {
         }
     }
 
-    // ── Phase cycling: keep dragon aggressive and near arena ──
-
     private void doPhaseCycle() {
         if (dragon == null || !dragon.isValid()) return;
         if (phaseTick % PHASE_CYCLE_INTERVAL != 0) return;
-
         currentPhaseIndex = (currentPhaseIndex + 1) % COMBAT_PHASES.length;
         try {
             dragon.setPhase(COMBAT_PHASES[currentPhaseIndex]);
         } catch (Exception ignored) {
-            // Some phases may abort; that's fine
             dragon.setPhase(EnderDragon.Phase.CIRCLING);
         }
     }
 
-    // ── Confinement: pull dragon back if it leaves arena ──────
-
     private void doConfinement() {
         if (dragon == null || !dragon.isValid() || arenaCenter == null) return;
-
         Location dLoc = dragon.getLocation();
         double dist = dLoc.distance(arenaCenter);
 
-        // If dragon is too far, reset podium and teleport back
         if (dist > ARENA_RADIUS + 15) {
             dragon.setPodium(arenaCenter);
             dragon.teleport(arenaCenter.clone().add(0, 15, 0));
             dragon.setPhase(EnderDragon.Phase.CIRCLING);
         } else if (dist > ARENA_RADIUS) {
-            // Nudge dragon back toward center
             dragon.setPodium(arenaCenter);
         }
 
-        // Prevent dragon from going below bedrock floor or too high
         if (dLoc.getY() < arenaY - 2) {
             dragon.teleport(arenaCenter.clone().add(0, 10, 0));
         }
@@ -308,13 +289,12 @@ public class AbyssDragonBoss implements Listener {
     @EventHandler
     public void onBossDamage(EntityDamageEvent event) {
         if (!active) return;
-        if (!(event.getEntity() instanceof EnderDragon d)) return;
+        if (!(event.getEntity() instanceof EnderDragon)) return;
+        EnderDragon d = (EnderDragon) event.getEntity();
         if (dragon == null || !d.getUniqueId().equals(dragon.getUniqueId())) return;
 
-        // Apply DR
         event.setDamage(event.getDamage() * (1.0 - DAMAGE_REDUCTION));
 
-        // Prevent certain damage types
         EntityDamageEvent.DamageCause cause = event.getCause();
         if (cause == EntityDamageEvent.DamageCause.SUFFOCATION
                 || cause == EntityDamageEvent.DamageCause.DROWNING
@@ -328,7 +308,8 @@ public class AbyssDragonBoss implements Listener {
     @EventHandler
     public void onBossDeath(EntityDeathEvent event) {
         if (!active) return;
-        if (!(event.getEntity() instanceof EnderDragon d)) return;
+        if (!(event.getEntity() instanceof EnderDragon)) return;
+        EnderDragon d = (EnderDragon) event.getEntity();
         if (dragon == null || !d.getUniqueId().equals(dragon.getUniqueId())) return;
 
         event.getDrops().clear();
@@ -336,14 +317,13 @@ public class AbyssDragonBoss implements Listener {
 
         active = false;
         lastFightEndTime = System.currentTimeMillis();
-        if (attackLoop != null) attackLoop.cancel();
+        if (attackLoop != null) {
+            try { attackLoop.cancel(); } catch (Exception ignored) {}
+        }
 
         World world = d.getWorld();
-
-        // Clear minions
         clearMinions(world);
 
-        // Victory announcement
         Title.Times times = Title.Times.times(
                 Duration.ofMillis(500),
                 Duration.ofSeconds(5),
@@ -359,13 +339,9 @@ public class AbyssDragonBoss implements Listener {
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1.0f);
         }
 
-        // Drop loot at arena center
         dropLoot(world);
-
-        // Create exit portal
         createExitPortal(world);
 
-        // Massive celebration particles
         new BukkitRunnable() {
             int count = 0;
             @Override
@@ -399,35 +375,51 @@ public class AbyssDragonBoss implements Listener {
         world.dropItemNaturally(lootLoc, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 8));
         world.dropItemNaturally(lootLoc, new ItemStack(Material.END_CRYSTAL, 4));
 
-        // Legendary weapons from the plugin managers (if available)
+        // Legendary weapons from plugin managers (safe calls)
         try {
             if (plugin.getLegendaryWeaponManager() != null) {
-                // Drop 2 random legendary weapons
+                // Use the manager's existing methods to create weapons
+                // Drop 2 ABYSSAL or MYTHIC tier weapons
                 for (int i = 0; i < 2; i++) {
-                    ItemStack legendary = plugin.getLegendaryWeaponManager().getRandomLegendaryWeapon();
-                    if (legendary != null) {
-                        world.dropItemNaturally(lootLoc, legendary);
-                    }
+                    try {
+                        // LegendaryWeaponManager.createWeaponItem(LegendaryWeapon) is the standard method
+                        com.jglims.plugin.legendary.LegendaryWeapon[] abyssalWeapons =
+                            com.jglims.plugin.legendary.LegendaryWeapon.values();
+                        List<com.jglims.plugin.legendary.LegendaryWeapon> highTier = new ArrayList<>();
+                        for (com.jglims.plugin.legendary.LegendaryWeapon lw : abyssalWeapons) {
+                            String tierName = lw.getTier().name();
+                            if (tierName.equals("ABYSSAL") || tierName.equals("MYTHIC")) {
+                                highTier.add(lw);
+                            }
+                        }
+                        if (!highTier.isEmpty()) {
+                            com.jglims.plugin.legendary.LegendaryWeapon chosen =
+                                highTier.get(random.nextInt(highTier.size()));
+                            ItemStack weapon = plugin.getLegendaryWeaponManager().createWeaponItem(chosen);
+                            if (weapon != null) {
+                                world.dropItemNaturally(lootLoc, weapon);
+                            }
+                        }
+                    } catch (Exception ignored) {}
                 }
             }
         } catch (Exception ignored) {}
 
         try {
             if (plugin.getPowerUpManager() != null) {
-                for (int i = 0; i < 3; i++) {
-                    ItemStack powerUp = plugin.getPowerUpManager().getRandomPowerUp();
-                    if (powerUp != null) {
-                        world.dropItemNaturally(lootLoc, powerUp);
-                    }
-                }
+                // Drop power-up items using known item types
+                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createHeartCrystal());
+                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createSoulFragment());
+                world.dropItemNaturally(lootLoc, plugin.getPowerUpManager().createPhoenixFeather());
             }
         } catch (Exception ignored) {}
 
         // XP orbs
         for (int i = 0; i < 20; i++) {
-            world.spawn(lootLoc.clone().add(
-                    (Math.random() - 0.5) * 3, 1, (Math.random() - 0.5) * 3
-            ), ExperienceOrb.class, orb -> orb.setExperience(500));
+            Location orbLoc = lootLoc.clone().add(
+                    (random.nextDouble() - 0.5) * 3, 1, (random.nextDouble() - 0.5) * 3
+            );
+            world.spawn(orbLoc, ExperienceOrb.class, orb -> orb.setExperience(500));
         }
     }
 
@@ -439,17 +431,14 @@ public class AbyssDragonBoss implements Listener {
         int cy = arenaCenter.getBlockY();
         int cz = arenaCenter.getBlockZ();
 
-        // 3x3 bedrock frame + END_PORTAL blocks
         for (int x = -1; x <= 1; x++) {
             for (int z = -1; z <= 1; z++) {
                 world.getBlockAt(cx + x, cy - 1, cz + z).setType(Material.BEDROCK);
                 if (x == 0 || z == 0) {
-                    // Cross pattern for portal
                     world.getBlockAt(cx + x, cy, cz + z).setType(Material.END_PORTAL);
                 }
             }
         }
-        // Outer frame ring
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
                 if (Math.abs(x) == 2 || Math.abs(z) == 2) {
@@ -458,7 +447,6 @@ public class AbyssDragonBoss implements Listener {
                 }
             }
         }
-
         world.playSound(arenaCenter, Sound.BLOCK_END_PORTAL_SPAWN, 2.0f, 1.0f);
     }
 
@@ -493,7 +481,6 @@ public class AbyssDragonBoss implements Listener {
     }
 
     private int findArenaY(World world) {
-        // Arena is bedrock at/near y=0-area. Scan from y=80 downward at (0,y,0)
         for (int y = 80; y > 0; y--) {
             if (world.getBlockAt(0, y, 0).getType() == Material.BEDROCK) {
                 return y;

@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.abyss;
+package com.jglims.plugin.abyss;
 
 import com.jglims.plugin.JGlimsPlugin;
 import net.kyori.adventure.text.Component;
@@ -7,7 +7,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Orientable;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,7 +20,13 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class AbyssDimensionManager implements Listener {
 
@@ -31,7 +37,7 @@ public class AbyssDimensionManager implements Listener {
     private World abyssWorld;
     private boolean citadelBuilt = false;
 
-    // Portal tracking: world -> set of portal block locations
+    // Portal tracking: world UUID -> set of portal block locations
     private final Map<UUID, Set<Location>> activePortals = new HashMap<>();
 
     public AbyssDimensionManager(JGlimsPlugin plugin) {
@@ -40,7 +46,7 @@ public class AbyssDimensionManager implements Listener {
 
     // ── World creation / loading ──────────────────────────────
 
-    public void initializeWorld() {
+    public void initialize() {
         abyssWorld = Bukkit.getWorld(ABYSS_WORLD_NAME);
         boolean freshWorld = (abyssWorld == null);
 
@@ -62,7 +68,7 @@ public class AbyssDimensionManager implements Listener {
             abyssWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
             abyssWorld.setGameRule(GameRule.MOB_GRIEFING, false);
             abyssWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
-            abyssWorld.setTime(18000); // midnight
+            abyssWorld.setTime(18000);
 
             // Remove vanilla ender dragons every 5 seconds
             new BukkitRunnable() {
@@ -100,8 +106,7 @@ public class AbyssDimensionManager implements Listener {
             lore.add(Component.text("Use on a Purpur portal frame", NamedTextColor.GRAY));
             lore.add(Component.text("to open a gateway to the Abyss.", NamedTextColor.DARK_GRAY));
             lore.add(Component.empty());
-            lore.add(Component.text("⚷ Abyssal Key", NamedTextColor.DARK_PURPLE));
-            meta.lore(lore);
+            lore.add(Component.text("\u2737 Abyssal Key", NamedTextColor.DARK_PURPLE));
             meta.setCustomModelData(9001);
             key.setItemMeta(meta);
         }
@@ -126,7 +131,6 @@ public class AbyssDimensionManager implements Listener {
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (!isAbyssalKey(hand)) return;
 
-        // Try to find a 4-wide x 5-tall portal frame
         Location frameLoc = findPortalFrame(clicked.getLocation());
         if (frameLoc == null) {
             player.sendMessage(Component.text("The key resonates... but no valid portal frame is found.", NamedTextColor.DARK_PURPLE));
@@ -142,13 +146,10 @@ public class AbyssDimensionManager implements Listener {
             player.getInventory().setItemInMainHand(null);
         }
 
-        // Activate portal — fill interior with NETHER_PORTAL blocks
         activatePortal(frameLoc, player);
     }
 
     private Location findPortalFrame(Location clickedLoc) {
-        // Search nearby for a valid 4-wide x 5-tall purpur frame
-        // Try both X-aligned and Z-aligned
         World w = clickedLoc.getWorld();
         int cx = clickedLoc.getBlockX();
         int cy = clickedLoc.getBlockY();
@@ -156,14 +157,12 @@ public class AbyssDimensionManager implements Listener {
 
         for (int ox = -4; ox <= 1; ox++) {
             for (int oy = -5; oy <= 0; oy++) {
-                // X-aligned frame: 4 wide (x), 5 tall (y), 1 deep (z)
                 Location base = new Location(w, cx + ox, cy + oy, cz);
                 if (isCompleteFrameX(base)) return base;
             }
         }
         for (int oz = -4; oz <= 1; oz++) {
             for (int oy = -5; oy <= 0; oy++) {
-                // Z-aligned frame: 1 wide (x), 5 tall (y), 4 deep (z)
                 Location base = new Location(w, cx, cy + oy, cz + oz);
                 if (isCompleteFrameZ(base)) return base;
             }
@@ -174,8 +173,6 @@ public class AbyssDimensionManager implements Listener {
     private boolean isCompleteFrameX(Location base) {
         World w = base.getWorld();
         int bx = base.getBlockX(), by = base.getBlockY(), bz = base.getBlockZ();
-        // Frame: bottom row (4 blocks), top row (4 blocks), left column (5), right column (5)
-        // Interior: 2 wide x 3 tall starting at (bx+1, by+1, bz)
         for (int x = 0; x < 4; x++) {
             if (w.getBlockAt(bx + x, by, bz).getType() != Material.PURPUR_BLOCK) return false;
             if (w.getBlockAt(bx + x, by + 4, bz).getType() != Material.PURPUR_BLOCK) return false;
@@ -184,7 +181,6 @@ public class AbyssDimensionManager implements Listener {
             if (w.getBlockAt(bx, by + y, bz).getType() != Material.PURPUR_BLOCK) return false;
             if (w.getBlockAt(bx + 3, by + y, bz).getType() != Material.PURPUR_BLOCK) return false;
         }
-        // Interior must be air
         for (int x = 1; x <= 2; x++) {
             for (int y = 1; y <= 3; y++) {
                 Material m = w.getBlockAt(bx + x, by + y, bz).getType();
@@ -217,8 +213,6 @@ public class AbyssDimensionManager implements Listener {
     private void activatePortal(Location frameLoc, Player player) {
         World w = frameLoc.getWorld();
         int bx = frameLoc.getBlockX(), by = frameLoc.getBlockY(), bz = frameLoc.getBlockZ();
-
-        // Determine orientation: check if X-aligned or Z-aligned
         boolean xAligned = isCompleteFrameX(frameLoc);
 
         Set<Location> portalBlocks = new HashSet<>();
@@ -227,11 +221,12 @@ public class AbyssDimensionManager implements Listener {
             for (int x = 1; x <= 2; x++) {
                 for (int y = 1; y <= 3; y++) {
                     Block b = w.getBlockAt(bx + x, by + y, bz);
-                    b.setType(Material.NETHER_PORTAL);
-                    // Set orientation for X-aligned: axis = X
-                    if (b.getBlockData() instanceof org.bukkit.block.data.Orientable orientable) {
+                    b.setType(Material.NETHER_PORTAL, false);
+                    org.bukkit.block.data.BlockData data = b.getBlockData();
+                    if (data instanceof Orientable) {
+                        Orientable orientable = (Orientable) data;
                         orientable.setAxis(Axis.X);
-                        b.setBlockData(orientable);
+                        b.setBlockData(orientable, false);
                     }
                     portalBlocks.add(b.getLocation().toBlockLocation());
                 }
@@ -240,10 +235,12 @@ public class AbyssDimensionManager implements Listener {
             for (int z = 1; z <= 2; z++) {
                 for (int y = 1; y <= 3; y++) {
                     Block b = w.getBlockAt(bx, by + y, bz + z);
-                    b.setType(Material.NETHER_PORTAL);
-                    if (b.getBlockData() instanceof org.bukkit.block.data.Orientable orientable) {
+                    b.setType(Material.NETHER_PORTAL, false);
+                    org.bukkit.block.data.BlockData data = b.getBlockData();
+                    if (data instanceof Orientable) {
+                        Orientable orientable = (Orientable) data;
                         orientable.setAxis(Axis.Z);
-                        b.setBlockData(orientable);
+                        b.setBlockData(orientable, false);
                     }
                     portalBlocks.add(b.getLocation().toBlockLocation());
                 }
@@ -253,7 +250,6 @@ public class AbyssDimensionManager implements Listener {
         UUID worldId = w.getUID();
         activePortals.computeIfAbsent(worldId, k -> new HashSet<>()).addAll(portalBlocks);
 
-        // Effects
         Location center = frameLoc.clone().add(xAligned ? 1.5 : 0.5, 2.5, xAligned ? 0.5 : 1.5);
         w.playSound(center, Sound.BLOCK_PORTAL_TRIGGER, 1.5f, 0.5f);
         w.spawnParticle(Particle.PORTAL, center, 200, 1.0, 2.0, 1.0, 0.5);
@@ -277,7 +273,7 @@ public class AbyssDimensionManager implements Listener {
                 }
                 w.playSound(center, Sound.BLOCK_PORTAL_TRAVEL, 0.8f, 1.5f);
             }
-        }.runTaskLater(plugin, 600L); // 30s
+        }.runTaskLater(plugin, 600L);
     }
 
     // ── Portal walk-in teleport ───────────────────────────────
@@ -288,7 +284,6 @@ public class AbyssDimensionManager implements Listener {
         Player player = event.getPlayer();
         Block block = event.getTo().getBlock();
 
-        // Check if player walked into an active portal
         if (block.getType() != Material.NETHER_PORTAL) return;
         Location blockLoc = block.getLocation().toBlockLocation();
 
@@ -296,10 +291,8 @@ public class AbyssDimensionManager implements Listener {
         Set<Location> portals = activePortals.get(worldId);
         if (portals == null || !portals.contains(blockLoc)) return;
 
-        // Only teleport from non-abyss worlds into the abyss
         if (player.getWorld().getName().equals(ABYSS_WORLD_NAME)) return;
 
-        // Teleport to abyss
         teleportToAbyss(player);
     }
 
@@ -310,11 +303,9 @@ public class AbyssDimensionManager implements Listener {
         }
 
         int safeY = findSafeY(abyssWorld, 0, 85);
-
         Location destination = new Location(abyssWorld, 0.5, safeY, 85.5, 0f, 0f);
         player.teleport(destination);
 
-        // Title
         Title.Times times = Title.Times.times(
                 Duration.ofMillis(500),
                 Duration.ofSeconds(3),
@@ -357,7 +348,7 @@ public class AbyssDimensionManager implements Listener {
                 return y + 1;
             }
         }
-        return 60; // fallback
+        return 60;
     }
 
     public World getAbyssWorld() { return abyssWorld; }
