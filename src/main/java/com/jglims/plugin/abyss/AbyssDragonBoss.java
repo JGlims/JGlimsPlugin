@@ -61,7 +61,9 @@ public class AbyssDragonBoss implements Listener {
         if (!player.getWorld().equals(abyssWorld)) return;
 
         // Check if boss should spawn
-        if (!active && (boss == null || boss.isDead())) {
+        // Always clean up vanilla Ender Dragon
+            abyssWorld.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).forEach(org.bukkit.entity.Entity::remove);
+            if (!active && (boss == null || boss.isDead())) {
             if (System.currentTimeMillis() - lastKillTime > RESPAWN_COOLDOWN_MS) {
                 // Delay spawn by 10 seconds to let player load in
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -81,7 +83,9 @@ public class AbyssDragonBoss implements Listener {
         tickCounter = 0;
 
         // Spawn at center of the main island, high up
-        Location spawnLoc = new Location(abyssWorld, 0.5, 80, 0.5);
+        int arenaY = abyssWorld.getHighestBlockYAt(0, 0) + 42; // arena is at baseY+40
+        if (arenaY < 90) arenaY = 100;
+        Location spawnLoc = new Location(abyssWorld, 0.5, arenaY + 5, 0.5);
 
         // Announce to all players in the Abyss
         for (Player p : abyssWorld.getPlayers()) {

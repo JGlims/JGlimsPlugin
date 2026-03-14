@@ -61,6 +61,10 @@ public class AbyssDimensionManager implements Listener {
                 abyssWorld.setGameRule(GameRule.DO_MOB_SPAWNING, true);
                 abyssWorld.setGameRule(GameRule.KEEP_INVENTORY, false);
                 abyssWorld.setTime(18000);
+                // Kill any vanilla Ender Dragon that spawned (THE_END env auto-spawns one)
+                abyssWorld.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).forEach(org.bukkit.entity.Entity::remove);
+                // Build the Abyssal Citadel
+                new AbyssCitadelBuilder(plugin).buildCitadel(abyssWorld);
                 plugin.getLogger().info("Abyss dimension created: " + ABYSS_WORLD_NAME);
             }
         } else {
@@ -272,9 +276,9 @@ public class AbyssDimensionManager implements Listener {
 
         // Delayed teleport (2 seconds)
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            Location dest = abyssWorld.getSpawnLocation().clone().add(0.5, 0, 0.5);
-            int safeY = abyssWorld.getHighestBlockYAt(dest.getBlockX(), dest.getBlockZ()) + 1;
-            if (safeY < 10) safeY = 66;
+            Location dest = new Location(abyssWorld, 0.5, 0, 35.5); // Gate entrance
+            int safeY = abyssWorld.getHighestBlockYAt(0, 35) + 1;
+            if (safeY < 30) safeY = 60; // citadel floor fallback
             dest.setY(safeY);
             player.teleport(dest);
             player.playSound(player.getLocation(), Sound.BLOCK_END_PORTAL_SPAWN, 0.8f, 0.7f);
