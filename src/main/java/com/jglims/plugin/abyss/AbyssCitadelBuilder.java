@@ -54,7 +54,16 @@ public class AbyssCitadelBuilder {
     private static final Material BOOKSHELF = Material.CHISELED_BOOKSHELF;
     private static final Material LAVA = Material.LAVA;
     private static final Material IRON_BARS = Material.IRON_BARS;
-    private static final Material CHAIN = Material.CHAIN;
+    private static final Material CHAIN;
+    static {
+        Material resolved;
+        try {
+            resolved = Material.valueOf("CHAIN");
+        } catch (IllegalArgumentException e) {
+            resolved = Material.IRON_BARS; // fallback for API versions where CHAIN is absent
+        }
+        CHAIN = resolved;
+    }
     private static final Material LANTERN = Material.SOUL_LANTERN;
     private static final Material CARPET = Material.PURPLE_CARPET;
     private static final Material BANNER = Material.PURPLE_BANNER;

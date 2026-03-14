@@ -308,7 +308,7 @@ public class AbyssDimensionManager implements Listener {
         player.showTitle(net.kyori.adventure.title.Title.title(
                 Component.text("\u2620 ENTERING THE ABYSS \u2620", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD),
                 Component.text("Prepare yourself...", NamedTextColor.DARK_GRAY),
-                net.kyori.adventure.title.Title.times(
+                net.kyori.adventure.title.Title.Times.times(
                         java.time.Duration.ofMillis(500), java.time.Duration.ofSeconds(2), java.time.Duration.ofMillis(1000))));
 
         // Delayed teleport — land on the path OUTSIDE the south gate
