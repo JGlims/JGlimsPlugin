@@ -2,6 +2,8 @@ package com.jglims.plugin;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
@@ -267,7 +269,7 @@ public class JGlimsPlugin extends JavaPlugin {
         if (!command.getName().equalsIgnoreCase("jglims")) return false;
         if (args.length == 0) {
             sender.sendMessage(Component.text("JGlimsPlugin v" + getDescription().getVersion(), NamedTextColor.GOLD));
-            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|menu|guia|help>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|abyss|menu|guia|help>", NamedTextColor.YELLOW));
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -281,6 +283,7 @@ public class JGlimsPlugin extends JavaPlugin {
             case "powerup" -> handlePowerUpCommand(sender, args);
             case "bosstitles" -> { if (sender instanceof Player player) bossMasteryManager.showBossTitles(player); else sender.sendMessage(Component.text("Only players can view boss titles.", NamedTextColor.RED)); }
             case "gauntlet" -> handleGauntletCommand(sender, args);
+            case "abyss" -> handleAbyssCommand(sender, args);
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -296,11 +299,12 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims menu", NamedTextColor.YELLOW).append(Component.text(" - Creative item menu (GUI)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims guia", NamedTextColor.YELLOW).append(Component.text(" - Receive guide books (PT-BR)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims abyss <key|tp>", NamedTextColor.YELLOW).append(Component.text(" - Abyss dimension commands (OP)", NamedTextColor.GRAY)));
             }
             case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
             case "menu" -> { if (sender instanceof Player player) creativeMenuManager.openMainMenu(player); else sender.sendMessage(Component.text("Only players can open the menu.", NamedTextColor.RED)); }
             case "guia" -> { if (sender instanceof Player player) guideBookManager.giveAllVolumes(player); else sender.sendMessage(Component.text("Only players can receive the guide.", NamedTextColor.RED)); }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, menu, guia, quests, help", NamedTextColor.RED));
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, abyss, menu, guia, quests, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -495,4 +499,33 @@ public class JGlimsPlugin extends JavaPlugin {
     public NpcWizardManager getNpcWizardManager() { return npcWizardManager; }
     public CreativeMenuManager getCreativeMenuManager() { return creativeMenuManager; }
     public GuideBookManager getGuideBookManager() { return guideBookManager; }
+
+    private void handleAbyssCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("  key - Get an Abyssal Key", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  tp  - Teleport directly to the Abyss", NamedTextColor.GRAY));
+            return;
+        }
+        switch (args[1].toLowerCase()) {
+            case "key" -> {
+                player.getInventory().addItem(abyssDimensionManager.createAbyssalKey());
+                player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
+                        .append(Component.text("Abyssal Key", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD)));
+            }
+            case "tp" -> {
+                World abyss = abyssDimensionManager.getAbyssWorld();
+                if (abyss == null) { player.sendMessage(Component.text("Abyss world not loaded!", NamedTextColor.RED)); return; }
+                Location dest = abyss.getSpawnLocation().clone().add(0.5, 0, 0.5);
+                int safeY = abyss.getHighestBlockYAt(dest.getBlockX(), dest.getBlockZ()) + 1;
+                if (safeY < 10) safeY = 66;
+                dest.setY(safeY);
+                player.teleport(dest);
+                player.sendMessage(Component.text("Teleported to the Abyss.", TextColor.color(170, 0, 0)));
+            }
+            default -> sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp>", NamedTextColor.YELLOW));
+        }
+    }
 }
