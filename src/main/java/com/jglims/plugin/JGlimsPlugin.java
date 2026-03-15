@@ -142,8 +142,7 @@ public class JGlimsPlugin extends JavaPlugin {
         powerUpManager = new PowerUpManager(this);
         structureManager = new StructureManager(this);
         abyssDimensionManager = new AbyssDimensionManager(this);
-        abyssDimensionManager.initialize();
-        abyssDragonBoss = new AbyssDragonBoss(this, abyssDimensionManager);
+        abyssDragonBoss = new AbyssDragonBoss(this);
         eventManager = new EventManager(this);
         eventManager.initialize();
         questManager = new QuestManager(this);
