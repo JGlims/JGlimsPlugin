@@ -1,1217 +1,1085 @@
 package com.jglims.plugin.abyss;
 
-import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Stairs;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.WitherSkeleton;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.legendary.LegendaryTier;
+import com.jglims.plugin.legendary.LegendaryWeapon;
+import com.jglims.plugin.legendary.LegendaryWeaponManager;
+import com.jglims.plugin.powerups.PowerUpManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
+import org.bukkit.entity.Enderman;
+import org.bukkit.entity.WitherSkeleton;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
- * Abyssal Citadel Builder v6.0
- * 
- * LAYOUT:  Arena at (0, Y, 0) so the Ender Dragon stays there naturally.
- *          Cathedral built to the south (positive Z).
- *          Player spawns far south and walks north through the castle to the arena.
+ * AbyssCitadelBuilder v4.0 — Massive Gothic Abyssal Cathedral
+ * Faithful recreation of the Blockwave Studios "Abyssal Citadel" 3D model.
  *
- *   Z ~ +200   = Player spawn platform
- *   Z ~ +180   = Custom trees + approach
- *   Z ~ +100   = Grand front facade (south-facing entrance)
- *   Z ~ +30-90 = Cathedral body (nave, transept, towers, side rooms)
- *   Z ~ +10-20 = Cathedral back (apse) → opening to arena
- *   Z ~ 0      = ARENA CENTER  (0, arenaY, 0) ← Dragon lives here
+ * Architecture: A towering gothic cathedral with a central mega-spire (180+ blocks),
+ * flanked by 10+ secondary spires of varying heights, a grand pointed-arch facade,
+ * flying buttresses, gothic arched windows with purple glass, a circular front
+ * courtyard with glowing purple path lines, 4 Abyssal weapon guardian chambers,
+ * an external rear arena, floating amethyst crystals, and organic rocky terrain.
+ *
+ * NOT a square fortress — a vertical, cathedral-shaped masterpiece.
  */
 public class AbyssCitadelBuilder {
 
-    // ── Block Palette ──
-    private static final Material PRIMARY      = Material.DEEPSLATE_BRICKS;
-    private static final Material SECONDARY    = Material.POLISHED_DEEPSLATE;
-    private static final Material ACCENT       = Material.DEEPSLATE_TILES;
-    private static final Material DARK         = Material.BLACKSTONE;
-    private static final Material OBSIDIAN_BLK = Material.OBSIDIAN;
-    private static final Material CRYING_OBS   = Material.CRYING_OBSIDIAN;
-    private static final Material AMETHYST     = Material.AMETHYST_BLOCK;
-    private static final Material GLASS        = Material.PURPLE_STAINED_GLASS_PANE;
-    private static final Material GLASS_BLOCK  = Material.PURPLE_STAINED_GLASS;
-    private static final Material SOUL_LANTERN = Material.SOUL_LANTERN;
-    private static final Material END_STONE    = Material.END_STONE_BRICKS;
-    private static final Material BEDROCK      = Material.BEDROCK;
-    private static final Material BARRIER      = Material.BARRIER;
-    private static final Material PURPUR       = Material.PURPUR_BLOCK;
-    private static final Material PRISMARINE   = Material.DARK_PRISMARINE;
-
-    // ── Dimensions ──
-    private static final int ARENA_RADIUS     = 45;      // arena at origin
-    private static final int NAVE_LENGTH      = 70;      // Z extent of nave
-    private static final int NAVE_HALF_W      = 25;      // half-width of nave
-    private static final int FACADE_HALF_W    = 50;      // grand facade width
-    private static final int SPIRE_HEIGHT     = 160;     // central spire
-    private static final int TOWER_HEIGHT     = 65;      // corner towers
-    private static final int TOWER_RADIUS     = 7;       // corner tower radius
-    private static final int WALL_HEIGHT      = 40;      // main wall height
-    private static final int ROOF_PEAK        = 50;      // roof peak above base
-
-    // Cathedral body occupies Z = BODY_START to Z = BODY_END
-    private static final int BODY_START = 15;   // back of cathedral (near arena)
-    private static final int BODY_END   = 100;  // front facade
-    private static final int TRANSEPT_Z = 55;   // transept crosses here
-    private static final int TRANSEPT_HALF_W = 40;
-
-    // Spawn & approach
-    private static final int SPAWN_Z = 200;
-    private static final int TREE_ZONE_START = 140;
-    private static final int TREE_ZONE_END   = 180;
-
+    private final JGlimsPlugin plugin;
     private final World world;
-    private final Logger log;
-    private final int baseY;
-    private int chestCount = 0;
-    private int abyssalChestCount = 0;
+    private final Random rng = new Random(42);
 
-    public AbyssCitadelBuilder(World world, Logger log) {
+    // ─── Block Palette ────────────────────────────────────────
+    private static final Material DS = Material.DEEPSLATE_BRICKS;      // primary dark wall
+    private static final Material DT = Material.DEEPSLATE_TILES;       // secondary wall
+    private static final Material PD = Material.POLISHED_DEEPSLATE;    // accents/pillars
+    private static final Material CD = Material.CHISELED_DEEPSLATE;    // detail trim
+    private static final Material NB = Material.NETHER_BRICKS;         // dark structural
+    private static final Material RNB = Material.RED_NETHER_BRICKS;    // dark accent
+    private static final Material BL = Material.BLACKSTONE;            // foundation
+    private static final Material PBL = Material.POLISHED_BLACKSTONE;  // floor accent
+    private static final Material PBB = Material.POLISHED_BLACKSTONE_BRICKS; // floor
+    private static final Material OBS = Material.OBSIDIAN;             // structural dark
+    private static final Material CRY = Material.CRYING_OBSIDIAN;      // glow accent
+    private static final Material AME = Material.AMETHYST_BLOCK;       // purple accent
+    private static final Material AMC = Material.AMETHYST_CLUSTER;     // crystal detail
+    private static final Material PGP = Material.PURPLE_STAINED_GLASS_PANE; // windows (replaces nether portal)
+    private static final Material PG = Material.PURPLE_STAINED_GLASS;  // window fill
+    private static final Material MG = Material.MAGENTA_STAINED_GLASS_PANE; // window accent
+    private static final Material IB = Material.IRON_BARS;             // railings
+    private static final Material SL = Material.SOUL_LANTERN;          // lighting
+    private static final Material SF = Material.SOUL_CAMPFIRE;         // fire lighting
+    private static final Material ER = Material.END_ROD;               // spire tips & lighting
+    private static final Material ES = Material.END_STONE_BRICKS;      // arena pillars
+    private static final Material BK = Material.BEDROCK;               // arena floor
+    private static final Material BA = Material.BARRIER;               // arena walls
+    private static final Material STR = Material.DEEPSLATE_BRICK_STAIRS; // stairs
+    private static final Material PIL = Material.POLISHED_DEEPSLATE;   // pillars
+    private static final Material AIR = Material.AIR;
+    private static final Material PUR = Material.PURPUR_BLOCK;         // purple structural
+
+    // ─── Key dimensions ──────────────────────────────────────
+    // The cathedral is oriented facing SOUTH (+Z).
+    // Center is at (0, sY, 0). Front entrance faces +Z.
+    private static final int CENTER_SPIRE_H = 180;   // tallest spire height
+    private static final int NAVE_LENGTH = 80;        // front-to-back length of main hall
+    private static final int NAVE_WIDTH = 30;         // half-width of the nave
+    private static final int NAVE_HEIGHT = 50;        // interior ceiling height
+    private static final int FACADE_WIDTH = 60;       // half-width of the front facade
+    private static final int FACADE_HEIGHT = 80;      // front facade peak
+    private static final int ARENA_RADIUS = 40;       // boss arena radius
+    private static final int ARENA_DIST = 120;        // arena center distance behind cathedral
+
+    private int sY; // surface Y level
+
+    public AbyssCitadelBuilder(JGlimsPlugin plugin, World world) {
+        this.plugin = plugin;
         this.world = world;
-        this.log = log;
-        this.baseY = findBaseY();
     }
 
-    private int findBaseY() {
-        // Find or create a base platform Y level
-        // In void End world, we build at Y=50
-        return 50;
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  MAIN BUILD
-    // ════════════════════════════════════════════════════════════════
     public void build() {
         long start = System.currentTimeMillis();
-        log.info("[Citadel] Building Gothic Abyssal Cathedral v6.0 at Y=" + baseY);
+        sY = findSurface();
+        plugin.getLogger().info("[Citadel] Building Gothic Abyssal Cathedral at Y=" + sY + "...");
 
-        phase("Foundation & Arena", this::buildArenaAndFoundation);
-        phase("Approach Path & Spawn", this::buildApproachAndSpawn);
-        phase("Custom Trees", this::buildCustomTrees);
-        phase("Nave Walls & Floor", this::buildNave);
-        phase("Transept", this::buildTransept);
-        phase("Apse & Arena Connection", this::buildApse);
-        phase("Grand Front Facade", this::buildGrandFacade);
-        phase("Central Spire", this::buildCentralSpire);
-        phase("Corner Towers x4", this::buildCornerTowers);
-        phase("Minor Spires x8", this::buildMinorSpires);
-        phase("Flying Buttresses", this::buildFlyingButtresses);
-        phase("Gothic Windows", this::buildGothicWindows);
-        phase("Roof", this::buildRoof);
-        phase("Interior Clearing", this::clearInterior);
-        phase("Interior Rooms (8)", this::buildInteriorRooms);
-        phase("Weapon Chambers (4)", this::buildWeaponChambers);
-        phase("Stairs & Galleries", this::buildStairsAndGalleries);
-        phase("Chests & Loot", this::placeChests);
-        phase("Arena Decorations", this::buildArenaDecorations);
-        phase("Arena Barriers", this::buildArenaBarriers);
-        phase("Ambient Lighting", this::placeLighting);
+        // Phase 1: Foundation & Ground
+        buildFoundationPlatform();
+        buildCircularCourtyard();
+
+        // Phase 2: Main Cathedral Body
+        buildNave();
+        buildTransept();
+        buildApse();
+        buildFrontFacade();
+
+        // Phase 3: Spires (the iconic skyline)
+        buildCenterSpire();
+        buildFlankerSpires();
+        buildMinorSpires();
+
+        // Phase 4: Gothic Details
+        buildFlyingButtresses();
+        buildGothicWindows();
+        buildRoofLine();
+
+        // Phase 5: Interior
+        buildInteriorNave();
+        buildInteriorChapels();
+        buildAbyssalWeaponChambers();
+        buildStairsToArena();
+
+        // Phase 6: Arena (behind the cathedral)
+        buildArena();
+        buildArenaDecorations();
+        buildArenaBarriers();
+        buildArenaPath();
+
+        // Phase 7: Environment
+        buildRockyTerrain();
+        buildFloatingCrystals();
+        buildGlowingCourtLines();
+        buildApproachPath();
+
+        // Phase 8: Populate (delayed)
+        new BukkitRunnable() {
+            @Override public void run() {
+                populateChests();
+                spawnGuards();
+                plugin.getLogger().info("[Citadel] Loot and guards placed.");
+            }
+        }.runTaskLater(plugin, 60L);
 
         long elapsed = System.currentTimeMillis() - start;
-        log.info("[Citadel] Structure complete in " + elapsed + "ms");
-        log.info("[Citadel] Found " + chestCount + " regular chests and " + abyssalChestCount + " abyssal weapon chests");
-
-        // Place loot & guards after a short delay
-        Bukkit.getScheduler().runTaskLater(
-            Bukkit.getPluginManager().getPlugin("JGlimsPlugin"),
-            this::populateLootAndGuards, 40L
-        );
+        plugin.getLogger().info("[Citadel] Structure complete in " + elapsed + "ms");
     }
 
-    private void phase(String name, Runnable task) {
-        log.info("[Citadel]   -> " + name);
-        task.run();
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  ARENA & FOUNDATION  (centered at 0, baseY, 0)
-    // ════════════════════════════════════════════════════════════════
-    private void buildArenaAndFoundation() {
-        // Arena: circular platform at origin, radius ARENA_RADIUS
-        for (int x = -ARENA_RADIUS - 5; x <= ARENA_RADIUS + 5; x++) {
-            for (int z = -ARENA_RADIUS - 5; z <= ARENA_RADIUS + 5; z++) {
-                double dist = Math.sqrt(x * x + z * z);
-                if (dist <= ARENA_RADIUS) {
-                    // Arena floor: bedrock so dragon can't destroy it
-                    setBlock(x, baseY, z, BEDROCK);
-                    // Decorative ring
-                    if (dist >= ARENA_RADIUS - 2 && dist <= ARENA_RADIUS) {
-                        setBlock(x, baseY, z, OBSIDIAN_BLK);
-                        if (dist >= ARENA_RADIUS - 1) {
-                            setBlock(x, baseY + 1, z, CRYING_OBS);
-                        }
-                    }
-                } else if (dist <= ARENA_RADIUS + 3) {
-                    // Outer edge - crumbling effect
-                    if (Math.random() < 0.6) {
-                        setBlock(x, baseY, z, END_STONE);
-                    }
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 1: FOUNDATION PLATFORM
+    // ═══════════════════════════════════════════════════════════
+    private void buildFoundationPlatform() {
+        plugin.getLogger().info("[Citadel] Laying foundation platform...");
+        // Elliptical platform — wider on Z (front-back) than X
+        int radiusX = 110, radiusZ = 140;
+        for (int x = -radiusX; x <= radiusX; x++) {
+            for (int z = -radiusZ; z <= radiusZ; z++) {
+                double norm = (double)(x*x)/(radiusX*radiusX) + (double)(z*z)/(radiusZ*radiusZ);
+                if (norm > 1.0) continue;
+                int ty = findTerrainY(x, z);
+                double edgeFade = 1.0 - norm;
+                int depth = (int)(8 * edgeFade) + 2;
+                for (int y = sY - depth; y <= sY; y++) {
+                    Material m;
+                    if (y == sY) m = edgeFade > 0.5 ? PBB : (edgeFade > 0.3 ? BL : DT);
+                    else if (y >= sY - 2) m = BL;
+                    else m = DT;
+                    s(x, y, z, m);
                 }
-            }
-        }
-
-        // Cathedral foundation platform  (Z = BODY_START to BODY_END+20)
-        for (int x = -FACADE_HALF_W - 10; x <= FACADE_HALF_W + 10; x++) {
-            for (int z = BODY_START - 5; z <= BODY_END + 20; z++) {
-                setBlock(x, baseY, z, PRIMARY);
-                setBlock(x, baseY - 1, z, DARK);
-            }
-        }
-
-        // Connect arena to cathedral (Z=0 to Z=BODY_START)
-        for (int x = -15; x <= 15; x++) {
-            for (int z = -ARENA_RADIUS; z <= BODY_START; z++) {
-                setBlock(x, baseY, z, PRIMARY);
-            }
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  APPROACH PATH & SPAWN PLATFORM
-    // ════════════════════════════════════════════════════════════════
-    private void buildApproachAndSpawn() {
-        // Spawn platform at Z = SPAWN_Z
-        for (int x = -8; x <= 8; x++) {
-            for (int z = SPAWN_Z - 4; z <= SPAWN_Z + 4; z++) {
-                setBlock(x, baseY, z, PURPUR);
-                if (Math.abs(x) == 8 || z == SPAWN_Z - 4 || z == SPAWN_Z + 4) {
-                    setBlock(x, baseY + 1, z, CRYING_OBS);
-                }
-            }
-        }
-
-        // Main approach path: Z = BODY_END+5 to SPAWN_Z-5
-        // Wide stone path with soul lanterns
-        for (int z = BODY_END + 5; z <= SPAWN_Z - 5; z++) {
-            int pathHalf = 5;
-            for (int x = -pathHalf; x <= pathHalf; x++) {
-                setBlock(x, baseY, z, SECONDARY);
-                // Edge pillars every 10 blocks
-                if ((Math.abs(x) == pathHalf) && (z % 10 == 0)) {
-                    for (int y = 1; y <= 4; y++) {
-                        setBlock(x, baseY + y, z, ACCENT);
-                    }
-                    setBlock(x, baseY + 5, z, SOUL_LANTERN);
-                }
-            }
-            // Under-path support (random deepslate columns into the void)
-            if (z % 8 == 0) {
-                for (int x2 = -pathHalf; x2 <= pathHalf; x2 += pathHalf * 2) {
-                    for (int dy = -1; dy >= -15; dy--) {
-                        if (Math.random() < 0.85) {
-                            setBlock(x2, baseY + dy, z, DARK);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Widen path near cathedral entrance
-        for (int z = BODY_END; z <= BODY_END + 10; z++) {
-            int w = 5 + (BODY_END + 10 - z);
-            for (int x = -w; x <= w; x++) {
-                if (world.getBlockAt(x, baseY, z).getType() == Material.AIR) {
-                    setBlock(x, baseY, z, SECONDARY);
+                // Fill from terrain up
+                for (int y = ty; y < sY - depth; y++) s(x, y, z, BL);
+                // Clear above
+                for (int y = sY + 1; y <= sY + CENTER_SPIRE_H + 20; y++) {
+                    Block b = world.getBlockAt(x, y, z);
+                    if (b.getType().isSolid() && b.getType() != BK) b.setType(AIR);
                 }
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  CUSTOM TREES (dark twisted End trees along approach)
-    // ════════════════════════════════════════════════════════════════
-    private void buildCustomTrees() {
-        // Place 8 custom trees along the approach, alternating sides
-        int[] treeZPositions = {145, 152, 160, 168, 175, 155, 163, 170};
-        int[] treeSides =      { -1,   1,  -1,   1,  -1,   1,  -1,   1};
-
-        for (int i = 0; i < treeZPositions.length; i++) {
-            int tz = treeZPositions[i];
-            int tx = treeSides[i] * (12 + (int)(Math.random() * 6));
-            buildCustomTree(tx, baseY + 1, tz);
+    private void buildCircularCourtyard() {
+        plugin.getLogger().info("[Citadel] Building circular courtyard...");
+        // Circular courtyard in front of the cathedral (centered at z=60)
+        int courtZ = 65, courtR = 40;
+        for (int x = -courtR; x <= courtR; x++) {
+            for (int z = courtZ - courtR; z <= courtZ + courtR; z++) {
+                double dist = Math.sqrt(x * x + (z - courtZ) * (z - courtZ));
+                if (dist > courtR) continue;
+                Material m;
+                if (dist < 5) m = CRY;
+                else if ((int)dist % 8 == 0) m = CRY;
+                else if ((x + z) % 3 == 0) m = PBL;
+                else m = PBB;
+                s(x, sY, z, m);
+                for (int dy = 1; dy <= 3; dy++) s(x, sY + dy, z, AIR);
+            }
         }
     }
 
-    private void buildCustomTree(int cx, int cy, int cz) {
-        Material TRUNK = Material.DARK_OAK_LOG;
-        Material LEAVES = Material.DARK_OAK_LEAVES;
-        Material CHORUS = Material.CHORUS_PLANT;
-
-        // Twisted trunk (5-12 blocks tall, with random offsets)
-        int height = 7 + (int)(Math.random() * 6);
-        int tx = cx, tz = cz;
-        for (int y = 0; y < height; y++) {
-            setBlock(tx, cy + y, tz, TRUNK);
-            // Random twist
-            if (y > 2 && Math.random() < 0.3) {
-                tx += (Math.random() < 0.5) ? 1 : -1;
-            }
-            if (y > 2 && Math.random() < 0.3) {
-                tz += (Math.random() < 0.5) ? 1 : -1;
-            }
-            // Branches
-            if (y > height / 2 && Math.random() < 0.5) {
-                int bx = (Math.random() < 0.5) ? 1 : -1;
-                int bz = (Math.random() < 0.5) ? 1 : -1;
-                setBlock(tx + bx, cy + y, tz, TRUNK);
-                setBlock(tx + bx, cy + y + 1, tz + bz, CHORUS);
-            }
-        }
-        // Canopy: mix of leaves and chorus, sphere-ish
-        int canopyR = 3 + (int)(Math.random() * 2);
-        for (int dx = -canopyR; dx <= canopyR; dx++) {
-            for (int dy = -1; dy <= canopyR; dy++) {
-                for (int dz = -canopyR; dz <= canopyR; dz++) {
-                    double d = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                    if (d <= canopyR && Math.random() < 0.65) {
-                        Material m = Math.random() < 0.7 ? LEAVES : CHORUS;
-                        int bx = tx + dx, by = cy + height + dy, bz2 = tz + dz;
-                        if (world.getBlockAt(bx, by, bz2).getType() == Material.AIR) {
-                            setBlock(bx, by, bz2, m);
-                        }
-                    }
-                }
-            }
-        }
-        // Roots at base
-        for (int r = 0; r < 3; r++) {
-            int rx = cx + (int)(Math.random() * 4) - 2;
-            int rz = cz + (int)(Math.random() * 4) - 2;
-            setBlock(rx, cy - 1, rz, TRUNK);
-            setBlock(rx, cy, rz, TRUNK);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  NAVE (main cathedral hall)
-    // ════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 2: MAIN CATHEDRAL BODY — NAVE
+    // ═══════════════════════════════════════════════════════════
     private void buildNave() {
-        // Walls
-        for (int z = BODY_START; z <= BODY_END; z++) {
-            for (int y = baseY + 1; y <= baseY + WALL_HEIGHT; y++) {
+        plugin.getLogger().info("[Citadel] Building nave...");
+        // The nave runs from z=40 (front) to z=-40 (back), centered on x=0
+        // It has thick walls that taper inward as they go up (gothic shape)
+        int frontZ = 40, backZ = -40;
+        int wallThick = 4;
+
+        for (int z = backZ; z <= frontZ; z++) {
+            for (int y = sY; y <= sY + NAVE_HEIGHT; y++) {
+                double heightRatio = (double)(y - sY) / NAVE_HEIGHT;
+                // Gothic narrowing: walls get closer together as they go up
+                int halfW = (int)(NAVE_WIDTH * (1.0 - heightRatio * 0.3));
                 // Left wall
-                setBlock(-NAVE_HALF_W, y, z, PRIMARY);
-                setBlock(-NAVE_HALF_W - 1, y, z, SECONDARY);
-                // Right wall
-                setBlock(NAVE_HALF_W, y, z, PRIMARY);
-                setBlock(NAVE_HALF_W + 1, y, z, SECONDARY);
-            }
-        }
-        // Floor pattern (alternating tiles)
-        for (int x = -NAVE_HALF_W + 1; x < NAVE_HALF_W; x++) {
-            for (int z = BODY_START; z <= BODY_END; z++) {
-                Material floor = ((x + z) % 2 == 0) ? ACCENT : SECONDARY;
-                setBlock(x, baseY, z, floor);
-            }
-        }
-        // Pillars along nave (every 8 blocks)
-        for (int z = BODY_START + 4; z <= BODY_END - 4; z += 8) {
-            for (int side = -1; side <= 1; side += 2) {
-                int px = side * (NAVE_HALF_W - 5);
-                for (int y = baseY + 1; y <= baseY + WALL_HEIGHT - 2; y++) {
-                    setBlock(px, y, z, DARK);
-                    setBlock(px, y, z + 1, DARK);
+                for (int t = 0; t < wallThick; t++) {
+                    Material m = wallMat(y, t);
+                    s(-halfW - t, y, z, m);
+                    s(halfW + t, y, z, m);
                 }
-                // Pillar capital
-                setBlock(px - 1, baseY + WALL_HEIGHT - 2, z, ACCENT);
-                setBlock(px + 1, baseY + WALL_HEIGHT - 2, z, ACCENT);
-                setBlock(px, baseY + WALL_HEIGHT - 2, z - 1, ACCENT);
-                setBlock(px, baseY + WALL_HEIGHT - 2, z + 1, ACCENT);
+            }
+        }
+        // Floor
+        for (int x = -NAVE_WIDTH; x <= NAVE_WIDTH; x++) {
+            for (int z = backZ; z <= frontZ; z++) {
+                s(x, sY, z, (x + z) % 2 == 0 ? PBB : PBL);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  TRANSEPT (cross-section)
-    // ════════════════════════════════════════════════════════════════
     private void buildTransept() {
-        for (int x = -TRANSEPT_HALF_W; x <= TRANSEPT_HALF_W; x++) {
-            for (int y = baseY + 1; y <= baseY + WALL_HEIGHT; y++) {
-                // Front and back walls of transept
-                setBlock(x, y, TRANSEPT_Z - 5, PRIMARY);
-                setBlock(x, y, TRANSEPT_Z + 5, PRIMARY);
-            }
-            // Floor
-            setBlock(x, baseY, TRANSEPT_Z, SECONDARY);
-            for (int dz = -5; dz <= 5; dz++) {
-                if (world.getBlockAt(x, baseY, TRANSEPT_Z + dz).getType() == Material.AIR) {
-                    setBlock(x, baseY, TRANSEPT_Z + dz, ACCENT);
-                }
-            }
-        }
-        // Side walls
-        for (int z = TRANSEPT_Z - 5; z <= TRANSEPT_Z + 5; z++) {
-            for (int y = baseY + 1; y <= baseY + WALL_HEIGHT; y++) {
-                setBlock(-TRANSEPT_HALF_W, y, z, PRIMARY);
-                setBlock(TRANSEPT_HALF_W, y, z, PRIMARY);
-            }
-        }
-        // Clear transept interior (where it intersects nave)
-        for (int x = -NAVE_HALF_W + 1; x < NAVE_HALF_W; x++) {
-            for (int z = TRANSEPT_Z - 4; z <= TRANSEPT_Z + 4; z++) {
-                for (int y = baseY + 1; y <= baseY + WALL_HEIGHT - 1; y++) {
-                    setBlock(x, y, z, Material.AIR);
+        plugin.getLogger().info("[Citadel] Building transept...");
+        // Cross-shaped transept at z=0, extending to x=±50
+        int transW = 50, transD = 12, transH = 45;
+        int wallThick = 3;
+        for (int x = -transW; x <= transW; x++) {
+            for (int z = -transD; z <= transD; z++) {
+                for (int y = sY; y <= sY + transH; y++) {
+                    double heightRatio = (double)(y - sY) / transH;
+                    int halfD = (int)(transD * (1.0 - heightRatio * 0.25));
+                    boolean isEdge = Math.abs(z) >= halfD - wallThick && Math.abs(z) <= halfD;
+                    boolean isXEdge = Math.abs(x) >= transW - wallThick && Math.abs(x) <= transW;
+                    if (isEdge || isXEdge) {
+                        s(x, y, z, wallMat(y, 0));
+                    } else if (y == sY) {
+                        s(x, y, z, (x + z) % 2 == 0 ? PBB : PBL);
+                    }
                 }
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  APSE (back of cathedral → opens to arena)
-    // ════════════════════════════════════════════════════════════════
     private void buildApse() {
-        // Semi-circular apse at the back (Z = BODY_START region)
-        int apseR = NAVE_HALF_W;
+        plugin.getLogger().info("[Citadel] Building apse...");
+        // Semicircular apse at the back (z = -40 to z = -65)
+        int apseCZ = -40, apseR = 25, apseH = 55;
         for (int x = -apseR; x <= apseR; x++) {
-            for (int z = BODY_START - apseR; z <= BODY_START; z++) {
-                double dist = Math.sqrt(x * x + (z - BODY_START) * (z - BODY_START));
-                if (dist >= apseR - 2 && dist <= apseR) {
-                    for (int y = baseY + 1; y <= baseY + WALL_HEIGHT; y++) {
-                        setBlock(x, y, z, PRIMARY);
+            for (int z = apseCZ; z >= apseCZ - apseR; z--) {
+                double dist = Math.sqrt(x * x + (z - apseCZ) * (z - apseCZ));
+                if (dist > apseR) continue;
+                for (int y = sY; y <= sY + apseH; y++) {
+                    double heightRatio = (double)(y - sY) / apseH;
+                    double rAtH = apseR * (1.0 - heightRatio * 0.35);
+                    if (dist >= rAtH - 3 && dist <= rAtH) {
+                        s(x, y, z, wallMat(y, 0));
+                    } else if (y == sY && dist < rAtH - 3) {
+                        s(x, y, z, PBB);
                     }
-                    setBlock(x, baseY, z, SECONDARY);
-                }
-            }
-        }
-        // Grand archway opening to arena (Z = BODY_START, X = -10 to 10)
-        for (int x = -10; x <= 10; x++) {
-            for (int y = baseY + 1; y <= baseY + 20; y++) {
-                double archDist = Math.sqrt(x * x + (y - baseY - 20) * (y - baseY - 20));
-                if (archDist <= 12) {
-                    setBlock(x, y, BODY_START, Material.AIR);
-                }
-            }
-        }
-        // Path from apse to arena
-        for (int x = -8; x <= 8; x++) {
-            for (int z = BODY_START - apseR; z >= -ARENA_RADIUS + 5; z--) {
-                if (world.getBlockAt(x, baseY, z).getType() == Material.AIR) {
-                    setBlock(x, baseY, z, SECONDARY);
                 }
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  GRAND FRONT FACADE  (at Z ~ BODY_END, facing south)
-    // ════════════════════════════════════════════════════════════════
-    private void buildGrandFacade() {
-        int fz = BODY_END;
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 2: FRONT FACADE
+    // ═══════════════════════════════════════════════════════════
+    private void buildFrontFacade() {
+        plugin.getLogger().info("[Citadel] Building front facade...");
+        int fz = 40; // front Z
 
-        // Main facade wall
-        for (int x = -FACADE_HALF_W; x <= FACADE_HALF_W; x++) {
-            for (int y = baseY + 1; y <= baseY + WALL_HEIGHT + 15; y++) {
-                double edgeDist = Math.min(Math.abs(x + FACADE_HALF_W), Math.abs(x - FACADE_HALF_W));
-                int maxH = baseY + WALL_HEIGHT + 15 - (int)(edgeDist < 15 ? (15 - edgeDist) / 2 : 0);
-                if (y <= maxH) {
-                    setBlock(x, y, fz, PRIMARY);
-                    setBlock(x, y, fz + 1, SECONDARY);
+        // The facade is a massive pointed shape, widest at bottom, narrowing to a peak
+        for (int y = sY; y <= sY + FACADE_HEIGHT; y++) {
+            double heightRatio = (double)(y - sY) / FACADE_HEIGHT;
+            // Width narrows as we go up — gothic pointed arch shape
+            int halfW = (int)(FACADE_WIDTH * (1.0 - heightRatio * heightRatio * 0.6));
+            for (int x = -halfW; x <= halfW; x++) {
+                // Outer surface
+                for (int dz = 0; dz < 5; dz++) {
+                    Material m;
+                    if (dz == 0) m = CD; // front face trim
+                    else if (heightRatio > 0.8) m = NB;
+                    else m = wallMat(y, dz);
+                    s(x, y, fz + dz, m);
                 }
             }
         }
 
-        // Recessed entrance: deep arch, no blocking pillar
-        // Carve the entrance - 3 blocks deep recess
-        for (int depth = 0; depth <= 3; depth++) {
-            for (int x = -6; x <= 6; x++) {
-                for (int y = baseY + 1; y <= baseY + 18; y++) {
-                    // Arch shape
-                    if (y <= baseY + 14 || (x * x + (y - baseY - 14) * (y - baseY - 14)) <= 36) {
-                        setBlock(x, y, fz + depth, Material.AIR);
-                    }
+        // Grand entrance arch (pointed gothic arch)
+        int archW = 8, archH = 25;
+        for (int x = -archW; x <= archW; x++) {
+            // Pointed arch profile: height depends on distance from center
+            double xRatio = (double)Math.abs(x) / archW;
+            int localH = (int)(archH * (1.0 - xRatio * xRatio));
+            for (int y = sY + 1; y <= sY + localH; y++) {
+                for (int dz = 0; dz < 5; dz++) {
+                    s(x, y, fz + dz, AIR);
                 }
             }
         }
+        // Arch frame in obsidian
+        for (int x = -archW - 1; x <= archW + 1; x++) {
+            double xRatio = (double)Math.abs(x) / (archW + 1);
+            int localH = (int)(archH * (1.0 - xRatio * xRatio));
+            s(x, sY + localH, fz, OBS);
+            s(x, sY + localH, fz + 1, OBS);
+        }
+        // Entrance pillars
+        for (int side = -1; side <= 1; side += 2) {
+            int px = side * (archW + 2);
+            for (int y = sY; y <= sY + archH + 5; y++) {
+                s(px, y, fz, OBS);
+                s(px, y, fz + 1, OBS);
+                s(px, y, fz - 1, CD);
+            }
+            s(px, sY + archH + 6, fz, SF);
+        }
 
-        // Arch trim around the entrance
-        for (int x = -7; x <= 7; x++) {
-            for (int y = baseY + 1; y <= baseY + 19; y++) {
-                double archCheck = x * x + Math.pow(y - baseY - 14, 2);
-                if (archCheck >= 36 && archCheck <= 64) {
-                    if (y > baseY + 14) {
-                        setBlock(x, y, fz, ACCENT);
-                        setBlock(x, y, fz + 1, ACCENT);
-                    }
-                }
+        // Secondary arched windows flanking entrance
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 1; i <= 3; i++) {
+                int wx = side * (archW + 6 + i * 10);
+                if (Math.abs(wx) > FACADE_WIDTH - 5) continue;
+                buildGothicWindowOnWall(wx, sY + 5, fz, 3, 12, true);
             }
         }
-        // Door frame columns
-        for (int y = baseY + 1; y <= baseY + 14; y++) {
-            setBlock(-7, y, fz, OBSIDIAN_BLK);
-            setBlock(-7, y, fz + 1, OBSIDIAN_BLK);
-            setBlock(7, y, fz, OBSIDIAN_BLK);
-            setBlock(7, y, fz + 1, OBSIDIAN_BLK);
-        }
 
-        // Rose window (large circular stained glass above entrance)
-        int roseY = baseY + 30;
-        int roseR = 8;
+        // Rose window (circular) above entrance
+        int roseY = sY + archH + 8, roseR = 7;
         for (int dx = -roseR; dx <= roseR; dx++) {
             for (int dy = -roseR; dy <= roseR; dy++) {
                 double d = Math.sqrt(dx * dx + dy * dy);
-                if (d <= roseR) {
-                    if (d >= roseR - 1) {
-                        setBlock(dx, roseY + dy, fz, ACCENT);
-                    } else {
-                        setBlock(dx, roseY + dy, fz, GLASS_BLOCK);
-                    }
-                    setBlock(dx, roseY + dy, fz + 1, Material.AIR);
+                if (d <= roseR && d >= roseR - 1) {
+                    s(dx, roseY + dy, fz, AME);
+                } else if (d < roseR - 1) {
+                    s(dx, roseY + dy, fz, PGP);
+                    s(dx, roseY + dy, fz + 1, AIR);
                 }
             }
         }
-        // Rose window spokes
-        for (int i = 0; i < 8; i++) {
-            double angle = i * Math.PI / 4;
-            for (int r = 1; r < roseR - 1; r++) {
-                int sx = (int)(Math.cos(angle) * r);
-                int sy = (int)(Math.sin(angle) * r);
-                setBlock(sx, roseY + sy, fz, ACCENT);
-            }
-        }
+        s(0, roseY, fz - 1, ER); // center rod
 
-        // Facade buttresses (tall vertical elements flanking the entrance)
-        for (int side = -1; side <= 1; side += 2) {
-            int bx = side * 20;
-            for (int y = baseY + 1; y <= baseY + WALL_HEIGHT + 10; y++) {
-                setBlock(bx, y, fz, DARK);
-                setBlock(bx, y, fz + 1, DARK);
-                setBlock(bx, y, fz + 2, ACCENT);
-                setBlock(bx + side, y, fz, ACCENT);
-            }
-            // Pinnacle on top
-            for (int py = 0; py < 8; py++) {
-                setBlock(bx, baseY + WALL_HEIGHT + 10 + py, fz, ACCENT);
-            }
-        }
-
-        // Smaller flanking arched windows
-        for (int side = -1; side <= 1; side += 2) {
-            int wx = side * 13;
-            for (int y = baseY + 5; y <= baseY + 16; y++) {
-                for (int dx = -2; dx <= 2; dx++) {
-                    double wd = dx * dx + Math.pow(y - baseY - 14, 2);
-                    if (wd <= 6) {
-                        setBlock(wx + dx, y, fz, GLASS);
-                    }
-                }
-            }
-        }
-
-        // Steps leading up to entrance
-        for (int step = 0; step < 5; step++) {
-            int sw = 10 + step * 2;
-            for (int x = -sw / 2; x <= sw / 2; x++) {
-                setBlock(x, baseY - step, fz + 4 + step, PRIMARY);
-                // Fill under step
-                for (int fill = 1; fill <= step; fill++) {
-                    setBlock(x, baseY - step + fill, fz + 4 + step, PRIMARY);
-                }
+        // Diamond/rhombus decorative element above rose window
+        int diaY = roseY + roseR + 3, diaSize = 5;
+        for (int dy = 0; dy <= diaSize; dy++) {
+            int w = dy <= diaSize/2 ? dy : diaSize - dy;
+            for (int dx = -w; dx <= w; dx++) {
+                s(dx, diaY + dy, fz, AME);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  CENTRAL SPIRE
-    // ════════════════════════════════════════════════════════════════
-    private void buildCentralSpire() {
-        int sz = (BODY_START + BODY_END) / 2; // center of cathedral Z
-        int sBaseR = 6;
-        for (int y = 0; y < SPIRE_HEIGHT; y++) {
-            double r = sBaseR * (1.0 - (double) y / SPIRE_HEIGHT);
-            r = Math.max(r, 0.5);
-            for (int dx = -(int) Math.ceil(r); dx <= (int) Math.ceil(r); dx++) {
-                for (int dz = -(int) Math.ceil(r); dz <= (int) Math.ceil(r); dz++) {
-                    if (dx * dx + dz * dz <= r * r) {
-                        Material mat = (y % 10 < 2) ? ACCENT : PRIMARY;
-                        setBlock(dx, baseY + WALL_HEIGHT + y, sz + dz, mat);
-                    }
-                }
-            }
-        }
-        // Spire tip with end crystal visual (amethyst + crying obsidian)
-        setBlock(0, baseY + WALL_HEIGHT + SPIRE_HEIGHT, sz, CRYING_OBS);
-        setBlock(0, baseY + WALL_HEIGHT + SPIRE_HEIGHT + 1, sz, AMETHYST);
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 3: SPIRES
+    // ═══════════════════════════════════════════════════════════
+    private void buildCenterSpire() {
+        plugin.getLogger().info("[Citadel] Building center mega-spire...");
+        // The central spire rises from the crossing (z=0) to 180 blocks
+        buildSpire(0, sY, -10, 14, CENTER_SPIRE_H, true);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  CORNER TOWERS (4 at corners of nave)
-    // ════════════════════════════════════════════════════════════════
-    private void buildCornerTowers() {
-        int[][] corners = {
-            {-NAVE_HALF_W - 5, BODY_START + 5},
-            { NAVE_HALF_W + 5, BODY_START + 5},
-            {-NAVE_HALF_W - 5, BODY_END - 5},
-            { NAVE_HALF_W + 5, BODY_END - 5}
-        };
-        for (int[] corner : corners) {
-            buildTower(corner[0], corner[1]);
-        }
+    private void buildFlankerSpires() {
+        plugin.getLogger().info("[Citadel] Building flanker spires...");
+        // 4 tall flanker spires at the transept ends and facade corners
+        buildSpire(-45, sY, 0, 10, 120, true);   // left transept
+        buildSpire(45, sY, 0, 10, 120, true);    // right transept
+        buildSpire(-40, sY, 38, 10, 100, true);  // left facade
+        buildSpire(40, sY, 38, 10, 100, true);   // right facade
+        // 2 tall spires behind apse
+        buildSpire(-15, sY, -55, 8, 110, true);
+        buildSpire(15, sY, -55, 8, 110, true);
     }
 
-    private void buildTower(int cx, int cz) {
-        // Cylindrical tower with spiral stairs
-        for (int y = 0; y <= TOWER_HEIGHT; y++) {
-            for (int dx = -TOWER_RADIUS; dx <= TOWER_RADIUS; dx++) {
-                for (int dz = -TOWER_RADIUS; dz <= TOWER_RADIUS; dz++) {
-                    double dist = Math.sqrt(dx * dx + dz * dz);
-                    if (dist <= TOWER_RADIUS) {
-                        if (dist >= TOWER_RADIUS - 1.5) {
-                            // Wall
-                            setBlock(cx + dx, baseY + y, cz + dz, PRIMARY);
-                        } else if (y == 0 || y == TOWER_HEIGHT) {
-                            // Floor/ceiling
-                            setBlock(cx + dx, baseY + y, cz + dz, SECONDARY);
-                        } else {
-                            // Interior (clear)
-                            setBlock(cx + dx, baseY + y, cz + dz, Material.AIR);
-                        }
-                    }
-                }
-            }
-            // Spiral staircase (one step per Y level, rotating)
-            double angle = (y * Math.PI * 2) / 12; // full rotation every 12 blocks
-            int sx = cx + (int)(Math.cos(angle) * (TOWER_RADIUS - 3));
-            int sz2 = cz + (int)(Math.sin(angle) * (TOWER_RADIUS - 3));
-            setBlock(sx, baseY + y, sz2, ACCENT);
-            setBlock(sx + 1, baseY + y, sz2, ACCENT);
-            setBlock(sx, baseY + y, sz2 + 1, ACCENT);
-
-            // Windows every 8 blocks
-            if (y % 8 == 4 && y > 3 && y < TOWER_HEIGHT - 3) {
-                for (int dir = 0; dir < 4; dir++) {
-                    double wAngle = dir * Math.PI / 2;
-                    int wx = cx + (int)(Math.cos(wAngle) * TOWER_RADIUS);
-                    int wz = cz + (int)(Math.sin(wAngle) * TOWER_RADIUS);
-                    setBlock(wx, baseY + y, wz, GLASS);
-                    setBlock(wx, baseY + y + 1, wz, GLASS);
-                }
-            }
-        }
-
-        // Conical roof
-        for (int y = 0; y < 15; y++) {
-            double r = TOWER_RADIUS * (1.0 - (double) y / 15);
-            for (int dx = -(int) Math.ceil(r); dx <= (int) Math.ceil(r); dx++) {
-                for (int dz = -(int) Math.ceil(r); dz <= (int) Math.ceil(r); dz++) {
-                    if (dx * dx + dz * dz <= r * r) {
-                        setBlock(cx + dx, baseY + TOWER_HEIGHT + y, cz + dz, ACCENT);
-                    }
-                }
-            }
-        }
-        setBlock(cx, baseY + TOWER_HEIGHT + 15, cz, CRYING_OBS);
-
-        // Bridge connector to nave (at gallery level, baseY + 15)
-        // We build toward X=0 (the nave center)
-        int bridgeY = baseY + 15;
-        int bridgeDir = (cx < 0) ? 1 : -1;
-        for (int step = 0; step < Math.abs(cx) - NAVE_HALF_W; step++) {
-            int bx = cx + bridgeDir * step;
-            setBlock(bx, bridgeY, cz, SECONDARY);
-            setBlock(bx, bridgeY, cz + 1, SECONDARY);
-            setBlock(bx, bridgeY + 3, cz, PRIMARY);
-            setBlock(bx, bridgeY + 3, cz + 1, PRIMARY);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  MINOR SPIRES (8 along the walls)
-    // ════════════════════════════════════════════════════════════════
     private void buildMinorSpires() {
-        int[] zPositions = {25, 40, 55, 70, 85, 35, 60, 80};
-        for (int i = 0; i < 8; i++) {
-            int side = (i < 5) ? -1 : 1;
-            int sx = side * (NAVE_HALF_W + 2);
-            int sz = zPositions[i];
-            int h = 25 + (int)(Math.random() * 15);
-            for (int y = 0; y < h; y++) {
-                double r = 2.0 * (1.0 - (double) y / h);
-                r = Math.max(r, 0.3);
-                for (int dx = -(int) Math.ceil(r); dx <= (int) Math.ceil(r); dx++) {
-                    for (int dz = -(int) Math.ceil(r); dz <= (int) Math.ceil(r); dz++) {
-                        if (dx * dx + dz * dz <= r * r) {
-                            setBlock(sx + dx, baseY + WALL_HEIGHT + y, sz + dz, ACCENT);
+        plugin.getLogger().info("[Citadel] Building minor spires...");
+        // Many smaller spires along the roofline and facade
+        int[][] minorPos = {
+            {-25, 30, 80}, {25, 30, 80},     // facade mid
+            {-55, 0, 70}, {55, 0, 70},       // facade outer
+            {-20, -30, 65}, {20, -30, 65},   // apse flankers
+            {-35, 20, 55}, {35, 20, 55},     // nave mid
+            {-50, 10, 50}, {50, 10, 50},     // transept mid
+            {0, 35, 90},                      // center front
+            {-30, -20, 60}, {30, -20, 60},   // back nave
+            {-10, 25, 70}, {10, 25, 70},     // inner front
+        };
+        for (int[] pos : minorPos) {
+            buildSpire(pos[0], sY, pos[1], 6 + rng.nextInt(3), pos[2], false);
+        }
+    }
+
+    private void buildSpire(int cx, int baseY, int cz, int baseRadius, int height, boolean major) {
+        for (int y = 0; y < height; y++) {
+            double progress = (double) y / height;
+            // Octagonal cross-section that narrows
+            double radius = baseRadius * (1.0 - progress);
+            if (radius < 0.5 && y > 10) break;
+            int r = Math.max(0, (int) radius);
+
+            Material m;
+            if (progress > 0.85) m = NB;
+            else if (y % 8 == 0) m = CD;
+            else if (y % 5 == 0) m = PD;
+            else m = DS;
+
+            if (r == 0) {
+                s(cx, baseY + y, cz, m);
+            } else {
+                // Build octagonal shell
+                for (int dx = -r; dx <= r; dx++) {
+                    for (int dz = -r; dz <= r; dz++) {
+                        double d = Math.sqrt(dx * dx + dz * dz);
+                        if (d <= r && d >= r - 2) {
+                            s(cx + dx, baseY + y, cz + dz, m);
+                        }
+                        // Interior floor every 12 blocks
+                        if (d < r - 2 && y % 12 == 0 && y > 0 && y < height - 15) {
+                            s(cx + dx, baseY + y, cz + dz, PBB);
+                        } else if (d < r - 2 && y % 12 != 0) {
+                            s(cx + dx, baseY + y, cz + dz, AIR);
+                        }
+                    }
+                }
+            }
+
+            // Windows on major spires
+            if (major && r > 3 && y % 12 >= 3 && y % 12 <= 7 && y < height - 20) {
+                // 4 cardinal windows
+                for (int w = -1; w <= 1; w++) {
+                    s(cx + w, baseY + y, cz + r, PGP);
+                    s(cx + w, baseY + y, cz - r, PGP);
+                    s(cx + r, baseY + y, cz + w, PGP);
+                    s(cx - r, baseY + y, cz + w, PGP);
+                }
+            }
+
+            // Ledges every 15 blocks
+            if (y > 0 && y % 15 == 0 && r > 2) {
+                for (int dx = -r - 1; dx <= r + 1; dx++) {
+                    for (int dz = -r - 1; dz <= r + 1; dz++) {
+                        double d = Math.sqrt(dx * dx + dz * dz);
+                        if (d <= r + 1 && d >= r) {
+                            s(cx + dx, baseY + y, cz + dz, CD);
                         }
                     }
                 }
             }
         }
+
+        // Pointed tip
+        for (int dy = 0; dy < 6; dy++) {
+            s(cx, baseY + height + dy, cz, dy < 4 ? NB : ER);
+        }
+        // Soul fire at base of major spires
+        if (major) {
+            s(cx + baseRadius + 1, baseY + 1, cz, SF);
+            s(cx - baseRadius - 1, baseY + 1, cz, SF);
+            s(cx, baseY + 1, cz + baseRadius + 1, SF);
+            s(cx, baseY + 1, cz - baseRadius - 1, SF);
+        }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  FLYING BUTTRESSES
-    // ════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 4: GOTHIC DETAILS
+    // ═══════════════════════════════════════════════════════════
     private void buildFlyingButtresses() {
-        for (int z = BODY_START + 8; z <= BODY_END - 8; z += 12) {
+        plugin.getLogger().info("[Citadel] Building flying buttresses...");
+        // Arched supports from nave walls outward
+        for (int z = -35; z <= 35; z += 10) {
             for (int side = -1; side <= 1; side += 2) {
-                int wallX = side * NAVE_HALF_W;
-                int outerX = side * (NAVE_HALF_W + 12);
-                // Support pillar
-                for (int y = baseY + 1; y <= baseY + WALL_HEIGHT - 10; y++) {
-                    setBlock(outerX, y, z, DARK);
-                }
-                // Arch connecting pillar to wall
-                for (int step = 0; step <= 12; step++) {
-                    int bx = wallX + side * step;
-                    int by = baseY + WALL_HEIGHT - 5 - (int)(5.0 * step / 12);
-                    setBlock(bx, by, z, PRIMARY);
-                    setBlock(bx, by + 1, z, ACCENT);
-                }
+                int startX = side * NAVE_WIDTH;
+                int endX = side * (NAVE_WIDTH + 18);
+                buildButtress(startX, sY, z, endX, sY + 30, z);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  GOTHIC WINDOWS (embedded in walls properly)
-    // ════════════════════════════════════════════════════════════════
+    private void buildButtress(int x1, int y1, int z, int x2, int y2, int z2) {
+        int dx = x2 > x1 ? 1 : -1;
+        int steps = Math.abs(x2 - x1);
+        for (int i = 0; i <= steps; i++) {
+            double progress = (double) i / steps;
+            // Arch shape: rises then comes back down
+            int archY = (int)(Math.sin(progress * Math.PI) * 15);
+            int baseY = y1 + (int)((y2 - y1) * (1.0 - progress));
+            int y = baseY + archY;
+            int x = x1 + dx * i;
+            s(x, y, z, DS);
+            s(x, y - 1, z, DS);
+            // Vertical support pillar at the end
+            if (i == steps) {
+                for (int dy = 0; dy <= y - sY; dy++) s(x, sY + dy, z, DS);
+            }
+        }
+    }
+
     private void buildGothicWindows() {
-        // Windows along nave walls, between pillars
-        for (int z = BODY_START + 6; z <= BODY_END - 6; z += 8) {
-            for (int side = -1; side <= 1; side += 2) {
-                int wx = side * NAVE_HALF_W;
-                // Tall pointed arch window
-                for (int y = baseY + 5; y <= baseY + WALL_HEIGHT - 8; y++) {
-                    int halfWidth = 2;
-                    if (y > baseY + WALL_HEIGHT - 14) {
-                        // Pointed top
-                        halfWidth = Math.max(0, 2 - (y - (baseY + WALL_HEIGHT - 14)));
-                    }
-                    for (int dx = -halfWidth; dx <= halfWidth; dx++) {
-                        setBlock(wx, y, z + dx, GLASS);
-                    }
+        plugin.getLogger().info("[Citadel] Building gothic windows...");
+        // Tall pointed-arch windows along the nave walls
+        for (int z = -30; z <= 30; z += 10) {
+            // Left wall
+            buildGothicWindowOnWall(-NAVE_WIDTH, sY + 5, z, 3, 15, false);
+            // Right wall
+            buildGothicWindowOnWall(NAVE_WIDTH, sY + 5, z, 3, 15, false);
+        }
+        // Transept windows
+        for (int x = -40; x <= 40; x += 12) {
+            if (Math.abs(x) < 15) continue;
+            buildGothicWindowOnWall(x, sY + 5, -12, 2, 12, true);
+            buildGothicWindowOnWall(x, sY + 5, 12, 2, 12, true);
+        }
+        // Apse windows (radial)
+        for (int a = 0; a < 180; a += 30) {
+            double rad = Math.toRadians(a);
+            int wx = (int)(22 * Math.cos(rad));
+            int wz = -40 + (int)(22 * -Math.sin(rad));
+            buildGothicWindowOnWall(wx, sY + 8, wz, 2, 14, Math.abs(wx) > Math.abs(wz + 40));
+        }
+    }
+
+    private void buildGothicWindowOnWall(int wx, int wy, int wz, int halfW, int height, boolean xFacing) {
+        // Pointed arch window filled with purple glass panes
+        for (int dy = 0; dy < height; dy++) {
+            double hRatio = (double) dy / height;
+            int localW = (int)(halfW * (1.0 - hRatio * hRatio));
+            for (int d = -localW; d <= localW; d++) {
+                if (xFacing) {
+                    s(wx + d, wy + dy, wz, PGP);
+                } else {
+                    s(wx, wy + dy, wz + d, PGP);
+                }
+            }
+        }
+        // Frame
+        for (int dy = 0; dy < height; dy++) {
+            double hRatio = (double) dy / height;
+            int localW = (int)(halfW * (1.0 - hRatio * hRatio));
+            if (xFacing) {
+                s(wx - localW - 1, wy + dy, wz, OBS);
+                s(wx + localW + 1, wy + dy, wz, OBS);
+            } else {
+                s(wx, wy + dy, wz - localW - 1, OBS);
+                s(wx, wy + dy, wz + localW + 1, OBS);
+            }
+        }
+    }
+
+    private void buildRoofLine() {
+        plugin.getLogger().info("[Citadel] Building roof...");
+        // Pointed roof along the nave
+        for (int z = -40; z <= 40; z++) {
+            for (int dy = 0; dy <= 15; dy++) {
+                int halfW = NAVE_WIDTH - dy;
+                if (halfW < 0) break;
+                s(-halfW, sY + NAVE_HEIGHT + dy, z, DT);
+                s(halfW, sY + NAVE_HEIGHT + dy, z, DT);
+                if (dy == 15 || halfW == 0) {
+                    s(0, sY + NAVE_HEIGHT + dy, z, CD);
                 }
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  ROOF
-    // ════════════════════════════════════════════════════════════════
-    private void buildRoof() {
-        int catCenter = (BODY_START + BODY_END) / 2;
-        // Pitched roof over nave
-        for (int z = BODY_START; z <= BODY_END; z++) {
-            for (int half = 0; half <= NAVE_HALF_W; half++) {
-                int roofY = baseY + WALL_HEIGHT + (NAVE_HALF_W - half) / 2;
-                setBlock(-half, roofY, z, ACCENT);
-                setBlock(half, roofY, z, ACCENT);
-                // Fill between wall top and roof
-                for (int fy = baseY + WALL_HEIGHT; fy < roofY; fy++) {
-                    if (half == NAVE_HALF_W || half == NAVE_HALF_W - 1) {
-                        setBlock(-half, fy, z, PRIMARY);
-                        setBlock(half, fy, z, PRIMARY);
-                    }
-                }
-            }
-        }
-        // Roof ridge
-        for (int z = BODY_START; z <= BODY_END; z++) {
-            setBlock(0, baseY + WALL_HEIGHT + NAVE_HALF_W / 2, z, OBSIDIAN_BLK);
-        }
-        // Connect roof to central spire (fill gap)
-        int spireZ = catCenter;
-        for (int y = baseY + WALL_HEIGHT; y <= baseY + WALL_HEIGHT + 10; y++) {
-            for (int dx = -3; dx <= 3; dx++) {
-                for (int dz = -3; dz <= 3; dz++) {
-                    Block b = world.getBlockAt(dx, y, spireZ + dz);
-                    if (b.getType() == Material.AIR) {
-                        setBlock(dx, y, spireZ + dz, ACCENT);
-                    }
-                }
-            }
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  CLEAR INTERIOR
-    // ════════════════════════════════════════════════════════════════
-    private void clearInterior() {
-        for (int x = -NAVE_HALF_W + 1; x < NAVE_HALF_W; x++) {
-            for (int z = BODY_START + 1; z < BODY_END; z++) {
-                for (int y = baseY + 1; y <= baseY + WALL_HEIGHT - 2; y++) {
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 5: INTERIOR
+    // ═══════════════════════════════════════════════════════════
+    private void buildInteriorNave() {
+        plugin.getLogger().info("[Citadel] Building interior nave...");
+        // Clear interior and add pillars
+        for (int x = -NAVE_WIDTH + 5; x <= NAVE_WIDTH - 5; x++) {
+            for (int z = -35; z <= 35; z++) {
+                for (int y = sY + 1; y <= sY + NAVE_HEIGHT - 2; y++) {
                     Block b = world.getBlockAt(x, y, z);
-                    Material type = b.getType();
-                    // Don't clear pillar blocks, stair blocks, or chests
-                    if (type != Material.AIR && type != DARK && type != ACCENT
-                        && type != GLASS && type != SOUL_LANTERN
-                        && type != Material.CHEST) {
-                        // Only clear if it was part of wall overlap
-                        if (Math.abs(x) < NAVE_HALF_W - 1) {
-                            setBlock(x, y, z, Material.AIR);
-                        }
+                    if (b.getType() != PGP && b.getType() != OBS && b.getType() != AME) {
+                        s(x, y, z, AIR);
                     }
                 }
             }
         }
+        // Two rows of pillars along the nave
+        for (int z = -30; z <= 30; z += 8) {
+            for (int side = -1; side <= 1; side += 2) {
+                int px = side * (NAVE_WIDTH - 8);
+                for (int y = sY; y <= sY + NAVE_HEIGHT - 5; y++) {
+                    s(px, y, z, PIL);
+                    s(px + side, y, z, y % 6 == 0 ? CD : DS);
+                }
+                // Arch connecting pillar to ceiling
+                for (int dy = 0; dy <= 5; dy++) {
+                    int dx = side * dy;
+                    s(px + dx, sY + NAVE_HEIGHT - 5 + dy, z, DS);
+                }
+                s(px, sY + NAVE_HEIGHT - 6, z, SL);
+            }
+        }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  INTERIOR ROOMS (8 side rooms off the nave)
-    // ════════════════════════════════════════════════════════════════
-    private void buildInteriorRooms() {
-        // Rooms are carved into the walls and extend outward
-        // 4 rooms on each side, different types
-        String[] roomTypes = {"treasure", "parkour", "puzzle", "guard", "treasure", "parkour", "puzzle", "guard"};
-        int roomIdx = 0;
+    private void buildInteriorChapels() {
+        plugin.getLogger().info("[Citadel] Building interior chapels...");
+        // Side chapels along the transept arms
         for (int side = -1; side <= 1; side += 2) {
-            for (int r = 0; r < 4; r++) {
-                int roomZ = BODY_START + 12 + r * 18;
-                int roomX = side * NAVE_HALF_W;
-                int roomDepth = 15;
-                int roomWidth = 12;
-                int roomHeight = 12;
-
-                // Carve room
-                for (int dx = 0; dx < roomDepth; dx++) {
-                    for (int dz = -roomWidth / 2; dz <= roomWidth / 2; dz++) {
-                        for (int dy = 1; dy <= roomHeight; dy++) {
-                            int rx = roomX + side * dx;
-                            int rz = roomZ + dz;
-                            setBlock(rx, baseY + dy, rz, Material.AIR);
-                        }
-                        // Floor
-                        int rx = roomX + side * dx;
-                        setBlock(rx, baseY, roomZ + dz, SECONDARY);
+            for (int i = 0; i < 3; i++) {
+                int cx = side * (20 + i * 10);
+                int cz = 0;
+                // Small room
+                int w = 5, d = 5, h = 8;
+                for (int y = sY + 1; y <= sY + h; y++) {
+                    for (int x = cx - w; x <= cx + w; x++) {
+                        s(x, y, cz - d, DS);
+                        s(x, y, cz + d, DS);
                     }
                 }
-
-                // Walls around room
-                for (int dx = -1; dx <= roomDepth; dx++) {
-                    for (int dy = 1; dy <= roomHeight + 1; dy++) {
-                        int rx = roomX + side * dx;
-                        // Front and back walls
-                        setBlock(rx, baseY + dy, roomZ - roomWidth / 2 - 1, PRIMARY);
-                        setBlock(rx, baseY + dy, roomZ + roomWidth / 2 + 1, PRIMARY);
+                // Floor
+                for (int x = cx - w + 1; x < cx + w; x++) {
+                    for (int z = cz - d + 1; z < cz + d; z++) {
+                        s(x, sY, z, CRY);
                     }
                 }
-                // Outer wall
-                for (int dz = -roomWidth / 2 - 1; dz <= roomWidth / 2 + 1; dz++) {
-                    for (int dy = 1; dy <= roomHeight + 1; dy++) {
-                        int rx = roomX + side * roomDepth;
-                        setBlock(rx, baseY + dy, roomZ + dz, PRIMARY);
-                    }
-                }
-                // Ceiling
-                for (int dx = 0; dx < roomDepth; dx++) {
-                    for (int dz = -roomWidth / 2; dz <= roomWidth / 2; dz++) {
-                        int rx = roomX + side * dx;
-                        setBlock(rx, baseY + roomHeight + 1, roomZ + dz, ACCENT);
-                    }
-                }
-
-                // Doorway from nave into room
-                for (int dy = 1; dy <= 4; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
-                        setBlock(roomX, baseY + dy, roomZ + dz, Material.AIR);
-                    }
-                }
-
-                // Room-specific features
-                buildRoomFeatures(roomTypes[roomIdx], roomX, roomZ, side, roomDepth, roomWidth, roomHeight);
-                roomIdx++;
+                // Chest
+                s(cx, sY + 1, cz, Material.CHEST);
+                s(cx, sY + h - 1, cz, SL);
             }
         }
     }
 
-    private void buildRoomFeatures(String type, int roomX, int roomZ, int side, int depth, int width, int height) {
-        switch (type) {
-            case "treasure":
-                // Multiple chests with decorative pedestals
-                for (int i = 0; i < 4; i++) {
-                    int cx = roomX + side * (3 + i * 3);
-                    int cz = roomZ + (i % 2 == 0 ? -3 : 3);
-                    setBlock(cx, baseY + 1, cz, AMETHYST);
-                    setBlock(cx, baseY + 2, cz, Material.CHEST);
-                    chestCount++;
-                }
-                // Decorations
-                setBlock(roomX + side * 7, baseY + 1, roomZ, CRYING_OBS);
-                setBlock(roomX + side * 7, baseY + 2, roomZ, SOUL_LANTERN);
-                break;
-
-            case "parkour":
-                // Floating platforms at different heights
-                for (int i = 0; i < 6; i++) {
-                    int px = roomX + side * (2 + (i % 3) * 4);
-                    int pz = roomZ + (i < 3 ? -3 : 3);
-                    int py = baseY + 2 + i;
-                    setBlock(px, py, pz, END_STONE);
-                    setBlock(px + 1, py, pz, END_STONE);
-                    // Reward chest at the top
-                    if (i == 5) {
-                        setBlock(px, py + 1, pz, Material.CHEST);
-                        chestCount++;
-                    }
-                }
-                // Lava/hazard at bottom
-                for (int dx = 1; dx < depth - 1; dx++) {
-                    for (int dz = -width / 2 + 1; dz < width / 2; dz++) {
-                        setBlock(roomX + side * dx, baseY, roomZ + dz, Material.MAGMA_BLOCK);
-                    }
-                }
-                break;
-
-            case "puzzle":
-                // Pressure plates, redstone hints, trapped chest
-                setBlock(roomX + side * 5, baseY + 1, roomZ, Material.STONE_PRESSURE_PLATE);
-                setBlock(roomX + side * 8, baseY + 1, roomZ - 2, Material.STONE_PRESSURE_PLATE);
-                setBlock(roomX + side * 8, baseY + 1, roomZ + 2, Material.STONE_PRESSURE_PLATE);
-                setBlock(roomX + side * 12, baseY + 1, roomZ, Material.TRAPPED_CHEST);
-                chestCount++;
-                // Hint signs could be added later
-                // Decorative redstone lamps
-                for (int dy = 3; dy <= 6; dy += 3) {
-                    setBlock(roomX + side * 3, baseY + dy, roomZ - 4, Material.REDSTONE_LAMP);
-                    setBlock(roomX + side * 3, baseY + dy, roomZ + 4, Material.REDSTONE_LAMP);
-                }
-                break;
-
-            case "guard":
-                // Combat room with spawners and loot
-                setBlock(roomX + side * 7, baseY + 1, roomZ, Material.SPAWNER);
-                // Chests behind guards
-                setBlock(roomX + side * 12, baseY + 1, roomZ - 3, Material.CHEST);
-                setBlock(roomX + side * 12, baseY + 1, roomZ + 3, Material.CHEST);
-                chestCount += 2;
-                // Cage-like decorations
-                for (int dy = 1; dy <= 3; dy++) {
-                    setBlock(roomX + side * 7, baseY + dy, roomZ - 3, Material.IRON_BARS);
-                    setBlock(roomX + side * 7, baseY + dy, roomZ + 3, Material.IRON_BARS);
-                }
-                break;
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  WEAPON CHAMBERS (4 special rooms for Abyssal weapons)
-    // ════════════════════════════════════════════════════════════════
-    private void buildWeaponChambers() {
-        // One in each transept arm and two in the apse area
-        int[][] chamberPositions = {
-            {-TRANSEPT_HALF_W + 5, TRANSEPT_Z},  // West transept
-            { TRANSEPT_HALF_W - 5, TRANSEPT_Z},  // East transept
-            {-12, BODY_START + 3},                // Left apse
-            { 12, BODY_START + 3}                 // Right apse
+    private void buildAbyssalWeaponChambers() {
+        plugin.getLogger().info("[Citadel] Building 4 Abyssal Weapon chambers...");
+        // 4 chambers in the corners of the transept/nave intersection
+        int[][] chamberPos = {
+            {-NAVE_WIDTH - 10, -25},  // NW
+            {NAVE_WIDTH + 10, -25},   // NE
+            {-NAVE_WIDTH - 10, 25},   // SW
+            {NAVE_WIDTH + 10, 25},    // SE
         };
+        for (int i = 0; i < 4; i++) {
+            buildWeaponChamber(chamberPos[i][0], sY, chamberPos[i][1], i);
+        }
+    }
 
-        for (int[] pos : chamberPositions) {
-            int cx = pos[0], cz = pos[1];
-            // Carve chamber (8x8x8)
-            for (int dx = -4; dx <= 4; dx++) {
-                for (int dz = -4; dz <= 4; dz++) {
-                    for (int dy = 0; dy <= 8; dy++) {
-                        if (dy == 0) {
-                            setBlock(cx + dx, baseY + dy, cz + dz, OBSIDIAN_BLK);
-                        } else if (Math.abs(dx) == 4 || Math.abs(dz) == 4 || dy == 8) {
-                            setBlock(cx + dx, baseY + dy, cz + dz, OBSIDIAN_BLK);
-                        } else {
-                            setBlock(cx + dx, baseY + dy, cz + dz, Material.AIR);
-                        }
-                    }
+    private void buildWeaponChamber(int cx, int baseY, int cz, int index) {
+        int w = 10, d = 10, h = 12;
+        // Obsidian chamber
+        for (int y = baseY; y <= baseY + h; y++) {
+            Material m = y % 4 == 0 ? OBS : DS;
+            for (int x = cx - w; x <= cx + w; x++) { s(x, y, cz - d, m); s(x, y, cz + d, m); }
+            for (int z = cz - d; z <= cz + d; z++) { s(cx - w, y, z, m); s(cx + w, y, z, m); }
+        }
+        // Interior
+        for (int x = cx - w + 1; x < cx + w; x++) {
+            for (int z = cz - d + 1; z < cz + d; z++) {
+                s(x, baseY, z, (x + z) % 3 == 0 ? CRY : OBS);
+                for (int y = baseY + 1; y < baseY + h; y++) s(x, y, z, AIR);
+            }
+        }
+        // Ceiling
+        for (int x = cx - w; x <= cx + w; x++) for (int z = cz - d; z <= cz + d; z++) s(x, baseY + h, z, OBS);
+        // Pedestal with weapon chest
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) s(cx + dx, baseY, cz + dz, AME);
+        s(cx, baseY + 1, cz, AME);
+        s(cx, baseY + 2, cz, Material.CHEST);
+        s(cx, baseY + 4, cz, ER);
+        // Purple glass windows
+        for (int dy = 3; dy <= 8; dy++) {
+            s(cx, dy + baseY, cz - d, PGP); s(cx, dy + baseY, cz + d, PGP);
+            s(cx - w, dy + baseY, cz, PGP); s(cx + w, dy + baseY, cz, PGP);
+        }
+        // Soul fire corners
+        s(cx - w + 2, baseY + 1, cz - d + 2, SF);
+        s(cx + w - 2, baseY + 1, cz - d + 2, SF);
+        s(cx - w + 2, baseY + 1, cz + d - 2, SF);
+        s(cx + w - 2, baseY + 1, cz + d - 2, SF);
+        // Lanterns
+        s(cx - 4, baseY + h - 1, cz, SL); s(cx + 4, baseY + h - 1, cz, SL);
+        // Doorway
+        for (int dy = 1; dy <= 4; dy++) for (int dz = -1; dz <= 1; dz++) {
+            s(cx - w, baseY + dy, cz + dz, AIR);
+            s(cx + w, baseY + dy, cz + dz, AIR);
+        }
+    }
+
+    private void buildStairsToArena() {
+        plugin.getLogger().info("[Citadel] Building path to arena...");
+        // Covered walkway from apse (z=-65) to arena (z=-ARENA_DIST)
+        int startZ = -65, endZ = -(ARENA_DIST - ARENA_RADIUS - 5);
+        for (int z = startZ; z >= endZ; z--) {
+            for (int x = -4; x <= 4; x++) {
+                s(x, sY, z, PBB);
+                s(x, sY + 6, z, DT);
+                if (Math.abs(x) == 4) {
+                    for (int dy = 1; dy <= 5; dy++) s(x, sY + dy, z, DS);
+                } else {
+                    for (int dy = 1; dy <= 5; dy++) s(x, sY + dy, z, AIR);
                 }
             }
-            // Amethyst pedestal in center
-            setBlock(cx, baseY + 1, cz, AMETHYST);
-            setBlock(cx, baseY + 2, cz, AMETHYST);
-            setBlock(cx, baseY + 3, cz, Material.CHEST);
-            abyssalChestCount++;
-
-            // Corner soul lanterns
-            for (int sx = -3; sx <= 3; sx += 6) {
-                for (int sz = -3; sz <= 3; sz += 6) {
-                    setBlock(cx + sx, baseY + 1, cz + sz, CRYING_OBS);
-                    setBlock(cx + sx, baseY + 2, cz + sz, SOUL_LANTERN);
-                }
-            }
-
-            // Doorway
-            for (int dy = 1; dy <= 3; dy++) {
-                setBlock(cx, baseY + dy, cz + 4, Material.AIR);
-                setBlock(cx + 1, baseY + dy, cz + 4, Material.AIR);
+            if (z % 8 == 0) {
+                s(-5, sY + 4, z, SL);
+                s(5, sY + 4, z, SL);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  STAIRS & GALLERIES
-    // ════════════════════════════════════════════════════════════════
-    private void buildStairsAndGalleries() {
-        // Gallery level at baseY + 15 along both sides of nave
-        for (int side = -1; side <= 1; side += 2) {
-            int galleryX = side * (NAVE_HALF_W - 6);
-            for (int z = BODY_START + 5; z <= BODY_END - 5; z++) {
-                setBlock(galleryX, baseY + 15, z, SECONDARY);
-                setBlock(galleryX + side, baseY + 15, z, SECONDARY);
-                // Railing
-                setBlock(galleryX - side, baseY + 16, z, Material.IRON_BARS);
-            }
-
-            // Staircase near front entrance connecting ground to gallery
-            int stairZ = BODY_END - 8;
-            for (int step = 0; step < 15; step++) {
-                setBlock(galleryX, baseY + 1 + step, stairZ - step, ACCENT);
-                setBlock(galleryX + side, baseY + 1 + step, stairZ - step, ACCENT);
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 6: ARENA (behind the cathedral)
+    // ═══════════════════════════════════════════════════════════
+    private void buildArena() {
+        plugin.getLogger().info("[Citadel] Building arena...");
+        int acx = 0, acz = -ARENA_DIST;
+        // Circular arena at surface level (not underground!)
+        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
+            for (int z = -ARENA_RADIUS; z <= ARENA_RADIUS; z++) {
+                if (x * x + z * z > ARENA_RADIUS * ARENA_RADIUS) continue;
+                s(acx + x, sY, acz + z, BK);
+                for (int dy = 1; dy <= 5; dy++) s(acx + x, sY + dy, acz + z, AIR);
             }
         }
+        // Circular wall (8 blocks high)
+        for (int y = sY; y <= sY + 8; y++) {
+            for (int a = 0; a < 360; a++) {
+                double rad = Math.toRadians(a);
+                int wx = acx + (int) Math.round(ARENA_RADIUS * Math.cos(rad));
+                int wz = acz + (int) Math.round(ARENA_RADIUS * Math.sin(rad));
+                s(wx, y, wz, y <= sY + 2 ? OBS : DS);
+            }
+        }
+        // Central altar
+        for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
+            if (dx * dx + dz * dz <= 9) s(acx + dx, sY + 1, acz + dz, OBS);
+        }
+        s(acx, sY + 2, acz, Material.LODESTONE);
+        s(acx, sY + 3, acz, AME);
+        s(acx, sY + 4, acz, ER);
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  SCATTER CHESTS throughout cathedral
-    // ════════════════════════════════════════════════════════════════
-    private void placeChests() {
-        // Additional chests in the nave, galleries, alcoves
-        Random rand = new Random(42);
-        // Nave alcove chests
-        for (int z = BODY_START + 10; z <= BODY_END - 10; z += 12) {
-            for (int side = -1; side <= 1; side += 2) {
-                int cx = side * (NAVE_HALF_W - 2);
-                if (rand.nextDouble() < 0.6) {
-                    setBlock(cx, baseY + 1, z, Material.CHEST);
-                    chestCount++;
-                }
-            }
-        }
-        // Gallery chests
-        for (int z = BODY_START + 15; z <= BODY_END - 15; z += 20) {
-            for (int side = -1; side <= 1; side += 2) {
-                setBlock(side * (NAVE_HALF_W - 6), baseY + 16, z, Material.CHEST);
-                chestCount++;
-            }
-        }
-        // Transept arm chests
-        for (int side = -1; side <= 1; side += 2) {
-            setBlock(side * (TRANSEPT_HALF_W - 3), baseY + 1, TRANSEPT_Z, Material.CHEST);
-            setBlock(side * (TRANSEPT_HALF_W - 8), baseY + 1, TRANSEPT_Z + 2, Material.CHEST);
-            chestCount += 2;
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    //  ARENA DECORATIONS  (at origin)
-    // ════════════════════════════════════════════════════════════════
     private void buildArenaDecorations() {
-        // Central altar/pillar the dragon perches on (this is where vanilla expects the exit portal)
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                for (int dy = 1; dy <= 5; dy++) {
-                    if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
-                        setBlock(dx, baseY + dy, dz, BEDROCK);
-                    }
-                }
-            }
+        int acx = 0, acz = -ARENA_DIST;
+        // Soul campfire ring
+        for (int a = 0; a < 360; a += 15) {
+            double rad = Math.toRadians(a);
+            int fx = acx + (int) Math.round((ARENA_RADIUS - 3) * Math.cos(rad));
+            int fz = acz + (int) Math.round((ARENA_RADIUS - 3) * Math.sin(rad));
+            s(fx, sY + 1, fz, SF);
         }
-        // Top of altar
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                setBlock(dx, baseY + 6, dz, END_STONE);
-            }
+        // Obsidian pillars
+        for (int a = 0; a < 360; a += 30) {
+            double rad = Math.toRadians(a);
+            int px = acx + (int) Math.round((ARENA_RADIUS - 2) * Math.cos(rad));
+            int pz = acz + (int) Math.round((ARENA_RADIUS - 2) * Math.sin(rad));
+            int ph = 5 + rng.nextInt(6);
+            for (int dy = 1; dy <= ph; dy++) s(px, sY + dy, pz, ES);
+            s(px, sY + ph + 1, pz, Material.POINTED_DRIPSTONE);
         }
-
-        // Obsidian pillars around arena (like End crystals)
-        int pillarCount = 10;
-        for (int i = 0; i < pillarCount; i++) {
-            double angle = (2 * Math.PI * i) / pillarCount;
-            int px = (int)(Math.cos(angle) * (ARENA_RADIUS - 8));
-            int pz = (int)(Math.sin(angle) * (ARENA_RADIUS - 8));
-            int pillarH = 15 + (int)(Math.random() * 20);
-            for (int y = 0; y <= pillarH; y++) {
-                setBlock(px, baseY + y, pz, OBSIDIAN_BLK);
-                setBlock(px + 1, baseY + y, pz, OBSIDIAN_BLK);
-                setBlock(px, baseY + y, pz + 1, OBSIDIAN_BLK);
-                setBlock(px + 1, baseY + y, pz + 1, OBSIDIAN_BLK);
-            }
-            // End crystal block on top
-            setBlock(px, baseY + pillarH + 1, pz, BEDROCK);
-        }
-
-        // Decorative ring patterns on the arena floor
-        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
-            for (int z = -ARENA_RADIUS; z <= ARENA_RADIUS; z++) {
-                double dist = Math.sqrt(x * x + z * z);
-                if ((int) dist == 15 || (int) dist == 30) {
-                    setBlock(x, baseY, z, CRYING_OBS);
-                }
+        // Crying obsidian floor accents
+        for (int x = -ARENA_RADIUS + 5; x <= ARENA_RADIUS - 5; x += 7) {
+            for (int z = -ARENA_RADIUS + 5; z <= ARENA_RADIUS - 5; z += 7) {
+                if (x * x + z * z < (ARENA_RADIUS - 5) * (ARENA_RADIUS - 5))
+                    s(acx + x, sY, acz + z, CRY);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  ARENA BARRIERS (invisible walls at edge + below)
-    // ════════════════════════════════════════════════════════════════
     private void buildArenaBarriers() {
-        // Barrier wall at arena edge to keep players in
-        for (int x = -ARENA_RADIUS - 2; x <= ARENA_RADIUS + 2; x++) {
-            for (int z = -ARENA_RADIUS - 2; z <= ARENA_RADIUS + 2; z++) {
-                double dist = Math.sqrt(x * x + z * z);
-                if (dist >= ARENA_RADIUS + 1 && dist <= ARENA_RADIUS + 2) {
-                    for (int y = baseY; y <= baseY + 60; y++) {
-                        setBlock(x, y, z, BARRIER);
-                    }
-                }
+        plugin.getLogger().info("[Citadel] Building arena barriers...");
+        int acx = 0, acz = -ARENA_DIST;
+        // Barrier dome
+        for (int y = sY + 9; y <= sY + 50; y++) {
+            for (int a = 0; a < 360; a++) {
+                double rad = Math.toRadians(a);
+                s(acx + (int) Math.round((ARENA_RADIUS + 1) * Math.cos(rad)), y,
+                  acz + (int) Math.round((ARENA_RADIUS + 1) * Math.sin(rad)), BA);
             }
         }
-        // Barrier floor below to prevent falling into void
-        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
-            for (int z = -ARENA_RADIUS; z <= ARENA_RADIUS; z++) {
-                if (x * x + z * z <= ARENA_RADIUS * ARENA_RADIUS) {
-                    setBlock(x, baseY - 1, z, BARRIER);
-                }
+        // Ceiling
+        for (int x = -ARENA_RADIUS - 1; x <= ARENA_RADIUS + 1; x++) {
+            for (int z = -ARENA_RADIUS - 1; z <= ARENA_RADIUS + 1; z++) {
+                if (x * x + z * z <= (ARENA_RADIUS + 1) * (ARENA_RADIUS + 1))
+                    s(acx + x, sY + 50, acz + z, BA);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  AMBIENT LIGHTING
-    // ════════════════════════════════════════════════════════════════
-    private void placeLighting() {
-        // Soul lanterns along nave pillars
-        for (int z = BODY_START + 4; z <= BODY_END - 4; z += 8) {
-            for (int side = -1; side <= 1; side += 2) {
-                int px = side * (NAVE_HALF_W - 5);
-                setBlock(px, baseY + 5, z, SOUL_LANTERN);
-                setBlock(px, baseY + 10, z, SOUL_LANTERN);
+    private void buildArenaPath() {
+        // Opening in arena wall facing cathedral
+        int acx = 0, acz = -ARENA_DIST;
+        for (int x = -4; x <= 4; x++) {
+            for (int dy = 1; dy <= 5; dy++) {
+                s(acx + x, sY + dy, acz + ARENA_RADIUS, AIR);
             }
-        }
-        // Transept lanterns
-        for (int x = -TRANSEPT_HALF_W + 5; x <= TRANSEPT_HALF_W - 5; x += 10) {
-            setBlock(x, baseY + 5, TRANSEPT_Z, SOUL_LANTERN);
-        }
-        // Arena lanterns on pillars
-        for (int i = 0; i < 10; i++) {
-            double angle = (2 * Math.PI * i) / 10;
-            int px = (int)(Math.cos(angle) * (ARENA_RADIUS - 8));
-            int pz = (int)(Math.sin(angle) * (ARENA_RADIUS - 8));
-            setBlock(px - 1, baseY + 8, pz, SOUL_LANTERN);
         }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  LOOT & GUARDS
-    // ════════════════════════════════════════════════════════════════
-    private void populateLootAndGuards() {
-        log.info("[Citadel] Populating loot and spawning guards...");
-        int regularChests = 0;
-        int abyssalChests = 0;
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 7: ENVIRONMENT
+    // ═══════════════════════════════════════════════════════════
+    private void buildRockyTerrain() {
+        plugin.getLogger().info("[Citadel] Building rocky terrain...");
+        // Jagged rock spires around the cathedral (like the 3D model)
+        // These are organic, pointed rock formations
+        for (int i = 0; i < 60; i++) {
+            double angle = rng.nextDouble() * Math.PI * 2;
+            double dist = 70 + rng.nextDouble() * 50;
+            int rx = (int)(dist * Math.cos(angle));
+            int rz = (int)(dist * Math.sin(angle));
+            // Skip if too close to arena
+            if (Math.sqrt(rx * rx + (rz + ARENA_DIST) * (rz + ARENA_DIST)) < ARENA_RADIUS + 10) continue;
 
-        for (int x = -FACADE_HALF_W - 20; x <= FACADE_HALF_W + 20; x++) {
-            for (int z = -ARENA_RADIUS - 5; z <= SPAWN_Z + 5; z++) {
-                for (int y = baseY - 1; y <= baseY + SPIRE_HEIGHT + WALL_HEIGHT; y++) {
-                    Block block = world.getBlockAt(x, y, z);
-                    if (block.getType() == Material.CHEST || block.getType() == Material.TRAPPED_CHEST) {
-                        if (block.getState() instanceof Chest chest) {
-                            // Check if it's in a weapon chamber
-                            boolean isAbyssal = false;
-                            int[][] chamberPositions = {
-                                {-TRANSEPT_HALF_W + 5, TRANSEPT_Z},
-                                { TRANSEPT_HALF_W - 5, TRANSEPT_Z},
-                                {-12, BODY_START + 3},
-                                { 12, BODY_START + 3}
-                            };
-                            for (int[] cp : chamberPositions) {
-                                if (Math.abs(x - cp[0]) <= 1 && Math.abs(z - cp[1]) <= 1 && y == baseY + 3) {
-                                    isAbyssal = true;
-                                    break;
-                                }
-                            }
+            int height = 15 + rng.nextInt(35);
+            int baseR = 3 + rng.nextInt(5);
+            Material rockMat = rng.nextDouble() < 0.3 ? AME : (rng.nextDouble() < 0.5 ? DT : BL);
 
-                            if (isAbyssal) {
-                                fillAbyssalChest(chest);
-                                abyssalChests++;
-                            } else {
-                                fillRegularChest(chest);
-                                regularChests++;
-                            }
+            for (int y = 0; y < height; y++) {
+                double r = baseR * (1.0 - (double) y / height);
+                int ir = (int) r;
+                for (int dx = -ir; dx <= ir; dx++) {
+                    for (int dz = -ir; dz <= ir; dz++) {
+                        if (dx * dx + dz * dz <= ir * ir) {
+                            s(rx + dx, sY + y, rz + dz, rockMat);
                         }
                     }
                 }
             }
         }
 
-        // Spawn guards at weapon chambers
-        int[][] chamberPositions = {
-            {-TRANSEPT_HALF_W + 5, TRANSEPT_Z},
-            { TRANSEPT_HALF_W - 5, TRANSEPT_Z},
-            {-12, BODY_START + 3},
-            { 12, BODY_START + 3}
-        };
-        for (int[] cp : chamberPositions) {
-            Location guardLoc = new Location(world, cp[0] + 2, baseY + 1, cp[1]);
-            WitherSkeleton guard = (WitherSkeleton) world.spawnEntity(guardLoc, EntityType.WITHER_SKELETON);
-            guard.customName(Component.text("Abyssal Guardian", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
-            guard.setCustomNameVisible(true);
-            guard.setMaxHealth(80);
-            guard.setHealth(80);
-            guard.setPersistent(true);
-            ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
-            guard.getEquipment().setItemInMainHand(sword);
-        }
-
-        log.info("[Citadel] Found " + regularChests + " regular chests and " + abyssalChests + " abyssal weapon chests");
-        log.info("[Citadel] Loot and guards placed.");
-    }
-
-    private void fillRegularChest(Chest chest) {
-        Random rand = new Random();
-        chest.getInventory().clear();
-        // Good mid-to-end game loot
-        ItemStack[] possibleLoot = {
-            new ItemStack(Material.DIAMOND, 1 + rand.nextInt(3)),
-            new ItemStack(Material.NETHERITE_SCRAP, 1 + rand.nextInt(2)),
-            new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1),
-            new ItemStack(Material.GOLDEN_APPLE, 1 + rand.nextInt(3)),
-            new ItemStack(Material.ENDER_PEARL, 2 + rand.nextInt(4)),
-            new ItemStack(Material.EXPERIENCE_BOTTLE, 8 + rand.nextInt(16)),
-            new ItemStack(Material.IRON_BLOCK, 1 + rand.nextInt(3)),
-            new ItemStack(Material.GOLD_BLOCK, 1 + rand.nextInt(2)),
-            new ItemStack(Material.DIAMOND_SWORD, 1),
-            new ItemStack(Material.DIAMOND_CHESTPLATE, 1),
-            new ItemStack(Material.TOTEM_OF_UNDYING, 1),
-            new ItemStack(Material.ARROW, 16 + rand.nextInt(32)),
-            new ItemStack(Material.BLAZE_ROD, 2 + rand.nextInt(4)),
-            new ItemStack(Material.PHANTOM_MEMBRANE, 2 + rand.nextInt(4)),
-            new ItemStack(Material.ECHO_SHARD, 1 + rand.nextInt(2)),
-        };
-
-        int itemCount = 3 + rand.nextInt(5);
-        Set<Integer> usedSlots = new HashSet<>();
-        for (int i = 0; i < itemCount; i++) {
-            int slot;
-            do { slot = rand.nextInt(27); } while (usedSlots.contains(slot));
-            usedSlots.add(slot);
-            chest.getInventory().setItem(slot, possibleLoot[rand.nextInt(possibleLoot.length)]);
+        // Large sweeping purple wave formations (the tentacle-like shapes)
+        for (int wave = 0; wave < 4; wave++) {
+            double startAngle = wave * Math.PI / 2 + 0.3;
+            int startR = 80 + rng.nextInt(20);
+            for (int t = 0; t < 40; t++) {
+                double a = startAngle + t * 0.04;
+                double r = startR + t * 1.5;
+                int wx = (int)(r * Math.cos(a));
+                int wz = (int)(r * Math.sin(a));
+                int wy = sY + 20 + (int)(30 * Math.sin(t * 0.15));
+                int wr = 4 + (int)(3 * Math.sin(t * 0.2));
+                for (int dx = -wr; dx <= wr; dx++) {
+                    for (int dz = -wr; dz <= wr; dz++) {
+                        for (int dy = -wr; dy <= wr; dy++) {
+                            if (dx * dx + dz * dz + dy * dy <= wr * wr) {
+                                s(wx + dx, wy + dy, wz + dz, Material.PURPLE_WOOL);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private void fillAbyssalChest(Chest chest) {
-        Random rand = new Random();
-        chest.getInventory().clear();
-        // Premium loot for abyssal weapon chambers
-        chest.getInventory().setItem(13, new ItemStack(Material.NETHERITE_INGOT, 2));
-        chest.getInventory().setItem(4, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 3));
-        chest.getInventory().setItem(10, new ItemStack(Material.NETHER_STAR, 1));
-        chest.getInventory().setItem(16, new ItemStack(Material.TOTEM_OF_UNDYING, 1));
-        chest.getInventory().setItem(22, new ItemStack(Material.EXPERIENCE_BOTTLE, 32));
-        chest.getInventory().setItem(1, new ItemStack(Material.END_CRYSTAL, 2));
-        chest.getInventory().setItem(7, new ItemStack(Material.ELYTRA, 1));
+    private void buildFloatingCrystals() {
+        plugin.getLogger().info("[Citadel] Building floating crystals...");
+        // Large floating amethyst crystals in the sky
+        int[][] crystalPos = {
+            {-30, 100, -20, 8}, {30, 110, 10, 7}, {-50, 90, 30, 6},
+            {50, 105, -30, 7}, {0, 120, 50, 9}, {-60, 95, -40, 5},
+            {40, 115, 40, 6}, {-20, 130, 0, 8},
+        };
+        for (int[] c : crystalPos) {
+            buildCrystal(c[0], sY + c[1], c[2], c[3]);
+        }
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  HELPERS
-    // ════════════════════════════════════════════════════════════════
-    private void setBlock(int x, int y, int z, Material mat) {
-        if (y < world.getMinHeight() || y > world.getMaxHeight() - 1) return;
-        world.getBlockAt(x, y, z).setType(mat, false);
+    private void buildCrystal(int cx, int cy, int cz, int size) {
+        // Diamond/elongated crystal shape
+        for (int dy = -size; dy <= size; dy++) {
+            double distFromCenter = (double) Math.abs(dy) / size;
+            int r = (int)(size * 0.5 * (1.0 - distFromCenter));
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (dx * dx + dz * dz <= r * r) {
+                        Material m = Math.abs(dy) > size * 0.7 ? AMC : AME;
+                        s(cx + dx, cy + dy, cz + dz, m);
+                    }
+                }
+            }
+        }
+    }
+
+    private void buildGlowingCourtLines() {
+        plugin.getLogger().info("[Citadel] Building glowing courtyard lines...");
+        // Purple path lines radiating from the courtyard center
+        int courtZ = 65;
+        for (int a = 0; a < 360; a += 30) {
+            double rad = Math.toRadians(a);
+            for (int d = 5; d < 38; d++) {
+                int lx = (int)(d * Math.cos(rad));
+                int lz = courtZ + (int)(d * Math.sin(rad));
+                s(lx, sY, lz, CRY);
+            }
+        }
+        // Concentric rings
+        for (int r = 10; r <= 35; r += 8) {
+            for (int a = 0; a < 360; a += 3) {
+                double rad = Math.toRadians(a);
+                int lx = (int)(r * Math.cos(rad));
+                int lz = courtZ + (int)(r * Math.sin(rad));
+                s(lx, sY, lz, CRY);
+            }
+        }
+    }
+
+    private void buildApproachPath() {
+        plugin.getLogger().info("[Citadel] Building approach path...");
+        // Path from front courtyard outward
+        for (int z = 100; z <= 130; z++) {
+            for (int x = -5; x <= 5; x++) {
+                int ty = findTerrainY(x, z);
+                for (int y = ty; y <= sY; y++) s(x, y, z, Math.abs(x) <= 2 ? PBL : PBB);
+                if (Math.abs(x) == 5 && z % 8 == 0) {
+                    for (int dy = 1; dy <= 5; dy++) s(x, sY + dy, z, PIL);
+                    s(x, sY + 6, z, SL);
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  PHASE 8: POPULATE
+    // ═══════════════════════════════════════════════════════════
+    private void populateChests() {
+        plugin.getLogger().info("[Citadel] Populating chests with loot...");
+        LegendaryWeaponManager weaponMgr = plugin.getLegendaryWeaponManager();
+        PowerUpManager powerUpMgr = plugin.getPowerUpManager();
+
+        List<Block> regularChests = new ArrayList<>();
+        List<Block> abyssalChests = new ArrayList<>();
+
+        for (int x = -130; x <= 130; x++) {
+            for (int z = -170; z <= 140; z++) {
+                for (int y = sY - 5; y <= sY + CENTER_SPIRE_H; y++) {
+                    Block b = world.getBlockAt(x, y, z);
+                    if (b.getType() != Material.CHEST) continue;
+                    Block below = world.getBlockAt(x, y - 1, z);
+                    if (below.getType() == AME) abyssalChests.add(b);
+                    else regularChests.add(b);
+                }
+            }
+        }
+        plugin.getLogger().info("[Citadel] Found " + regularChests.size() + " regular chests and " + abyssalChests.size() + " abyssal weapon chests.");
+
+        // Abyssal weapon chests
+        LegendaryWeapon[] abyssalWeapons = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
+        for (int i = 0; i < abyssalChests.size() && i < abyssalWeapons.length; i++) {
+            Block cb = abyssalChests.get(i);
+            if (cb.getState() instanceof Chest chest) {
+                Inventory inv = chest.getBlockInventory();
+                inv.clear();
+                if (weaponMgr != null) { ItemStack w = weaponMgr.createWeapon(abyssalWeapons[i]); if (w != null) inv.setItem(13, w); }
+                inv.setItem(0, new ItemStack(Material.NETHER_STAR, 1));
+                inv.setItem(4, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 4));
+                if (powerUpMgr != null) { inv.setItem(9, powerUpMgr.createPhoenixFeather()); inv.setItem(11, powerUpMgr.createHeartCrystal()); inv.setItem(15, powerUpMgr.createSoulFragment()); }
+                inv.setItem(18, new ItemStack(Material.NETHERITE_INGOT, 2));
+                inv.setItem(22, new ItemStack(Material.TOTEM_OF_UNDYING, 1));
+                chest.update();
+            }
+        }
+
+        // Regular chests
+        LegendaryWeapon[] mythic = LegendaryWeapon.byTier(LegendaryTier.MYTHIC);
+        LegendaryWeapon[] epic = LegendaryWeapon.byTier(LegendaryTier.EPIC);
+        LegendaryWeapon[] rare = LegendaryWeapon.byTier(LegendaryTier.RARE);
+
+        for (int i = 0; i < regularChests.size(); i++) {
+            Block cb = regularChests.get(i);
+            if (!(cb.getState() instanceof Chest chest)) continue;
+            Inventory inv = chest.getBlockInventory(); inv.clear();
+            int type = i % 5;
+            switch (type) {
+                case 0 -> {
+                    if (weaponMgr != null && mythic.length > 0) { ItemStack w = weaponMgr.createWeapon(mythic[rng.nextInt(mythic.length)]); if (w != null) inv.setItem(13, w); }
+                    inv.setItem(0, new ItemStack(Material.DIAMOND, 4 + rng.nextInt(8)));
+                    inv.setItem(4, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 1 + rng.nextInt(3)));
+                }
+                case 1 -> {
+                    if (weaponMgr != null && epic.length > 0) { ItemStack w = weaponMgr.createWeapon(epic[rng.nextInt(epic.length)]); if (w != null) inv.setItem(13, w); }
+                    inv.setItem(2, new ItemStack(Material.GOLDEN_APPLE, 3 + rng.nextInt(5)));
+                }
+                case 2 -> {
+                    if (powerUpMgr != null) { inv.setItem(10, powerUpMgr.createHeartCrystal()); inv.setItem(12, powerUpMgr.createSoulFragment()); inv.setItem(14, powerUpMgr.createPhoenixFeather()); inv.setItem(16, powerUpMgr.createTitanResolve()); }
+                    inv.setItem(4, new ItemStack(Material.EXPERIENCE_BOTTLE, 16 + rng.nextInt(32)));
+                }
+                case 3 -> {
+                    inv.setItem(0, new ItemStack(Material.NETHERITE_INGOT, 1 + rng.nextInt(2)));
+                    inv.setItem(2, new ItemStack(Material.TOTEM_OF_UNDYING, 1));
+                    inv.setItem(4, new ItemStack(Material.ELYTRA, 1));
+                    inv.setItem(6, new ItemStack(Material.DIAMOND_BLOCK, 1 + rng.nextInt(3)));
+                    inv.setItem(8, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 2));
+                }
+                case 4 -> {
+                    if (weaponMgr != null && rare.length > 0) { ItemStack w = weaponMgr.createWeapon(rare[rng.nextInt(rare.length)]); if (w != null) inv.setItem(13, w); }
+                    inv.setItem(4, new ItemStack(Material.DIAMOND, 6 + rng.nextInt(10)));
+                    if (powerUpMgr != null) { inv.setItem(18, powerUpMgr.createVitalityShard()); inv.setItem(20, powerUpMgr.createBerserkerMark()); }
+                }
+            }
+            chest.update();
+        }
+    }
+
+    private void spawnGuards() {
+        plugin.getLogger().info("[Citadel] Spawning guards...");
+        // Courtyard guards
+        for (int i = 0; i < 12; i++) {
+            double a = rng.nextDouble() * Math.PI * 2;
+            double d = 20 + rng.nextDouble() * 25;
+            int gx = (int)(d * Math.cos(a));
+            int gz = 65 + (int)(d * Math.sin(a));
+            spawnGuard(gx, sY + 1, gz, "Abyssal Sentinel", false);
+        }
+        // Interior guards
+        for (int z = -30; z <= 30; z += 15) {
+            spawnGuard(-NAVE_WIDTH + 10, sY + 1, z, "Cathedral Warden", false);
+            spawnGuard(NAVE_WIDTH - 10, sY + 1, z, "Cathedral Warden", false);
+        }
+        // Weapon chamber elite guards (6 per room)
+        int[][] chamberPos = {{-NAVE_WIDTH-10,-25},{NAVE_WIDTH+10,-25},{-NAVE_WIDTH-10,25},{NAVE_WIDTH+10,25}};
+        for (int[] cp : chamberPos) {
+            for (int g = 0; g < 6; g++) {
+                spawnGuard(cp[0] + rng.nextInt(8) - 4, sY + 1, cp[1] + rng.nextInt(8) - 4, "Abyssal Weapon Guardian", true);
+            }
+        }
+        // Enderman patrols
+        for (int i = 0; i < 8; i++) {
+            int ex = -60 + rng.nextInt(120);
+            int ez = -50 + rng.nextInt(100);
+            Location loc = new Location(world, ex + 0.5, sY + 1, ez + 0.5);
+            world.spawn(loc, Enderman.class, e -> {
+                e.customName(Component.text("Void Wanderer", NamedTextColor.DARK_PURPLE));
+                e.setCustomNameVisible(true); e.addScoreboardTag("abyss_citadel_mob"); e.setPersistent(true);
+                Objects.requireNonNull(e.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(60); e.setHealth(60);
+            });
+        }
+        // Arena guards
+        for (int a = 0; a < 360; a += 45) {
+            double rad = Math.toRadians(a);
+            int gx = (int)((ARENA_RADIUS - 5) * Math.cos(rad));
+            int gz = -ARENA_DIST + (int)((ARENA_RADIUS - 5) * Math.sin(rad));
+            spawnGuard(gx, sY + 1, gz, "Arena Sentinel", false);
+        }
+    }
+
+    private void spawnGuard(int x, int y, int z, String name, boolean elite) {
+        Location loc = new Location(world, x + 0.5, y, z + 0.5);
+        world.spawn(loc, WitherSkeleton.class, ws -> {
+            ws.customName(Component.text(name, elite ? NamedTextColor.DARK_PURPLE : NamedTextColor.DARK_RED, elite ? TextDecoration.BOLD : TextDecoration.OBFUSCATED).decoration(TextDecoration.OBFUSCATED, false));
+            ws.setCustomNameVisible(true); ws.addScoreboardTag("abyss_citadel_mob");
+            if (elite) ws.addScoreboardTag("abyss_weapon_guardian");
+            ws.setPersistent(true);
+            double hp = elite ? 120 : 50;
+            Objects.requireNonNull(ws.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(hp); ws.setHealth(hp);
+            ws.getEquipment().setItemInMainHand(new ItemStack(elite ? Material.NETHERITE_SWORD : Material.STONE_SWORD));
+            if (elite) { ws.getEquipment().setHelmet(new ItemStack(Material.NETHERITE_HELMET)); ws.getEquipment().setChestplate(new ItemStack(Material.NETHERITE_CHESTPLATE)); }
+            else ws.getEquipment().setHelmet(new ItemStack(Material.CHAINMAIL_HELMET));
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  UTILITIES
+    // ═══════════════════════════════════════════════════════════
+    private Material wallMat(int y, int layer) {
+        if (layer == 0) {
+            if (y % 8 == 0) return CD;
+            if (y % 5 == 0) return PD;
+            return DS;
+        }
+        if (layer == 1) return DT;
+        return NB;
+    }
+
+    private void s(int x, int y, int z, Material m) {
+        if (y < -64 || y > 319) return;
+        world.getBlockAt(x, y, z).setType(m);
+    }
+
+    private int findSurface() {
+        for (int y = 120; y > 1; y--) if (world.getBlockAt(0, y, 0).getType().isSolid()) return y;
+        return 55;
+    }
+
+    private int findTerrainY(int x, int z) {
+        for (int y = 120; y > 1; y--) if (world.getBlockAt(x, y, z).getType().isSolid()) return y;
+        return 50;
     }
 }
