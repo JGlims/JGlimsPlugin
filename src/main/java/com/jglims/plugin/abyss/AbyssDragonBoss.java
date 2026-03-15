@@ -3,8 +3,6 @@ package com.jglims.plugin.abyss;
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.legendary.LegendaryTier;
 import com.jglims.plugin.legendary.LegendaryWeapon;
-import com.jglims.plugin.legendary.LegendaryWeaponManager;
-import com.jglims.plugin.powerups.PowerUpManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -23,34 +21,45 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+
 import java.time.Duration;
 import java.util.*;
 
+/**
+ * AbyssDragonBoss v3.0 — Fixed arena trigger + improved fight
+ *
+ * FIXES:
+ *  - Dragon trigger now checks if player is within ARENA_R of (0, arenaY, 0)
+ *    AND standing on bedrock OR obsidian (arena floor materials)
+ *  - arenaY detection scans from y=60 down (matching new deeper arena)
+ *  - Added /jglims abyss boss manual trigger as backup
+ *  - Phase system with 4 thresholds: 75%, 50%, 25%, 10%
+ *  - Loot uses correct method names: createWeapon(), createPhoenixFeather(), etc.
+ */
 public class AbyssDragonBoss implements Listener {
 
-    // ── Constants ──────────────────────────────────────────────────────
-    private static final double DRAGON_MAX_HP = 1500.0;
+    // ─── Constants ────────────────────────────────────────────
+    private static final double DRAGON_HP = 1500.0;
     private static final double DAMAGE_REDUCTION = 0.20;
-    private static final int ARENA_RADIUS = 40;
-    private static final int MAX_MINIONS = 4;
-    private static final long RESPAWN_COOLDOWN_MS = 30L * 60 * 1000;
+    private static final int ARENA_R = 40;
+    private static final int MAX_MINIONS = 6;
+    private static final long RESPAWN_COOLDOWN_MS = 30L * 60 * 1000; // 30 min
 
-    // ── State ──────────────────────────────────────────────────────────
+    // ─── State ────────────────────────────────────────────────
     private final JGlimsPlugin plugin;
     private final AbyssDimensionManager dimMgr;
     private EnderDragon dragon;
     private boolean active = false;
-    private long lastEnd = 0;
-    private int atkTick = 0;
+    private long lastDeathTime = 0;
+    private int attackTick = 0;
     private int phaseTick = 0;
-    private int phaseIdx = 0;
-    private int currentPhase = 1;
-    private Location center;
+    private int phaseIndex = 0;
+    private Location arenaCenter;
     private int arenaY;
-    private BukkitRunnable loop;
+    private BukkitRunnable combatLoop;
     private final Random rng = new Random();
 
-    private static final EnderDragon.Phase[] CLOSE_PHASES = {
+    private static final EnderDragon.Phase[] DRAGON_PHASES = {
         EnderDragon.Phase.CHARGE_PLAYER,
         EnderDragon.Phase.BREATH_ATTACK,
         EnderDragon.Phase.STRAFING,
@@ -59,245 +68,215 @@ public class AbyssDragonBoss implements Listener {
         EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET
     };
 
-    // ── Constructor ────────────────────────────────────────────────────
     public AbyssDragonBoss(JGlimsPlugin plugin, AbyssDimensionManager dimensionManager) {
         this.plugin = plugin;
         this.dimMgr = dimensionManager;
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  TRIGGER
-    // ══════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  TRIGGER: Player walks on arena floor
+    // ═══════════════════════════════════════════════════════════
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         if (active) return;
-        Player p = event.getPlayer();
-        World w = p.getWorld();
-        if (!w.getName().equals("world_abyss")) return;
-        if (System.currentTimeMillis() - lastEnd < RESPAWN_COOLDOWN_MS && lastEnd > 0) return;
+        Player player = event.getPlayer();
+        World world = player.getWorld();
 
-        Location loc = p.getLocation();
-        Block below = w.getBlockAt(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
-        if (below.getType() != Material.BEDROCK) return;
-        if (Math.abs(loc.getX()) > ARENA_RADIUS && Math.abs(loc.getZ()) > ARENA_RADIUS) return;
+        // Must be in the Abyss
+        if (!world.getName().equals("world_abyss")) return;
 
-        arenaY = findArenaY(w);
-        if (arenaY < 0 || Math.abs(loc.getBlockY() - arenaY) > 5) return;
+        // Cooldown check
+        if (lastDeathTime > 0 && System.currentTimeMillis() - lastDeathTime < RESPAWN_COOLDOWN_MS) return;
 
-        center = new Location(w, 0.5, arenaY + 1, 0.5);
-        startFight(p);
+        Location loc = player.getLocation();
+
+        // Must be standing on bedrock or obsidian (arena floor)
+        Block below = world.getBlockAt(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
+        Material belowType = below.getType();
+        if (belowType != Material.BEDROCK && belowType != Material.OBSIDIAN && belowType != Material.CRYING_OBSIDIAN) return;
+
+        // Find the arena Y (bedrock floor)
+        arenaY = findArenaY(world);
+        if (arenaY < 0) {
+            plugin.getLogger().warning("[DragonBoss] Could not find arena floor (bedrock at x=0)");
+            return;
+        }
+
+        // Must be near arena Y level (within 5 blocks)
+        if (Math.abs(loc.getBlockY() - arenaY) > 6) return;
+
+        // Must be within arena radius of center (0, arenaY, 0)
+        double distXZ = Math.sqrt(loc.getX() * loc.getX() + loc.getZ() * loc.getZ());
+        if (distXZ > ARENA_R) return;
+
+        // All checks passed — start the fight!
+        arenaCenter = new Location(world, 0.5, arenaY + 1, 0.5);
+        plugin.getLogger().info("[DragonBoss] Player " + player.getName() + " triggered boss at Y=" + arenaY);
+        startFight(player);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  START
-    // ══════════════════════════════════════════════════════════════════
+    /**
+     * Manual trigger — called from /jglims abyss boss
+     */
+    public void manualTrigger(Player player) {
+        if (active) {
+            player.sendMessage(Component.text("The Abyssal Dragon is already active!", NamedTextColor.RED));
+            return;
+        }
+        World world = player.getWorld();
+        if (!world.getName().equals("world_abyss")) {
+            player.sendMessage(Component.text("You must be in the Abyss!", NamedTextColor.RED));
+            return;
+        }
+        arenaY = findArenaY(world);
+        if (arenaY < 0) {
+            // Fallback: use player Y - 1
+            arenaY = player.getLocation().getBlockY() - 1;
+            plugin.getLogger().warning("[DragonBoss] Arena floor not found, using player Y: " + arenaY);
+        }
+        arenaCenter = new Location(world, 0.5, arenaY + 1, 0.5);
+        startFight(player);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  START FIGHT
+    // ═══════════════════════════════════════════════════════════
     private void startFight(Player trigger) {
         if (active) return;
         active = true;
-        currentPhase = 1;
-        World w = trigger.getWorld();
 
-        // Clean up any existing entities
-        for (EnderDragon d : w.getEntitiesByClass(EnderDragon.class)) d.remove();
-        for (Wither wt : w.getEntitiesByClass(Wither.class)) wt.remove();
-        clearMinions(w);
+        World world = trigger.getWorld();
 
-        // Spawn dragon close to arena
-        Location spawn = center.clone().add(0, 8, 0);
-        dragon = w.spawn(spawn, EnderDragon.class, d -> {
+        // Clean up any existing dragons/withers/minions
+        for (EnderDragon d : world.getEntitiesByClass(EnderDragon.class)) d.remove();
+        for (Wither w : world.getEntitiesByClass(Wither.class)) w.remove();
+        clearMinions(world);
+
+        // Spawn dragon above arena center
+        Location spawnLoc = arenaCenter.clone().add(0, 20, 0);
+        dragon = world.spawn(spawnLoc, EnderDragon.class, d -> {
             d.customName(Component.text("\u2620 Abyssal Dragon \u2620", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
             d.setCustomNameVisible(true);
             d.setGlowing(true);
-            Objects.requireNonNull(d.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(DRAGON_MAX_HP);
-            d.setHealth(DRAGON_MAX_HP);
-            d.setPodium(center);
+            Objects.requireNonNull(d.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(DRAGON_HP);
+            d.setHealth(DRAGON_HP);
+            d.setPodium(arenaCenter);
             d.setPhase(EnderDragon.Phase.CIRCLING);
         });
 
-        // Title and sounds
-        Title.Times tt = Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(500));
-        for (Player p : w.getPlayers()) {
+        // Dramatic entrance
+        Title.Times times = Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(500));
+        for (Player p : world.getPlayers()) {
             p.showTitle(Title.title(
                 Component.text("ABYSSAL DRAGON", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
-                Component.text("Your soul will be consumed...", NamedTextColor.RED, TextDecoration.ITALIC), tt));
+                Component.text("Your soul will be consumed...", NamedTextColor.RED, TextDecoration.ITALIC),
+                times
+            ));
             p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2f, 0.5f);
             p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1f, 0.7f);
         }
-        w.strikeLightningEffect(center.clone().add(5, 0, 5));
-        w.strikeLightningEffect(center.clone().add(-5, 0, -5));
 
-        // After 3 seconds, force into close-combat phase
+        // Lightning effects
+        world.strikeLightningEffect(arenaCenter.clone().add(8, 0, 8));
+        world.strikeLightningEffect(arenaCenter.clone().add(-8, 0, -8));
+        world.strikeLightningEffect(arenaCenter.clone().add(8, 0, -8));
+        world.strikeLightningEffect(arenaCenter.clone().add(-8, 0, 8));
+
+        // Start attacking after a brief delay
         new BukkitRunnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 if (dragon != null && dragon.isValid() && active) {
                     dragon.setPhase(EnderDragon.Phase.CHARGE_PLAYER);
                 }
             }
         }.runTaskLater(plugin, 60L);
 
-        atkTick = 0;
+        // Reset combat state
+        attackTick = 0;
         phaseTick = 0;
-        phaseIdx = 0;
+        phaseIndex = 0;
 
-        // Main combat loop – every 2 seconds (40 ticks)
-        loop = new BukkitRunnable() {
-            @Override public void run() {
+        // Main combat loop (every 2 seconds)
+        combatLoop = new BukkitRunnable() {
+            @Override
+            public void run() {
                 if (!active || dragon == null || dragon.isDead() || !dragon.isValid()) {
                     cancel();
                     return;
                 }
-                atkTick++;
+                attackTick++;
                 phaseTick++;
-                doPhaseManagement(w);
-                doAttacks(w);
-                doCycle();
-                doConfine();
-                doParticles(w);
+                doAttacks(world);
+                doPhaseCycle();
+                doConfinement();
+                doAmbientParticles(world);
             }
         };
-        loop.runTaskTimer(plugin, 80L, 40L);
+        combatLoop.runTaskTimer(plugin, 80L, 40L);
+
+        plugin.getLogger().info("[DragonBoss] Fight started! Dragon HP=" + DRAGON_HP);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  PHASE MANAGEMENT (4 phases based on HP %)
-    // ══════════════════════════════════════════════════════════════════
-    private void doPhaseManagement(World w) {
+    // ═══════════════════════════════════════════════════════════
+    //  COMBAT: Attacks
+    // ═══════════════════════════════════════════════════════════
+    private void doAttacks(World world) {
         if (dragon == null || !dragon.isValid()) return;
-        double hpPct = dragon.getHealth() / DRAGON_MAX_HP;
-        int newPhase;
-        if (hpPct > 0.75) newPhase = 1;
-        else if (hpPct > 0.50) newPhase = 2;
-        else if (hpPct > 0.25) newPhase = 3;
-        else newPhase = 4;
 
-        if (newPhase != currentPhase) {
-            currentPhase = newPhase;
-            String phaseName;
-            NamedTextColor color;
-            switch (currentPhase) {
-                case 2:
-                    phaseName = "GROUND POUND";
-                    color = NamedTextColor.GOLD;
-                    break;
-                case 3:
-                    phaseName = "VOID PULL";
-                    color = NamedTextColor.DARK_RED;
-                    break;
-                case 4:
-                    phaseName = "ENRAGE";
-                    color = NamedTextColor.RED;
-                    break;
-                default:
-                    phaseName = "AWAKEN";
-                    color = NamedTextColor.DARK_PURPLE;
-                    break;
-            }
-            Title.Times tt = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(300));
-            for (Player p : w.getPlayers()) {
-                p.showTitle(Title.title(
-                    Component.text("Phase " + currentPhase + ": " + phaseName, color, TextDecoration.BOLD),
-                    Component.text("The dragon's power shifts!", NamedTextColor.GRAY, TextDecoration.ITALIC), tt));
-                p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2f, 0.3f + (currentPhase * 0.15f));
-            }
-            // Lightning burst on phase change
-            for (int i = 0; i < currentPhase; i++) {
-                double a = rng.nextDouble() * Math.PI * 2;
-                w.strikeLightningEffect(center.clone().add(Math.cos(a) * 15, 0, Math.sin(a) * 15));
-            }
-        }
-    }
+        double hpPercent = dragon.getHealth() / DRAGON_HP;
+        List<Player> nearbyPlayers = getPlayersInArena(world);
+        if (nearbyPlayers.isEmpty()) return;
 
-    // ══════════════════════════════════════════════════════════════════
-    //  ATTACKS
-    // ══════════════════════════════════════════════════════════════════
-    private void doAttacks(World w) {
-        if (dragon == null || !dragon.isValid()) return;
-        double hp = dragon.getHealth() / DRAGON_MAX_HP;
-        List<Player> near = getPlayers(w);
-        if (near.isEmpty()) return;
-
-        // ── Lightning strikes (every 5 loops = 10 seconds) ──
-        if (atkTick % 5 == 0) {
-            int n = currentPhase >= 4 ? 5 : currentPhase >= 3 ? 4 : currentPhase >= 2 ? 3 : 2;
-            for (int i = 0; i < n; i++) {
-                Player t = near.get(rng.nextInt(near.size()));
-                Location tl = t.getLocation().add((rng.nextDouble() - 0.5) * 4, 0, (rng.nextDouble() - 0.5) * 4);
-                w.strikeLightningEffect(tl);
-                for (Player p : near) {
-                    if (p.getLocation().distance(tl) < 3) p.damage(6);
+        // ─── Lightning strikes (every 5 ticks = 10s) ───
+        if (attackTick % 5 == 0) {
+            int bolts = hpPercent < 0.25 ? 5 : hpPercent < 0.50 ? 4 : hpPercent < 0.75 ? 3 : 2;
+            for (int i = 0; i < bolts; i++) {
+                Player target = nearbyPlayers.get(rng.nextInt(nearbyPlayers.size()));
+                Location strike = target.getLocation().add(
+                    (rng.nextDouble() - 0.5) * 5, 0, (rng.nextDouble() - 0.5) * 5
+                );
+                world.strikeLightningEffect(strike);
+                for (Player p : nearbyPlayers) {
+                    if (p.getLocation().distance(strike) < 3.5) p.damage(7);
                 }
             }
         }
 
-        // ── Void breath (every 4 loops = 8 seconds) ──
-        if (atkTick % 4 == 0) {
-            Location dl = dragon.getLocation();
-            w.spawnParticle(Particle.DRAGON_BREATH, dl, 80, 4, 2, 4, 0.02);
-            for (Player p : near) {
-                if (p.getLocation().distance(dl) < 10) {
-                    p.damage(5);
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 60, 1));
+        // ─── Void Breath (every 4 ticks = 8s) ───
+        if (attackTick % 4 == 0) {
+            Location dragonLoc = dragon.getLocation();
+            world.spawnParticle(Particle.DRAGON_BREATH, dragonLoc, 100, 5, 2, 5, 0.03);
+            for (Player p : nearbyPlayers) {
+                if (p.getLocation().distance(dragonLoc) < 12) {
+                    p.damage(6);
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1));
                 }
             }
-            w.playSound(dl, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.7f);
+            world.playSound(dragonLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.7f);
         }
 
-        // ── Ground pound (phase 2+, every 6 loops = 12 seconds) ──
-        if (currentPhase >= 2 && atkTick % 6 == 0) {
-            w.spawnParticle(Particle.EXPLOSION, center, 30, 8, 1, 8, 0.1);
-            w.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2f, 0.5f);
-            for (Player p : near) {
-                if (p.getLocation().distance(center) < 20) {
-                    p.damage(8);
-                    Vector kb = p.getLocation().toVector().subtract(center.toVector()).normalize().multiply(1.5).setY(0.6);
-                    p.setVelocity(p.getVelocity().add(kb));
-                }
-            }
-        }
-
-        // ── Void pull (phase 3+, every 3 loops = 6 seconds) ──
-        if (currentPhase >= 3 && atkTick % 3 == 0) {
-            for (Player p : near) {
-                Vector pull = dragon.getLocation().toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.4);
-                p.setVelocity(p.getVelocity().add(pull));
-                p.damage(3);
-                p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 40, 0));
-            }
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, dragon.getLocation(), 40, 3, 3, 3, 0.05);
-            w.spawnParticle(Particle.SOUL, dragon.getLocation(), 20, 4, 4, 4, 0.02);
-        }
-
-        // ── Enrage attacks (phase 4, every 2 loops = 4 seconds) ──
-        if (currentPhase >= 4 && atkTick % 2 == 0) {
-            for (Player p : near) {
-                p.damage(4);
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1));
-                w.spawnParticle(Particle.SCULK_CHARGE_POP, p.getLocation(), 15, 1, 1, 1, 0.05);
-            }
-            // Rapid lightning ring
-            for (int a = 0; a < 360; a += 45) {
-                double r = Math.toRadians(a);
-                w.strikeLightningEffect(center.clone().add(Math.cos(r) * (ARENA_RADIUS - 5), 0, Math.sin(r) * (ARENA_RADIUS - 5)));
-            }
-        }
-
-        // ── Minion spawning (every 8 loops = 16 seconds, max 4) ──
-        if (atkTick % 8 == 0) {
-            int cur = countMinions(w);
-            if (cur < MAX_MINIONS) {
-                int s = Math.min(2, MAX_MINIONS - cur);
-                for (int i = 0; i < s; i++) {
-                    Location ml = center.clone().add((rng.nextDouble() - 0.5) * 20, 1, (rng.nextDouble() - 0.5) * 20);
+        // ─── Minion spawns (every 8 ticks = 16s) ───
+        if (attackTick % 8 == 0) {
+            int currentMinions = countMinions(world);
+            if (currentMinions < MAX_MINIONS) {
+                int toSpawn = Math.min(2, MAX_MINIONS - currentMinions);
+                for (int i = 0; i < toSpawn; i++) {
+                    Location minionLoc = arenaCenter.clone().add(
+                        (rng.nextDouble() - 0.5) * 30, 1, (rng.nextDouble() - 0.5) * 30
+                    );
                     if (i % 2 == 0) {
-                        w.spawn(ml, Enderman.class, e -> {
+                        world.spawn(minionLoc, Enderman.class, e -> {
                             e.customName(Component.text("Void Servant", NamedTextColor.DARK_PURPLE));
+                            e.setCustomNameVisible(true);
                             e.addScoreboardTag("abyss_minion");
                             Objects.requireNonNull(e.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(40);
                             e.setHealth(40);
                         });
                     } else {
-                        w.spawn(ml, WitherSkeleton.class, ws -> {
+                        world.spawn(minionLoc, WitherSkeleton.class, ws -> {
                             ws.customName(Component.text("Abyssal Guard", NamedTextColor.DARK_RED));
+                            ws.setCustomNameVisible(true);
                             ws.addScoreboardTag("abyss_minion");
                             Objects.requireNonNull(ws.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(60);
                             ws.setHealth(60);
@@ -305,226 +284,318 @@ public class AbyssDragonBoss implements Listener {
                         });
                     }
                 }
-                w.playSound(center, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
+                world.playSound(arenaCenter, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
             }
+        }
+
+        // ─── Ground Pound (phase 2+, every 6 ticks) ───
+        if (hpPercent < 0.50 && attackTick % 6 == 0) {
+            world.spawnParticle(Particle.EXPLOSION, arenaCenter, 10, 8, 1, 8, 0.1);
+            world.playSound(arenaCenter, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.5f);
+            for (Player p : nearbyPlayers) {
+                double dist = p.getLocation().distance(arenaCenter);
+                if (dist < 15) {
+                    p.damage(8);
+                    Vector kb = p.getLocation().toVector().subtract(arenaCenter.toVector()).normalize().multiply(1.2);
+                    kb.setY(0.5);
+                    p.setVelocity(p.getVelocity().add(kb));
+                }
+            }
+        }
+
+        // ─── Void Pull (phase 3+, constant) ───
+        if (hpPercent < 0.25) {
+            for (Player p : nearbyPlayers) {
+                Vector pull = dragon.getLocation().toVector()
+                    .subtract(p.getLocation().toVector()).normalize().multiply(0.35);
+                p.setVelocity(p.getVelocity().add(pull));
+                p.damage(2);
+                p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0));
+            }
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, dragon.getLocation(), 40, 4, 4, 4, 0.05);
+            world.spawnParticle(Particle.SOUL, dragon.getLocation(), 25, 5, 5, 5, 0.02);
+        }
+
+        // ─── Enrage (phase 4: below 10%) ───
+        if (hpPercent < 0.10) {
+            // Lightning ring
+            for (int a = 0; a < 360; a += 30) {
+                double rad = Math.toRadians(a + attackTick * 10);
+                int lx = (int) Math.round(arenaCenter.getX() + 15 * Math.cos(rad));
+                int lz = (int) Math.round(arenaCenter.getZ() + 15 * Math.sin(rad));
+                world.strikeLightningEffect(new Location(world, lx, arenaCenter.getY(), lz));
+            }
+            // Speed up attacks
+            for (Player p : nearbyPlayers) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0));
+            }
+        }
+
+        // ─── Phase transition titles ───
+        if (hpPercent < 0.75 && hpPercent > 0.74 && attackTick % 10 == 0) {
+            showPhaseTitle(world, "Phase 2: Fury Awakens", NamedTextColor.RED);
+        }
+        if (hpPercent < 0.50 && hpPercent > 0.49 && attackTick % 10 == 0) {
+            showPhaseTitle(world, "Phase 3: Void Tremor", NamedTextColor.DARK_PURPLE);
+        }
+        if (hpPercent < 0.25 && hpPercent > 0.24 && attackTick % 10 == 0) {
+            showPhaseTitle(world, "Phase 4: Soul Harvest", NamedTextColor.DARK_RED);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  PHASE CYCLING (close-combat oriented)
-    // ══════════════════════════════════════════════════════════════════
-    private void doCycle() {
+    private void showPhaseTitle(World world, String subtitle, NamedTextColor color) {
+        Title.Times t = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500));
+        for (Player p : world.getPlayers()) {
+            p.showTitle(Title.title(
+                Component.text("\u2620", NamedTextColor.DARK_PURPLE),
+                Component.text(subtitle, color, TextDecoration.BOLD), t
+            ));
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.6f);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  COMBAT: Phase cycling
+    // ═══════════════════════════════════════════════════════════
+    private void doPhaseCycle() {
         if (dragon == null || !dragon.isValid()) return;
         if (phaseTick % 3 != 0) return;
-        phaseIdx = (phaseIdx + 1) % CLOSE_PHASES.length;
+        phaseIndex = (phaseIndex + 1) % DRAGON_PHASES.length;
         try {
-            dragon.setPhase(CLOSE_PHASES[phaseIdx]);
+            dragon.setPhase(DRAGON_PHASES[phaseIndex]);
         } catch (Exception e) {
             dragon.setPhase(EnderDragon.Phase.CIRCLING);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  CONFINEMENT
-    // ══════════════════════════════════════════════════════════════════
-    private void doConfine() {
-        if (dragon == null || !dragon.isValid() || center == null) return;
+    // ═══════════════════════════════════════════════════════════
+    //  COMBAT: Keep dragon in arena
+    // ═══════════════════════════════════════════════════════════
+    private void doConfinement() {
+        if (dragon == null || !dragon.isValid() || arenaCenter == null) return;
         Location dl = dragon.getLocation();
-        double dist = dl.distance(center);
-        if (dist > ARENA_RADIUS + 15) {
-            dragon.setPodium(center);
-            dragon.teleport(center.clone().add(0, 15, 0));
+        double dist = dl.distance(arenaCenter);
+
+        // If dragon escapes too far, pull back
+        if (dist > ARENA_R + 20) {
+            dragon.setPodium(arenaCenter);
+            dragon.teleport(arenaCenter.clone().add(0, 18, 0));
             dragon.setPhase(EnderDragon.Phase.CIRCLING);
-        } else if (dist > ARENA_RADIUS) {
-            dragon.setPodium(center);
+        } else if (dist > ARENA_R) {
+            dragon.setPodium(arenaCenter);
         }
-        if (dl.getY() < arenaY - 2) dragon.teleport(center.clone().add(0, 10, 0));
-        if (dl.getY() > arenaY + 50) {
-            dragon.setPodium(center);
+
+        // Keep above floor
+        if (dl.getY() < arenaY - 3) {
+            dragon.teleport(arenaCenter.clone().add(0, 12, 0));
+        }
+
+        // Keep below ceiling
+        if (dl.getY() > arenaY + 55) {
+            dragon.setPodium(arenaCenter);
             dragon.setPhase(EnderDragon.Phase.FLY_TO_PORTAL);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  PARTICLES
-    // ══════════════════════════════════════════════════════════════════
-    private void doParticles(World w) {
-        if (center == null) return;
-        w.spawnParticle(Particle.ASH, center, 15, 15, 10, 15, 0);
+    // ═══════════════════════════════════════════════════════════
+    //  COMBAT: Ambient particles
+    // ═══════════════════════════════════════════════════════════
+    private void doAmbientParticles(World world) {
+        if (arenaCenter == null) return;
+        world.spawnParticle(Particle.ASH, arenaCenter, 20, 20, 12, 20, 0);
         if (dragon != null && dragon.isValid()) {
-            w.spawnParticle(Particle.DRAGON_BREATH, dragon.getLocation(), 10, 2, 1, 2, 0.01);
+            world.spawnParticle(Particle.DRAGON_BREATH, dragon.getLocation(), 12, 2, 1, 2, 0.01);
+            world.spawnParticle(Particle.REVERSE_PORTAL, dragon.getLocation(), 8, 1, 1, 1, 0.05);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  DAMAGE HANDLER
-    // ══════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  DAMAGE REDUCTION
+    // ═══════════════════════════════════════════════════════════
     @EventHandler
     public void onBossDamage(EntityDamageEvent event) {
-        if (!active || !(event.getEntity() instanceof EnderDragon)) return;
-        EnderDragon d = (EnderDragon) event.getEntity();
+        if (!active || !(event.getEntity() instanceof EnderDragon d)) return;
         if (dragon == null || !d.getUniqueId().equals(dragon.getUniqueId())) return;
-        event.setDamage(event.getDamage() * (1 - DAMAGE_REDUCTION));
-        EntityDamageEvent.DamageCause c = event.getCause();
-        if (c == EntityDamageEvent.DamageCause.SUFFOCATION
-            || c == EntityDamageEvent.DamageCause.DROWNING
-            || c == EntityDamageEvent.DamageCause.FALL) {
+
+        // Apply damage reduction
+        event.setDamage(event.getDamage() * (1.0 - DAMAGE_REDUCTION));
+
+        // Cancel environment damage
+        EntityDamageEvent.DamageCause cause = event.getCause();
+        if (cause == EntityDamageEvent.DamageCause.SUFFOCATION ||
+            cause == EntityDamageEvent.DamageCause.DROWNING ||
+            cause == EntityDamageEvent.DamageCause.FALL) {
             event.setCancelled(true);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  DEATH → LOOT
-    // ══════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  DEATH: Loot & Victory
+    // ═══════════════════════════════════════════════════════════
     @EventHandler
     public void onBossDeath(EntityDeathEvent event) {
-        if (!active || !(event.getEntity() instanceof EnderDragon)) return;
-        EnderDragon d = (EnderDragon) event.getEntity();
+        if (!active || !(event.getEntity() instanceof EnderDragon d)) return;
         if (dragon == null || !d.getUniqueId().equals(dragon.getUniqueId())) return;
 
+        // Clear default drops
         event.getDrops().clear();
         event.setDroppedExp(0);
+
+        // End fight
         active = false;
-        lastEnd = System.currentTimeMillis();
+        lastDeathTime = System.currentTimeMillis();
+        if (combatLoop != null) try { combatLoop.cancel(); } catch (Exception ignored) {}
 
-        if (loop != null) {
-            try { loop.cancel(); } catch (Exception ignored) {}
-        }
+        World world = d.getWorld();
+        clearMinions(world);
 
-        World w = d.getWorld();
-        clearMinions(w);
-
-        // Victory title
-        Title.Times tt = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(5), Duration.ofMillis(1500));
+        // Victory announcement
+        Title.Times times = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(5), Duration.ofMillis(1500));
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.showTitle(Title.title(
                 Component.text("VICTORY!", NamedTextColor.GOLD, TextDecoration.BOLD),
-                Component.text("The Abyssal Dragon has been vanquished!", NamedTextColor.YELLOW), tt));
+                Component.text("The Abyssal Dragon has been vanquished!", NamedTextColor.YELLOW),
+                times
+            ));
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1f);
         }
 
-        dropLoot(w);
-        createExit(w);
+        // Drop loot
+        dropLoot(world);
 
-        // Firework celebration
+        // Create exit portal
+        createExitPortal(world);
+
+        // Victory fireworks
         new BukkitRunnable() {
-            int c = 0;
-            @Override public void run() {
-                if (c++ >= 10 || center == null) { cancel(); return; }
-                w.spawnParticle(Particle.FIREWORK, center.clone().add(0, 5, 0), 100, 8, 8, 8, 0.3);
-                w.playSound(center, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.5f, 1f);
+            int count = 0;
+            @Override
+            public void run() {
+                if (count++ >= 12 || arenaCenter == null) { cancel(); return; }
+                world.spawnParticle(Particle.FIREWORK, arenaCenter.clone().add(0, 5, 0), 120, 10, 10, 10, 0.3);
+                world.playSound(arenaCenter, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.5f, 1f);
             }
         }.runTaskTimer(plugin, 0L, 20L);
 
         dragon = null;
+        plugin.getLogger().info("[DragonBoss] Dragon defeated! Loot dropped.");
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  LOOT DROPS – includes all 4 ABYSSAL weapons
-    // ══════════════════════════════════════════════════════════════════
-    private void dropLoot(World w) {
-        if (center == null) return;
-        Location l = center.clone().add(0, 1, 0);
+    // ═══════════════════════════════════════════════════════════
+    //  LOOT TABLE
+    // ═══════════════════════════════════════════════════════════
+    private void dropLoot(World world) {
+        if (arenaCenter == null) return;
+        Location dropLoc = arenaCenter.clone().add(0, 1, 0);
 
-        // Guaranteed drops
-        w.dropItemNaturally(l, new ItemStack(Material.DRAGON_EGG, 1));
-        w.dropItemNaturally(l, new ItemStack(Material.NETHER_STAR, 3));
-        w.dropItemNaturally(l, new ItemStack(Material.EXPERIENCE_BOTTLE, 64));
-        w.dropItemNaturally(l, new ItemStack(Material.NETHERITE_INGOT, 4));
-        w.dropItemNaturally(l, new ItemStack(Material.ELYTRA, 1));
-        w.dropItemNaturally(l, new ItemStack(Material.TOTEM_OF_UNDYING, 2));
-        w.dropItemNaturally(l, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 8));
-        w.dropItemNaturally(l, new ItemStack(Material.END_CRYSTAL, 4));
+        // ─── Guaranteed drops ───
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.DRAGON_EGG, 1));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHER_STAR, 3));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.EXPERIENCE_BOTTLE, 64));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHERITE_INGOT, 4));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.ELYTRA, 1));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.TOTEM_OF_UNDYING, 2));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 8));
+        world.dropItemNaturally(dropLoc, new ItemStack(Material.END_CRYSTAL, 4));
 
-        // Drop all 4 ABYSSAL weapons
-        LegendaryWeaponManager weaponMgr = plugin.getLegendaryWeaponManager();
-        if (weaponMgr != null) {
-            LegendaryWeapon[] abyssals = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
-            for (LegendaryWeapon aw : abyssals) {
-                ItemStack weaponItem = weaponMgr.createWeapon(aw);
-                if (weaponItem != null) {
-                    w.dropItemNaturally(l, weaponItem);
+        // ─── Legendary weapons (2 random MYTHIC or ABYSSAL) ───
+        try {
+            if (plugin.getLegendaryWeaponManager() != null) {
+                LegendaryWeapon[] allWeapons = LegendaryWeapon.values();
+                List<LegendaryWeapon> highTier = new ArrayList<>();
+                for (LegendaryWeapon lw : allWeapons) {
+                    String tierName = lw.getTier().name();
+                    if (tierName.equals("ABYSSAL") || tierName.equals("MYTHIC")) {
+                        highTier.add(lw);
+                    }
+                }
+                for (int i = 0; i < 2 && !highTier.isEmpty(); i++) {
+                    LegendaryWeapon chosen = highTier.get(rng.nextInt(highTier.size()));
+                    ItemStack weapon = plugin.getLegendaryWeaponManager().createWeapon(chosen);
+                    if (weapon != null) world.dropItemNaturally(dropLoc, weapon);
                 }
             }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[DragonBoss] Error dropping legendary weapons: " + e.getMessage());
         }
 
-        // Power-up drops
-        PowerUpManager puMgr = plugin.getPowerUpManager();
-        if (puMgr != null) {
-            try {
-                ItemStack phoenix = puMgr.createPhoenixFeather();
-                if (phoenix != null) { phoenix.setAmount(2); w.dropItemNaturally(l, phoenix); }
-                ItemStack heart = puMgr.createHeartCrystal();
-                if (heart != null) { heart.setAmount(3); w.dropItemNaturally(l, heart); }
-                ItemStack soul = puMgr.createSoulFragment();
-                if (soul != null) { soul.setAmount(5); w.dropItemNaturally(l, soul); }
-            } catch (Exception ignored) {}
+        // ─── Power-ups ───
+        try {
+            if (plugin.getPowerUpManager() != null) {
+                for (int i = 0; i < 2; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createPhoenixFeather());
+                for (int i = 0; i < 3; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createHeartCrystal());
+                for (int i = 0; i < 5; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createSoulFragment());
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[DragonBoss] Error dropping power-ups: " + e.getMessage());
         }
 
-        // XP orbs
-        for (int i = 0; i < 20; i++) {
-            Location ol = l.clone().add((rng.nextDouble() - 0.5) * 6, 0.5, (rng.nextDouble() - 0.5) * 6);
-            w.spawn(ol, ExperienceOrb.class, orb -> orb.setExperience(100 + rng.nextInt(200)));
+        // ─── XP orbs ───
+        for (int i = 0; i < 25; i++) {
+            Location orbLoc = dropLoc.clone().add(
+                (rng.nextDouble() - 0.5) * 4, 1, (rng.nextDouble() - 0.5) * 4
+            );
+            world.spawn(orbLoc, ExperienceOrb.class, o -> o.setExperience(500));
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
     //  EXIT PORTAL
-    // ══════════════════════════════════════════════════════════════════
-    private void createExit(World w) {
-        if (center == null) return;
-        int cy = arenaY + 1;
-        // Obsidian ring
+    // ═══════════════════════════════════════════════════════════
+    private void createExitPortal(World world) {
+        if (arenaCenter == null) return;
+        int cx = arenaCenter.getBlockX(), cy = arenaCenter.getBlockY(), cz = arenaCenter.getBlockZ();
+
+        // Bedrock platform with end portal
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
-                if (x * x + z * z <= 4) {
-                    w.getBlockAt(x, cy, z).setType(Material.OBSIDIAN);
+                world.getBlockAt(cx + x, cy - 1, cz + z).setType(Material.BEDROCK);
+                if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
+                    world.getBlockAt(cx + x, cy, cz + z).setType(Material.END_PORTAL);
                 }
             }
         }
-        // End portal blocks in center
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                w.getBlockAt(x, cy, z).setType(Material.END_PORTAL);
-            }
-        }
+        world.playSound(arenaCenter, Sound.BLOCK_END_PORTAL_SPAWN, 2f, 1f);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  UTILITY
-    // ══════════════════════════════════════════════════════════════════
-    private List<Player> getPlayers(World w) {
-        List<Player> result = new ArrayList<>();
-        if (center == null) return result;
-        for (Player p : w.getPlayers()) {
-            if (p.getLocation().distance(center) < ARENA_RADIUS + 20) {
-                result.add(p);
+    // ═══════════════════════════════════════════════════════════
+    //  UTILITIES
+    // ═══════════════════════════════════════════════════════════
+    private List<Player> getPlayersInArena(World world) {
+        List<Player> players = new ArrayList<>();
+        for (Player p : world.getPlayers()) {
+            if (arenaCenter != null && p.getLocation().distance(arenaCenter) <= ARENA_R + 15) {
+                players.add(p);
             }
         }
-        return result;
+        return players;
     }
 
-    private int countMinions(World w) {
+    private int countMinions(World world) {
         int count = 0;
-        for (Entity e : w.getEntities()) {
+        for (Entity e : world.getEntities()) {
             if (e.getScoreboardTags().contains("abyss_minion") && !e.isDead()) count++;
         }
         return count;
     }
 
-    private void clearMinions(World w) {
-        for (Entity e : w.getEntities()) {
+    private void clearMinions(World world) {
+        for (Entity e : world.getEntities()) {
             if (e.getScoreboardTags().contains("abyss_minion")) e.remove();
         }
     }
 
-    private int findArenaY(World w) {
-        for (int y = 0; y < 60; y++) {
-            if (w.getBlockAt(0, y, 0).getType() == Material.BEDROCK) return y;
+    private int findArenaY(World world) {
+        // Scan downward from y=80 to find bedrock floor at (0, y, 0)
+        for (int y = 80; y > 0; y--) {
+            if (world.getBlockAt(0, y, 0).getType() == Material.BEDROCK) return y;
+        }
+        // Also try negative Y for deep arenas
+        for (int y = 0; y >= -64; y--) {
+            if (world.getBlockAt(0, y, 0).getType() == Material.BEDROCK) return y;
         }
         return -1;
     }
 
     public boolean isActive() { return active; }
-    public JGlimsPlugin getPlugin() { return plugin; }
 }

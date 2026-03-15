@@ -504,9 +504,10 @@ public class JGlimsPlugin extends JavaPlugin {
         if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
         if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED)); return; }
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp|boss>", NamedTextColor.YELLOW));
             sender.sendMessage(Component.text("  key - Get an Abyssal Key", NamedTextColor.GRAY));
-            sender.sendMessage(Component.text("  tp  - Teleport directly to the Abyss", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  tp   - Teleport directly to the Abyss", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("  boss - Manually summon the Abyssal Dragon (must be in Abyss)", NamedTextColor.GRAY));
             return;
         }
         switch (args[1].toLowerCase()) {
@@ -515,26 +516,36 @@ public class JGlimsPlugin extends JavaPlugin {
                 player.sendMessage(Component.text("Received: ", NamedTextColor.GREEN)
                         .append(Component.text("Abyssal Key", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD)));
             }
+            case "boss" -> {
+                World abyssW = abyssDimensionManager.getAbyssWorld();
+                if (abyssW == null) { player.sendMessage(Component.text("Abyss world not loaded!", NamedTextColor.RED)); return; }
+                if (!player.getWorld().getName().equals("world_abyss")) {
+                    player.sendMessage(Component.text("You must be in the Abyss to summon the dragon!", NamedTextColor.RED));
+                    return;
+                }
+                abyssDragonBoss.manualTrigger(player);
+            }
             case "tp" -> {
                 World abyss = abyssDimensionManager.getAbyssWorld();
                 if (abyss == null) { player.sendMessage(Component.text("Abyss world not loaded!", NamedTextColor.RED)); return; }
                 // Land on the grand gate path outside the south wall (z=85)
                 int safeY = 60;
                 for (int sy = 120; sy > 30; sy--) {
-                    org.bukkit.Material belowMat = abyss.getBlockAt(0, sy - 1, 85).getType();
-                    org.bukkit.Material atMat = abyss.getBlockAt(0, sy, 85).getType();
-                    org.bukkit.Material aboveMat = abyss.getBlockAt(0, sy + 1, 85).getType();
+                    org.bukkit.Material belowMat = abyss.getBlockAt(0, sy - 1, 115).getType();
+                    org.bukkit.Material atMat = abyss.getBlockAt(0, sy, 115).getType();
+                    org.bukkit.Material aboveMat = abyss.getBlockAt(0, sy + 1, 115).getType();
                     if (belowMat.isSolid() && !atMat.isSolid() && !aboveMat.isSolid()) {
                         safeY = sy;
                         break;
                     }
                 }
-                Location dest = new Location(abyss, 0.5, safeY, 85.5);
+                Location dest = new Location(abyss, 0.5, safeY, 115.5);
                 dest.setYaw(0);
                 player.teleport(dest);
                 player.sendMessage(Component.text("Teleported to the Abyss citadel gate.", TextColor.color(170, 0, 0)));
+                dest.setYaw(180f);
             }
-            default -> sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp>", NamedTextColor.YELLOW));
+            default -> sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp|boss>", NamedTextColor.YELLOW));
         }
     }
 }
