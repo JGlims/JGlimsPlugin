@@ -25,18 +25,18 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * AbyssDimensionManager v3.0 — Updated for the massive citadel
+ * AbyssDimensionManager v4.0 — Matched to AbyssCitadelBuilder v4.0 Gothic Cathedral
  *
- * Changes:
- *  - Teleport destination: south gate approach at (0.5, safeY, 115.5) facing north
- *    (outer wall is at z=100, approach path extends to z=130)
- *  - Ambient mob spawner with 50-block arena exclusion zone
- *  - /jglims abyss boss command support
- *  - Handles abyssal key, portal activation, teleport
+ * Teleport destination: south approach at (0.5, safeY, 115.5) facing north (180f yaw)
+ * The cathedral entrance faces +Z (south), so players land outside looking at the facade.
+ *
+ * Arena is at z=-120 (behind the cathedral). The ambient mob exclusion zone
+ * avoids a 50-block radius around (0, y, -120).
  */
 public class AbyssDimensionManager implements Listener {
 
     private static final String ABYSS_WORLD_NAME = "world_abyss";
+    private static final int ARENA_CENTER_Z = -120; // must match AbyssDragonBoss
     private final JGlimsPlugin plugin;
     private World abyssWorld;
     private boolean citadelBuilt = false;
@@ -85,7 +85,6 @@ public class AbyssDimensionManager implements Listener {
                 }
             }.runTaskTimer(plugin, 100L, 100L);
 
-            // Ambient mob spawner
             startAmbientSpawner();
 
             if (freshWorld) {
@@ -109,29 +108,25 @@ public class AbyssDimensionManager implements Listener {
             public void run() {
                 if (abyssWorld == null) return;
                 for (Player p : abyssWorld.getPlayers()) {
-                    // Don't spawn near arena (within 50 blocks of center)
                     Location pLoc = p.getLocation();
-                    double distFromCenter = Math.sqrt(pLoc.getX() * pLoc.getX() + pLoc.getZ() * pLoc.getZ());
-                    // Count existing ambient mobs
                     long ambientCount = abyssWorld.getEntities().stream()
                         .filter(e -> e.getScoreboardTags().contains("abyss_ambient"))
                         .count();
                     if (ambientCount >= 12) continue;
 
-                    // Spawn 25-45 blocks from player
                     double angle = rng.nextDouble() * Math.PI * 2;
                     double dist = 25 + rng.nextDouble() * 20;
                     double sx = pLoc.getX() + Math.cos(angle) * dist;
                     double sz = pLoc.getZ() + Math.sin(angle) * dist;
 
-                    // Don't spawn inside arena zone
-                    if (Math.sqrt(sx * sx + sz * sz) < 50) continue;
+                    // Don't spawn inside arena zone (50-block radius around arena center)
+                    double arenaDistSq = sx * sx + (sz - ARENA_CENTER_Z) * (sz - ARENA_CENTER_Z);
+                    if (arenaDistSq < 50 * 50) continue;
 
                     int sy = findSafeY(abyssWorld, (int) sx, (int) sz);
                     Location spawnLoc = new Location(abyssWorld, sx, sy, sz);
 
                     if (rng.nextDouble() < 0.6) {
-                        // Enderman
                         abyssWorld.spawn(spawnLoc, Enderman.class, e -> {
                             e.customName(Component.text("Void Wanderer", NamedTextColor.DARK_PURPLE));
                             e.setCustomNameVisible(true);
@@ -140,7 +135,6 @@ public class AbyssDimensionManager implements Listener {
                             e.setHealth(50);
                         });
                     } else {
-                        // Wither Skeleton
                         abyssWorld.spawn(spawnLoc, WitherSkeleton.class, ws -> {
                             ws.customName(Component.text("Abyssal Sentinel", NamedTextColor.DARK_RED));
                             ws.setCustomNameVisible(true);
@@ -152,7 +146,7 @@ public class AbyssDimensionManager implements Listener {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 400L, 400L + new Random().nextInt(200)); // Every 20-30 seconds
+        }.runTaskTimer(plugin, 400L, 400L + new Random().nextInt(200));
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -203,7 +197,6 @@ public class AbyssDimensionManager implements Listener {
         event.setCancelled(true);
         if (hand.getAmount() > 1) hand.setAmount(hand.getAmount() - 1);
         else player.getInventory().setItemInMainHand(null);
-
         activatePortal(frameLoc, player);
     }
 
@@ -238,8 +231,7 @@ public class AbyssDimensionManager implements Listener {
                 if (w.getBlockAt(bx + 3, by + i, bz).getType() != Material.PURPUR_BLOCK) return false;
             }
             for (int x = 1; x <= 2; x++) for (int y = 1; y <= 3; y++) {
-                Material m = w.getBlockAt(bx + x, by + y, bz).getType();
-                if (!m.isAir()) return false;
+                if (!w.getBlockAt(bx + x, by + y, bz).getType().isAir()) return false;
             }
         } else {
             for (int i = 0; i < 4; i++) {
@@ -251,8 +243,7 @@ public class AbyssDimensionManager implements Listener {
                 if (w.getBlockAt(bx, by + i, bz + 3).getType() != Material.PURPUR_BLOCK) return false;
             }
             for (int z = 1; z <= 2; z++) for (int y = 1; y <= 3; y++) {
-                Material m = w.getBlockAt(bx, by + y, bz + z).getType();
-                if (!m.isAir()) return false;
+                if (!w.getBlockAt(bx, by + y, bz + z).getType().isAir()) return false;
             }
         }
         return true;
@@ -285,10 +276,8 @@ public class AbyssDimensionManager implements Listener {
         w.playSound(center, Sound.BLOCK_END_PORTAL_SPAWN, 1.5f, 0.5f);
         w.spawnParticle(Particle.PORTAL, center, 200, 1, 2, 1, 0.5);
         w.spawnParticle(Particle.REVERSE_PORTAL, center, 100, 1, 2, 1, 0.3);
-
         player.sendMessage(Component.text("The Abyssal Gateway opens...", NamedTextColor.DARK_PURPLE, TextDecoration.ITALIC));
 
-        // Particle loop for 30s then close
         final Set<String> keys = blockKeys;
         new BukkitRunnable() {
             int ticks = 0;
@@ -345,12 +334,9 @@ public class AbyssDimensionManager implements Listener {
             player.sendMessage(Component.text("The Abyss is not yet ready.", NamedTextColor.RED));
             return;
         }
-
-        // Teleport to approach path outside south gate
-        // Outer wall is at z=100, approach extends to z=130
-        // Land at z=115 (middle of approach path)
+        // Land on approach path outside south gate: z=115, facing north (yaw=180)
         int safeY = findSafeY(abyssWorld, 0, 115);
-        Location dest = new Location(abyssWorld, 0.5, safeY, 115.5, 180f, 0f); // facing north toward gate
+        Location dest = new Location(abyssWorld, 0.5, safeY, 115.5, 180f, 0f);
         player.teleport(dest);
 
         Title.Times times = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(1000));
@@ -362,7 +348,6 @@ public class AbyssDimensionManager implements Listener {
         player.playSound(dest, Sound.AMBIENT_CAVE, 1.0f, 0.5f);
         player.playSound(dest, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.5f, 0.5f);
 
-        // Clean up vanilla dragons
         new BukkitRunnable() {
             @Override
             public void run() {
