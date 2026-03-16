@@ -92,7 +92,12 @@ public class AbyssDragonBoss implements Listener {
         Location loc = player.getLocation();
         org.bukkit.block.Block below = world.getBlockAt(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
         Material belowType = below.getType();
-        if (belowType != Material.BEDROCK && belowType != Material.OBSIDIAN && belowType != Material.CRYING_OBSIDIAN) return;
+        if (!belowType.isSolid() || belowType == Material.BARRIER || belowType == Material.AIR) return;
+            // Only trigger on arena-like floor materials
+            if (belowType != Material.BEDROCK && belowType != Material.OBSIDIAN
+                    && belowType != Material.CRYING_OBSIDIAN && belowType != Material.END_STONE_BRICKS
+                    && belowType != Material.DEEPSLATE_BRICKS && belowType != Material.POLISHED_BLACKSTONE_BRICKS
+                    && belowType != Material.BLACKSTONE) return;
 
         arenaY = findArenaY(world);
         if (arenaY < 0) return;
@@ -662,16 +667,23 @@ public class AbyssDragonBoss implements Listener {
     }
 
     private int findArenaY(World world) {
-        for (int y = 120; y > 0; y--) {
-            if (world.getBlockAt(0, y, ARENA_CENTER_Z).getType() == Material.BEDROCK) return y;
+        // Check arena center (0, y, -120) for any solid floor block
+        for (int y = 200; y >= -64; y--) {
+            Material mat = world.getBlockAt(0, y, ARENA_CENTER_Z).getType();
+            if (mat == Material.BEDROCK || mat == Material.OBSIDIAN
+                    || mat == Material.CRYING_OBSIDIAN || mat == Material.DEEPSLATE_BRICKS
+                    || mat == Material.POLISHED_BLACKSTONE_BRICKS || mat == Material.BLACKSTONE
+                    || mat == Material.END_STONE_BRICKS || mat == Material.DEEPSLATE_TILES) {
+                return y;
+            }
         }
-        for (int y = 0; y >= -64; y--) {
-            if (world.getBlockAt(0, y, ARENA_CENTER_Z).getType() == Material.BEDROCK) return y;
+        // Fallback: check center of citadel (0, y, 0)
+        for (int y = 200; y >= -64; y--) {
+            Material mat = world.getBlockAt(0, y, 0).getType();
+            if (mat.isSolid() && mat != Material.BARRIER) return y;
         }
-        for (int y = 120; y > 0; y--) {
-            if (world.getBlockAt(0, y, 0).getType() == Material.BEDROCK) return y;
-        }
-        return -1;
+        plugin.getLogger().warning("[DragonBoss] findArenaY found no floor, returning 64 as fallback");
+        return 64;
     }
 
     private void doAmbientParticles(World world) {

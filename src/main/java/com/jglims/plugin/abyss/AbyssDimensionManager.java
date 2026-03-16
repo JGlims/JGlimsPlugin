@@ -57,7 +57,7 @@ public class AbyssDimensionManager implements Listener {
         if (freshWorld) {
             plugin.getLogger().info("[Abyss] Creating dimension: " + ABYSS_WORLD_NAME);
             WorldCreator creator = new WorldCreator(ABYSS_WORLD_NAME);
-            creator.environment(World.Environment.THE_END);
+            creator.environment(World.Environment.NORMAL);
             creator.generator(new AbyssChunkGenerator());
             abyssWorld = creator.createWorld();
         } else {
@@ -73,17 +73,20 @@ public class AbyssDimensionManager implements Listener {
             abyssWorld.setGameRule(GameRule.MOB_GRIEFING, false);
             abyssWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
             abyssWorld.setTime(18000);
+            abyssWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
 
-            // Remove unnamed EnderDragons (vanilla ones)
+            // Enforce permanent midnight and dark atmosphere
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (abyssWorld == null) return;
-                    for (EnderDragon d : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
-                        if (d.getCustomName() == null) d.remove();
-                    }
+                    abyssWorld.setTime(18000);
+                    abyssWorld.setStorm(false);
+                    abyssWorld.setThundering(false);
                 }
-            }.runTaskTimer(plugin, 100L, 100L);
+            }.runTaskTimer(plugin, 200L, 6000L);
+
+            // No vanilla dragon cleanup needed — NORMAL environment
 
             startAmbientSpawner();
 

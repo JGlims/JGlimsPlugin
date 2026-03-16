@@ -271,7 +271,7 @@ public class AbyssCitadelBuilder {
     //  PHASE 2: FRONT FACADE
     // ═══════════════════════════════════════════════════════════
     private void buildFrontFacade() {
-        plugin.getLogger().info("[Citadel] Building front facade...");
+        plugin.getLogger().info("[Citadel] Building improved front facade...");
         int fz = 40; // front Z
 
         // The facade is a massive pointed shape, widest at bottom, narrowing to a peak
@@ -284,7 +284,7 @@ public class AbyssCitadelBuilder {
                 for (int dz = 0; dz < 5; dz++) {
                     Material m;
                     if (dz == 0) m = CD; // front face trim
-                    else if (heightRatio > 0.8) m = NB;
+                    else if (heightRatio > 0.8) m = DS; // FIXED: was NB, now deepslate bricks
                     else m = wallMat(y, dz);
                     s(x, y, fz + dz, m);
                 }
@@ -294,7 +294,6 @@ public class AbyssCitadelBuilder {
         // Grand entrance arch (pointed gothic arch)
         int archW = 8, archH = 25;
         for (int x = -archW; x <= archW; x++) {
-            // Pointed arch profile: height depends on distance from center
             double xRatio = (double)Math.abs(x) / archW;
             int localH = (int)(archH * (1.0 - xRatio * xRatio));
             for (int y = sY + 1; y <= sY + localH; y++) {
@@ -310,53 +309,137 @@ public class AbyssCitadelBuilder {
             s(x, sY + localH, fz, OBS);
             s(x, sY + localH, fz + 1, OBS);
         }
-        // Entrance pillars
+        // Entrance pillars (taller, more detailed)
         for (int side = -1; side <= 1; side += 2) {
             int px = side * (archW + 2);
-            for (int y = sY; y <= sY + archH + 5; y++) {
+            for (int y = sY; y <= sY + archH + 8; y++) {
                 s(px, y, fz, OBS);
                 s(px, y, fz + 1, OBS);
                 s(px, y, fz - 1, CD);
+                // Pillar detail bands every 5 blocks
+                if (y % 5 == 0) {
+                    s(px, y, fz - 1, AME);
+                    s(px - side, y, fz, CD);
+                }
             }
-            s(px, sY + archH + 6, fz, SF);
+            s(px, sY + archH + 9, fz, SF);
+            // Pinnacle on top of entrance pillars
+            for (int dy = 0; dy < 8; dy++) {
+                s(px, sY + archH + 10 + dy, fz, dy < 5 ? DS : ER);
+            }
         }
 
-        // Secondary arched windows flanking entrance
+        // Decorative blind arcading along facade base (between entrance and windows)
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < 6; i++) {
+                int bx = side * (archW + 8 + i * 6);
+                if (Math.abs(bx) > FACADE_WIDTH - 3) continue;
+                // Small decorative pointed arch
+                for (int dy = 0; dy <= 8; dy++) {
+                    s(bx, sY + 1 + dy, fz - 1, PIL);
+                    s(bx, sY + 1 + dy, fz, DS);
+                }
+                // Arch top
+                for (int dx = -2; dx <= 2; dx++) {
+                    int ay = 8 - Math.abs(dx);
+                    s(bx + dx, sY + 1 + ay, fz, CD);
+                    // Fill below arch with recessed wall
+                    for (int dy = 1; dy < ay; dy++) {
+                        s(bx + dx, sY + dy, fz, DT);
+                    }
+                }
+                // Soul lantern at arch peak
+                if (i % 2 == 0) s(bx, sY + 10, fz - 1, SL);
+            }
+        }
+
+        // Secondary arched windows flanking entrance (taller, more dramatic)
         for (int side = -1; side <= 1; side += 2) {
             for (int i = 1; i <= 3; i++) {
                 int wx = side * (archW + 6 + i * 10);
                 if (Math.abs(wx) > FACADE_WIDTH - 5) continue;
-                buildGothicWindowOnWall(wx, sY + 5, fz, 3, 12, true);
+                buildGothicWindowOnWall(wx, sY + 12, fz, 3, 15, true);
             }
         }
 
-        // Rose window (circular) above entrance
-        int roseY = sY + archH + 8, roseR = 7;
+        // Rose window (circular, larger) above entrance
+        int roseY = sY + archH + 10, roseR = 9;
         for (int dx = -roseR; dx <= roseR; dx++) {
             for (int dy = -roseR; dy <= roseR; dy++) {
                 double d = Math.sqrt(dx * dx + dy * dy);
-                if (d <= roseR && d >= roseR - 1) {
+                if (d <= roseR && d >= roseR - 1.5) {
                     s(dx, roseY + dy, fz, AME);
-                } else if (d < roseR - 1) {
-                    s(dx, roseY + dy, fz, PGP);
+                } else if (d < roseR - 1.5) {
+                    // Inner pattern: radiating spokes
+                    double angle = Math.atan2(dy, dx);
+                    int spoke = (int)(angle / (Math.PI / 6));
+                    if (Math.abs(angle - spoke * (Math.PI / 6)) < 0.12 && d > 2) {
+                        s(dx, roseY + dy, fz, AME);
+                    } else if (d < 3) {
+                        s(dx, roseY + dy, fz, MG); // magenta center
+                    } else {
+                        s(dx, roseY + dy, fz, PGP);
+                    }
                     s(dx, roseY + dy, fz + 1, AIR);
                 }
             }
         }
-        s(0, roseY, fz - 1, ER); // center rod
+        s(0, roseY, fz - 1, ER); // center end rod
 
-        // Diamond/rhombus decorative element above rose window
-        int diaY = roseY + roseR + 3, diaSize = 5;
+        // Gable above rose window (pointed triangular)
+        int gableBase = roseY + roseR + 2;
+        int gableH = 20;
+        for (int dy = 0; dy <= gableH; dy++) {
+            int gw = (int)((double)(gableH - dy) / gableH * 15);
+            for (int dx = -gw; dx <= gw; dx++) {
+                s(dx, gableBase + dy, fz, DS);
+                if (Math.abs(dx) == gw) s(dx, gableBase + dy, fz - 1, CD); // edge trim
+            }
+            // Center line detail
+            if (dy % 3 == 0 && dy > 0) s(0, gableBase + dy, fz - 1, AME);
+        }
+        // Gable finial
+        for (int dy = 0; dy < 5; dy++) {
+            s(0, gableBase + gableH + 1 + dy, fz, dy < 3 ? DS : ER);
+        }
+
+        // Corner buttress towers on facade edges
+        for (int side = -1; side <= 1; side += 2) {
+            int bx = side * (FACADE_WIDTH - 2);
+            for (int y = sY; y <= sY + FACADE_HEIGHT - 10; y++) {
+                for (int dx = -2; dx <= 2; dx++) {
+                    for (int dz = -2; dz <= 2; dz++) {
+                        if (Math.abs(dx) == 2 && Math.abs(dz) == 2) continue; // round corners
+                        Material bm = (Math.abs(dx) == 2 || Math.abs(dz) == 2) ? CD : DS;
+                        s(bx + dx, y, fz + dz, bm);
+                    }
+                }
+                // Band every 10 blocks
+                if (y % 10 == 0) {
+                    for (int dx = -3; dx <= 3; dx++) {
+                        s(bx + dx, y, fz - 3, CD);
+                        s(bx + dx, y, fz + 3, CD);
+                    }
+                }
+            }
+            // Pinnacle
+            for (int dy = 0; dy < 15; dy++) {
+                int pr = Math.max(0, 2 - dy / 4);
+                for (int dx = -pr; dx <= pr; dx++) {
+                    s(bx + dx, sY + FACADE_HEIGHT - 10 + dy, fz, dy < 10 ? DS : ER);
+                }
+            }
+        }
+
+        // Diamond/rhombus decorative element between rose and gable
+        int diaY = roseY + roseR + 1, diaSize = 4;
         for (int dy = 0; dy <= diaSize; dy++) {
             int w = dy <= diaSize/2 ? dy : diaSize - dy;
             for (int dx = -w; dx <= w; dx++) {
-                s(dx, diaY + dy, fz, AME);
+                s(dx, diaY + dy, fz - 1, CRY);
             }
         }
     }
-
-    // ═══════════════════════════════════════════════════════════
-    //  PHASE 3: SPIRES
     // ═══════════════════════════════════════════════════════════
     private void buildCenterSpire() {
         plugin.getLogger().info("[Citadel] Building center mega-spire...");
@@ -403,7 +486,7 @@ public class AbyssCitadelBuilder {
             int r = Math.max(0, (int) radius);
 
             Material m;
-            if (progress > 0.85) m = NB;
+            if (progress > 0.85) m = DS;
             else if (y % 8 == 0) m = CD;
             else if (y % 5 == 0) m = PD;
             else m = DS;
@@ -454,7 +537,7 @@ public class AbyssCitadelBuilder {
 
         // Pointed tip
         for (int dy = 0; dy < 6; dy++) {
-            s(cx, baseY + height + dy, cz, dy < 4 ? NB : ER);
+            s(cx, baseY + height + dy, cz, dy < 4 ? DS : ER);
         }
         // Soul fire at base of major spires
         if (major) {
@@ -1065,7 +1148,7 @@ public class AbyssCitadelBuilder {
             return DS;
         }
         if (layer == 1) return DT;
-        return NB;
+        return DS;
     }
 
     private void s(int x, int y, int z, Material m) {
