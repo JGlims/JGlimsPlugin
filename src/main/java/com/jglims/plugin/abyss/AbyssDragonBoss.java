@@ -155,7 +155,15 @@ public class AbyssDragonBoss implements Listener {
         // Spawn the custom dragon model
         Location spawnLoc = arenaCenter.clone().add(0, 25, 0);
         dragonModel = new AbyssDragonModel(plugin);
-        dragonModel.spawn(spawnLoc, DRAGON_HP);
+        try {
+            dragonModel.spawn(spawnLoc, DRAGON_HP);
+        } catch (Exception e) {
+            plugin.getLogger().severe("[DragonBoss] Failed to spawn dragon model: " + e.getMessage());
+            e.printStackTrace();
+            active = false;
+            cleanupDragonEntities(world);
+            return;
+        }
 
         // Create boss bar
         bossBar = BossBar.bossBar(

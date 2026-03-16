@@ -9,6 +9,7 @@ import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Enderman;
+import org.bukkit.boss.DragonBattle;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WitherSkeleton;
@@ -25,7 +26,7 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * AbyssDimensionManager v4.0 — Matched to AbyssCitadelBuilder v4.0 Gothic Cathedral
+ * AbyssDimensionManager v4.0 - Matched to AbyssCitadelBuilder v4.0 Gothic Cathedral
  *
  * Teleport destination: south approach at (0.5, safeY, 115.5) facing north (180f yaw)
  * The cathedral entrance faces +Z (south), so players land outside looking at the facade.
@@ -57,7 +58,7 @@ public class AbyssDimensionManager implements Listener {
         if (freshWorld) {
             plugin.getLogger().info("[Abyss] Creating dimension: " + ABYSS_WORLD_NAME);
             WorldCreator creator = new WorldCreator(ABYSS_WORLD_NAME);
-            creator.environment(World.Environment.NORMAL);
+            creator.environment(World.Environment.THE_END);
             creator.generator(new AbyssChunkGenerator());
             abyssWorld = creator.createWorld();
         } else {
@@ -73,20 +74,24 @@ public class AbyssDimensionManager implements Listener {
             abyssWorld.setGameRule(GameRule.MOB_GRIEFING, false);
             abyssWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
             abyssWorld.setTime(18000);
-            abyssWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            // THE_END environment provides permanent dark void sky
 
-            // Enforce permanent midnight and dark atmosphere
+            // Aggressively kill vanilla Ender Dragon + boss bar every 2 seconds
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (abyssWorld == null) return;
-                    abyssWorld.setTime(18000);
-                    abyssWorld.setStorm(false);
-                    abyssWorld.setThundering(false);
+                    // Remove all EnderDragons (vanilla ones have no custom name or default name)
+                    for (EnderDragon d : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
+                        d.remove();
+                    }
+                    // Disable the dragon battle / boss bar
+                    DragonBattle battle = abyssWorld.getEnderDragonBattle();
+                    if (battle != null && battle.getEnderDragon() != null) {
+                        battle.getEnderDragon().remove();
+                    }
                 }
-            }.runTaskTimer(plugin, 200L, 6000L);
-
-            // No vanilla dragon cleanup needed — NORMAL environment
+            }.runTaskTimer(plugin, 20L, 40L);
 
             startAmbientSpawner();
 

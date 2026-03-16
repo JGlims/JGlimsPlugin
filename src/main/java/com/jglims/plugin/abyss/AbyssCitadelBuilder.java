@@ -43,7 +43,7 @@ public class AbyssCitadelBuilder {
     private static final Material DT = Material.DEEPSLATE_TILES;       // secondary wall
     private static final Material PD = Material.POLISHED_DEEPSLATE;    // accents/pillars
     private static final Material CD = Material.CHISELED_DEEPSLATE;    // detail trim
-    private static final Material NB = Material.NETHER_BRICKS;         // dark structural
+    private static final Material NB = Material.DEEPSLATE_BRICKS;      // dark structural (was NETHER_BRICKS)
     private static final Material RNB = Material.RED_NETHER_BRICKS;    // dark accent
     private static final Material BL = Material.BLACKSTONE;            // foundation
     private static final Material PBL = Material.POLISHED_BLACKSTONE;  // floor accent
