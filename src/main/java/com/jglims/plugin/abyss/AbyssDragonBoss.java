@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.abyss;
+package com.jglims.plugin.abyss;
 
 import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.legendary.LegendaryTier;
