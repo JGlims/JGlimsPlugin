@@ -8,6 +8,8 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
@@ -32,6 +34,7 @@ public class AbyssDragonModel {
     private Zombie baseEntity;
     private ItemDisplay displayEntity;
     private int animationTaskId = -1;
+    private int invisTaskId = -1;
     private int currentPhase = 1;
     private boolean alive = false;
 
@@ -69,6 +72,8 @@ public class AbyssDragonModel {
                 zombie.customName(Component.text("Abyssal Dragon"));
                 zombie.setCustomNameVisible(false);
                 zombie.setRemoveWhenFarAway(false);
+                zombie.addPotionEffect(new PotionEffect(
+                    PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
             });
             plugin.getLogger().info("[DragonModel] Zombie spawned, ID: " + baseEntity.getEntityId());
 
@@ -129,6 +134,7 @@ public class AbyssDragonModel {
 
             alive = true;
             startAnimation();
+            startInvisibilityEnforcer();
 
             // Spawn effects
             location.getWorld().playSound(location, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.7f);
@@ -150,6 +156,25 @@ public class AbyssDragonModel {
 
     public boolean spawn(Location location) {
         return spawn(location, 1500.0);
+    }
+
+
+    // Re-applies invisibility every 5 ticks to prevent zombie from ever being visible
+    private void startInvisibilityEnforcer() {
+        invisTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!alive || baseEntity == null || baseEntity.isDead()) {
+                    cancel();
+                    return;
+                }
+                baseEntity.setInvisible(true);
+                if (!baseEntity.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                    baseEntity.addPotionEffect(new PotionEffect(
+                        PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
+                }
+            }
+        }.runTaskTimer(plugin, 5L, 5L).getTaskId();
     }
 
     // ==================== ANIMATION ====================
@@ -286,16 +311,22 @@ public class AbyssDragonModel {
     // ==================== DAMAGE / DEATH ====================
 
     public void damageFlash() {
-        if (baseEntity != null && !baseEntity.isDead()) {
-            baseEntity.setGlowing(true);
+        // Flash the ItemDisplay brightness instead of glowing the zombie
+        if (displayEntity != null && !displayEntity.isDead()) {
+            displayEntity.setBrightness(new Display.Brightness(15, 15));
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (baseEntity != null && !baseEntity.isDead()) {
-                        baseEntity.setGlowing(false);
+                    if (displayEntity != null && !displayEntity.isDead()) {
+                        displayEntity.setBrightness(null);
                     }
                 }
-            }.runTaskLater(plugin, 5L);
+            }.runTaskLater(plugin, 4L);
+        }
+        // Red damage particles at the model location
+        if (displayEntity != null && displayEntity.getLocation().getWorld() != null) {
+            displayEntity.getLocation().getWorld().spawnParticle(
+                Particle.DAMAGE_INDICATOR, displayEntity.getLocation(), 8, 1.0, 1.0, 1.0, 0.1);
         }
     }
 
@@ -305,10 +336,20 @@ public class AbyssDragonModel {
             Bukkit.getScheduler().cancelTask(animationTaskId);
             animationTaskId = -1;
         }
+        if (invisTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(invisTaskId);
+            invisTaskId = -1;
+        }
 
         if (displayEntity == null || displayEntity.isDead()) {
             cleanup();
             return;
+        }
+
+        // Remove zombie immediately so it cannot flash visible during death
+        if (baseEntity != null && !baseEntity.isDead()) {
+            baseEntity.remove();
+            baseEntity = null;
         }
 
         Location loc = displayEntity.getLocation();
@@ -361,6 +402,10 @@ public class AbyssDragonModel {
         if (animationTaskId != -1) {
             Bukkit.getScheduler().cancelTask(animationTaskId);
             animationTaskId = -1;
+        }
+        if (invisTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(invisTaskId);
+            invisTaskId = -1;
         }
         if (baseEntity != null && !baseEntity.isDead()) baseEntity.remove();
         if (displayEntity != null && !displayEntity.isDead()) displayEntity.remove();
