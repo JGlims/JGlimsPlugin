@@ -3,6 +3,7 @@ package com.jglims.plugin.abyss;
 import com.jglims.plugin.JGlimsPlugin;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
@@ -108,6 +109,13 @@ public class AbyssDragonModel {
             ItemStack modelItem = new ItemStack(Material.PAPER);
             ItemMeta meta = modelItem.getItemMeta();
             meta.setCustomModelData(CUSTOM_MODEL_DATA);
+            // 1.21.4+ item_model component for modern resource packs
+            try {
+                meta.setItemModel(NamespacedKey.fromString("minecraft:abyss_dragon"));
+                plugin.getLogger().info("[DragonModel] ItemModel set: minecraft:abyss_dragon");
+            } catch (Exception e) {
+                plugin.getLogger().warning("[DragonModel] setItemModel failed (non-fatal): " + e.getMessage());
+            }
             try {
                 CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
                 cmd.setStrings(List.of(CUSTOM_MODEL_DATA_STRING));
