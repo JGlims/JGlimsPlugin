@@ -45,8 +45,8 @@ import java.util.*;
 public class AbyssDragonBoss implements Listener {
 
     // ─── Constants ────────────────────────────────────────────
-    private static final double DRAGON_HP = 1500.0;
-    private static final double DAMAGE_REDUCTION = 0.20;
+    private static final double DRAGON_HP = 1024.0;
+    private static final double DAMAGE_REDUCTION = 0.32;
     private static final int ARENA_R = 40;
     private static final int ARENA_CENTER_Z = -120;
     private static final int MAX_MINIONS = 6;

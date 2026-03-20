@@ -12,6 +12,7 @@ import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Zombie;
@@ -31,14 +32,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 /**
- * AbyssDragonModel v7.0 — Fixed spawn crash + string CMD for 1.21.4+ packs
+ * AbyssDragonModel v8.0 — Paper 1.21 HP cap fix
  *
- * Uses invisible Zombie as hitbox + ItemDisplay with custom 3D model.
- * The spawn bug was caused by setHealth() inside the spawn lambda before Paper
- * flushes the MAX_HEALTH attribute. Fixed by setting health AFTER spawn returns.
+ * Paper 1.21+ enforces a hard 1024 HP cap on setHealth().
+ * Fix: use MAX_HEALTH capped at 1024 and scale damage reduction in the boss
+ * to simulate 1500 effective HP. Alternatively, we keep 1024 raw HP and
+ * the boss applies 32% damage reduction (1024 / 0.68 ≈ 1506 effective HP).
  *
- * v7.0 change: sets BOTH integer CMD (40000) and string CMD ("abyss_dragon")
- * so the resource pack item definition JSON can match via the string "when" clause.
+ * v8.0: MAX_HP capped at 1024, health set safely with Math.min().
  */
 public class AbyssDragonModel {
 
@@ -57,14 +58,13 @@ public class AbyssDragonModel {
     private static final int CUSTOM_MODEL_DATA = 40000;
     private static final String CUSTOM_MODEL_DATA_STRING = "abyss_dragon";
 
+    // Paper 1.21+ caps entity health at 1024
+    private static final double PAPER_MAX_HEALTH_CAP = 1024.0;
+
     public AbyssDragonModel(JGlimsPlugin plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Spawns the dragon at the given location with the specified max HP.
-     * CRITICAL FIX: Health attributes set AFTER spawn(), not inside lambda.
-     */
     public void spawn(Location location, double maxHp) {
         if (alive) return;
         World world = location.getWorld();
@@ -72,12 +72,14 @@ public class AbyssDragonModel {
 
         this.lastKnownLocation = location.clone();
 
+        // Cap HP to Paper's hard limit
+        double safeMaxHp = Math.min(maxHp, PAPER_MAX_HEALTH_CAP);
+
         plugin.getLogger().info("[DragonModel] Attempting spawn at " +
                 location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() +
-                " with " + maxHp + " HP");
+                " with " + safeMaxHp + " HP (requested " + maxHp + ", Paper cap " + PAPER_MAX_HEALTH_CAP + ")");
 
-        // Step 1: Spawn the invisible zombie base (hitbox entity)
-        // DO NOT set health inside this lambda — Paper validates it before attribute flush
+        // Step 1: Spawn invisible zombie base — NO health ops in lambda
         baseEntity = world.spawn(location, Zombie.class, zombie -> {
             zombie.setInvisible(true);
             zombie.setSilent(true);
@@ -94,11 +96,12 @@ public class AbyssDragonModel {
 
         plugin.getLogger().info("[DragonModel] Zombie base spawned: " + baseEntity.getUniqueId());
 
-        // Step 2: Set health attributes OUTSIDE the lambda (Paper-safe)
+        // Step 2: Set health OUTSIDE lambda, capped to Paper limit
         try {
-            Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(maxHp);
-            baseEntity.setHealth(maxHp);
-            plugin.getLogger().info("[DragonModel] Health set to " + maxHp);
+            AttributeInstance maxHealthAttr = Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH));
+            maxHealthAttr.setBaseValue(safeMaxHp);
+            baseEntity.setHealth(safeMaxHp);
+            plugin.getLogger().info("[DragonModel] Health set to " + safeMaxHp);
         } catch (Exception e) {
             plugin.getLogger().severe("[DragonModel] Failed to set dragon health: " + e.getMessage());
             e.printStackTrace();
@@ -106,9 +109,9 @@ public class AbyssDragonModel {
             throw new RuntimeException("Dragon health setup failed", e);
         }
 
-        // Step 3: Set scale attribute if available (Paper 1.20.5+)
+        // Step 3: Set scale attribute
         try {
-            var scaleAttr = baseEntity.getAttribute(Attribute.SCALE);
+            AttributeInstance scaleAttr = baseEntity.getAttribute(Attribute.SCALE);
             if (scaleAttr != null) {
                 scaleAttr.setBaseValue(3.0);
                 plugin.getLogger().info("[DragonModel] SCALE attribute set to 3.0");
@@ -117,34 +120,29 @@ public class AbyssDragonModel {
             plugin.getLogger().warning("[DragonModel] Could not set SCALE attribute: " + e.getMessage());
         }
 
-        // Step 4: Create the dragon visual item with BOTH integer and string CMD
+        // Step 4: Create dragon visual item with integer + string CMD
         ItemStack dragonItem = new ItemStack(Material.PAPER);
         ItemMeta meta = dragonItem.getItemMeta();
         if (meta != null) {
-            // Legacy integer CMD (backwards compatibility)
             meta.setCustomModelData(CUSTOM_MODEL_DATA);
-
-            // String-based CMD for 1.21.4+ resource pack item definitions
             try {
                 CustomModelDataComponent cmdComponent = meta.getCustomModelDataComponent();
                 cmdComponent.setStrings(List.of(CUSTOM_MODEL_DATA_STRING));
                 meta.setCustomModelDataComponent(cmdComponent);
                 plugin.getLogger().info("[DragonModel] String CMD set: " + CUSTOM_MODEL_DATA_STRING);
             } catch (Exception e) {
-                plugin.getLogger().warning("[DragonModel] Could not set string CMD (older API?): " + e.getMessage());
+                plugin.getLogger().warning("[DragonModel] Could not set string CMD: " + e.getMessage());
             }
-
             dragonItem.setItemMeta(meta);
         }
 
-        // Step 5: Spawn the ItemDisplay entity
+        // Step 5: Spawn ItemDisplay
         Location displayLoc = location.clone().add(0, 1.5, 0);
         dragonDisplay = world.spawn(displayLoc, ItemDisplay.class, display -> {
             display.setItemStack(dragonItem);
             display.setBillboard(Display.Billboard.FIXED);
             display.setViewRange(1.5f);
             display.addScoreboardTag("abyss_dragon_part");
-
             Quaternionf noRotation = new Quaternionf();
             display.setTransformation(new Transformation(
                     new Vector3f(-DRAGON_SCALE / 2f, -0.5f, -DRAGON_SCALE / 2f),
@@ -152,7 +150,6 @@ public class AbyssDragonModel {
                     new Vector3f(DRAGON_SCALE, DRAGON_SCALE, DRAGON_SCALE),
                     noRotation
             ));
-
             display.setInterpolationDuration(3);
             display.setShadowRadius(4.0f);
             display.setShadowStrength(0.6f);
@@ -174,19 +171,13 @@ public class AbyssDragonModel {
 
         plugin.getLogger().info("[DragonModel] Dragon spawned successfully at " +
                 location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() +
-                " with " + maxHp + " HP (CMD: " + CUSTOM_MODEL_DATA + " / \"" + CUSTOM_MODEL_DATA_STRING + "\")");
+                " with " + safeMaxHp + " HP");
     }
 
-    /**
-     * Overload: spawn with default 1500 HP.
-     */
     public void spawn(Location location) {
-        spawn(location, 1500.0);
+        spawn(location, 1024.0);
     }
 
-    /**
-     * Animation loop: hover bob, ambient particles, phase-based effects.
-     */
     private void startAnimation() {
         animationTaskId = new BukkitRunnable() {
             @Override
@@ -196,36 +187,24 @@ public class AbyssDragonModel {
                     cancel();
                     return;
                 }
-
                 hoverPhase += 0.08f;
                 Location loc = baseEntity.getLocation();
                 lastKnownLocation = loc.clone();
-
-                // Hover bob — gentle sine wave
                 double hoverY = Math.sin(hoverPhase) * 0.3;
                 baseEntity.setVelocity(new Vector(0, hoverY * 0.04, 0));
-
                 World world = loc.getWorld();
                 if (world == null) return;
-
-                // Body ambient particles
                 Location bodyLoc = loc.clone().add(0, 2, 0);
                 world.spawnParticle(Particle.DRAGON_BREATH, bodyLoc, 2, 1.5, 0.8, 1.5, 0.005);
-
-                // Eye glow (near head, forward direction)
                 Vector forward = loc.getDirection().normalize().multiply(3.0);
                 Location headLoc = loc.clone().add(forward).add(0, 3.5, 0);
                 world.spawnParticle(Particle.END_ROD, headLoc, 1, 0.15, 0.1, 0.15, 0.005);
-
-                // Wing trail particles (spread based on hover phase)
                 double wingSpread = Math.cos(hoverPhase * 0.5) * 4;
                 Vector right = new Vector(-forward.getZ(), 0, forward.getX()).normalize();
                 Location leftWing = loc.clone().add(right.clone().multiply(-wingSpread)).add(0, 2, 0);
                 Location rightWing = loc.clone().add(right.clone().multiply(wingSpread)).add(0, 2, 0);
                 world.spawnParticle(Particle.PORTAL, leftWing, 1, 0.4, 0.2, 0.4, 0.05);
                 world.spawnParticle(Particle.PORTAL, rightWing, 1, 0.4, 0.2, 0.4, 0.05);
-
-                // Phase-based ambient effects
                 if (currentPhase >= 3) {
                     world.spawnParticle(Particle.SOUL_FIRE_FLAME, bodyLoc, 3, 2, 1, 2, 0.02);
                 }
@@ -233,17 +212,12 @@ public class AbyssDragonModel {
                     world.spawnParticle(Particle.REVERSE_PORTAL, bodyLoc, 5, 2.5, 1.5, 2.5, 0.05);
                     world.spawnParticle(Particle.SOUL, bodyLoc, 2, 3, 2, 3, 0.02);
                 }
-
-                // Rotate display entity for liveliness
                 if (dragonDisplay != null && dragonDisplay.isValid()) {
                     float yaw = (float) Math.sin(hoverPhase * 0.25) * 0.12f;
                     Quaternionf rotation = new Quaternionf().rotateY(yaw);
                     Transformation current = dragonDisplay.getTransformation();
                     dragonDisplay.setTransformation(new Transformation(
-                            current.getTranslation(),
-                            rotation,
-                            current.getScale(),
-                            new Quaternionf()
+                            current.getTranslation(), rotation, current.getScale(), new Quaternionf()
                     ));
                     dragonDisplay.setInterpolationDelay(0);
                     dragonDisplay.setInterpolationDuration(5);
@@ -251,10 +225,6 @@ public class AbyssDragonModel {
             }
         }.runTaskTimer(plugin, 0L, 2L).getTaskId();
     }
-
-    // ═══════════════════════════════════════════════════════════
-    //  MOVEMENT
-    // ═══════════════════════════════════════════════════════════
 
     public void setTarget(Location target) {
         double speed = currentPhase >= 3 ? 0.8 : (currentPhase >= 2 ? 0.7 : 0.6);
@@ -266,31 +236,18 @@ public class AbyssDragonModel {
         Location current = baseEntity.getLocation();
         double dist = current.distance(target);
         if (dist < 1.0) return;
-
-        Vector direction = target.toVector().subtract(current.toVector()).normalize().multiply(
-                Math.min(speed, dist * 0.5)
-        );
+        Vector direction = target.toVector().subtract(current.toVector()).normalize().multiply(Math.min(speed, dist * 0.5));
         baseEntity.setVelocity(direction);
-
-        // Face movement direction
-        Location facing = current.clone();
-        facing.setDirection(direction);
         baseEntity.teleport(baseEntity.getLocation().setDirection(direction));
     }
-
-    // ═══════════════════════════════════════════════════════════
-    //  VISUAL ATTACKS
-    // ═══════════════════════════════════════════════════════════
 
     public void breathAttackVisual(Location target) {
         if (baseEntity == null || baseEntity.isDead()) return;
         Location from = baseEntity.getLocation().add(0, 3, 0);
         World world = from.getWorld();
         if (world == null) return;
-
         Vector dir = target.toVector().subtract(from.toVector()).normalize();
         double maxDist = Math.min(from.distance(target), 25);
-
         for (double d = 0; d < maxDist; d += 0.4) {
             Location point = from.clone().add(dir.clone().multiply(d));
             double spread = d * 0.08;
@@ -308,35 +265,24 @@ public class AbyssDragonModel {
         Location loc = baseEntity.getLocation().add(0, 2, 0);
         World world = loc.getWorld();
         if (world == null) return;
-
         for (int angle = 0; angle < 360; angle += 12) {
             double rad = Math.toRadians(angle);
             for (double r = 1.5; r < 10; r += 1.5) {
-                double x = r * Math.cos(rad);
-                double z = r * Math.sin(rad);
-                world.spawnParticle(Particle.CLOUD, loc.clone().add(x, -0.3, z), 1, 0, 0, 0, 0.03);
+                world.spawnParticle(Particle.CLOUD, loc.clone().add(r * Math.cos(rad), -0.3, r * Math.sin(rad)), 1, 0, 0, 0, 0.03);
             }
         }
         world.spawnParticle(Particle.EXPLOSION, loc, 4, 2.5, 0.5, 2.5, 0);
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_FLAP, SoundCategory.HOSTILE, 2f, 0.5f);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  PHASE TRANSITIONS
-    // ═══════════════════════════════════════════════════════════
-
-    public void phaseTransition(int bossPhase) {
-        setPhase(bossPhase + 1);
-    }
+    public void phaseTransition(int bossPhase) { setPhase(bossPhase + 1); }
 
     public void setPhase(int phase) {
         this.currentPhase = phase;
         if (baseEntity == null || baseEntity.isDead()) return;
-
         Location loc = baseEntity.getLocation();
         World world = loc.getWorld();
         if (world == null) return;
-
         switch (phase) {
             case 2 -> {
                 world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.HOSTILE, 2.0f, 0.7f);
@@ -360,80 +306,45 @@ public class AbyssDragonModel {
     private void scaleDisplay(float scale) {
         if (dragonDisplay == null || !dragonDisplay.isValid()) return;
         dragonDisplay.setTransformation(new Transformation(
-                new Vector3f(-scale / 2f, -0.5f, -scale / 2f),
-                new Quaternionf(),
-                new Vector3f(scale, scale, scale),
-                new Quaternionf()
+                new Vector3f(-scale / 2f, -0.5f, -scale / 2f), new Quaternionf(),
+                new Vector3f(scale, scale, scale), new Quaternionf()
         ));
         dragonDisplay.setInterpolationDelay(0);
         dragonDisplay.setInterpolationDuration(10);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  DAMAGE FLASH
-    // ═══════════════════════════════════════════════════════════
-
-    public void damageFlash() {
-        flashDamage();
-    }
+    public void damageFlash() { flashDamage(); }
 
     public void flashDamage() {
         if (dragonDisplay == null || !dragonDisplay.isValid()) return;
-
         dragonDisplay.setGlowing(true);
         dragonDisplay.setGlowColorOverride(Color.fromRGB(180, 30, 60));
-
         new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (dragonDisplay != null && dragonDisplay.isValid()) {
-                    dragonDisplay.setGlowing(false);
-                }
+            @Override public void run() {
+                if (dragonDisplay != null && dragonDisplay.isValid()) dragonDisplay.setGlowing(false);
             }
         }.runTaskLater(plugin, 4L);
-
         if (baseEntity != null && !baseEntity.isDead()) {
             Location loc = baseEntity.getLocation().add(0, 2, 0);
             World world = loc.getWorld();
-            if (world != null) {
-                world.spawnParticle(Particle.DAMAGE_INDICATOR, loc, 10, 2, 1.5, 2, 0.1);
-            }
+            if (world != null) world.spawnParticle(Particle.DAMAGE_INDICATOR, loc, 10, 2, 1.5, 2, 0.1);
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  DEATH ANIMATION
-    // ═══════════════════════════════════════════════════════════
-
-    public void deathAnimation() {
-        playDeathAnimation();
-    }
+    public void deathAnimation() { playDeathAnimation(); }
 
     public void playDeathAnimation() {
         alive = false;
-
-        if (baseEntity == null || baseEntity.isDead()) {
-            cleanup();
-            return;
-        }
-
+        if (baseEntity == null || baseEntity.isDead()) { cleanup(); return; }
         Location loc = baseEntity.getLocation();
         World world = loc.getWorld();
         if (world == null) { cleanup(); return; }
-
-        if (animationTaskId != -1) {
-            Bukkit.getScheduler().cancelTask(animationTaskId);
-            animationTaskId = -1;
-        }
-
+        if (animationTaskId != -1) { Bukkit.getScheduler().cancelTask(animationTaskId); animationTaskId = -1; }
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, SoundCategory.HOSTILE, 2.5f, 0.5f);
-
         new BukkitRunnable() {
             int ticks = 0;
             final int DURATION = 60;
-
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (ticks >= DURATION) {
                     Location deathLoc = lastKnownLocation != null ? lastKnownLocation : loc;
                     world.spawnParticle(Particle.EXPLOSION_EMITTER, deathLoc.clone().add(0, 2, 0), 5, 3, 3, 3, 0.1);
@@ -441,104 +352,46 @@ public class AbyssDragonModel {
                     world.spawnParticle(Particle.END_ROD, deathLoc.clone().add(0, 3, 0), 150, 4, 4, 4, 0.3);
                     world.spawnParticle(Particle.SOUL_FIRE_FLAME, deathLoc.clone().add(0, 2, 0), 100, 4, 3, 4, 0.2);
                     world.playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 2.5f, 0.4f);
-
-                    cleanup();
-                    cancel();
-                    return;
+                    cleanup(); cancel(); return;
                 }
-
                 float progress = (float) ticks / DURATION;
-
                 if (dragonDisplay != null && dragonDisplay.isValid()) {
                     float scale = DRAGON_SCALE * (1.0f - progress * 0.85f);
                     Quaternionf spin = new Quaternionf().rotateY(progress * 15.0f);
                     dragonDisplay.setTransformation(new Transformation(
                             new Vector3f(-scale / 2f, -0.5f + progress * -3f, -scale / 2f),
-                            spin,
-                            new Vector3f(scale, scale, scale),
-                            new Quaternionf()
+                            spin, new Vector3f(scale, scale, scale), new Quaternionf()
                     ));
                     dragonDisplay.setInterpolationDelay(0);
                     dragonDisplay.setInterpolationDuration(2);
-
                     dragonDisplay.setGlowing(true);
-                    dragonDisplay.setGlowColorOverride(ticks % 6 < 3 ?
-                            Color.fromRGB(180, 30, 60) : Color.fromRGB(120, 20, 200));
+                    dragonDisplay.setGlowColorOverride(ticks % 6 < 3 ? Color.fromRGB(180, 30, 60) : Color.fromRGB(120, 20, 200));
                 }
-
                 Location deathLoc = (baseEntity != null && !baseEntity.isDead()) ?
                         baseEntity.getLocation().add(0, 2, 0) :
                         (lastKnownLocation != null ? lastKnownLocation.clone().add(0, 2, 0) : loc.clone().add(0, 2, 0));
-
                 world.spawnParticle(Particle.DRAGON_BREATH, deathLoc, 8, 2.5, 2, 2.5, 0.05);
                 world.spawnParticle(Particle.PORTAL, deathLoc, 15, 3, 2, 3, 1.0);
                 world.spawnParticle(Particle.SOUL, deathLoc, 3, 2, 1.5, 2, 0.03);
-
-                if (ticks % 10 == 0) {
-                    world.playSound(deathLoc, Sound.ENTITY_ENDER_DRAGON_HURT, SoundCategory.HOSTILE,
-                            1.2f, 0.3f + progress * 0.8f);
-                }
-                if (ticks % 20 == 0) {
-                    world.spawnParticle(Particle.EXPLOSION, deathLoc, 2, 2, 1, 2, 0);
-                }
-
+                if (ticks % 10 == 0) world.playSound(deathLoc, Sound.ENTITY_ENDER_DRAGON_HURT, SoundCategory.HOSTILE, 1.2f, 0.3f + progress * 0.8f);
+                if (ticks % 20 == 0) world.spawnParticle(Particle.EXPLOSION, deathLoc, 2, 2, 1, 2, 0);
                 ticks += 2;
             }
         }.runTaskTimer(plugin, 0L, 2L);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  CLEANUP
-    // ═══════════════════════════════════════════════════════════
-
     public void cleanup() {
         alive = false;
-
-        if (animationTaskId != -1) {
-            try { Bukkit.getScheduler().cancelTask(animationTaskId); } catch (Exception ignored) {}
-            animationTaskId = -1;
-        }
-
-        if (dragonDisplay != null) {
-            try { if (dragonDisplay.isValid()) dragonDisplay.remove(); } catch (Exception ignored) {}
-            dragonDisplay = null;
-        }
-
-        if (baseEntity != null) {
-            try { if (baseEntity.isValid()) baseEntity.remove(); } catch (Exception ignored) {}
-            baseEntity = null;
-        }
+        if (animationTaskId != -1) { try { Bukkit.getScheduler().cancelTask(animationTaskId); } catch (Exception ignored) {} animationTaskId = -1; }
+        if (dragonDisplay != null) { try { if (dragonDisplay.isValid()) dragonDisplay.remove(); } catch (Exception ignored) {} dragonDisplay = null; }
+        if (baseEntity != null) { try { if (baseEntity.isValid()) baseEntity.remove(); } catch (Exception ignored) {} baseEntity = null; }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  GETTERS
-    // ═══════════════════════════════════════════════════════════
-
-    public boolean isAlive() {
-        return alive && baseEntity != null && !baseEntity.isDead();
-    }
-
+    public boolean isAlive() { return alive && baseEntity != null && !baseEntity.isDead(); }
     public Zombie getBaseEntity() { return baseEntity; }
     public ItemDisplay getDragonDisplay() { return dragonDisplay; }
-
-    public Location getLocation() {
-        if (baseEntity != null && !baseEntity.isDead()) {
-            return baseEntity.getLocation();
-        }
-        return lastKnownLocation;
-    }
-
-    public double getHealth() {
-        if (baseEntity != null && !baseEntity.isDead()) return baseEntity.getHealth();
-        return 0;
-    }
-
-    public double getMaxHealth() {
-        if (baseEntity != null && !baseEntity.isDead()) {
-            return Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH)).getValue();
-        }
-        return 1500;
-    }
-
+    public Location getLocation() { return (baseEntity != null && !baseEntity.isDead()) ? baseEntity.getLocation() : lastKnownLocation; }
+    public double getHealth() { return (baseEntity != null && !baseEntity.isDead()) ? baseEntity.getHealth() : 0; }
+    public double getMaxHealth() { return (baseEntity != null && !baseEntity.isDead()) ? Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH)).getValue() : 1024; }
     public int getCurrentPhase() { return currentPhase; }
 }
