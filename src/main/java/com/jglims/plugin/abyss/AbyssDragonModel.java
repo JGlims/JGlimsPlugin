@@ -1,5 +1,6 @@
 package com.jglims.plugin.abyss;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.bukkit.Bukkit;
@@ -16,6 +17,7 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
@@ -29,11 +31,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 /**
- * AbyssDragonModel v6.0 — Fixed spawn crash + improved visuals
- * 
- * Uses invisible Zombie as hitbox + ItemDisplay with custom 3D model (CMD 40000).
+ * AbyssDragonModel v7.0 — Fixed spawn crash + string CMD for 1.21.4+ packs
+ *
+ * Uses invisible Zombie as hitbox + ItemDisplay with custom 3D model.
  * The spawn bug was caused by setHealth() inside the spawn lambda before Paper
  * flushes the MAX_HEALTH attribute. Fixed by setting health AFTER spawn returns.
+ *
+ * v7.0 change: sets BOTH integer CMD (40000) and string CMD ("abyss_dragon")
+ * so the resource pack item definition JSON can match via the string "when" clause.
  */
 public class AbyssDragonModel {
 
@@ -50,6 +55,7 @@ public class AbyssDragonModel {
     private static final float RAGE_SCALE = DRAGON_SCALE * 1.15f;
     private static final float ENRAGE_SCALE = DRAGON_SCALE * 1.25f;
     private static final int CUSTOM_MODEL_DATA = 40000;
+    private static final String CUSTOM_MODEL_DATA_STRING = "abyss_dragon";
 
     public AbyssDragonModel(JGlimsPlugin plugin) {
         this.plugin = plugin;
@@ -66,6 +72,10 @@ public class AbyssDragonModel {
 
         this.lastKnownLocation = location.clone();
 
+        plugin.getLogger().info("[DragonModel] Attempting spawn at " +
+                location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() +
+                " with " + maxHp + " HP");
+
         // Step 1: Spawn the invisible zombie base (hitbox entity)
         // DO NOT set health inside this lambda — Paper validates it before attribute flush
         baseEntity = world.spawn(location, Zombie.class, zombie -> {
@@ -75,38 +85,55 @@ public class AbyssDragonModel {
             zombie.setGravity(false);
             zombie.setInvulnerable(false);
             zombie.customName(Component.text("Abyssal Void Dragon", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
-            zombie.setCustomNameVisible(false); // display entity shows the name visually
+            zombie.setCustomNameVisible(false);
             zombie.setAdult();
             zombie.setCanPickupItems(false);
             zombie.setRemoveWhenFarAway(false);
             zombie.addScoreboardTag("abyss_dragon_base");
         });
 
+        plugin.getLogger().info("[DragonModel] Zombie base spawned: " + baseEntity.getUniqueId());
+
         // Step 2: Set health attributes OUTSIDE the lambda (Paper-safe)
         try {
             Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(maxHp);
             baseEntity.setHealth(maxHp);
+            plugin.getLogger().info("[DragonModel] Health set to " + maxHp);
         } catch (Exception e) {
             plugin.getLogger().severe("[DragonModel] Failed to set dragon health: " + e.getMessage());
+            e.printStackTrace();
             baseEntity.remove();
             throw new RuntimeException("Dragon health setup failed", e);
         }
 
-        // Step 3: Set scale attribute if available
+        // Step 3: Set scale attribute if available (Paper 1.20.5+)
         try {
             var scaleAttr = baseEntity.getAttribute(Attribute.SCALE);
             if (scaleAttr != null) {
                 scaleAttr.setBaseValue(3.0);
+                plugin.getLogger().info("[DragonModel] SCALE attribute set to 3.0");
             }
         } catch (Exception e) {
             plugin.getLogger().warning("[DragonModel] Could not set SCALE attribute: " + e.getMessage());
         }
 
-        // Step 4: Create the dragon visual item (Paper with CMD 40000)
+        // Step 4: Create the dragon visual item with BOTH integer and string CMD
         ItemStack dragonItem = new ItemStack(Material.PAPER);
         ItemMeta meta = dragonItem.getItemMeta();
         if (meta != null) {
+            // Legacy integer CMD (backwards compatibility)
             meta.setCustomModelData(CUSTOM_MODEL_DATA);
+
+            // String-based CMD for 1.21.4+ resource pack item definitions
+            try {
+                CustomModelDataComponent cmdComponent = meta.getCustomModelDataComponent();
+                cmdComponent.setStrings(List.of(CUSTOM_MODEL_DATA_STRING));
+                meta.setCustomModelDataComponent(cmdComponent);
+                plugin.getLogger().info("[DragonModel] String CMD set: " + CUSTOM_MODEL_DATA_STRING);
+            } catch (Exception e) {
+                plugin.getLogger().warning("[DragonModel] Could not set string CMD (older API?): " + e.getMessage());
+            }
+
             dragonItem.setItemMeta(meta);
         }
 
@@ -131,6 +158,8 @@ public class AbyssDragonModel {
             display.setShadowStrength(0.6f);
         });
 
+        plugin.getLogger().info("[DragonModel] ItemDisplay spawned: " + dragonDisplay.getUniqueId());
+
         // Step 6: Mount display on zombie
         baseEntity.addPassenger(dragonDisplay);
         alive = true;
@@ -143,9 +172,9 @@ public class AbyssDragonModel {
         world.spawnParticle(Particle.PORTAL, location, 300, 5, 4, 5, 1.0);
         world.spawnParticle(Particle.REVERSE_PORTAL, location, 100, 3, 2, 3, 0.5);
 
-        plugin.getLogger().info("[DragonModel] Dragon spawned at " +
+        plugin.getLogger().info("[DragonModel] Dragon spawned successfully at " +
                 location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() +
-                " with " + maxHp + " HP");
+                " with " + maxHp + " HP (CMD: " + CUSTOM_MODEL_DATA + " / \"" + CUSTOM_MODEL_DATA_STRING + "\")");
     }
 
     /**
@@ -239,7 +268,7 @@ public class AbyssDragonModel {
         if (dist < 1.0) return;
 
         Vector direction = target.toVector().subtract(current.toVector()).normalize().multiply(
-                Math.min(speed, dist * 0.5) // slow down when close
+                Math.min(speed, dist * 0.5)
         );
         baseEntity.setVelocity(direction);
 
@@ -264,7 +293,6 @@ public class AbyssDragonModel {
 
         for (double d = 0; d < maxDist; d += 0.4) {
             Location point = from.clone().add(dir.clone().multiply(d));
-            // Wider spread as beam travels farther
             double spread = d * 0.08;
             world.spawnParticle(Particle.DRAGON_BREATH, point, 2, spread, spread, spread, 0.005);
             world.spawnParticle(Particle.SOUL_FIRE_FLAME, point, 1, spread * 0.5, spread * 0.5, spread * 0.5, 0.005);
@@ -298,7 +326,7 @@ public class AbyssDragonModel {
     // ═══════════════════════════════════════════════════════════
 
     public void phaseTransition(int bossPhase) {
-        setPhase(bossPhase + 1); // bossPhase 0-based, display phase 1-based
+        setPhase(bossPhase + 1);
     }
 
     public void setPhase(int phase) {
@@ -338,7 +366,7 @@ public class AbyssDragonModel {
                 new Quaternionf()
         ));
         dragonDisplay.setInterpolationDelay(0);
-        dragonDisplay.setInterpolationDuration(10); // smooth scale transition
+        dragonDisplay.setInterpolationDuration(10);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -393,7 +421,6 @@ public class AbyssDragonModel {
         World world = loc.getWorld();
         if (world == null) { cleanup(); return; }
 
-        // Cancel hover animation
         if (animationTaskId != -1) {
             Bukkit.getScheduler().cancelTask(animationTaskId);
             animationTaskId = -1;
@@ -401,15 +428,13 @@ public class AbyssDragonModel {
 
         world.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, SoundCategory.HOSTILE, 2.5f, 0.5f);
 
-        // Death sequence: shrink + spin + fall + explode
         new BukkitRunnable() {
             int ticks = 0;
-            final int DURATION = 60; // 3 seconds
+            final int DURATION = 60;
 
             @Override
             public void run() {
                 if (ticks >= DURATION) {
-                    // Final explosion
                     Location deathLoc = lastKnownLocation != null ? lastKnownLocation : loc;
                     world.spawnParticle(Particle.EXPLOSION_EMITTER, deathLoc.clone().add(0, 2, 0), 5, 3, 3, 3, 0.1);
                     world.spawnParticle(Particle.DRAGON_BREATH, deathLoc.clone().add(0, 2, 0), 300, 5, 4, 5, 0.15);
@@ -424,7 +449,6 @@ public class AbyssDragonModel {
 
                 float progress = (float) ticks / DURATION;
 
-                // Shrink + spin + fall
                 if (dragonDisplay != null && dragonDisplay.isValid()) {
                     float scale = DRAGON_SCALE * (1.0f - progress * 0.85f);
                     Quaternionf spin = new Quaternionf().rotateY(progress * 15.0f);
@@ -437,16 +461,14 @@ public class AbyssDragonModel {
                     dragonDisplay.setInterpolationDelay(0);
                     dragonDisplay.setInterpolationDuration(2);
 
-                    // Flash between red and purple glow
                     dragonDisplay.setGlowing(true);
                     dragonDisplay.setGlowColorOverride(ticks % 6 < 3 ?
                             Color.fromRGB(180, 30, 60) : Color.fromRGB(120, 20, 200));
                 }
 
-                // Continuous death particles
                 Location deathLoc = (baseEntity != null && !baseEntity.isDead()) ?
                         baseEntity.getLocation().add(0, 2, 0) :
-                        (lastKnownLocation != null ? lastKnownLocation.add(0, 2, 0) : loc.clone().add(0, 2, 0));
+                        (lastKnownLocation != null ? lastKnownLocation.clone().add(0, 2, 0) : loc.clone().add(0, 2, 0));
 
                 world.spawnParticle(Particle.DRAGON_BREATH, deathLoc, 8, 2.5, 2, 2.5, 0.05);
                 world.spawnParticle(Particle.PORTAL, deathLoc, 15, 3, 2, 3, 1.0);
