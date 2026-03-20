@@ -358,7 +358,7 @@ public class AbyssDragonBoss implements Listener {
         Location dragonLoc = dragonModel.getLocation();
         if (dragonLoc == null) return;
 
-        abyss.spawnParticle(Particle.PORTAL, dragonLoc, 200, 8, 8, 8, 0.5);
+        try { Particle.PORTAL.builder().location(dragonLoc).count(200).offset(8, 8, 8).receivers(64, true).spawn(); } catch (Exception ignored) {};
         abyss.playSound(dragonLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.3f);
 
         for (Player p : getPlayersInArena(abyss)) {

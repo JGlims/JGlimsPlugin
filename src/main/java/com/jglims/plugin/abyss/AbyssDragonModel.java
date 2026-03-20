@@ -134,8 +134,21 @@ public class AbyssDragonModel {
             location.getWorld().playSound(location, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.7f);
             location.getWorld().playSound(location, Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.5f);
             location.getWorld().strikeLightningEffect(location);
-            location.getWorld().spawnParticle(Particle.DRAGON_BREATH, location, 200, 3, 3, 3, 0.1);
-            location.getWorld().spawnParticle(Particle.PORTAL, location, 300, 5, 5, 5, 1.0);
+            try {
+                Particle.DRAGON_BREATH.builder()
+                    .location(location).count(200).offset(3, 3, 3).extra(0.1)
+                    .receivers(64, true).spawn();
+            } catch (Exception pe) {
+                plugin.getLogger().warning("[DragonModel] DRAGON_BREATH particle failed: " + pe.getMessage());
+                location.getWorld().spawnParticle(Particle.FLAME, location, 100, 3, 3, 3, 0.05);
+            }
+            try {
+                Particle.PORTAL.builder()
+                    .location(location).count(300).offset(5, 5, 5)
+                    .receivers(64, true).spawn();
+            } catch (Exception pe) {
+                plugin.getLogger().warning("[DragonModel] PORTAL particle failed: " + pe.getMessage());
+            }
 
             plugin.getLogger().info("[DragonModel] === SPAWN COMPLETE ===");
             return true;
@@ -242,8 +255,10 @@ public class AbyssDragonModel {
         for (double t = 0; t < dist; t += 0.5) {
             double ratio = t / dist;
             Location point = start.clone().add(dx * ratio, dy * ratio, dz * ratio);
-            w.spawnParticle(Particle.DRAGON_BREATH, point, 3, 0.2, 0.2, 0.2, 0.01);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, point, 2, 0.1, 0.1, 0.1, 0.02);
+            try { Particle.DRAGON_BREATH.builder().location(point).count(3).offset(0.2, 0.2, 0.2).extra(0.01).receivers(64, true).spawn(); }
+                catch (Exception ignored) { w.spawnParticle(Particle.FLAME, point, 3, 0.2, 0.2, 0.2, 0.01); }
+            try { Particle.SOUL_FIRE_FLAME.builder().location(point).count(2).offset(0.1, 0.1, 0.1).extra(0.02).receivers(64, true).spawn(); }
+                catch (Exception ignored) {}
         }
         w.playSound(start, Sound.ENTITY_ENDER_DRAGON_SHOOT, 1.5f, 0.7f);
     }
