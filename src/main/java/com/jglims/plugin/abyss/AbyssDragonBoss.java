@@ -12,14 +12,10 @@ import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -27,684 +23,568 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * AbyssDragonBoss v5.0 — Custom Display Entity Dragon (no EnderDragon!)
- *
- * Uses AbyssDragonModel for visuals (ItemDisplay parts on invisible Zombie).
- * All attacks, phases, and movement are 100% custom.
- * No hardcoded vanilla dragon behavior to fight against.
- *
- * Features:
- *  - 1500 HP dragon with 20% damage reduction
- *  - 4-phase system at 75%, 50%, 25%, 10%
- *  - Custom BossBar (Adventure API)
- *  - Lightning, Void Breath, Minion spawns, Ground Pound, Void Pull, Enrage
- *  - Movement: fly between waypoints around the arena
- *  - Death animation with scattering display entities
- *  - Loot: same as before + exit portal
+ * AbyssDragonBoss v9.0 — Complete boss fight controller.
+ * Manages spawning, combat phases, attacks, and loot.
  */
 public class AbyssDragonBoss implements Listener {
 
-    // ─── Constants ────────────────────────────────────────────
-    private static final double DRAGON_HP = 1024.0;
-    private static final double DAMAGE_REDUCTION = 0.32;
-    private static final int ARENA_R = 40;
-    private static final int ARENA_CENTER_Z = -120;
-    private static final int MAX_MINIONS = 6;
-    private static final long RESPAWN_COOLDOWN_MS = 30L * 60 * 1000;
+    // Boss stats
+    private static final double DRAGON_HP = 1500.0;
+    private static final double DAMAGE_REDUCTION = 0.25;
+    private static final int ARENA_RADIUS = 40;
+    private static final long RESPAWN_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
 
-    // ─── State ────────────────────────────────────────────────
     private final JGlimsPlugin plugin;
-    private final AbyssDimensionManager dimMgr;
+    private final AbyssDimensionManager dimensionManager;
+
     private AbyssDragonModel dragonModel;
-    private boolean active = false;
-    private long lastDeathTime = 0;
-    private int attackTick = 0;
-    private Location arenaCenter;
-    private int arenaY;
-    private BukkitRunnable combatLoop;
-    private BukkitRunnable movementAI;
     private BossBar bossBar;
-    private final Random rng = new Random();
+    private boolean fightActive = false;
+    private long lastFightEnd = 0;
 
-    // Movement waypoints (generated around arena)
-    private final List<Location> waypoints = new ArrayList<>();
-    private int currentWaypointIndex = 0;
-
-    // Phase tracking
-    private int currentPhase = 0; // 0 = phase 1, 1 = phase 2, etc.
+    // Combat state
+    private int combatTaskId = -1;
+    private int movementTaskId = -1;
+    private List<Location> waypoints = new ArrayList<>();
+    private int currentWaypoint = 0;
+    private int attackCooldown = 0;
+    private final Set<UUID> fightParticipants = new HashSet<>();
 
     public AbyssDragonBoss(JGlimsPlugin plugin, AbyssDimensionManager dimensionManager) {
         this.plugin = plugin;
-        this.dimMgr = dimensionManager;
+        this.dimensionManager = dimensionManager;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  TRIGGER: Player walks on arena floor
-    // ═══════════════════════════════════════════════════════════
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        if (active) return;
-        Player player = event.getPlayer();
-        World world = player.getWorld();
-        if (!world.getName().equals("world_abyss")) return;
-        if (lastDeathTime > 0 && System.currentTimeMillis() - lastDeathTime < RESPAWN_COOLDOWN_MS) return;
+    // ==================== TRIGGER ====================
 
-        Location loc = player.getLocation();
-        org.bukkit.block.Block below = world.getBlockAt(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
-        Material belowType = below.getType();
-        if (!belowType.isSolid() || belowType == Material.BARRIER || belowType == Material.AIR) return;
-            // Only trigger on arena-like floor materials
-            if (belowType != Material.BEDROCK && belowType != Material.OBSIDIAN
-                    && belowType != Material.CRYING_OBSIDIAN && belowType != Material.END_STONE_BRICKS
-                    && belowType != Material.DEEPSLATE_BRICKS && belowType != Material.POLISHED_BLACKSTONE_BRICKS
-                    && belowType != Material.BLACKSTONE) return;
-
-        arenaY = findArenaY(world);
-        if (arenaY < 0) return;
-        if (Math.abs(loc.getBlockY() - arenaY) > 6) return;
-
-        double dx = loc.getX();
-        double dz = loc.getZ() - ARENA_CENTER_Z;
-        double distXZ = Math.sqrt(dx * dx + dz * dz);
-        if (distXZ > ARENA_R) return;
-
-        arenaCenter = new Location(world, 0.5, arenaY + 1, ARENA_CENTER_Z + 0.5);
-        plugin.getLogger().info("[DragonBoss] Player " + player.getName() + " triggered boss at arena center");
-        startFight(player);
-    }
-
-    /**
-     * Manual trigger via /jglims abyss boss
-     */
     public void manualTrigger(Player player) {
-        if (active) {
-            player.sendMessage(Component.text("The Abyssal Dragon is already active!", NamedTextColor.RED));
+        plugin.getLogger().info("[DragonBoss] manualTrigger called by " + player.getName());
+        plugin.getLogger().info("[DragonBoss] Player world: " + player.getWorld().getName());
+        plugin.getLogger().info("[DragonBoss] Fight active: " + fightActive);
+
+        World abyss = dimensionManager.getAbyssWorld();
+        if (abyss == null) {
+            player.sendMessage(Component.text("The Abyss is not initialized!", NamedTextColor.RED));
+            plugin.getLogger().warning("[DragonBoss] Abyss world is null!");
             return;
         }
-        World world = player.getWorld();
-        if (!world.getName().equals("world_abyss")) {
+
+        if (!player.getWorld().getName().equals(abyss.getName())) {
             player.sendMessage(Component.text("You must be in the Abyss!", NamedTextColor.RED));
+            plugin.getLogger().warning("[DragonBoss] Player not in Abyss world. Player in: " +
+                player.getWorld().getName() + ", Abyss is: " + abyss.getName());
             return;
         }
-        arenaY = findArenaY(world);
-        if (arenaY < 0) {
-            arenaY = player.getLocation().getBlockY() - 1;
-            plugin.getLogger().warning("[DragonBoss] Arena floor not found, using player Y: " + arenaY);
+
+        if (fightActive) {
+            player.sendMessage(Component.text("The dragon is already awakened!", NamedTextColor.RED));
+            return;
         }
-        arenaCenter = new Location(world, 0.5, arenaY + 1, ARENA_CENTER_Z + 0.5);
-        player.teleport(arenaCenter.clone().add(0, 0, 15));
+
+        long timeSinceLastFight = System.currentTimeMillis() - lastFightEnd;
+        if (timeSinceLastFight < RESPAWN_COOLDOWN_MS && lastFightEnd > 0) {
+            long remaining = (RESPAWN_COOLDOWN_MS - timeSinceLastFight) / 1000;
+            player.sendMessage(Component.text("The dragon rests... " + remaining + "s until it awakens.",
+                NamedTextColor.DARK_PURPLE));
+            return;
+        }
+
         startFight(player);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  START FIGHT
-    // ═══════════════════════════════════════════════════════════
+    // ==================== FIGHT START ====================
+
     private void startFight(Player trigger) {
-        if (active) return;
-        active = true;
-        currentPhase = 0;
-        World world = trigger.getWorld();
+        plugin.getLogger().info("[DragonBoss] === STARTING FIGHT ===");
 
-        // Cleanup any previous entities
-        cleanupDragonEntities(world);
-        clearMinions(world);
-
-        // Generate flight waypoints (circle at various heights around arena)
-        generateWaypoints();
-
-        // Spawn the custom dragon model
-        Location spawnLoc = arenaCenter.clone().add(0, 25, 0);
-        dragonModel = new AbyssDragonModel(plugin);
-        try {
-            dragonModel.spawn(spawnLoc, DRAGON_HP);
-        } catch (Exception e) {
-            plugin.getLogger().severe("[DragonBoss] Failed to spawn dragon model: " + e.getMessage());
-            e.printStackTrace();
-            active = false;
-            cleanupDragonEntities(world);
+        World abyss = dimensionManager.getAbyssWorld();
+        if (abyss == null) {
+            plugin.getLogger().severe("[DragonBoss] Cannot start: abyss world is null");
             return;
         }
+
+        // Find arena center
+        int arenaY = findArenaY(abyss);
+        Location spawnLoc = new Location(abyss, 0.5, arenaY + 15, AbyssDimensionManager.ARENA_CENTER_Z + 0.5);
+        plugin.getLogger().info("[DragonBoss] Arena Y: " + arenaY + ", Spawn location: " +
+            spawnLoc.getBlockX() + "," + spawnLoc.getBlockY() + "," + spawnLoc.getBlockZ());
+
+        // Generate waypoints around the arena
+        generateWaypoints(spawnLoc, arenaY);
+
+        // Create dragon model
+        dragonModel = new AbyssDragonModel(plugin);
+        boolean spawned = dragonModel.spawn(spawnLoc, DRAGON_HP);
+
+        if (!spawned) {
+            plugin.getLogger().severe("[DragonBoss] Dragon model failed to spawn!");
+            trigger.sendMessage(Component.text(
+                "The dragon could not manifest. Check server logs for [DragonModel] errors.",
+                NamedTextColor.RED));
+            return;
+        }
+
+        plugin.getLogger().info("[DragonBoss] Dragon model spawned successfully!");
 
         // Create boss bar
         bossBar = BossBar.bossBar(
-            Component.text("\u2620 Abyssal Dragon \u2620", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
+            Component.text("Abyssal Dragon", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
             1.0f,
             BossBar.Color.PURPLE,
-            BossBar.Overlay.PROGRESS
+            BossBar.Overlay.NOTCHED_10
         );
-        for (Player p : world.getPlayers()) {
-            p.showBossBar(bossBar);
-        }
 
-        // Title announcement
-        Title.Times times = Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(500));
-        for (Player p : world.getPlayers()) {
+        fightActive = true;
+        fightParticipants.clear();
+        fightParticipants.add(trigger.getUniqueId());
+
+        // Show boss bar and title to all players in the Abyss
+        for (Player p : abyss.getPlayers()) {
+            p.showBossBar(bossBar);
             p.showTitle(Title.title(
                 Component.text("ABYSSAL DRAGON", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
-                Component.text("Your soul will be consumed...", NamedTextColor.RED, TextDecoration.ITALIC),
-                times
+                Component.text("The void incarnate awakens", NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(2), Duration.ofMillis(500))
             ));
-            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2f, 0.5f);
-            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1f, 0.7f);
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.7f);
+            fightParticipants.add(p.getUniqueId());
         }
 
-        // Lightning for drama
-        world.strikeLightningEffect(arenaCenter.clone().add(10, 0, 10));
-        world.strikeLightningEffect(arenaCenter.clone().add(-10, 0, -10));
-        world.strikeLightningEffect(arenaCenter.clone().add(10, 0, -10));
-        world.strikeLightningEffect(arenaCenter.clone().add(-10, 0, 10));
+        // Lightning effects at spawn
+        abyss.strikeLightningEffect(spawnLoc);
+        abyss.strikeLightningEffect(spawnLoc.clone().add(5, 0, 5));
+        abyss.strikeLightningEffect(spawnLoc.clone().add(-5, 0, -5));
 
-        attackTick = 0;
+        // Start combat and movement loops
+        startCombatLoop(abyss);
+        startMovementLoop(abyss);
 
-        // Combat loop (attacks)
-        combatLoop = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!active || dragonModel == null || !dragonModel.isAlive()) {
-                    cancel();
-                    return;
-                }
-                attackTick++;
-                doAttacks(world);
-                updateBossBar();
-                checkPhaseTransitions();
-                doAmbientParticles(world);
-                showBossBarToNewPlayers(world);
-            }
-        };
-        combatLoop.runTaskTimer(plugin, 80L, 40L); // every 2 seconds
-
-        // Movement AI loop (independent of attacks)
-        movementAI = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!active || dragonModel == null || !dragonModel.isAlive()) {
-                    cancel();
-                    return;
-                }
-                doMovementAI(world);
-            }
-        };
-        movementAI.runTaskTimer(plugin, 20L, 10L); // every 0.5 seconds
-
-        plugin.getLogger().info("[DragonBoss] Fight started! Custom display entity dragon spawned.");
+        plugin.getLogger().info("[DragonBoss] Fight started! Dragon HP: " + dragonModel.getHealth());
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  WAYPOINT GENERATION
-    // ═══════════════════════════════════════════════════════════
-    private void generateWaypoints() {
+    private int findArenaY(World abyss) {
+        // The arena should have a bedrock or solid floor at z=-120
+        for (int y = 100; y > 30; y--) {
+            Material mat = abyss.getBlockAt(0, y, AbyssDimensionManager.ARENA_CENTER_Z).getType();
+            if (mat.isSolid()) {
+                plugin.getLogger().info("[DragonBoss] Found arena floor at Y=" + y + " (material: " + mat + ")");
+                return y;
+            }
+        }
+        plugin.getLogger().warning("[DragonBoss] No solid arena floor found! Using default Y=64");
+        return 64;
+    }
+
+    private void generateWaypoints(Location center, int arenaY) {
         waypoints.clear();
-        if (arenaCenter == null) return;
-        World world = arenaCenter.getWorld();
-        // Circle of 8 waypoints at varying heights
+        double cx = center.getX();
+        double cz = center.getZ();
+        World w = center.getWorld();
+
+        // Circle of waypoints around the arena at varying heights
         for (int i = 0; i < 8; i++) {
-            double angle = (i / 8.0) * Math.PI * 2;
-            double r = ARENA_R * 0.6;
-            double x = arenaCenter.getX() + r * Math.cos(angle);
-            double z = arenaCenter.getZ() + r * Math.sin(angle);
-            double y = arenaCenter.getY() + 15 + (i % 3) * 5; // varying heights: 15, 20, 25
-            waypoints.add(new Location(world, x, y, z));
+            double angle = (2 * Math.PI * i) / 8;
+            double x = cx + Math.cos(angle) * (ARENA_RADIUS - 5);
+            double z = cz + Math.sin(angle) * (ARENA_RADIUS - 5);
+            double y = arenaY + 10 + Math.random() * 15;
+            waypoints.add(new Location(w, x, y, z));
         }
-        // Add some dive-bomb waypoints (low altitude)
-        for (int i = 0; i < 4; i++) {
-            double angle = (i / 4.0) * Math.PI * 2 + Math.PI / 8;
-            double r = ARENA_R * 0.4;
-            double x = arenaCenter.getX() + r * Math.cos(angle);
-            double z = arenaCenter.getZ() + r * Math.sin(angle);
-            waypoints.add(new Location(world, x, arenaCenter.getY() + 5, z));
-        }
-        currentWaypointIndex = 0;
+        // Center high point
+        waypoints.add(new Location(w, cx, arenaY + 25, cz));
+        // Dive points
+        waypoints.add(new Location(w, cx + 15, arenaY + 5, cz));
+        waypoints.add(new Location(w, cx - 15, arenaY + 5, cz));
+
+        plugin.getLogger().info("[DragonBoss] Generated " + waypoints.size() + " waypoints");
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  MOVEMENT AI
-    // ═══════════════════════════════════════════════════════════
-    private void doMovementAI(World world) {
-        if (dragonModel == null || !dragonModel.isAlive() || waypoints.isEmpty()) return;
+    // ==================== COMBAT LOOP ====================
 
+    private void startCombatLoop(World abyss) {
+        combatTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!fightActive || dragonModel == null || !dragonModel.isAlive()) {
+                    cancel();
+                    return;
+                }
+
+                // Update boss bar
+                double maxHp = DRAGON_HP;
+                double currentHp = dragonModel.getHealth();
+                float progress = (float) Math.max(0, Math.min(1, currentHp / maxHp));
+                bossBar.progress(progress);
+
+                // Check phase transitions
+                double hpPercent = currentHp / maxHp;
+                if (hpPercent <= 0.10 && dragonModel.getPhase() < 4) {
+                    dragonModel.setPhase(4);
+                    phaseAnnounce(abyss, 4, "ENRAGED — THE ABYSS CONSUMES ALL");
+                } else if (hpPercent <= 0.25 && dragonModel.getPhase() < 3) {
+                    dragonModel.setPhase(3);
+                    phaseAnnounce(abyss, 3, "The dragon unleashes its true power!");
+                } else if (hpPercent <= 0.50 && dragonModel.getPhase() < 2) {
+                    dragonModel.setPhase(2);
+                    phaseAnnounce(abyss, 2, "The dragon enters a rage!");
+                }
+
+                // Show boss bar to any new players
+                for (Player p : abyss.getPlayers()) {
+                    fightParticipants.add(p.getUniqueId());
+                    p.showBossBar(bossBar);
+                }
+
+                // Attack logic
+                attackCooldown--;
+                if (attackCooldown <= 0) {
+                    List<Player> nearby = getPlayersInArena(abyss);
+                    if (!nearby.isEmpty()) {
+                        Player target = nearby.get((int)(Math.random() * nearby.size()));
+                        performAttack(target, abyss);
+                        attackCooldown = 3 + (int)(Math.random() * 3); // 6-12 seconds
+                    }
+                }
+
+                // Check death
+                if (currentHp <= 0) {
+                    onDragonDeath(abyss);
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 40L, 40L).getTaskId(); // every 2 seconds
+    }
+
+    private void startMovementLoop(World abyss) {
+        movementTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!fightActive || dragonModel == null || !dragonModel.isAlive()) {
+                    cancel();
+                    return;
+                }
+
+                if (waypoints.isEmpty()) return;
+
+                Location target = waypoints.get(currentWaypoint);
+                dragonModel.moveToward(target, 0.8 + (dragonModel.getPhase() * 0.2));
+
+                // Reached waypoint?
+                Location dragonLoc = dragonModel.getLocation();
+                if (dragonLoc != null && dragonLoc.distance(target) < 3.0) {
+                    // Sometimes fly toward a player instead
+                    List<Player> nearby = getPlayersInArena(abyss);
+                    if (!nearby.isEmpty() && Math.random() < 0.3) {
+                        Player p = nearby.get((int)(Math.random() * nearby.size()));
+                        Location playerAbove = p.getLocation().clone().add(0, 8, 0);
+                        dragonModel.moveToward(playerAbove, 1.2);
+                    }
+                    currentWaypoint = (currentWaypoint + 1) % waypoints.size();
+                }
+            }
+        }.runTaskTimer(plugin, 10L, 10L).getTaskId(); // every 0.5 seconds
+    }
+
+    // ==================== ATTACKS ====================
+
+    private void performAttack(Player target, World abyss) {
+        int phase = dragonModel.getPhase();
+        double roll = Math.random();
+
+        if (phase >= 4) {
+            // Enrage: lightning barrage + void pull
+            enrageLightningBarrage(abyss, target);
+        } else if (phase >= 3) {
+            if (roll < 0.3) voidBreath(target);
+            else if (roll < 0.5) groundPound(abyss);
+            else if (roll < 0.7) summonMinions(abyss);
+            else voidPull(abyss);
+        } else if (phase >= 2) {
+            if (roll < 0.4) voidBreath(target);
+            else if (roll < 0.6) wingGust(abyss);
+            else summonMinions(abyss);
+        } else {
+            if (roll < 0.4) voidBreath(target);
+            else if (roll < 0.7) lightningStrike(abyss, target);
+            else wingGust(abyss);
+        }
+    }
+
+    private void voidBreath(Player target) {
+        if (dragonModel == null) return;
+        dragonModel.breathAttackVisual(target.getLocation());
+        target.damage(8.0 + dragonModel.getPhase() * 2.0);
+        target.sendMessage(Component.text("The dragon's void breath burns!", NamedTextColor.DARK_PURPLE));
+    }
+
+    private void lightningStrike(World abyss, Player target) {
+        abyss.strikeLightningEffect(target.getLocation());
+        target.damage(6.0);
+    }
+
+    private void wingGust(World abyss) {
+        if (dragonModel == null) return;
+        dragonModel.wingGustVisual();
         Location dragonLoc = dragonModel.getLocation();
         if (dragonLoc == null) return;
 
-        Location target = waypoints.get(currentWaypointIndex);
-        double dist = dragonLoc.distance(target);
-
-        if (dist < 3.0) {
-            // Pick next waypoint
-            if (currentPhase >= 2 && rng.nextDouble() < 0.3) {
-                // In later phases, sometimes target a player directly
-                List<Player> players = getPlayersInArena(world);
-                if (!players.isEmpty()) {
-                    Player p = players.get(rng.nextInt(players.size()));
-                    Location diveLoc = p.getLocation().clone().add(0, 4, 0);
-                    dragonModel.setTarget(diveLoc);
-                    return;
-                }
-            }
-            currentWaypointIndex = rng.nextInt(waypoints.size());
+        for (Player p : getPlayersInArena(abyss)) {
+            Vector knockback = p.getLocation().toVector().subtract(dragonLoc.toVector()).normalize().multiply(2.5);
+            knockback.setY(0.8);
+            p.setVelocity(knockback);
+            p.damage(4.0);
         }
-
-        dragonModel.setTarget(target);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  COMBAT: Attacks
-    // ═══════════════════════════════════════════════════════════
-    private void doAttacks(World world) {
-        if (dragonModel == null || !dragonModel.isAlive()) return;
-        Zombie base = dragonModel.getBaseEntity();
-        if (base == null) return;
-        double hpPercent = base.getHealth() / DRAGON_HP;
-        List<Player> nearbyPlayers = getPlayersInArena(world);
-        if (nearbyPlayers.isEmpty()) return;
+    private void groundPound(World abyss) {
+        if (dragonModel == null) return;
+        Location loc = dragonModel.getLocation();
+        if (loc == null) return;
 
-        // Lightning (every 10s)
-        if (attackTick % 5 == 0) {
-            int bolts = hpPercent < 0.25 ? 5 : hpPercent < 0.50 ? 4 : hpPercent < 0.75 ? 3 : 2;
-            for (int i = 0; i < bolts; i++) {
-                Player target = nearbyPlayers.get(rng.nextInt(nearbyPlayers.size()));
-                Location strike = target.getLocation().add((rng.nextDouble() - 0.5) * 5, 0, (rng.nextDouble() - 0.5) * 5);
-                world.strikeLightningEffect(strike);
-                for (Player p : nearbyPlayers) {
-                    if (p.getLocation().distance(strike) < 3.5) p.damage(7);
-                }
-            }
-        }
+        abyss.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 2, 0, 2, 0.1);
+        abyss.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
 
-        // Void Breath (every 8s)
-        if (attackTick % 4 == 0) {
-            Player target = nearbyPlayers.get(rng.nextInt(nearbyPlayers.size()));
-            dragonModel.breathAttackVisual(target.getLocation());
-            Location dragonLoc = dragonModel.getLocation();
-            if (dragonLoc != null) {
-                for (Player p : nearbyPlayers) {
-                    if (p.getLocation().distance(dragonLoc) < 15) {
-                        p.damage(6);
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1));
-                    }
-                }
-                world.playSound(dragonLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.7f);
-            }
-        }
-
-        // Minions (every 16s)
-        if (attackTick % 8 == 0) {
-            int current = countMinions(world);
-            if (current < MAX_MINIONS) {
-                int toSpawn = Math.min(2, MAX_MINIONS - current);
-                for (int i = 0; i < toSpawn; i++) {
-                    Location minionLoc = arenaCenter.clone().add((rng.nextDouble() - 0.5) * 30, 1, (rng.nextDouble() - 0.5) * 30);
-                    if (i % 2 == 0) {
-                        world.spawn(minionLoc, Enderman.class, e -> {
-                            e.customName(Component.text("Void Servant", NamedTextColor.DARK_PURPLE));
-                            e.setCustomNameVisible(true);
-                            e.addScoreboardTag("abyss_minion");
-                            Objects.requireNonNull(e.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(40);
-                            e.setHealth(40);
-                        });
-                    } else {
-                        world.spawn(minionLoc, WitherSkeleton.class, ws -> {
-                            ws.customName(Component.text("Abyssal Guard", NamedTextColor.DARK_RED));
-                            ws.setCustomNameVisible(true);
-                            ws.addScoreboardTag("abyss_minion");
-                            Objects.requireNonNull(ws.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(60);
-                            ws.setHealth(60);
-                            ws.getEquipment().setItemInMainHand(new ItemStack(Material.NETHERITE_SWORD));
-                        });
-                    }
-                }
-                world.playSound(arenaCenter, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
-            }
-        }
-
-        // Wing Gust (every 12s in phase 2+)
-        if (currentPhase >= 1 && attackTick % 6 == 0) {
-            dragonModel.wingGustVisual();
-            Location dragonLoc = dragonModel.getLocation();
-            if (dragonLoc != null) {
-                world.playSound(dragonLoc, Sound.ENTITY_ENDER_DRAGON_FLAP, 2f, 0.5f);
-                for (Player p : nearbyPlayers) {
-                    double dist = p.getLocation().distance(dragonLoc);
-                    if (dist < 12) {
-                        Vector kb = p.getLocation().toVector().subtract(dragonLoc.toVector()).normalize().multiply(1.5);
-                        kb.setY(0.6);
-                        p.setVelocity(p.getVelocity().add(kb));
-                        p.damage(5);
-                    }
-                }
-            }
-        }
-
-        // Ground Pound (phase 3+, every 12s)
-        if (currentPhase >= 2 && attackTick % 6 == 3) {
-            world.spawnParticle(Particle.EXPLOSION, arenaCenter, 10, 8, 1, 8, 0.1);
-            world.playSound(arenaCenter, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.5f);
-            for (Player p : nearbyPlayers) {
-                double dist = p.getLocation().distance(arenaCenter);
-                if (dist < 15) {
-                    p.damage(8);
-                    Vector kb = p.getLocation().toVector().subtract(arenaCenter.toVector()).normalize().multiply(1.2);
-                    kb.setY(0.5);
-                    p.setVelocity(p.getVelocity().add(kb));
-                }
-            }
-        }
-
-        // Void Pull (phase 4, constant)
-        if (currentPhase >= 3) {
-            Location dragonLoc = dragonModel.getLocation();
-            if (dragonLoc != null) {
-                for (Player p : nearbyPlayers) {
-                    Vector pull = dragonLoc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.35);
-                    p.setVelocity(p.getVelocity().add(pull));
-                    p.damage(2);
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0));
-                }
-                world.spawnParticle(Particle.SOUL_FIRE_FLAME, dragonLoc, 40, 4, 4, 4, 0.05);
-                world.spawnParticle(Particle.SOUL, dragonLoc, 25, 5, 5, 5, 0.02);
-            }
-        }
-
-        // Enrage (below 10%)
-        if (hpPercent < 0.10) {
-            for (int a = 0; a < 360; a += 30) {
-                double rad = Math.toRadians(a + attackTick * 10);
-                int lx = (int) Math.round(arenaCenter.getX() + 15 * Math.cos(rad));
-                int lz = (int) Math.round(arenaCenter.getZ() + 15 * Math.sin(rad));
-                world.strikeLightningEffect(new Location(world, lx, arenaCenter.getY(), lz));
-            }
-            for (Player p : nearbyPlayers) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0));
+        for (Player p : getPlayersInArena(abyss)) {
+            if (p.getLocation().distance(loc) < 15) {
+                p.damage(10.0);
+                Vector up = new Vector(0, 1.5, 0);
+                p.setVelocity(p.getVelocity().add(up));
             }
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  PHASE TRANSITIONS
-    // ═══════════════════════════════════════════════════════════
-    private void checkPhaseTransitions() {
-        if (dragonModel == null || !dragonModel.isAlive()) return;
-        Zombie base = dragonModel.getBaseEntity();
-        if (base == null) return;
-        double hpPercent = base.getHealth() / DRAGON_HP;
+    private void voidPull(World abyss) {
+        if (dragonModel == null) return;
+        Location dragonLoc = dragonModel.getLocation();
+        if (dragonLoc == null) return;
 
-        int newPhase;
-        if (hpPercent <= 0.10) newPhase = 3;
-        else if (hpPercent <= 0.25) newPhase = 3;
-        else if (hpPercent <= 0.50) newPhase = 2;
-        else if (hpPercent <= 0.75) newPhase = 1;
-        else newPhase = 0;
+        abyss.spawnParticle(Particle.PORTAL, dragonLoc, 200, 8, 8, 8, 0.5);
+        abyss.playSound(dragonLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.3f);
 
-        if (newPhase > currentPhase) {
-            currentPhase = newPhase;
-            dragonModel.phaseTransition(currentPhase);
-            World world = base.getWorld();
-            String[] phaseNames = {"Phase 2: Fury Awakens", "Phase 3: Void Tremor", "Phase 4: Soul Harvest"};
-            NamedTextColor[] phaseColors = {NamedTextColor.RED, NamedTextColor.DARK_PURPLE, NamedTextColor.DARK_RED};
-            if (currentPhase > 0 && currentPhase <= 3) {
-                Title.Times t = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500));
-                for (Player p : world.getPlayers()) {
-                    p.showTitle(Title.title(
-                        Component.text("\u2620", NamedTextColor.DARK_PURPLE),
-                        Component.text(phaseNames[currentPhase - 1], phaseColors[currentPhase - 1], TextDecoration.BOLD), t
-                    ));
-                    p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.6f);
-                }
-            }
-            // Update boss bar color per phase
-            BossBar.Color[] barColors = {BossBar.Color.PURPLE, BossBar.Color.RED, BossBar.Color.RED, BossBar.Color.RED};
-            if (bossBar != null && currentPhase < barColors.length) {
-                bossBar.color(barColors[currentPhase]);
-            }
+        for (Player p : getPlayersInArena(abyss)) {
+            Vector pull = dragonLoc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.8);
+            p.setVelocity(p.getVelocity().add(pull));
+            p.damage(3.0);
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  BOSS BAR
-    // ═══════════════════════════════════════════════════════════
-    private void updateBossBar() {
-        if (bossBar == null || dragonModel == null || !dragonModel.isAlive()) return;
-        Zombie base = dragonModel.getBaseEntity();
-        if (base == null) return;
-        float progress = (float) Math.max(0, Math.min(1, base.getHealth() / DRAGON_HP));
-        bossBar.progress(progress);
-    }
+    private void summonMinions(World abyss) {
+        if (dragonModel == null) return;
+        Location loc = dragonModel.getLocation();
+        if (loc == null) return;
 
-    private void showBossBarToNewPlayers(World world) {
-        if (bossBar == null) return;
-        for (Player p : world.getPlayers()) {
-            p.showBossBar(bossBar);
+        int count = Math.min(3 + dragonModel.getPhase(), 6);
+        for (int i = 0; i < count; i++) {
+            Location spawn = loc.clone().add(
+                (Math.random() - 0.5) * 20, -5, (Math.random() - 0.5) * 20);
+
+            if (Math.random() < 0.5) {
+                Enderman e = abyss.spawn(spawn, Enderman.class);
+                e.customName(Component.text("Void Minion", NamedTextColor.DARK_PURPLE));
+            } else {
+                WitherSkeleton ws = abyss.spawn(spawn, WitherSkeleton.class);
+                ws.customName(Component.text("Abyss Guard", NamedTextColor.DARK_RED));
+            }
+        }
+
+        abyss.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.5f);
+        for (Player p : abyss.getPlayers()) {
+            p.sendMessage(Component.text("Minions emerge from the void!", NamedTextColor.DARK_PURPLE));
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  DAMAGE HANDLING
-    // ═══════════════════════════════════════════════════════════
-    @EventHandler
-    public void onBossDamage(EntityDamageEvent event) {
-        if (!active || dragonModel == null) return;
-        Zombie base = dragonModel.getBaseEntity();
-        if (base == null || !(event.getEntity() instanceof Zombie z)) return;
-        if (!z.getUniqueId().equals(base.getUniqueId())) return;
+    private void enrageLightningBarrage(World abyss, Player target) {
+        new BukkitRunnable() {
+            int strikes = 0;
+            @Override
+            public void run() {
+                if (strikes >= 8 || !fightActive) { cancel(); return; }
+                Location loc = target.getLocation().add(
+                    (Math.random() - 0.5) * 10, 0, (Math.random() - 0.5) * 10);
+                abyss.strikeLightningEffect(loc);
+                strikes++;
+            }
+        }.runTaskTimer(plugin, 0L, 5L);
+    }
 
-        // Apply damage reduction
-        event.setDamage(event.getDamage() * (1.0 - DAMAGE_REDUCTION));
+    private void phaseAnnounce(World abyss, int phase, String message) {
+        for (Player p : abyss.getPlayers()) {
+            p.showTitle(Title.title(
+                Component.text("PHASE " + phase, NamedTextColor.DARK_RED, TextDecoration.BOLD),
+                Component.text(message, NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500))
+            ));
+            p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.5f);
+        }
+        bossBar.color(phase >= 3 ? BossBar.Color.RED : BossBar.Color.PURPLE);
+    }
 
-        // Cancel environmental damage
-        EntityDamageEvent.DamageCause cause = event.getCause();
-        if (cause == EntityDamageEvent.DamageCause.SUFFOCATION ||
-            cause == EntityDamageEvent.DamageCause.DROWNING ||
-            cause == EntityDamageEvent.DamageCause.FALL ||
-            cause == EntityDamageEvent.DamageCause.FIRE ||
-            cause == EntityDamageEvent.DamageCause.FIRE_TICK ||
-            cause == EntityDamageEvent.DamageCause.LAVA) {
+    // ==================== DAMAGE HANDLING ====================
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!fightActive || dragonModel == null) return;
+        if (dragonModel.getBaseEntity() == null) return;
+        if (!event.getEntity().getUniqueId().equals(dragonModel.getBaseEntity().getUniqueId())) return;
+
+        // Block environmental damage
+        if (!(event instanceof EntityDamageByEntityEvent)) {
             event.setCancelled(true);
             return;
         }
 
-        // Visual damage flash
+        // Apply damage reduction
+        double originalDamage = event.getDamage();
+        double reduced = originalDamage * (1.0 - DAMAGE_REDUCTION);
+        event.setDamage(reduced);
+
         dragonModel.damageFlash();
+
+        // Check if dragon died
+        double newHp = dragonModel.getHealth() - reduced;
+        if (newHp <= 0) {
+            event.setCancelled(true); // We handle death ourselves
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (fightActive) {
+                        onDragonDeath(dragonModel.getLocation().getWorld());
+                    }
+                }
+            }.runTaskLater(plugin, 1L);
+        }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  DEATH
-    // ═══════════════════════════════════════════════════════════
-    @EventHandler
-    public void onBossDeath(EntityDeathEvent event) {
-        if (!active || dragonModel == null) return;
-        Zombie base = dragonModel.getBaseEntity();
-        if (base == null || !(event.getEntity() instanceof Zombie z)) return;
-        if (!z.getUniqueId().equals(base.getUniqueId())) return;
+    // ==================== DEATH / LOOT ====================
 
-        event.getDrops().clear();
-        event.setDroppedExp(0);
-        active = false;
-        lastDeathTime = System.currentTimeMillis();
+    private void onDragonDeath(World abyss) {
+        if (!fightActive) return;
+        fightActive = false;
+        lastFightEnd = System.currentTimeMillis();
 
-        if (combatLoop != null) try { combatLoop.cancel(); } catch (Exception ignored) {}
-        if (movementAI != null) try { movementAI.cancel(); } catch (Exception ignored) {}
+        plugin.getLogger().info("[DragonBoss] Dragon defeated!");
 
-        World world = z.getWorld();
-        clearMinions(world);
+        // Cancel tasks
+        if (combatTaskId != -1) Bukkit.getScheduler().cancelTask(combatTaskId);
+        if (movementTaskId != -1) Bukkit.getScheduler().cancelTask(movementTaskId);
+        combatTaskId = -1;
+        movementTaskId = -1;
 
-        // Remove boss bar
-        if (bossBar != null) {
-            for (Player p : Bukkit.getOnlinePlayers()) p.hideBossBar(bossBar);
-            bossBar = null;
+        // Boss bar
+        bossBar.progress(0);
+        bossBar.name(Component.text("DEFEATED", NamedTextColor.GRAY, TextDecoration.STRIKETHROUGH));
+
+        // Death animation
+        if (dragonModel != null) {
+            dragonModel.playDeathAnimation();
         }
 
-        // Victory announcement
-        Title.Times times = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(5), Duration.ofMillis(1500));
-        for (Player p : Bukkit.getOnlinePlayers()) {
+        Location deathLoc = dragonModel != null && dragonModel.getLocation() != null ?
+            dragonModel.getLocation() : new Location(abyss, 0, 80, AbyssDimensionManager.ARENA_CENTER_Z);
+
+        // Victory message
+        for (Player p : abyss.getPlayers()) {
             p.showTitle(Title.title(
                 Component.text("VICTORY!", NamedTextColor.GOLD, TextDecoration.BOLD),
-                Component.text("The Abyssal Dragon has been vanquished!", NamedTextColor.YELLOW),
-                times
+                Component.text("The Abyssal Dragon has fallen!", NamedTextColor.YELLOW),
+                Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(4), Duration.ofMillis(1000))
             ));
-            p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.5f, 1f);
+            p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+            // Fireworks
+            for (int i = 0; i < 5; i++) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        Location fw = deathLoc.clone().add(
+                            (Math.random() - 0.5) * 20, Math.random() * 10, (Math.random() - 0.5) * 20);
+                        abyss.spawnParticle(Particle.FIREWORK, fw, 50, 2, 2, 2, 0.1);
+                        abyss.playSound(fw, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.0f);
+                    }
+                }.runTaskLater(plugin, 20L + i * 20L);
+            }
         }
 
-        // Death animation (scatters display parts)
-        dragonModel.deathAnimation();
-
-        // Drop loot after a delay (let animation play)
+        // Drop loot after death animation
         new BukkitRunnable() {
             @Override
             public void run() {
-                dropLoot(world);
-                createExitPortal(world);
-                // Fireworks
+                dropLoot(abyss, deathLoc);
+                // Remove boss bar after 10 seconds
                 new BukkitRunnable() {
-                    int count = 0;
                     @Override
                     public void run() {
-                        if (count++ >= 12 || arenaCenter == null) { cancel(); return; }
-                        world.spawnParticle(Particle.FIREWORK, arenaCenter.clone().add(0, 5, 0), 120, 10, 10, 10, 0.3);
-                        world.playSound(arenaCenter, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.5f, 1f);
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            p.hideBossBar(bossBar);
+                        }
                     }
-                }.runTaskTimer(plugin, 0L, 20L);
-            }
-        }.runTaskLater(plugin, 50L); // 2.5 seconds for death anim
+                }.runTaskLater(plugin, 200L);
 
-        dragonModel = null;
-        plugin.getLogger().info("[DragonBoss] Dragon defeated! Custom model death animation played.");
+                // Clean up minions
+                abyss.getEntitiesByClass(Enderman.class).forEach(e -> {
+                    if (e.customName() != null) e.remove();
+                });
+                abyss.getEntitiesByClass(WitherSkeleton.class).forEach(e -> {
+                    if (e.customName() != null) e.remove();
+                });
+            }
+        }.runTaskLater(plugin, 80L);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  LOOT
-    // ═══════════════════════════════════════════════════════════
-    private void dropLoot(World world) {
-        if (arenaCenter == null) return;
-        Location dropLoc = arenaCenter.clone().add(0, 1, 0);
+    private void dropLoot(World abyss, Location loc) {
+        // Dragon Egg
+        abyss.dropItemNaturally(loc, new ItemStack(Material.DRAGON_EGG, 1));
+        // Nether Star
+        abyss.dropItemNaturally(loc, new ItemStack(Material.NETHER_STAR, 2));
+        // Experience
+        for (int i = 0; i < 20; i++) {
+            Location xpLoc = loc.clone().add((Math.random()-0.5)*5, Math.random()*3, (Math.random()-0.5)*5);
+            abyss.spawn(xpLoc, ExperienceOrb.class, orb -> orb.setExperience(50));
+        }
 
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.DRAGON_EGG, 1));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHER_STAR, 3));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.EXPERIENCE_BOTTLE, 64));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.NETHERITE_INGOT, 4));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.ELYTRA, 1));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.TOTEM_OF_UNDYING, 2));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 8));
-        world.dropItemNaturally(dropLoc, new ItemStack(Material.END_CRYSTAL, 4));
-
+        // Abyssal weapon drop (guaranteed)
         try {
-            if (plugin.getLegendaryWeaponManager() != null) {
-                List<LegendaryWeapon> highTier = new ArrayList<>();
-                for (LegendaryWeapon lw : LegendaryWeapon.values()) {
-                    String tn = lw.getTier().name();
-                    if (tn.equals("ABYSSAL") || tn.equals("MYTHIC")) highTier.add(lw);
-                }
-                for (int i = 0; i < 2 && !highTier.isEmpty(); i++) {
-                    LegendaryWeapon chosen = highTier.get(rng.nextInt(highTier.size()));
-                    ItemStack weapon = plugin.getLegendaryWeaponManager().createWeapon(chosen);
-                    if (weapon != null) world.dropItemNaturally(dropLoc, weapon);
+            List<LegendaryWeapon> abyssals = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
+            if (!abyssals.isEmpty()) {
+                LegendaryWeapon weapon = abyssals.get((int)(Math.random() * abyssals.size()));
+                ItemStack weaponItem = plugin.getLegendaryWeaponManager().createWeaponItem(weapon);
+                if (weaponItem != null) {
+                    abyss.dropItemNaturally(loc, weaponItem);
+                    plugin.getLogger().info("[DragonBoss] Dropped ABYSSAL weapon: " + weapon.getDisplayName());
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("[DragonBoss] Error dropping legendary weapons: " + e.getMessage());
+            plugin.getLogger().warning("[DragonBoss] Failed to drop legendary weapon: " + e.getMessage());
         }
 
-        try {
-            if (plugin.getPowerUpManager() != null) {
-                for (int i = 0; i < 2; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createPhoenixFeather());
-                for (int i = 0; i < 3; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createHeartCrystal());
-                for (int i = 0; i < 5; i++) world.dropItemNaturally(dropLoc, plugin.getPowerUpManager().createSoulFragment());
-            }
-        } catch (Exception e) {
-            plugin.getLogger().warning("[DragonBoss] Error dropping power-ups: " + e.getMessage());
-        }
+        // Extra items
+        abyss.dropItemNaturally(loc, new ItemStack(Material.NETHERITE_INGOT, 3));
+        abyss.dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 16));
+        abyss.dropItemNaturally(loc, new ItemStack(Material.EMERALD, 32));
 
-        for (int i = 0; i < 25; i++) {
-            Location orbLoc = dropLoc.clone().add((rng.nextDouble() - 0.5) * 4, 1, (rng.nextDouble() - 0.5) * 4);
-            world.spawn(orbLoc, ExperienceOrb.class, o -> o.setExperience(500));
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    //  EXIT PORTAL
-    // ═══════════════════════════════════════════════════════════
-    private void createExitPortal(World world) {
-        if (arenaCenter == null) return;
-        int cx = arenaCenter.getBlockX(), cy = arenaCenter.getBlockY(), cz = arenaCenter.getBlockZ();
-        for (int x = -2; x <= 2; x++) {
-            for (int z = -2; z <= 2; z++) {
-                world.getBlockAt(cx + x, cy - 1, cz + z).setType(Material.BEDROCK);
-                if (Math.abs(x) <= 1 && Math.abs(z) <= 1) {
-                    world.getBlockAt(cx + x, cy, cz + z).setType(Material.END_PORTAL);
-                }
-            }
-        }
-        world.playSound(arenaCenter, Sound.BLOCK_END_PORTAL_SPAWN, 2f, 1f);
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    //  UTILITIES
-    // ═══════════════════════════════════════════════════════════
-    private List<Player> getPlayersInArena(World world) {
-        List<Player> players = new ArrayList<>();
-        for (Player p : world.getPlayers()) {
-            if (arenaCenter != null && p.getLocation().distance(arenaCenter) <= ARENA_R + 15) players.add(p);
-        }
-        return players;
-    }
-
-    private int countMinions(World world) {
-        int count = 0;
-        for (Entity e : world.getEntities()) {
-            if (e.getScoreboardTags().contains("abyss_minion") && !e.isDead()) count++;
-        }
-        return count;
-    }
-
-    private void clearMinions(World world) {
-        for (Entity e : world.getEntities()) {
-            if (e.getScoreboardTags().contains("abyss_minion")) e.remove();
-        }
-    }
-
-    private void cleanupDragonEntities(World world) {
-        for (Entity e : world.getEntities()) {
-            if (e.getScoreboardTags().contains("abyss_dragon_base") ||
-                e.getScoreboardTags().contains("abyss_dragon_part")) {
-                e.remove();
-            }
-        }
-        // Also remove any stray EnderDragons
-        for (EnderDragon d : world.getEntitiesByClass(EnderDragon.class)) {
-            d.remove();
-        }
-    }
-
-    private int findArenaY(World world) {
-        // Check arena center (0, y, -120) for any solid floor block
-        for (int y = 200; y >= -64; y--) {
-            Material mat = world.getBlockAt(0, y, ARENA_CENTER_Z).getType();
-            if (mat == Material.BEDROCK || mat == Material.OBSIDIAN
-                    || mat == Material.CRYING_OBSIDIAN || mat == Material.DEEPSLATE_BRICKS
-                    || mat == Material.POLISHED_BLACKSTONE_BRICKS || mat == Material.BLACKSTONE
-                    || mat == Material.END_STONE_BRICKS || mat == Material.DEEPSLATE_TILES) {
-                return y;
-            }
-        }
-        // Fallback: check center of citadel (0, y, 0)
-        for (int y = 200; y >= -64; y--) {
-            Material mat = world.getBlockAt(0, y, 0).getType();
-            if (mat.isSolid() && mat != Material.BARRIER) return y;
-        }
-        plugin.getLogger().warning("[DragonBoss] findArenaY found no floor, returning 64 as fallback");
-        return 64;
-    }
-
-    private void doAmbientParticles(World world) {
-        if (arenaCenter == null) return;
-        world.spawnParticle(Particle.ASH, arenaCenter, 20, 20, 12, 20, 0);
-        if (dragonModel != null && dragonModel.isAlive()) {
-            Location dloc = dragonModel.getLocation();
-            if (dloc != null) {
-                world.spawnParticle(Particle.DRAGON_BREATH, dloc, 12, 2, 1, 2, 0.01);
-                world.spawnParticle(Particle.REVERSE_PORTAL, dloc, 8, 1, 1, 1, 0.05);
+        // Exit portal
+        Location portalLoc = new Location(abyss, 0, loc.getBlockY(), AbyssDimensionManager.ARENA_CENTER_Z);
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                abyss.getBlockAt(portalLoc.getBlockX() + x, portalLoc.getBlockY(),
+                    portalLoc.getBlockZ() + z).setType(Material.END_GATEWAY);
             }
         }
     }
 
-    public boolean isActive() { return active; }
+    // ==================== UTILITIES ====================
+
+    private List<Player> getPlayersInArena(World abyss) {
+        List<Player> result = new ArrayList<>();
+        Location center = new Location(abyss, 0, 0, AbyssDimensionManager.ARENA_CENTER_Z);
+        for (Player p : abyss.getPlayers()) {
+            double dx = p.getLocation().getX() - center.getX();
+            double dz = p.getLocation().getZ() - center.getZ();
+            if (Math.sqrt(dx*dx + dz*dz) <= ARENA_RADIUS + 10) {
+                result.add(p);
+            }
+        }
+        return result;
+    }
+
+    public boolean isFightActive() { return fightActive; }
 }

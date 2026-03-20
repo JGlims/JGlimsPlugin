@@ -6,381 +6,455 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Enderman;
 import org.bukkit.boss.DragonBattle;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.WitherSkeleton;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.Duration;
 import java.util.*;
 
 /**
- * AbyssDimensionManager v4.0 - Matched to AbyssCitadelBuilder v4.0 Gothic Cathedral
- *
- * Teleport destination: south approach at (0.5, safeY, 115.5) facing north (180f yaw)
- * The cathedral entrance faces +Z (south), so players land outside looking at the facade.
- *
- * Arena is at z=-120 (behind the cathedral). The ambient mob exclusion zone
- * avoids a 50-block radius around (0, y, -120).
+ * AbyssDimensionManager v9.0 — Complete rewrite
+ * Fixes: phantom Ender Dragon boss bar, world environment,
+ *        portal detection, NPC leak, and arena coordinates.
  */
 public class AbyssDimensionManager implements Listener {
 
-    private static final String ABYSS_WORLD_NAME = "world_abyss";
-    private static final int ARENA_CENTER_Z = -120; // must match AbyssDragonBoss
+    private static final String WORLD_NAME = "world_abyss";
+    public static final int ARENA_CENTER_Z = -120;
+
     private final JGlimsPlugin plugin;
     private World abyssWorld;
     private boolean citadelBuilt = false;
-    private final Map<UUID, Set<String>> activePortalBlocks = new HashMap<>();
-    private final Set<UUID> teleportCooldown = new HashSet<>();
+
+    // Active portal gateway blocks
+    private final Set<Location> activePortalBlocks = new HashSet<>();
+    private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
 
     public AbyssDimensionManager(JGlimsPlugin plugin) {
         this.plugin = plugin;
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  INITIALIZATION
-    // ═══════════════════════════════════════════════════════════
     public void initialize() {
-        abyssWorld = Bukkit.getWorld(ABYSS_WORLD_NAME);
-        boolean freshWorld = (abyssWorld == null);
+        plugin.getLogger().info("[Abyss] Initializing Abyss dimension...");
 
-        if (freshWorld) {
-            plugin.getLogger().info("[Abyss] Creating dimension: " + ABYSS_WORLD_NAME);
-            WorldCreator creator = new WorldCreator(ABYSS_WORLD_NAME);
-            creator.environment(World.Environment.THE_END);
-            creator.generator(new AbyssChunkGenerator());
-            abyssWorld = creator.createWorld();
-        } else {
-            plugin.getLogger().info("[Abyss] Loaded existing dimension: " + ABYSS_WORLD_NAME);
+        // === Create world_abyss paper-world.yml BEFORE world loads ===
+        // This disables the vanilla dragon fight at the config level
+        java.io.File worldFolder = new java.io.File(
+            Bukkit.getWorldContainer(), WORLD_NAME);
+        if (!worldFolder.exists()) {
+            worldFolder.mkdirs();
+        }
+        java.io.File paperWorldYml = new java.io.File(worldFolder, "paper-world.yml");
+        if (!paperWorldYml.exists()) {
+            try {
+                String yaml = "_version: 31\nentities:\n  spawning:\n    scan-for-legacy-ender-dragon: false\n";
+                java.nio.file.Files.writeString(paperWorldYml.toPath(), yaml);
+                plugin.getLogger().info("[Abyss] Created paper-world.yml with dragon scan disabled");
+            } catch (Exception e) {
+                plugin.getLogger().warning("[Abyss] Could not create paper-world.yml: " + e.getMessage());
+            }
         }
 
-        if (abyssWorld != null) {
-            abyssWorld.setDifficulty(Difficulty.HARD);
-            abyssWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            abyssWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-            abyssWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-            abyssWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
-            abyssWorld.setGameRule(GameRule.MOB_GRIEFING, false);
-            abyssWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
-            abyssWorld.setTime(18000);
-            // THE_END environment provides permanent dark void sky
+        // === Create the world with THE_END environment ===
+        WorldCreator creator = new WorldCreator(WORLD_NAME);
+        creator.environment(World.Environment.THE_END);
+        creator.generator(new AbyssChunkGenerator());
+        creator.generateStructures(false);
+        abyssWorld = Bukkit.createWorld(creator);
 
-            // Aggressively kill vanilla Ender Dragon + boss bar every 2 seconds
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (abyssWorld == null) return;
-                    // Remove all EnderDragons (vanilla ones have no custom name or default name)
-                    for (EnderDragon d : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
-                        d.remove();
-                    }
-                    // Disable the dragon battle / boss bar
-                    DragonBattle battle = abyssWorld.getEnderDragonBattle();
-                    if (battle != null && battle.getEnderDragon() != null) {
-                        battle.getEnderDragon().remove();
-                    }
-                }
-            }.runTaskTimer(plugin, 20L, 40L);
+        if (abyssWorld == null) {
+            plugin.getLogger().severe("[Abyss] FAILED to create world_abyss!");
+            return;
+        }
 
-            startAmbientSpawner();
+        // === Disable game rules ===
+        abyssWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        abyssWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        abyssWorld.setGameRule(GameRule.DO_FIRE_TICK, false);
+        abyssWorld.setGameRule(GameRule.MOB_GRIEFING, false);
+        abyssWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+        abyssWorld.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
+        abyssWorld.setDifficulty(Difficulty.HARD);
+        abyssWorld.setTime(18000); // midnight
+        abyssWorld.setStorm(false);
+        abyssWorld.setThundering(false);
 
-            if (freshWorld) {
-                plugin.getLogger().info("[Abyss] Building massive Abyssal Citadel on fresh world...");
+        // === CRITICAL: Disable the vanilla DragonBattle ===
+        disableVanillaDragonBattle();
+
+        // === Build citadel if fresh world ===
+        if (!citadelBuilt) {
+            boolean hasBlocks = false;
+            // Quick check: is there anything built at the citadel location?
+            Block check = abyssWorld.getBlockAt(0, 65, 0);
+            if (check.getType() != Material.AIR && check.getType() != Material.END_STONE) {
+                hasBlocks = true;
+            }
+            if (!hasBlocks) {
+                plugin.getLogger().info("[Abyss] Building Abyssal Citadel...");
                 new AbyssCitadelBuilder(plugin, abyssWorld).build();
                 citadelBuilt = true;
-                plugin.getLogger().info("[Abyss] Citadel construction complete.");
             } else {
                 citadelBuilt = true;
+                plugin.getLogger().info("[Abyss] Citadel already exists, skipping build.");
             }
+        }
+
+        // === Repeating task: remove stray EnderDragons and their boss bars ===
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (abyssWorld == null) { cancel(); return; }
+                disableVanillaDragonBattle();
+                // Remove any EnderDragon entities
+                abyssWorld.getEntitiesByClass(EnderDragon.class).forEach(dragon -> {
+                    dragon.remove();
+                });
+            }
+        }.runTaskTimer(plugin, 200L, 200L); // every 10 seconds
+
+        // === Start ambient mob spawner ===
+        startAmbientSpawner();
+
+        plugin.getLogger().info("[Abyss] Abyss dimension initialized successfully!");
+    }
+
+    /**
+     * Disables the vanilla DragonBattle and removes its boss bar.
+     * This is the fix for the phantom "Ender Dragon" health bar.
+     */
+    private void disableVanillaDragonBattle() {
+        if (abyssWorld == null) return;
+        try {
+            DragonBattle battle = abyssWorld.getEnderDragonBattle();
+            if (battle != null) {
+                // Get the boss bar from the battle and remove all players
+                org.bukkit.boss.BossBar bar = battle.getBossBar();
+                if (bar != null) {
+                    bar.setVisible(false);
+                    bar.removeAll();
+                }
+                // Remove the dragon entity if one exists
+                EnderDragon dragon = battle.getEnderDragon();
+                if (dragon != null) {
+                    dragon.remove();
+                }
+            }
+        } catch (Exception e) {
+            // Some versions may not support all these methods
+            plugin.getLogger().fine("[Abyss] DragonBattle cleanup note: " + e.getMessage());
         }
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  AMBIENT MOB SPAWNER
-    // ═══════════════════════════════════════════════════════════
     private void startAmbientSpawner() {
         new BukkitRunnable() {
-            final Random rng = new Random();
             @Override
             public void run() {
-                if (abyssWorld == null) return;
+                if (abyssWorld == null) { cancel(); return; }
                 for (Player p : abyssWorld.getPlayers()) {
-                    Location pLoc = p.getLocation();
-                    long ambientCount = abyssWorld.getEntities().stream()
-                        .filter(e -> e.getScoreboardTags().contains("abyss_ambient"))
+                    // Don't spawn ambient mobs near the arena
+                    if (Math.abs(p.getLocation().getZ() - ARENA_CENTER_Z) < 50) continue;
+
+                    int count = (int) abyssWorld.getEntities().stream()
+                        .filter(e -> e.getType() == EntityType.ENDERMAN ||
+                                     e.getType() == EntityType.WITHER_SKELETON)
                         .count();
-                    if (ambientCount >= 12) continue;
+                    if (count >= 12) continue;
 
-                    double angle = rng.nextDouble() * Math.PI * 2;
-                    double dist = 25 + rng.nextDouble() * 20;
-                    double sx = pLoc.getX() + Math.cos(angle) * dist;
-                    double sz = pLoc.getZ() + Math.sin(angle) * dist;
+                    Location spawn = p.getLocation().add(
+                        (Math.random() - 0.5) * 60,
+                        0,
+                        (Math.random() - 0.5) * 60
+                    );
+                    spawn.setY(findSafeY(spawn));
 
-                    // Don't spawn inside arena zone (50-block radius around arena center)
-                    double arenaDistSq = sx * sx + (sz - ARENA_CENTER_Z) * (sz - ARENA_CENTER_Z);
-                    if (arenaDistSq < 50 * 50) continue;
-
-                    int sy = findSafeY(abyssWorld, (int) sx, (int) sz);
-                    Location spawnLoc = new Location(abyssWorld, sx, sy, sz);
-
-                    if (rng.nextDouble() < 0.6) {
-                        abyssWorld.spawn(spawnLoc, Enderman.class, e -> {
-                            e.customName(Component.text("Void Wanderer", NamedTextColor.DARK_PURPLE));
-                            e.setCustomNameVisible(true);
-                            e.addScoreboardTag("abyss_ambient");
-                            Objects.requireNonNull(e.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(50);
-                            e.setHealth(50);
-                        });
+                    if (Math.random() < 0.6) {
+                        var mob = abyssWorld.spawnEntity(spawn, EntityType.ENDERMAN);
+                        mob.customName(Component.text("Void Wanderer", NamedTextColor.DARK_PURPLE));
                     } else {
-                        abyssWorld.spawn(spawnLoc, WitherSkeleton.class, ws -> {
-                            ws.customName(Component.text("Abyssal Sentinel", NamedTextColor.DARK_RED));
-                            ws.setCustomNameVisible(true);
-                            ws.addScoreboardTag("abyss_ambient");
-                            Objects.requireNonNull(ws.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(40);
-                            ws.setHealth(40);
-                            ws.getEquipment().setItemInMainHand(new ItemStack(Material.STONE_SWORD));
-                        });
+                        var mob = abyssWorld.spawnEntity(spawn, EntityType.WITHER_SKELETON);
+                        mob.customName(Component.text("Abyssal Sentinel", NamedTextColor.DARK_RED));
                     }
                 }
             }
-        }.runTaskTimer(plugin, 400L, 400L + new Random().nextInt(200));
+        }.runTaskTimer(plugin, 400L, 400L + (long)(Math.random() * 200));
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  ABYSSAL KEY
-    // ═══════════════════════════════════════════════════════════
+    // ==================== ABYSSAL KEY ====================
+
     public ItemStack createAbyssalKey() {
-        ItemStack key = new ItemStack(Material.ECHO_SHARD, 1);
+        ItemStack key = new ItemStack(Material.ECHO_SHARD);
         ItemMeta meta = key.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text("Abyssal Key", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("A key forged in the void.", NamedTextColor.GRAY));
-            lore.add(Component.text("Use on a Purpur portal frame", NamedTextColor.GRAY));
-            lore.add(Component.text("to open a gateway to the Abyss.", NamedTextColor.DARK_GRAY));
-            lore.add(Component.empty());
-            lore.add(Component.text("Abyssal Key", NamedTextColor.DARK_PURPLE));
-            meta.lore(lore);
-            meta.setCustomModelData(9001);
-            key.setItemMeta(meta);
-        }
+        meta.displayName(Component.text("Abyssal Key", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD));
+        meta.lore(List.of(
+            Component.text("A key forged in the void", NamedTextColor.GRAY),
+            Component.text("Right-click a Purpur frame to open", NamedTextColor.DARK_GRAY),
+            Component.text("the gateway to the Abyss", NamedTextColor.DARK_GRAY)
+        ));
+        meta.setCustomModelData(9001);
+        meta.getPersistentDataContainer().set(
+            new NamespacedKey(plugin, "abyssal_key"),
+            PersistentDataType.BYTE, (byte) 1
+        );
+        key.setItemMeta(meta);
         return key;
     }
 
-    private boolean isAbyssalKey(ItemStack item) {
-        if (item == null || item.getType() != Material.ECHO_SHARD) return false;
-        ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.hasCustomModelData() && meta.getCustomModelData() == 9001;
+    public boolean isAbyssalKey(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(
+            new NamespacedKey(plugin, "abyssal_key"), PersistentDataType.BYTE
+        );
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  PORTAL ACTIVATION
-    // ═══════════════════════════════════════════════════════════
-    @EventHandler
+    // ==================== PORTAL INTERACTION ====================
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        Block clicked = event.getClickedBlock();
-        if (clicked == null || clicked.getType() != Material.PURPUR_BLOCK) return;
+        if (event.getClickedBlock() == null) return;
+        if (event.getClickedBlock().getType() != Material.PURPUR_BLOCK) return;
+
         Player player = event.getPlayer();
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (!isAbyssalKey(hand)) return;
 
-        Location frameLoc = findPortalFrame(clicked.getLocation());
-        if (frameLoc == null) {
-            player.sendMessage(Component.text("The key resonates... but no valid portal frame is found.", NamedTextColor.DARK_PURPLE));
-            return;
-        }
+        // Don't open portals inside the Abyss
+        if (player.getWorld().getName().equals(WORLD_NAME)) return;
 
-        event.setCancelled(true);
-        if (hand.getAmount() > 1) hand.setAmount(hand.getAmount() - 1);
-        else player.getInventory().setItemInMainHand(null);
-        activatePortal(frameLoc, player);
+        Block clicked = event.getClickedBlock();
+        plugin.getLogger().info("[Abyss] Player " + player.getName() +
+            " used Abyssal Key on purpur at " + clicked.getLocation());
+
+        // Try to find a 4-wide x 5-tall portal frame
+        Location frameLoc = findPortalFrame(clicked);
+        if (frameLoc != null) {
+            // Consume key
+            hand.setAmount(hand.getAmount() - 1);
+            activatePortal(frameLoc, player);
+            event.setCancelled(true);
+        } else {
+            player.sendMessage(Component.text(
+                "The key resonates, but no valid portal frame is nearby...",
+                NamedTextColor.DARK_PURPLE));
+        }
     }
 
-    private Location findPortalFrame(Location loc) {
-        World w = loc.getWorld();
-        int cx = loc.getBlockX(), cy = loc.getBlockY(), cz = loc.getBlockZ();
-        for (int ox = -4; ox <= 1; ox++) {
-            for (int oy = -5; oy <= 0; oy++) {
-                Location b = new Location(w, cx + ox, cy + oy, cz);
-                if (checkFrame(b, true)) return b;
-            }
-        }
-        for (int oz = -4; oz <= 1; oz++) {
-            for (int oy = -5; oy <= 0; oy++) {
-                Location b = new Location(w, cx, cy + oy, cz + oz);
-                if (checkFrame(b, false)) return b;
+    /**
+     * Searches for a valid 4-wide x 5-tall purpur portal frame
+     * around the clicked block. The frame is:
+     *   - 4 blocks wide (X or Z axis)
+     *   - 5 blocks tall (Y axis)
+     *   - Inner opening is 2 wide x 3 tall
+     */
+    private Location findPortalFrame(Block clicked) {
+        World world = clicked.getWorld();
+        int cx = clicked.getX(), cy = clicked.getY(), cz = clicked.getZ();
+
+        // Search in a small radius for potential bottom-left corners
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dy = -5; dy <= 0; dy++) {
+                for (int dz = -4; dz <= 4; dz++) {
+                    int bx = cx + dx, by = cy + dy, bz = cz + dz;
+
+                    // Try X-axis frame (portal faces along Z)
+                    if (isValidFrame(world, bx, by, bz, true)) {
+                        return new Location(world, bx, by, bz);
+                    }
+                    // Try Z-axis frame (portal faces along X)
+                    if (isValidFrame(world, bx, by, bz, false)) {
+                        return new Location(world, bx, by, bz);
+                    }
+                }
             }
         }
         return null;
     }
 
-    private boolean checkFrame(Location base, boolean xAxis) {
-        World w = base.getWorld();
-        int bx = base.getBlockX(), by = base.getBlockY(), bz = base.getBlockZ();
-        if (xAxis) {
-            for (int i = 0; i < 4; i++) {
-                if (w.getBlockAt(bx + i, by, bz).getType() != Material.PURPUR_BLOCK) return false;
-                if (w.getBlockAt(bx + i, by + 4, bz).getType() != Material.PURPUR_BLOCK) return false;
-            }
-            for (int i = 0; i < 5; i++) {
-                if (w.getBlockAt(bx, by + i, bz).getType() != Material.PURPUR_BLOCK) return false;
-                if (w.getBlockAt(bx + 3, by + i, bz).getType() != Material.PURPUR_BLOCK) return false;
-            }
-            for (int x = 1; x <= 2; x++) for (int y = 1; y <= 3; y++) {
-                if (!w.getBlockAt(bx + x, by + y, bz).getType().isAir()) return false;
-            }
-        } else {
-            for (int i = 0; i < 4; i++) {
-                if (w.getBlockAt(bx, by, bz + i).getType() != Material.PURPUR_BLOCK) return false;
-                if (w.getBlockAt(bx, by + 4, bz + i).getType() != Material.PURPUR_BLOCK) return false;
-            }
-            for (int i = 0; i < 5; i++) {
-                if (w.getBlockAt(bx, by + i, bz).getType() != Material.PURPUR_BLOCK) return false;
-                if (w.getBlockAt(bx, by + i, bz + 3).getType() != Material.PURPUR_BLOCK) return false;
-            }
-            for (int z = 1; z <= 2; z++) for (int y = 1; y <= 3; y++) {
-                if (!w.getBlockAt(bx, by + y, bz + z).getType().isAir()) return false;
+    private boolean isValidFrame(World world, int bx, int by, int bz, boolean xAxis) {
+        // Frame shape (4 wide x 5 tall, inner 2x3):
+        //  P P P P    (top row, y+4)
+        //  P . . P    (y+3)
+        //  P . . P    (y+2)
+        //  P . . P    (y+1)
+        //  P P P P    (bottom row, y+0)
+        for (int w = 0; w < 4; w++) {
+            for (int h = 0; h < 5; h++) {
+                int x = bx + (xAxis ? w : 0);
+                int z = bz + (xAxis ? 0 : w);
+                int y = by + h;
+
+                boolean isEdge = (w == 0 || w == 3 || h == 0 || h == 4);
+                Block b = world.getBlockAt(x, y, z);
+
+                if (isEdge) {
+                    if (b.getType() != Material.PURPUR_BLOCK &&
+                        b.getType() != Material.PURPUR_PILLAR) {
+                        return false;
+                    }
+                }
+                // Inner blocks should be air (or will be replaced)
             }
         }
         return true;
     }
 
     private void activatePortal(Location frameLoc, Player player) {
-        World w = frameLoc.getWorld();
-        int bx = frameLoc.getBlockX(), by = frameLoc.getBlockY(), bz = frameLoc.getBlockZ();
-        boolean xAxis = checkFrame(frameLoc, true);
+        World world = frameLoc.getWorld();
+        int bx = (int) frameLoc.getX();
+        int by = (int) frameLoc.getY();
+        int bz = (int) frameLoc.getZ();
 
-        Set<String> blockKeys = new HashSet<>();
-        if (xAxis) {
-            for (int x = 1; x <= 2; x++) for (int y = 1; y <= 3; y++) {
-                Block b = w.getBlockAt(bx + x, by + y, bz);
-                b.setType(Material.END_GATEWAY, false);
-                blockKeys.add((bx + x) + "," + (by + y) + "," + bz);
-            }
-        } else {
-            for (int z = 1; z <= 2; z++) for (int y = 1; y <= 3; y++) {
-                Block b = w.getBlockAt(bx, by + y, bz + z);
-                b.setType(Material.END_GATEWAY, false);
-                blockKeys.add(bx + "," + (by + y) + "," + (bz + z));
+        // Determine axis by checking which direction the frame extends
+        boolean xAxis = (world.getBlockAt(bx + 1, by, bz).getType() == Material.PURPUR_BLOCK ||
+                          world.getBlockAt(bx + 1, by, bz).getType() == Material.PURPUR_PILLAR);
+
+        // Fill inner 2x3 with END_GATEWAY
+        Set<Location> newPortals = new HashSet<>();
+        for (int w = 1; w <= 2; w++) {
+            for (int h = 1; h <= 3; h++) {
+                int x = bx + (xAxis ? w : 0);
+                int z = bz + (xAxis ? 0 : w);
+                int y = by + h;
+
+                Block b = world.getBlockAt(x, y, z);
+                b.setType(Material.END_GATEWAY);
+                Location loc = b.getLocation();
+                newPortals.add(loc);
+                activePortalBlocks.add(loc);
             }
         }
 
-        UUID wid = w.getUID();
-        activePortalBlocks.put(wid, blockKeys);
+        // Effects
+        Location center = new Location(world,
+            bx + (xAxis ? 2 : 0.5), by + 2.5, bz + (xAxis ? 0.5 : 2));
+        world.playSound(center, Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 0.5f);
+        world.spawnParticle(Particle.PORTAL, center, 100, 1, 1, 1, 0.5);
+        world.spawnParticle(Particle.REVERSE_PORTAL, center, 50, 1, 1, 1, 0.1);
 
-        Location center = frameLoc.clone().add(xAxis ? 1.5 : 0.5, 2.5, xAxis ? 0.5 : 1.5);
-        w.playSound(center, Sound.BLOCK_END_PORTAL_SPAWN, 1.5f, 0.5f);
-        w.spawnParticle(Particle.PORTAL, center, 200, 1, 2, 1, 0.5);
-        w.spawnParticle(Particle.REVERSE_PORTAL, center, 100, 1, 2, 1, 0.3);
-        player.sendMessage(Component.text("The Abyssal Gateway opens...", NamedTextColor.DARK_PURPLE, TextDecoration.ITALIC));
+        player.sendMessage(Component.text(
+            "The Abyss Gateway opens... step through if you dare.",
+            NamedTextColor.DARK_PURPLE, TextDecoration.ITALIC));
 
-        final Set<String> keys = blockKeys;
+        // Remove gateway after 30 seconds
         new BukkitRunnable() {
             int ticks = 0;
             @Override
             public void run() {
-                ticks++;
-                if (ticks > 600) {
-                    for (String k : keys) {
-                        String[] parts = k.split(",");
-                        Block b = w.getBlockAt(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
-                        if (b.getType() == Material.END_GATEWAY) b.setType(Material.AIR);
+                ticks += 20;
+                if (ticks >= 600) { // 30 seconds
+                    for (Location loc : newPortals) {
+                        if (loc.getBlock().getType() == Material.END_GATEWAY) {
+                            loc.getBlock().setType(Material.AIR);
+                        }
+                        activePortalBlocks.remove(loc);
                     }
-                    activePortalBlocks.remove(wid);
-                    w.playSound(center, Sound.BLOCK_PORTAL_TRAVEL, 0.8f, 1.5f);
                     cancel();
-                    return;
-                }
-                if (ticks % 5 == 0) {
-                    w.spawnParticle(Particle.PORTAL, center, 30, 0.5, 1.5, 0.5, 0.3);
-                    w.spawnParticle(Particle.REVERSE_PORTAL, center, 15, 0.5, 1.5, 0.5, 0.2);
+                } else {
+                    // Periodic particles
+                    world.spawnParticle(Particle.PORTAL, center, 20, 0.5, 0.5, 0.5, 0.3);
                 }
             }
-        }.runTaskTimer(plugin, 1L, 1L);
+        }.runTaskTimer(plugin, 20L, 20L);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  PORTAL TELEPORT
-    // ═══════════════════════════════════════════════════════════
+    // ==================== PORTAL TELEPORTATION ====================
+
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (event.getTo() == null) return;
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
+
         Player player = event.getPlayer();
-        if (player.getWorld().getName().equals(ABYSS_WORLD_NAME)) return;
-        if (teleportCooldown.contains(player.getUniqueId())) return;
+        if (player.getWorld().getName().equals(WORLD_NAME)) return;
 
         Location to = event.getTo();
-        String key = to.getBlockX() + "," + to.getBlockY() + "," + to.getBlockZ();
-        UUID wid = player.getWorld().getUID();
-        Set<String> portals = activePortalBlocks.get(wid);
-        if (portals == null || !portals.contains(key)) return;
+        Location blockLoc = new Location(to.getWorld(),
+            to.getBlockX(), to.getBlockY(), to.getBlockZ());
 
-        teleportCooldown.add(player.getUniqueId());
+        if (!activePortalBlocks.contains(blockLoc)) return;
+
+        UUID uuid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        if (teleportCooldowns.containsKey(uuid) &&
+            now - teleportCooldowns.get(uuid) < 5000) return;
+        teleportCooldowns.put(uuid, now);
+
         teleportToAbyss(player);
-        new BukkitRunnable() {
-            @Override public void run() { teleportCooldown.remove(player.getUniqueId()); }
-        }.runTaskLater(plugin, 100L);
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  TELEPORT TO ABYSS
-    // ═══════════════════════════════════════════════════════════
     public void teleportToAbyss(Player player) {
         if (abyssWorld == null) {
-            player.sendMessage(Component.text("The Abyss is not yet ready.", NamedTextColor.RED));
+            player.sendMessage(Component.text("The Abyss is not ready.", NamedTextColor.RED));
             return;
         }
-        // Land on approach path outside south gate: z=115, facing north (yaw=180)
-        int safeY = findSafeY(abyssWorld, 0, 115);
+
+        // Teleport to south of citadel, facing north toward arena
+        double safeY = findSafeY(new Location(abyssWorld, 0.5, 80, 115.5));
         Location dest = new Location(abyssWorld, 0.5, safeY, 115.5, 180f, 0f);
+
         player.teleport(dest);
 
-        Title.Times times = Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(1000));
+        // Title
         player.showTitle(Title.title(
             Component.text("THE ABYSS", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
-            Component.text("Abandon all hope...", NamedTextColor.GRAY, TextDecoration.ITALIC),
-            times
+            Component.text("Enter at your own peril", NamedTextColor.GRAY),
+            Title.Times.times(Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(1000))
         ));
-        player.playSound(dest, Sound.AMBIENT_CAVE, 1.0f, 0.5f);
-        player.playSound(dest, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.5f, 0.5f);
 
+        // Sounds
+        player.playSound(dest, Sound.AMBIENT_CAVE, 1.0f, 0.5f);
+        player.playSound(dest, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.3f, 0.5f);
+
+        // Clean up any stray vanilla dragons after a short delay
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (abyssWorld == null) return;
-                for (EnderDragon d : abyssWorld.getEntitiesByClass(EnderDragon.class)) {
-                    if (d.getCustomName() == null) d.remove();
-                }
+                disableVanillaDragonBattle();
+                abyssWorld.getEntitiesByClass(EnderDragon.class).forEach(EnderDragon::remove);
             }
         }.runTaskLater(plugin, 40L);
+
+        plugin.getLogger().info("[Abyss] " + player.getName() + " teleported to the Abyss");
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  UTILITIES
-    // ═══════════════════════════════════════════════════════════
-    public int findSafeY(World world, int x, int z) {
-        for (int y = 120; y > 1; y--) {
-            Block b = world.getBlockAt(x, y, z);
-            Block a1 = world.getBlockAt(x, y + 1, z);
-            Block a2 = world.getBlockAt(x, y + 2, z);
-            if (b.getType().isSolid() && !a1.getType().isSolid() && !a2.getType().isSolid()) return y + 1;
+    public double findSafeY(Location loc) {
+        World w = loc.getWorld();
+        if (w == null) return 80;
+        for (int y = 120; y > 30; y--) {
+            Block b = w.getBlockAt(loc.getBlockX(), y, loc.getBlockZ());
+            Block above1 = w.getBlockAt(loc.getBlockX(), y + 1, loc.getBlockZ());
+            Block above2 = w.getBlockAt(loc.getBlockX(), y + 2, loc.getBlockZ());
+            if (b.getType().isSolid() &&
+                above1.getType().isAir() && above2.getType().isAir()) {
+                return y + 1.0;
+            }
         }
-        return 60;
+        return 80;
     }
+
+    // ==================== GETTERS ====================
 
     public World getAbyssWorld() { return abyssWorld; }
     public JGlimsPlugin getPlugin() { return plugin; }
     public boolean isCitadelBuilt() { return citadelBuilt; }
+
+    /** Check if a world is the Abyss — use this from other managers to filter */
+    public static boolean isAbyssWorld(World world) {
+        return world != null && WORLD_NAME.equals(world.getName());
+    }
 }
