@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
@@ -35,6 +36,7 @@ public class AbyssDragonModel {
     private final JGlimsPlugin plugin;
     private Zombie baseEntity;
     private ItemDisplay displayEntity;
+    private EnderDragon dragonEntity;
     private int animationTaskId = -1;
     private int invisTaskId = -1;
     private int currentPhase = 1;
@@ -148,6 +150,24 @@ public class AbyssDragonModel {
             });
             plugin.getLogger().info("[DragonModel] ItemDisplay spawned, ID: " + displayEntity.getEntityId());
 
+            // === Spawn real EnderDragon as visual (no AI, no damage) ===
+            try {
+                Location dragonSpawnLoc = location.clone().add(0, 3, 0);
+                dragonEntity = location.getWorld().spawn(dragonSpawnLoc, EnderDragon.class, dragon -> {
+                    dragon.setAI(false);
+                    dragon.setSilent(true);
+                    dragon.setInvulnerable(true);
+                    dragon.setGravity(false);
+                    dragon.setPhase(EnderDragon.Phase.HOVERING);
+                    dragon.customName(Component.text("Abyssal Dragon", net.kyori.adventure.text.format.NamedTextColor.DARK_PURPLE));
+                    dragon.setCustomNameVisible(true);
+                    dragon.setRemoveWhenFarAway(false);
+                });
+                plugin.getLogger().info("[DragonModel] EnderDragon visual spawned, ID: " + dragonEntity.getEntityId());
+            } catch (Exception e) {
+                plugin.getLogger().warning("[DragonModel] EnderDragon visual spawn failed (non-fatal): " + e.getMessage());
+            }
+
             alive = true;
             startAnimation();
             startInvisibilityEnforcer();
@@ -216,6 +236,10 @@ public class AbyssDragonModel {
                 double bobY = Math.sin(bobAngle) * 0.5;
                 Location baseLoc = baseEntity.getLocation();
                 displayEntity.teleport(baseLoc.clone().add(0, 2 + bobY, 0));
+                // Move the real dragon to follow
+                if (dragonEntity != null && !dragonEntity.isDead()) {
+                    dragonEntity.teleport(baseLoc.clone().add(0, 3 + bobY, 0));
+                }
 
                 // Slow rotation
                 rotAngle += 0.02f;

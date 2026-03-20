@@ -669,6 +669,12 @@ public class AbyssDragonBoss implements Listener {
     public void onEntityDamage(EntityDamageEvent event) {
         if (!fightActive || dragonModel == null) return;
         if (dragonModel.getBaseEntity() == null) return;
+        // Cancel damage on the visual EnderDragon entity
+        if (dragonModel.getDragonEntity() != null &&
+            event.getEntity().getUniqueId().equals(dragonModel.getDragonEntity().getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
         if (!event.getEntity().getUniqueId().equals(dragonModel.getBaseEntity().getUniqueId())) return;
 
         // Block environmental damage
