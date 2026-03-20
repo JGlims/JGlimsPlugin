@@ -1,4 +1,4 @@
-package com.jglims.plugin.abyss;
+﻿package com.jglims.plugin.abyss;
 
 import com.jglims.plugin.JGlimsPlugin;
 import net.kyori.adventure.text.Component;
@@ -8,6 +8,8 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
@@ -17,8 +19,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * AbyssDragonModel v9.0 — Visual model for the custom Abyss Dragon boss.
+ * AbyssDragonModel v10.0 — Visual model for the custom Abyss Dragon boss.
  * Uses an invisible Zombie (hitbox) + ItemDisplay (visual).
+ * v10 fixes: permanent invisibility enforcer, damage flash on display only,
+ *            safe particle wrapper, improved death animation.
  */
 public class AbyssDragonModel {
 
@@ -32,11 +36,29 @@ public class AbyssDragonModel {
     private Zombie baseEntity;
     private ItemDisplay displayEntity;
     private int animationTaskId = -1;
+    private int invisTaskId = -1;
     private int currentPhase = 1;
     private boolean alive = false;
 
     public AbyssDragonModel(JGlimsPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    // Safe particle spawning — wraps all particle calls to prevent crashes
+    private void safeParticle(Location loc, Particle particle, int count,
+                              double ox, double oy, double oz, double extra) {
+        if (loc == null || loc.getWorld() == null) return;
+        try {
+            particle.builder()
+                .location(loc).count(count)
+                .offset(ox, oy, oz).extra(extra)
+                .receivers(64, true).spawn();
+        } catch (Exception e1) {
+            try {
+                loc.getWorld().spawnParticle(Particle.FLAME, loc, Math.max(1, count / 2),
+                    ox, oy, oz, Math.min(extra, 0.05));
+            } catch (Exception ignored) {}
+        }
     }
 
     public boolean spawn(Location location, double maxHp) {
@@ -51,8 +73,6 @@ public class AbyssDragonModel {
             return false;
         }
 
-        // Cap HP to avoid spigot.yml maxHealth cap
-        // Default spigot.yml cap is 1024, but we raise it to 2048 via config
         double cappedHp = Math.min(maxHp, 2048.0);
         plugin.getLogger().info("[DragonModel] Capped HP: " + cappedHp);
 
@@ -69,6 +89,9 @@ public class AbyssDragonModel {
                 zombie.customName(Component.text("Abyssal Dragon"));
                 zombie.setCustomNameVisible(false);
                 zombie.setRemoveWhenFarAway(false);
+                // Apply permanent invisibility to prevent damage flash revealing zombie
+                zombie.addPotionEffect(new PotionEffect(
+                    PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
             });
             plugin.getLogger().info("[DragonModel] Zombie spawned, ID: " + baseEntity.getEntityId());
 
@@ -81,14 +104,12 @@ public class AbyssDragonModel {
                     "/" + Objects.requireNonNull(baseEntity.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
             } catch (Exception e) {
                 plugin.getLogger().severe("[DragonModel] Health setup FAILED: " + e.getMessage());
-                plugin.getLogger().severe("[DragonModel] This usually means spigot.yml attribute.maxHealth.max is too low.");
-                plugin.getLogger().severe("[DragonModel] Current requested HP: " + cappedHp +
-                    " — increase spigot.yml settings.attribute.maxHealth.max to 2048.0");
+                plugin.getLogger().severe("[DragonModel] Ensure spigot.yml attribute.maxHealth.max >= 2048");
                 baseEntity.remove();
                 return false;
             }
 
-            // === Set scale ===
+            // === Set scale for larger hitbox ===
             try {
                 var scaleAttr = baseEntity.getAttribute(Attribute.SCALE);
                 if (scaleAttr != null) {
@@ -129,26 +150,14 @@ public class AbyssDragonModel {
 
             alive = true;
             startAnimation();
+            startInvisibilityEnforcer();
 
             // Spawn effects
             location.getWorld().playSound(location, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.7f);
             location.getWorld().playSound(location, Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.5f);
             location.getWorld().strikeLightningEffect(location);
-            try {
-                Particle.DRAGON_BREATH.builder()
-                    .location(location).count(200).offset(3, 3, 3).extra(0.1)
-                    .receivers(64, true).spawn();
-            } catch (Exception pe) {
-                plugin.getLogger().warning("[DragonModel] DRAGON_BREATH particle failed: " + pe.getMessage());
-                location.getWorld().spawnParticle(Particle.FLAME, location, 100, 3, 3, 3, 0.05);
-            }
-            try {
-                Particle.PORTAL.builder()
-                    .location(location).count(300).offset(5, 5, 5)
-                    .receivers(64, true).spawn();
-            } catch (Exception pe) {
-                plugin.getLogger().warning("[DragonModel] PORTAL particle failed: " + pe.getMessage());
-            }
+            safeParticle(location, Particle.DRAGON_BREATH, 200, 3, 3, 3, 0.1);
+            safeParticle(location, Particle.PORTAL, 300, 5, 5, 5, 0.5);
 
             plugin.getLogger().info("[DragonModel] === SPAWN COMPLETE ===");
             return true;
@@ -162,7 +171,29 @@ public class AbyssDragonModel {
     }
 
     public boolean spawn(Location location) {
-        return spawn(location, 1500.0);
+        return spawn(location, 2000.0);
+    }
+
+    // ==================== INVISIBILITY ENFORCER ====================
+    // Re-applies invisibility every 5 ticks to ensure the zombie is NEVER visible.
+    // This prevents the red damage flash from revealing the zombie.
+
+    private void startInvisibilityEnforcer() {
+        invisTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!alive || baseEntity == null || baseEntity.isDead()) {
+                    cancel();
+                    return;
+                }
+                baseEntity.setInvisible(true);
+                // Re-apply invisibility potion if it was cleared
+                if (!baseEntity.hasPotionEffect(PotionEffectType.INVISIBILITY)) {
+                    baseEntity.addPotionEffect(new PotionEffect(
+                        PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
+                }
+            }
+        }.runTaskTimer(plugin, 5L, 5L).getTaskId();
     }
 
     // ==================== ANIMATION ====================
@@ -197,18 +228,15 @@ public class AbyssDragonModel {
                     new AxisAngle4f(0, 0, 1, 0)
                 ));
 
-                // Ambient particles
+                // Ambient particles (reduced for performance)
                 Location particleLoc = displayEntity.getLocation();
-                particleLoc.getWorld().spawnParticle(
-                    Particle.DRAGON_BREATH, particleLoc, 5, 1.5, 1.5, 1.5, 0.01);
+                safeParticle(particleLoc, Particle.DRAGON_BREATH, 3, 1.5, 1.5, 1.5, 0.01);
 
                 if (currentPhase >= 2) {
-                    particleLoc.getWorld().spawnParticle(
-                        Particle.SOUL_FIRE_FLAME, particleLoc, 3, 2, 2, 2, 0.02);
+                    safeParticle(particleLoc, Particle.SOUL_FIRE_FLAME, 2, 2, 2, 2, 0.02);
                 }
                 if (currentPhase >= 3) {
-                    particleLoc.getWorld().spawnParticle(
-                        Particle.PORTAL, particleLoc, 10, 3, 3, 3, 0.5);
+                    safeParticle(particleLoc, Particle.PORTAL, 5, 3, 3, 3, 0.5);
                 }
             }
         }.runTaskTimer(plugin, 0L, 2L).getTaskId();
@@ -228,12 +256,11 @@ public class AbyssDragonModel {
         double dx = target.getX() - current.getX();
         double dy = target.getY() - current.getY();
         double dz = target.getZ() - current.getZ();
-        double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (dist < 1.0) return;
 
         double factor = speed / dist;
         Location newLoc = current.clone().add(dx * factor, dy * factor, dz * factor);
-        // Face toward target
         newLoc.setYaw((float) Math.toDegrees(Math.atan2(-dx, dz)));
         newLoc.setPitch(0);
         baseEntity.teleport(newLoc);
@@ -250,15 +277,13 @@ public class AbyssDragonModel {
         double dx = target.getX() - start.getX();
         double dy = target.getY() - start.getY();
         double dz = target.getZ() - start.getZ();
-        double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         for (double t = 0; t < dist; t += 0.5) {
             double ratio = t / dist;
             Location point = start.clone().add(dx * ratio, dy * ratio, dz * ratio);
-            try { Particle.DRAGON_BREATH.builder().location(point).count(3).offset(0.2, 0.2, 0.2).extra(0.01).receivers(64, true).spawn(); }
-                catch (Exception ignored) { w.spawnParticle(Particle.FLAME, point, 3, 0.2, 0.2, 0.2, 0.01); }
-            try { Particle.SOUL_FIRE_FLAME.builder().location(point).count(2).offset(0.1, 0.1, 0.1).extra(0.02).receivers(64, true).spawn(); }
-                catch (Exception ignored) {}
+            safeParticle(point, Particle.DRAGON_BREATH, 3, 0.2, 0.2, 0.2, 0.01);
+            safeParticle(point, Particle.SOUL_FIRE_FLAME, 2, 0.1, 0.1, 0.1, 0.02);
         }
         w.playSound(start, Sound.ENTITY_ENDER_DRAGON_SHOOT, 1.5f, 0.7f);
     }
@@ -269,9 +294,34 @@ public class AbyssDragonModel {
         World w = loc.getWorld();
         if (w == null) return;
 
-        w.spawnParticle(Particle.CLOUD, loc, 80, 5, 2, 5, 0.3);
-        w.spawnParticle(Particle.SWEEP_ATTACK, loc, 30, 4, 1, 4, 0.1);
+        safeParticle(loc, Particle.CLOUD, 80, 5, 2, 5, 0.3);
+        safeParticle(loc, Particle.SWEEP_ATTACK, 30, 4, 1, 4, 0.1);
         w.playSound(loc, Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.5f);
+    }
+
+    public void diveBombVisual(Location impactLoc) {
+        if (impactLoc == null || impactLoc.getWorld() == null) return;
+        World w = impactLoc.getWorld();
+        safeParticle(impactLoc, Particle.EXPLOSION_EMITTER, 5, 3, 1, 3, 0.1);
+        safeParticle(impactLoc, Particle.SOUL_FIRE_FLAME, 50, 5, 2, 5, 0.15);
+        safeParticle(impactLoc, Particle.DRAGON_BREATH, 40, 4, 1, 4, 0.1);
+        w.playSound(impactLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.6f);
+        w.playSound(impactLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 1.2f);
+    }
+
+    public void shadowBoltVisual(Location from, Location to) {
+        if (from == null || to == null || from.getWorld() == null) return;
+        double dx = to.getX() - from.getX();
+        double dy = to.getY() - from.getY();
+        double dz = to.getZ() - from.getZ();
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        for (double t = 0; t < dist; t += 0.8) {
+            double ratio = t / dist;
+            Location point = from.clone().add(dx * ratio, dy * ratio, dz * ratio);
+            safeParticle(point, Particle.SOUL_FIRE_FLAME, 2, 0.1, 0.1, 0.1, 0.02);
+            safeParticle(point, Particle.WITCH, 1, 0.05, 0.05, 0.05, 0);
+        }
     }
 
     // ==================== PHASE TRANSITIONS ====================
@@ -289,28 +339,38 @@ public class AbyssDragonModel {
         if (w == null) return;
 
         w.playSound(loc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.5f + (currentPhase * 0.1f));
-        w.spawnParticle(Particle.EXPLOSION, loc, 10, 3, 3, 3, 0.1);
-        w.spawnParticle(Particle.PORTAL, loc, 200, 5, 5, 5, 1.0);
+        safeParticle(loc, Particle.EXPLOSION, 10, 3, 3, 3, 0.1);
+        safeParticle(loc, Particle.PORTAL, 200, 5, 5, 5, 1.0);
 
         if (currentPhase >= 3) {
             w.playSound(loc, Sound.ENTITY_WITHER_SPAWN, 0.8f, 1.2f);
-            w.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 100, 5, 5, 5, 0.1);
+            safeParticle(loc, Particle.SOUL_FIRE_FLAME, 100, 5, 5, 5, 0.1);
+        }
+        if (currentPhase >= 4) {
+            w.playSound(loc, Sound.ENTITY_WARDEN_ROAR, 1.5f, 0.5f);
+            w.strikeLightningEffect(loc);
         }
     }
 
     // ==================== DAMAGE / DEATH ====================
 
     public void damageFlash() {
-        if (baseEntity != null && !baseEntity.isDead()) {
-            baseEntity.setGlowing(true);
+        // Flash the ItemDisplay with brightness instead of making zombie glow
+        // This prevents the zombie hitbox from ever becoming visible
+        if (displayEntity != null && !displayEntity.isDead()) {
+            displayEntity.setBrightness(new Display.Brightness(15, 15));
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (baseEntity != null && !baseEntity.isDead()) {
-                        baseEntity.setGlowing(false);
+                    if (displayEntity != null && !displayEntity.isDead()) {
+                        displayEntity.setBrightness(null); // reset to default
                     }
                 }
-            }.runTaskLater(plugin, 5L);
+            }.runTaskLater(plugin, 4L);
+        }
+        // Also spawn a small red particle burst at the model location for feedback
+        if (displayEntity != null) {
+            safeParticle(displayEntity.getLocation(), Particle.DAMAGE_INDICATOR, 5, 0.5, 0.5, 0.5, 0.1);
         }
     }
 
@@ -320,10 +380,20 @@ public class AbyssDragonModel {
             Bukkit.getScheduler().cancelTask(animationTaskId);
             animationTaskId = -1;
         }
+        if (invisTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(invisTaskId);
+            invisTaskId = -1;
+        }
 
         if (displayEntity == null || displayEntity.isDead()) {
             cleanup();
             return;
+        }
+
+        // Remove the zombie immediately so it can't be seen
+        if (baseEntity != null && !baseEntity.isDead()) {
+            baseEntity.remove();
+            baseEntity = null;
         }
 
         Location loc = displayEntity.getLocation();
@@ -339,7 +409,7 @@ public class AbyssDragonModel {
                 tick++;
                 if (displayEntity == null || displayEntity.isDead() || tick > 60) {
                     if (w != null) {
-                        w.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 5, 2, 2, 2, 0.1);
+                        safeParticle(loc, Particle.EXPLOSION_EMITTER, 5, 2, 2, 2, 0.1);
                         w.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
                         w.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 1.0f);
                     }
@@ -353,7 +423,7 @@ public class AbyssDragonModel {
                 rot += 0.3f;
                 try {
                     displayEntity.setTransformation(new Transformation(
-                        new Vector3f(0, (float)(tick * 0.05), 0),
+                        new Vector3f(0, (float) (tick * 0.05), 0),
                         new AxisAngle4f(rot, 0, 1, 0),
                         new Vector3f(scale, scale, scale),
                         new AxisAngle4f(0, 0, 1, 0)
@@ -361,10 +431,15 @@ public class AbyssDragonModel {
                 } catch (Exception ignored) {}
 
                 if (w != null) {
-                    w.spawnParticle(Particle.DRAGON_BREATH, loc, 20, 3, 3, 3, 0.1);
-                    w.spawnParticle(Particle.PORTAL, loc, 30, 4, 4, 4, 0.5);
+                    safeParticle(loc, Particle.DRAGON_BREATH, 15, 3, 3, 3, 0.1);
+                    safeParticle(loc, Particle.PORTAL, 20, 4, 4, 4, 0.5);
+                    safeParticle(loc, Particle.SOUL_FIRE_FLAME, 10, 2, 2, 2, 0.08);
                     if (tick % 5 == 0) {
                         w.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
+                    }
+                    if (tick % 10 == 0) {
+                        w.strikeLightningEffect(loc.clone().add(
+                            (Math.random() - 0.5) * 10, 0, (Math.random() - 0.5) * 10));
                     }
                 }
             }
@@ -376,6 +451,10 @@ public class AbyssDragonModel {
         if (animationTaskId != -1) {
             Bukkit.getScheduler().cancelTask(animationTaskId);
             animationTaskId = -1;
+        }
+        if (invisTaskId != -1) {
+            Bukkit.getScheduler().cancelTask(invisTaskId);
+            invisTaskId = -1;
         }
         if (baseEntity != null && !baseEntity.isDead()) baseEntity.remove();
         if (displayEntity != null && !displayEntity.isDead()) displayEntity.remove();
@@ -389,8 +468,18 @@ public class AbyssDragonModel {
         return baseEntity != null && !baseEntity.isDead() ? baseEntity.getHealth() : 0;
     }
 
+    public double getMaxHealth() {
+        if (baseEntity == null || baseEntity.isDead()) return 0;
+        var attr = baseEntity.getAttribute(Attribute.MAX_HEALTH);
+        return attr != null ? attr.getBaseValue() : 0;
+    }
+
     public Location getLocation() {
         return baseEntity != null ? baseEntity.getLocation() : null;
+    }
+
+    public Location getDisplayLocation() {
+        return displayEntity != null ? displayEntity.getLocation() : null;
     }
 
     public int getPhase() { return currentPhase; }
