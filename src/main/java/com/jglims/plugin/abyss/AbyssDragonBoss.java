@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
@@ -543,10 +544,10 @@ public class AbyssDragonBoss implements Listener {
 
         // Abyssal weapon drop (guaranteed)
         try {
-            List<LegendaryWeapon> abyssals = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
-            if (!abyssals.isEmpty()) {
-                LegendaryWeapon weapon = abyssals.get((int)(Math.random() * abyssals.size()));
-                ItemStack weaponItem = plugin.getLegendaryWeaponManager().createWeaponItem(weapon);
+            LegendaryWeapon[] abyssals = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
+            if (abyssals.length > 0) {
+                LegendaryWeapon weapon = abyssals[(int)(Math.random() * abyssals.length)];
+                ItemStack weaponItem = plugin.getLegendaryWeaponManager().createWeapon(weapon);
                 if (weaponItem != null) {
                     abyss.dropItemNaturally(loc, weaponItem);
                     plugin.getLogger().info("[DragonBoss] Dropped ABYSSAL weapon: " + weapon.getDisplayName());
