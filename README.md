@@ -1,49 +1,80 @@
-JGLIMSPLUGIN — DEFINITIVE PROJECT SUMMARY v10.0
-Compiled: 2026-03-13 | Author: JGlims (jg.melo.lima2005@gmail.com) | Plugin Version: 2.0.0 | Target Version: 3.0.0
+JGLIMSPLUGIN — ULTIMATE DEFINITIVE PROJECT SUMMARY v12.0
+Compiled: 2026-03-20 | Author: JGlims (jg.melo.lima2005@gmail.com) | Plugin Version: 2.0.0 | Target Version: 3.0.0
 
 A. PROJECT METADATA
 Repository: https://github.com/JGlims/JGlimsPlugin
 
-Server Environment: Docker container mc-crossplay on Oracle Cloud ARM64 instance. IP 144.22.198.184, Java port 25565, Bedrock port 19132. Paper 1.21.11-127, Java 25 (OpenJDK 25.0.2+10-LTS, Eclipse Adoptium Temurin), GeyserMC 2.9.4-SNAPSHOT + Floodgate 2.2.5-SNAPSHOT, SkinsRestorer 15.11.0, Chunky 1.4.40. Memory: 8GB. Online mode: disabled (crossplay). Game mode: creative. Max players: 15. View distance: 10, Simulation distance: 6.
+Plugin: JGlimsPlugin v2.0.0 — A comprehensive Minecraft server-side plugin for Paper 1.21+ featuring 63 legendary weapons with unique dual abilities, 13 custom armor sets, 7 power-up consumables, an Infinity Gauntlet system, 64 custom enchantments, 6 random server events, 6 roaming world bosses, 40 procedurally-placed structures, a complete quest system, guild system, and the custom Abyss dimension with a gothic cathedral citadel and multi-phase dragon boss fight. Written in Java, built with Gradle, targeting the PaperMC API.
 
-SSH Access: Key at C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key, user ubuntu@144.22.198.184 (NOT opc — confirmed during this session).
+Server Environment:
 
-Local Dev Path: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin
+The server runs inside a Docker container named mc-crossplay on an Oracle Cloud ARM64 (Ampere) free-tier instance. The public IP is 144.22.198.184. Java Edition connects on port 25565; Bedrock Edition connects on port 19132 via GeyserMC crossplay bridge. The server software is Paper 1.21.11-127 running on Java 25 (OpenJDK 25.0.2+10-LTS, Eclipse Adoptium Temurin). Crossplay is provided by GeyserMC 2.9.4-SNAPSHOT and Floodgate 2.2.5-SNAPSHOT. Other plugins include SkinsRestorer 15.11.0 and Chunky 1.4.40 for pre-generation. The JVM is allocated 8 GB of RAM. Online mode is disabled to support crossplay. The default game mode is creative. Maximum players is 15. View distance is 10 chunks and simulation distance is 6 chunks. Difficulty is set per-world (Hard in the Abyss, configurable elsewhere).
+
+SSH Access: Key file at C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key, user ubuntu@144.22.198.184 (confirmed NOT opc).
+
+Local Development Path: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin
 
 Resource Pack Working Directory: C:\Users\jgmel\Documents\projects\JGlimsPlugin\resourcepack-work\JGlimsResourcePack
 
 Server Resource Pack Source (original full pack): C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsResourcePack-v2.1-server
 
-Build Output: JGlimsPlugin-2.0.0.jar (711,934 bytes, built successfully 2026-03-13)
-
-Docker Compose File: /home/ubuntu/minecraft-server/docker-compose.yml
+Docker Compose File (on server): /home/ubuntu/minecraft-server/docker-compose.yml
 
 Data Volume Mount: /home/ubuntu/minecraft-server/data:/data (bind mount, NOT a Docker volume)
 
-B. CURRENT RESOURCE PACK STATE (CRITICAL — READ THIS CAREFULLY)
-What Is Currently Live and Working
-The server is running with resource pack v5.0, hosted on GitHub release v5.0. This is the exact same file as the original v4.1.0 pack (SHA-1 a7a0e72c67c052f8710b2957b7193b94dc0c9824, 3,693,680 bytes / 3.52 MB).
+Build Output: JGlimsPlugin-2.0.0.jar (711,934 bytes). Built using .\gradlew clean build from the local dev path.
+
+Build Configuration (build.gradle): Applies the java plugin, sets group com.jglims.plugin and version 2.0.0, uses Java toolchain version 21, pulls dependencies from Maven Central and the PaperMC Maven repository (https://repo.papermc.io/repository/maven-public/), adds a compile-only dependency on io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT, and configures the jar archive base name to JGlimsPlugin.
+
+Plugin Descriptor (plugin.yml): Name JGlimsPlugin, version 2.0.0, main class com.jglims.plugin.JGlimsPlugin, api-version 1.21, author JGlims. Defines three commands: /jglims (admin command with subcommands: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, menu, guia, help — requires jglims.admin permission, defaults to ops), /guild (subcommands: create, invite, join, leave, kick, disband, info, list), and /guia (alias: /guide, gives Portuguese guide books).
+
+B. CURRENT RESOURCE PACK STATE
+What Is Currently Live
+The server is running resource pack v9.0, hosted on GitHub Releases. This is the latest pack after multiple iterations of fixes.
 
 Current docker-compose.yml settings:
 
-RESOURCE_PACK: https://github.com/JGlims/JGlimsPlugin/releases/download/v5.0/JGlimsResourcePack-v5.0.zip
-RESOURCE_PACK_SHA1: a7a0e72c67c052f8710b2957b7193b94dc0c9824
+RESOURCE_PACK: https://github.com/JGlims/JGlimsPlugin/releases/download/v9.0/JGlimsResourcePack-v9.0.zip
+RESOURCE_PACK_SHA1: 0e6151b68727aff120a9648c8f295078ccfee809
 RESOURCE_PACK_ENFORCE: TRUE
 CRITICAL RULE: The resource pack URL and SHA-1 are set in docker-compose.yml as environment variables. The Docker image (itzg/minecraft-server) overwrites server.properties from these env vars on EVERY container start. Editing server.properties directly is useless — you MUST edit docker-compose.yml and run docker compose down && docker compose up -d for changes to persist.
 
-What Works Right Now
-All 63 legendary weapon textures (3D models from Fantasy Weapons + Blades of Majestica packs)
-All legendary weapon abilities (primary = right-click, alt = crouch + right-click)
-Armor set item icons in inventory (13 sets)
-Infinity Gauntlet and Thanos Glove textures
-Infinity Stone textures
-Plugin loads cleanly: JGlimsPlugin 2.0.0, Abyss dimension created, all events loaded
-What Does NOT Work
-Armor worn textures: Armor shows correct custom icon in inventory, but when equipped on the player character, it shows vanilla netherite texture. Needs assets/minecraft/equipment/*.json files with asset_id matching the equippable component set in LegendaryArmorManager.java, plus worn texture PNGs at assets/minecraft/textures/entity/equipment/humanoid/ and humanoid_leggings/.
-Power-up item textures: Heart Crystal, Soul Fragment, Titan's Resolve, Phoenix Feather, KeepInventorer, Vitality Shard, Berserker Mark all show vanilla item textures. The PowerUpManager.java may still use integer CMD instead of string-based CMD, and the item definition JSONs may not have the correct when cases.
-Abyss portal: Right-clicking the purpur frame with the Abyssal Key does not open the portal. The AbyssDimensionManager.java portal detection code needs fixing.
-Missing animations: Whisperwind, True Excalibur (Awakened), Creation Splitter, Edge of the Astral Plane lack animated textures. Awakened weapons should have animations (the only difference from their base versions).
-One Creation Splitter ability bug: One of the abilities has a bug (details to be identified in-game).
+What Works Right Now (Corrected Status as of 2026-03-20)
+All items below are confirmed working:
+
+All 63 legendary weapon textures and 3D models — sourced from the Fantasy Weapons and Blades of Majestica asset packs, converted to the 1.21.4+ assets/minecraft/items/*.json format using string-based custom_model_data. Every weapon renders its correct custom model in hand and inventory.
+
+All 63 legendary weapon abilities — each weapon has a primary ability (right-click) and an alternate ability (crouch + right-click), all functional.
+
+All 13 armor set textures — both inventory icons AND worn textures are now working correctly. The worn armor textures use the 1.21.4+ equippable component system with assets/minecraft/equipment/*.json files pointing to PNGs under assets/minecraft/textures/entity/equipment/humanoid/ and humanoid_leggings/. This was previously broken but has been fixed.
+
+All 7 power-up item textures — Heart Crystal, Soul Fragment, Titan's Resolve, Phoenix Feather, KeepInventorer, Vitality Shard, and Berserker Mark all display their correct custom textures. The PowerUpManager.java now uses string-based CustomModelDataComponent correctly.
+
+Infinity Gauntlet and Thanos Glove textures — custom 3D models render correctly.
+
+Infinity Stone textures — all 6 stones (Power, Space, Reality, Soul, Time, Mind) display correctly. Fixed in resource pack v7.0.
+
+Abyss portal activation — the 4×5 purpur frame + Abyssal Key interaction now works correctly. Players can right-click a purpur frame with the Abyssal Key item, the portal detects the valid frame shape, fills the interior with END_GATEWAY blocks (temporary, 30-second duration), and teleports the player into the Abyss dimension when they step through.
+
+Abyss Dragon basic item model — a basic 3D blocky dragon model exists at assets/minecraft/models/item/abyss/abyss_dragon.json with a 64×64 texture, mapped to CustomModelData ID 40000 / string "abyss_dragon". This renders on the ItemDisplay entity in-game but is visually low-quality (11 cuboid elements, very blocky).
+
+Plugin loads cleanly — JGlimsPlugin 2.0.0 initializes without errors, the Abyss dimension is created (world_abyss), all events are loaded, all listeners are registered.
+
+What Does NOT Work / Needs Rework
+The Abyss dimension / dragon / citadel experience as a whole — while the portal activation works, the actual Abyss gameplay experience has critical issues that need a comprehensive rework:
+
+The Abyss Dragon model quality is poor. The current model (abyss_dragon.json) is a basic 11-element blocky representation made of cuboids. It does not look like a convincing dragon. The plan is to replace it with a high-quality Sketchfab-sourced Blockbench model (see Section Q below).
+
+The Abyss Dragon boss fight mechanics need tuning. The AbyssDragonBoss.java fight controller works but the visual experience is underwhelming because the dragon model is a small blocky shape scaled up via ItemDisplay. Combat feel needs improvement.
+
+The Abyssal Citadel (AbyssCitadelBuilder.java, 54 KB) generates a massive gothic cathedral structure but may have performance issues during generation and visual refinement needs.
+
+One Creation Splitter ability has a bug — needs identification of which ability (primary or alt) in LegendaryPrimaryAbilities.java or LegendaryAltAbilities.java is malfunctioning.
+
+Missing animated textures for awakened weapons — Whisperwind Awakened, Creation Splitter Awakened, and Edge of the Astral Plane should have animated texture variants (.png.mcmeta animation files) but do not. Excalibur Awakened has its animated texture working (fixed in v4.0.6–v4.0.9).
+
+The Abyssal Key item uses a vanilla Echo Shard texture — it should have a unique custom texture.
+
 Resource Pack Version History
 Version	Size	SHA-1	Description
 v4.0.0	3.04 MB	63b8e30d...	pack_format 75, initial 63 weapons, item definitions for 1.21.4+
@@ -52,103 +83,285 @@ v4.0.3	3.17 MB	6cd61288...	All 15 missing 3D weapon models from v2.1 pack
 v4.0.4	3.19 MB	ca60f59f...	Fixed 5 remaining buggy weapons
 v4.0.5	3.19 MB	2147a804...	Fixed excalibur + requiem awakened
 v4.0.6	3.19 MB	7d03a108...	Added animation mcmeta for excalibur textures
-v4.0.7	3.17 MB	c433786c...	Fix Excalibur 3D models: extract 128x128 frame from spritesheet
+v4.0.7	3.17 MB	c433786c...	Fix Excalibur 3D models: extract 128×128 frame from spritesheet
 v4.0.8	3.17 MB	45aeea8a...	Excalibur Awakened: animated fire texture
 v4.0.9	3.17 MB	1b9f9e6c...	Excalibur Awakened: majestica model with blue fire + effect-sheet
-v4.1.0	3.52 MB	a7a0e72c...	Added armor, infinity, powerup textures + models. Bow models ready. THIS IS THE WORKING PACK
-v5.0	3.52 MB	a7a0e72c...	CURRENT — identical copy of v4.1.0, hosted under new version
-The 9.5 MB "v4.1.1" file on the v4.1.0 release is BROKEN — it was created by PowerShell's Compress-Archive and has hundreds of extra files that override/break the working definitions. DO NOT USE IT.
+v4.1.0	3.52 MB	a7a0e72c...	Added armor, infinity, powerup textures + models. Bow models ready.
+v5.0	3.52 MB	dc5cdce0...	Repackaged for new release URL
+v6.0	—	26704612...	(intermediate update)
+v7.0	—	a7212467...	Fixed Infinity Stone textures, Creation Splitter particle bug
+v8.0	—	—	Abyss Dragon model added
+v9.0	~3.68 MB	0e6151b6...	CURRENT — Dragon visual fix
+The broken "v4.1.1" file (9.5 MB, created by PowerShell's Compress-Archive) must NEVER be used.
 
-How to Update the Resource Pack (for future changes)
-Make changes to files in C:\Users\jgmel\Documents\projects\JGlimsPlugin\resourcepack-work\JGlimsResourcePack
-DO NOT use PowerShell Compress-Archive — it produces zips with wrong structure. Instead use 7-Zip or the manual zip method that preserves pack.mcmeta at root.
-Get the SHA-1: (Get-FileHash -Path $zipPath -Algorithm SHA1).Hash.ToLower()
-Upload as a NEW release version (v6.0, v7.0, etc. — never overwrite old versions):
-Copygh release create v6.0 $zipPath --repo JGlims/JGlimsPlugin --title "Resource Pack v6.0" --notes "SHA-1: $sha1"
-Update docker-compose.yml on the server:
-Copyssh -i $sshKey $remoteHost "sudo sed -i 's|v5.0/JGlimsResourcePack-v5.0.zip|v6.0/JGlimsResourcePack-v6.0.zip|' /home/ubuntu/minecraft-server/docker-compose.yml && sudo sed -i 's|OLD_SHA1|NEW_SHA1|' /home/ubuntu/minecraft-server/docker-compose.yml"
-Recreate container: ssh -i $sshKey $remoteHost "cd /home/ubuntu/minecraft-server && docker compose down && docker compose up -d"
 How Minecraft 1.21.4+ Custom Textures Work
-Minecraft 1.21.4 uses item model definitions in assets/minecraft/items/*.json. Each file uses type: "minecraft:select" with property: "minecraft:custom_model_data" to choose which model to render based on the custom_model_data component's strings list. The Java plugin sets the string via CustomModelDataComponent.setStrings(List.of("texture_name")). The "when" value in the JSON must exactly match the string set by the plugin.
+Minecraft 1.21.4+ uses item model definitions in assets/minecraft/items/*.json. Each file uses type: "minecraft:select" with property: "minecraft:custom_model_data" to choose which model to render based on the custom_model_data component's strings list. The Java plugin sets the string via CustomModelDataComponent.setStrings(List.of("texture_name")). The "when" value in the JSON must exactly match the string set by the plugin.
 
 For worn armor textures in 1.21.4+, the equippable component must set an asset_id that points to an assets/minecraft/equipment/<name>.json file, which in turn references textures in assets/minecraft/textures/entity/equipment/humanoid/ and humanoid_leggings/.
 
-C. CURRENT CODEBASE (52+ Java files)
-File Inventory by Package
-Root: JGlimsPlugin.java (34,896 B) — Main class, onEnable(), all listener/manager registration, commands (/guild, /guia, /jglims)
+How to Update the Resource Pack
+Make changes to files in the resource-pack working directory.
+DO NOT use PowerShell Compress-Archive — it produces zips with wrong structure. Use 7-Zip CLI or the manual zip method that preserves pack.mcmeta at root.
+Get the SHA-1: (Get-FileHash -Path $zipPath -Algorithm SHA1).Hash.ToLower()
+Upload as a NEW release version (v10.0, v11.0, etc. — never overwrite old versions): gh release create v10.0 $zipPath --repo JGlims/JGlimsPlugin --title "Resource Pack v10.0" --notes "SHA-1: $sha1"
+Update docker-compose.yml on the server with new URL + SHA-1 via sed.
+Recreate container: docker compose down && docker compose up -d
+C. COMPLETE CODEBASE (68 Java files, ~1.27 MB total)
+Root Package — com.jglims.plugin
+JGlimsPlugin.java (34,896 B) — Main plugin class. onEnable() initializes all managers and listeners, registers all three commands (/jglims, /guild, /guia), creates the Abyss dimension, and logs startup. Contains the command dispatcher for the /jglims admin command with its 14+ subcommands.
 
-abyss/: AbyssChunkGenerator.java (7,341 B), AbyssDimensionManager.java (12,440 B), AbyssDragonBoss.java (13,844 B)
+abyss Package (5 files)
+AbyssChunkGenerator.java (7,341 B) — Custom ChunkGenerator that produces a void-based terrain for world_abyss. Generates a roughly 210-block-radius landmass centered at origin using layered sinusoidal noise. Surface materials include deepslate tiles (inner), polished blackstone (mid), purpur blocks and end stone (outer). Features random amethyst columns, obsidian spikes, end rods, crying obsidian, and soul campfires as decorations. Beyond radius 160, generates floating islands at random Y levels. Includes void rivers carved between radius 130–200. All vanilla generation (noise, surface, caves, decorations, mobs, structures) is disabled.
 
-blessings/: BlessingListener.java (3,452 B), BlessingManager.java (10,296 B)
+AbyssCitadelBuilder.java (54,253 B) — The largest structure builder in the plugin. Constructs a massive gothic cathedral called the "Abyssal Citadel" using a Blockwave Studios-inspired design. The architecture consists of: an elliptical foundation platform (110×140 blocks), a circular courtyard with glowing crying obsidian lines (radius 40, centered at z=65), a main nave (80 blocks long × 60 wide × 50 tall with gothic narrowing walls), a cross-shaped transept (extending ±50 blocks on X, 45 blocks tall), a semicircular apse (radius 25, 55 blocks tall), a massive front facade (60 half-width, 80 blocks tall) with a pointed-arch entrance (8 half-width, 25 blocks tall), a rose window (radius 9 with radiating spokes pattern), a gable with finial, a center mega-spire (180 blocks tall), 6 flanker spires (100–120 blocks), 15 minor spires (50–90 blocks), flying buttresses along the nave, gothic pointed-arch windows with purple glass panes throughout, a pointed roof, interior nave with two rows of pillars, interior side chapels with loot chests, 4 Abyssal Weapon guardian chambers (obsidian rooms with amethyst pedestals, weapon chests, soul fire, and purple glass windows), a covered walkway from the apse to the boss arena, and the boss arena itself (radius 40, bedrock floor, barrier walls, 8 end stone pillars with amethyst caps, end rods, crying obsidian accents, and soul campfire pedestals), plus rocky terrain features, floating amethyst crystal formations, and an approach path. Block palette uses deepslate bricks, deepslate tiles, polished deepslate, chiseled deepslate, blackstone, polished blackstone bricks, obsidian, crying obsidian, amethyst blocks/clusters, purple stained glass panes, magenta stained glass panes, iron bars, soul lanterns, soul campfire, end rods, end stone bricks, bedrock, barrier, purpur, and air. After construction, populates chests with ABYSSAL and MYTHIC tier loot and spawns Enderman/WitherSkeleton guards.
 
-config/: ConfigManager.java (29,211 B)
+AbyssDimensionManager.java (18,501 B) — Creates and manages the world_abyss world. Before world load, writes a paper-world.yml that disables scan-for-legacy-ender-dragon. Creates the world with THE_END environment using AbyssChunkGenerator. Disables game rules: mob spawning, weather cycle, fire tick, mob griefing, advancement announcements, death messages. Sets difficulty to HARD, time to midnight. CRITICAL: Actively disables the vanilla DragonBattle every 10 seconds — removes the phantom Ender Dragon boss bar, kills any stray EnderDragon entities, and hides/removes the vanilla BossBar. If the citadel hasn't been built, triggers AbyssCitadelBuilder. Runs an ambient mob spawner (Endermen named "Void Wanderer" and Wither Skeletons named "Abyssal Sentinel") that avoids the arena vicinity. Creates the Abyssal Key item (Echo Shard base material, CMD 9001, PersistentDataContainer tag abyssal_key). Handles portal interaction: RIGHT_CLICK_BLOCK on PURPUR_BLOCK while holding the Abyssal Key searches for a valid 4-wide × 5-tall purpur frame (inner opening 2×3), fills interior with END_GATEWAY blocks, plays sounds and particle effects, and auto-removes the gateway after 30 seconds. Player teleportation is triggered by PlayerMoveEvent detecting entry into active gateway blocks, with a 5-second cooldown. Teleports to z=115.5 (south of citadel, facing north). Arena center constant: ARENA_CENTER_Z = -120.
 
-crafting/: RecipeManager.java (34,774 B), VanillaRecipeRemover.java (588 B)
+AbyssDragonBoss.java (23,877 B) — Complete boss fight controller implementing Listener. Constants: 1500 HP, 25% damage reduction, arena radius 40 blocks, 30-minute respawn cooldown. The manualTrigger(Player) method validates the player is in world_abyss, checks cooldowns, then calls startFight(). Fight initialization finds the arena floor Y-level, generates 11 waypoints in a circle (8 perimeter + 1 center high + 2 dive points), creates an AbyssDragonModel, sets up a purple notched boss bar, shows titles/sounds to all players, and spawns lightning effects. Two concurrent scheduled tasks run: a combat loop (every 2 seconds / 40 ticks) that updates the boss bar progress, checks phase transitions at 50% HP (phase 2), 25% HP (phase 3), and 10% HP (phase 4/enrage), selects random nearby players for attacks, and checks for death; and a movement loop (every 0.5 seconds / 10 ticks) that moves the dragon toward current waypoint at speed 0.8 + (phase × 0.2), with a 30% chance to divert toward a random player when reaching a waypoint. Attack methods vary by phase: Phase 1 — void breath (8+ damage, breath particles), lightning strike (6 damage), wing gust (4 damage + knockback). Phase 2 — adds summon minions (3-6 Endermen/Wither Skeletons). Phase 3 — adds ground pound (10 damage, vertical knockback to players within 15 blocks) and void pull (portal particles, pulls players toward dragon). Phase 4 (enrage) — enrage lightning barrage (8 rapid lightning strikes near target). Phase announcements show titles, change boss bar to red at phase 3+. Damage handling: blocks environmental damage on the base zombie entity, applies 25% reduction to player damage, triggers damage flash on the model. On death: cancels tasks, zeroes boss bar, plays death animation, shows VICTORY title with fireworks, drops loot after 4-second delay (dragon egg, 2 nether stars, 1000 XP in 20 orbs, 1 guaranteed random ABYSSAL legendary weapon, 3 netherite ingots, 16 diamonds, 32 emeralds), builds a 3×3 END_GATEWAY exit portal, cleans up named minions, hides boss bar after 10 seconds.
 
-enchantments/: AnvilRecipeListener.java (33,648 B), CustomEnchantManager.java (8,853 B), EnchantmentEffectListener.java (69,495 B), EnchantmentType.java (1,942 B), SoulboundListener.java (7,961 B)
+AbyssDragonModel.java (17,894 B) — Visual model implementation using an invisible Zombie (hitbox entity) + ItemDisplay (visual entity). Constants: base scale 5.0, rage scale 5.75, enrage scale 6.25, CMD integer 40000, CMD string "abyss_dragon". The spawn() method creates an invisible, silent, no-AI, no-gravity adult Zombie with health capped at Math.min(maxHp, 2048.0) (requires spigot.yml attribute.maxHealth.max >= 2048.0). Sets SCALE attribute to 3.0 on the zombie for hitbox size. Creates a PAPER ItemStack with both legacy integer CMD (40000) and modern string-based CustomModelDataComponent ("abyss_dragon"), plus setItemModel(NamespacedKey.fromString("minecraft:abyss_dragon")). Spawns an ItemDisplay at +2Y with FIXED billboard, scale transformation of (5,5,5), and view range 2.0. Starts an invisibility enforcer (every 5 ticks, reapplies invisibility potion to zombie). Starts an animation loop (every 2 ticks) that bobs the display sinusoidally (±0.5 blocks), slowly rotates it around the Y axis (0.02 rad/tick), scales per phase (5.0 → 5.75 → 6.25), and spawns ambient particles (DRAGON_BREATH always, SOUL_FIRE_FLAME at phase 2+, PORTAL at phase 3+). Movement via moveToward() teleports the zombie toward a target at configurable speed, updating yaw to face the direction of travel. Attack visuals: breathAttackVisual() draws a particle beam (DRAGON_BREATH + SOUL_FIRE_FLAME) from display to target with dragon shoot sound; wingGustVisual() spawns CLOUD + SWEEP_ATTACK particles with dragon flap sound. Phase transitions trigger growl, explosion particles, portal particles, and wither spawn sound at phase 3+. damageFlash() sets display brightness to max for 4 ticks and spawns DAMAGE_INDICATOR particles. playDeathAnimation() removes the zombie immediately, then runs a 60-tick shrink-and-spin animation (scale × 0.97 per tick, rotation += 0.3 per tick, rising translation) with continuous DRAGON_BREATH and PORTAL particles, explosion sounds every 5 ticks, culminating in EXPLOSION_EMITTER and ENDER_DRAGON_DEATH sound. cleanup() cancels all tasks and removes both entities.
 
-events/: EndRiftEvent.java (30,058 B), EventManager.java (10,367 B), NetherStormEvent.java (11,421 B), PiglinUprisingEvent.java (8,956 B), PillagerSiegeEvent.java (19,146 B), PillagerWarPartyEvent.java (19,957 B), VoidCollapseEvent.java (8,961 B)
+blessings Package (2 files)
+BlessingListener.java (3,452 B) — Listens for blessing crystal use events. BlessingManager.java (10,296 B) — Manages three blessing types: C-Bless (heal +1 HP per use, max 10 uses), Ami-Bless (+2% damage per use, max 10), La-Bless (+2% defense per use, max 10). Stats displayed via /jglims stats.
 
-guilds/: GuildListener.java (1,456 B), GuildManager.java (13,679 B)
+config Package (1 file)
+ConfigManager.java (29,211 B) — Reads all config.yml values and provides getters. Configuration sections cover: mob difficulty (distance-based scaling from 350 to 5000 blocks), biome multipliers, boss enhancer (Ender Dragon 3.5× HP, Wither 1.0×, Warden 1.0×, Elder Guardian 2.0× HP), creeper spawn reduction (50% cancel), Pale Garden fog effect, loot booster, blessings, anvil modification (remove "Too Expensive" + 50% XP reduction), feature toggles for 10 systems, drop rate booster (35% trident drop from Drowned), villager trade modifications (50% price reduction, no trade locking), king mob configuration (every 100th mob, 7× HP), axe nerf (0.5 attack speed), weapon mastery (max 1000 kills → +20% bonus), blood moon (15% chance per night, 12× boss HP), guilds (max 10 members, no friendly fire), dog armor (95% damage reduction), super tools (2% bonus per enchantment for netherite), and ore detection radii.
 
-legendary/: InfinityGauntletManager.java (23,370 B), InfinityStoneManager.java (8,029 B), LegendaryAbilityContext.java (4,941 B — updated with particle throttle), LegendaryAbilityListener.java (18,032 B), LegendaryAltAbilities.java (73,055 B), LegendaryArmorListener.java (38,729 B), LegendaryArmorManager.java (16,059 B), LegendaryArmorSet.java (16,160 B), LegendaryLootListener.java (22,565 B), LegendaryPrimaryAbilities.java (69,951 B), LegendaryTier.java (3,673 B), LegendaryWeapon.java (15,034 B), LegendaryWeaponManager.java (7,937 B)
+crafting Package (2 files)
+RecipeManager.java (34,774 B) — Registers all custom shaped/shapeless recipes: 8 battle tool types (sword, axe, bow, mace, shovel, pickaxe, trident, spear), diamond and netherite super tools, sickles, Infinity Stone combining (colored glass + redstone → finished Stone), Infinity Gauntlet assembly (Thanos Glove + all 6 Stones), and all 24 craftable armor pieces (6 sets × 4 slots). VanillaRecipeRemover.java (588 B) — Removes conflicting vanilla recipes on startup.
 
-menu/: CreativeMenuManager.java (45,503 B), GuideBookManager.java (29,396 B)
+enchantments Package (5 files)
+AnvilRecipeListener.java (33,648 B) — Custom anvil UI interceptor handling enchantment combining, Infinity Stone assembly, and enchantment conflict detection. CustomEnchantManager.java (8,853 B) — Defines all 64 custom enchantments with level caps, conflict pairs, and applicable item type restrictions. EnchantmentEffectListener.java (69,495 B) — The largest single source file. Implements all 64 enchantment effects with their trigger conditions and gameplay mechanics. EnchantmentType.java (1,942 B) — Enum categorizing enchantment types. SoulboundListener.java (7,961 B) — Prevents items with the Soulbound enchantment from dropping on player death.
 
-mobs/: BiomeMultipliers.java (3,080 B), BloodMoonManager.java (12,329 B), BossEnhancer.java (19,998 B — restored from GitHub, BOM stripped), BossMasteryManager.java (12,294 B), KingMobManager.java (5,972 B), MobDifficultyManager.java (4,744 B), RoamingBossManager.java (57,427 B)
+events Package (7 files)
+EventManager.java (10,367 B) — Central event scheduler running every 60 seconds (1200 ticks). Checks for random event triggers, manages 10-minute per-world cooldowns, handles broadcasts, boss tagging, weapon drops, and miscellaneous loot drops.
 
-powerups/: PowerUpListener.java (5,607 B), PowerUpManager.java (26,207 B)
+NetherStormEvent.java (11,421 B) — Ghast swarms, enhanced Blaze spawns, fire rain particles, Infernal Overlord boss (Ghast base, 400 HP). PiglinUprisingEvent.java (8,956 B) — Massive Piglin army spawn, Piglin Emperor boss (Piglin Brute base, 500 HP). VoidCollapseEvent.java (8,961 B) — Void particles pulling players down, Void Leviathan boss (Elder Guardian variant, 500 HP). PillagerWarPartyEvent.java (19,957 B) — Overworld Pillager raid with escalating waves. PillagerSiegeEvent.java (19,146 B) — Nighttime Pillager siege with Fortress Warlord boss. EndRiftEvent.java (30,058 B) — Creates a 15×15 portal, spawns waves of End mobs, End Rift Dragon boss (600 HP Ender Dragon variant).
 
-quests/: NpcWizardManager.java (15,501 B), QuestManager.java (27,940 B), QuestProgressListener.java (3,231 B)
+guilds Package (2 files)
+GuildListener.java (1,456 B) — Guild event hooks. GuildManager.java (13,679 B) — Full CRUD operations, invitation system, friendly fire toggle, persistence via flat-file storage.
 
-structures/: StructureBossManager.java (14,554 B), StructureBuilder.java (8,714 B), StructureLootPopulator.java (8,554 B), StructureManager.java (49,819 B), StructureType.java (10,780 B)
+legendary Package (15 files — core of the plugin)
+LegendaryTier.java (3,673 B) — 5-tier enum. COMMON: 12–15 damage, 10 particle budget, 1.0× cooldown multiplier. RARE: 14–17 damage, 25 particles, 0.95×. EPIC: 17–20 damage, 50 particles, 0.9×. MYTHIC: 20–30 damage, 100 particles, 0.85×. ABYSSAL: 28–40 damage, 200 particles, 0.8×. Color scheme: COMMON=white, RARE=aqua, EPIC=gold, MYTHIC=light purple, ABYSSAL=dark red (RGB 170,0,0). Includes backward-compatibility mappings: "LEGENDARY" → EPIC, "UNCOMMON" → COMMON.
 
-utility/: BestBuddiesListener.java (11,609 B), DropRateListener.java, EnchantTransferListener.java, InventorySortListener.java, LootBoosterListener.java, PaleGardenFogTask.java, VillagerTradeListener.java
+LegendaryWeapon.java (15,034 B) — Enum of 63 weapons with fields: id, displayName, baseMaterial, baseDamage, customModelData (legacy int 30001–30063), tier, textureName (the critical string that must match the resource pack JSON "when" value), primaryAbilityName, altAbilityName, primaryCooldown, altCooldown. Distribution: 20 COMMON, 8 RARE, 7 EPIC, 24 MYTHIC, 4 ABYSSAL. Provides fromId(), byTier(), byMaterial().
 
-weapons/: BattleAxeManager.java, BattleBowManager.java, BattleMaceManager.java, BattlePickaxeManager.java, BattleShovelManager.java, BattleSpearManager.java, BattleSwordManager.java, BattleTridentManager.java, SickleManager.java, SpearManager.java, SuperToolManager.java, WeaponAbilityListener.java, WeaponMasteryManager.java
+LegendaryWeaponManager.java (7,937 B) — Creates weapon ItemStacks with string-based CustomModelDataComponent, PersistentDataContainer tags, tier-colored display names via Adventure API, and lore showing ability names and cooldowns. All items are set as Unbreakable.
 
-D. LEGENDARY WEAPONS (63 total across 5 tiers)
-The LegendaryWeapon.java enum defines all 63 weapons. Each entry has: id, displayName, baseMaterial, baseDamage, customModelData (legacy int), tier (LegendaryTier), textureName (string used for CMD matching), primaryAbilityName, altAbilityName, primaryCooldown, altCooldown. The textureName field is the critical field — it must match the "when" value in the item definition JSON.
+LegendaryAbilityListener.java (18,032 B) — Event dispatcher: right-click → primary ability, crouch + right-click → alternate ability. Routes to the appropriate handler based on the weapon's PersistentDataContainer tag.
 
-Tier Distribution: 20 COMMON, 8 RARE, 7 EPIC, 24 MYTHIC, 4 ABYSSAL
+LegendaryPrimaryAbilities.java (69,951 B) — Implementation of all 63 primary abilities. Each weapon has a unique ability with particles, damage calculations, entity spawning, and cooldowns.
 
-COMMON (20): Amethyst Shuriken, Gravescepter, Lycanbane, Gloomsteel Katana, Viridian Cleaver, Crescent Edge, Gravecleaver, Amethyst Greatblade, Flamberge, Crystal Frostblade, Demonslayer, Vengeance, Oculus, Ancient Greatslab, Neptune's Fang, Tidecaller, Stormfork, Jade Reaper, Vindicator, Spider Fang
+LegendaryAltAbilities.java (73,055 B) — Implementation of all 63 alternate abilities. The second-largest source file.
 
-RARE (8): Ocean's Rage, Aquatic Sacred Blade, Royal Chakram, Acidic Cleaver, Muramasa, Windreaper, Moonlight, Talonbrand
+LegendaryAbilityContext.java (4,941 B) — Shared state maps (bloodlust stacks, retribution damage, soul collector counts, phase shift active status, etc.) and utility methods: getNearbyEnemies(), dealDamage(), getTargetEntity(), rotateY(), spawnThrottled() (particle throttle), trackTask(), trackSummon(), cleanupPlayer().
 
-EPIC (7): Berserker's Greataxe, Black Iron Greatsword, Solstice, Grand Claymore, Calamity Blade, Emerald Greatcleaver, Demon's Blood Blade
+LegendaryArmorSet.java (16,160 B) — Enum of 13 armor sets. Each set defines: id, displayName, tier, base material per slot (helmet/chestplate/leggings/boots), command IDs per slot (range 30101–30254), total defense value, set-bonus description, passive ability strings per piece, and texture file names per piece. Craftable sets: Reinforced Leather (12 def), Copper (14 def), Chainmail Reinforced (15 def), Amethyst (16 def), Bone (16 def), Sculk (18 def). Legendary sets: Shadow Stalker (24 def, RARE), Blood Moon (30 def, EPIC), Nature's Embrace (28 def, EPIC), Frost Warden (30 def, EPIC), Void Walker (36 def, MYTHIC), Dragon Knight (40 def, MYTHIC), Abyssal Plate (50 def, ABYSSAL — set bonus: +30% damage, Wither immunity).
 
-MYTHIC (24): True Excalibur, Requiem of the Ninth Abyss, Phoenix's Grace, Soul Collector, Valhakyra, Phantomguard, Zenith, Dragon Sword, Nocturne, Divine Axe Rhitta, Yoru, Tengen's Blade, Edge of the Astral Plane, Fallen God's Spear, Nature Sword, Heavenly Partisan, Soul Devourer, Mjölnir, Thousand Demon Daggers, Star Edge, Rivers of Blood, Dragon Slaying Blade, Stop Sign, Creation Splitter
+LegendaryArmorManager.java (16,059 B) — Creates armor ItemStacks with the equippable component, sets asset_id for worn texture rendering, applies passives and set bonuses.
 
-ABYSSAL (4): Requiem Awakened (dmg 38), Excalibur Awakened (dmg 34), Creation Splitter Awakened (dmg 40), Whisperwind Awakened (dmg 30)
+LegendaryArmorListener.java (38,729 B) — Implements all set bonuses and per-piece passive effects for all 13 armor sets.
 
-Weapons Missing Models/Textures (9)
-neptunes_fang, tidecaller, stormfork (tridents), edge_astral_plane, fallen_gods_spear, star_edge, requiem_awakened, excalibur_awakened, creation_splitter_awakened, whisperwind_awakened
+LegendaryLootListener.java (22,565 B) — Drop table logic for bosses, structures, and chests. Tiered probability system.
 
-Weapons with Fuzzy Model Name Matches
-divine_axe_rhitta → divineaxerhitta, tengens_blade → tengensblade, thousand_demon_daggers → thousanddemondaggers, rivers_of_blood → riversofblood, dragon_slaying_blade → dragonslayingblade, creation_splitter → creationsplitter
+InfinityStoneManager.java (8,029 B) — 6 stone types: Power (purple), Space (blue), Reality (red), Soul (orange), Time (green), Mind (yellow). Handles fragment creation, finished stone creation, and anvil combining logic.
 
-E. ARMOR SETS (13 total: 6 craftable + 7 legendary)
-Craftable: Reinforced Leather (12 def), Copper Armor (10 def), Chainmail Reinforced (14 def), Amethyst Armor (16 def), Bone Armor (8 def), Sculk Armor (18 def)
+InfinityGauntletManager.java (23,370 B) — Creates Thanos Glove, Infinity Gauntlet, and implements the snap ability (right-click kills 50% of all loaded hostile mobs in the current dimension, 300-second cooldown). Includes snap animation with particle effects and sounds.
 
-Legendary: Shadow Stalker (24 def, RARE), Blood Moon (20 def, EPIC), Nature's Embrace (18 def, EPIC), Frost Warden (22 def, EPIC), Void Walker (20 def, MYTHIC), Dragon Knight (26 def, MYTHIC), Abyssal Plate (30 def, ABYSSAL — +30% damage, Wither immunity)
+menu Package (2 files)
+CreativeMenuManager.java (45,503 B) — GUI inventory menus for browsing all weapons (by tier), armor sets, power-ups, Infinity Stones, and other items. Supports pagination. GuideBookManager.java (29,396 B) — Generates multi-volume written books in Portuguese (PT-BR) explaining all plugin systems, given via /guia.
+
+mobs Package (7 files)
+BiomeMultipliers.java (3,080 B) — Biome-specific mob stat scaling lookups.
+
+BloodMoonManager.java (12,329 B) — Blood Moon event system: 15% chance per night, red sky visual, mob stat buffs, boss-tier mob spawns every 10th regular mob, double drops from all mobs, 0.1% chance to drop Infinity Stone fragments.
+
+BossEnhancer.java (19,998 B) — Enhances vanilla bosses: Ender Dragon 3.5× HP with custom abilities, Wither 1.0× with abilities, Warden 1.0× with abilities, Elder Guardian 2.0× HP with abilities. Each boss gets custom attack patterns.
+
+BossMasteryManager.java (12,294 B) — Tracks boss kill participation and awards permanent titles with passive bonuses: Wither Slayer (+5%), Guardian Slayer (+7%), Warden Slayer (+10%), Dragon Slayer (+15%), Abyssal Conqueror (+20%), God Slayer (+25% damage / +20% defense).
+
+KingMobManager.java (5,972 B) — Every Nth mob spawn (configurable, default every 100th) becomes a "King" mob with 7× HP, 2.5× damage, and diamond drops.
+
+MobDifficultyManager.java (4,744 B) — Distance-from-spawn scaling system. Mobs become progressively harder as players venture further (350-block intervals up to 5000 blocks).
+
+RoamingBossManager.java (57,427 B) — The second-largest source file. Implements 6 roaming world bosses: The Watcher (Deep Dark biome, Warden base, 800 HP, EPIC drops, Darkness + Mining Fatigue aura), Hellfire Drake (Nether wastes, Ghast base, 600 HP, EPIC, triple fireball salvo), Frostbound Colossus (Snowy biomes, Iron Golem base, 700 HP, EPIC, freeze aura + ground pound), Jungle Predator (Jungle, Ravager base, 500 HP, RARE/EPIC, stealth pounce + poison fog), End Wraith (The End outer islands, Phantom size 6, 900 HP, MYTHIC, void beam + phase shift + shadow clones at 50% HP), Abyssal Leviathan (Abyss dimension, 1200 HP, ABYSSAL drops). Each boss has a 2–4% spawn chance per 2-minute check, auto-despawn after 10 minutes, custom particle effects, unique attack patterns per phase, and tier-appropriate weapon/loot drops.
+
+powerups Package (2 files)
+PowerUpManager.java (26,207 B) — 7 power-up items, all using string-based CustomModelDataComponent: Heart Crystal (RED_DYE base, +2 max HP per use, max 40 uses → +80 HP), Soul Fragment (PURPLE_DYE, +1.0% damage per use, max 100 → +100%), Titan's Resolve (IRON_NUGGET, +10% knockback resistance + 2% DR per use, max 5 → 50% KB resist + 10% DR), Phoenix Feather (FEATHER, auto-revive on death with 4 hearts, stackable/consumes one per death), KeepInventorer (ENDER_EYE, permanent keep-inventory flag, one-time use), Vitality Shard (PRISMARINE_SHARD, +5% DR per use, max 10 → 50% DR), Berserker's Mark (BLAZE_POWDER, +3% attack speed per use, max 10 → 30%). Maximum total passive DR is capped at 75%.
+
+PowerUpListener.java (5,607 B) — Handles right-click consumption events and death events (Phoenix Feather auto-revive, KeepInventory enforcement).
+
+quests Package (3 files)
+QuestManager.java (27,940 B) — 6 quest lines (Overworld, Nether, End, Special, Boss, Explorer) with progress tracking, tiered rewards, and a scheduler. QuestProgressListener.java (3,231 B) — Monitors kills, exploration milestones, and item collection for quest advancement. NpcWizardManager.java (15,501 B) — Archmage NPC villager (purple robes) that sells exclusive MYTHIC weapons (rotating stock of 3 for 48 diamonds + 16 Nether Stars each), Heart Crystals, Phoenix Feathers, KeepInventorer (64 diamonds + 32 emeralds), and Blessing Crystals.
+
+structures Package (5 files)
+StructureType.java (10,780 B) — Enum of 40 structure types: 24 Overworld (Ruined Colosseum, Druid's Grove, Shrek House, Gigantic Castle, Thanos Temple, Pillager Fortress, Pillager Airship, Frost Dungeon, Bandit Hideout, Sunken Ruins, Cursed Graveyard, Sky Altar, and more), 7 Nether (Crimson Citadel, Soul Sanctum, etc.), 5 End (Void Shrine, Ender Monastery, Dragon's Hoard, etc.), 3 Abyss (Abyssal Castle 120×80×120, Void Nexus, Shattered Cathedral), plus the Ender Dragon Death Chest structure. Each structure has: display name, dimension, loot tier, size (X/Y/Z), boss flag, boss name and base HP, and valid biome set. Generation chances: COMMON 0.8%, RARE 0.5%, EPIC 0.3%, MYTHIC 0.1%, ABYSSAL 0.05% per chunk. isAbyssDimension() check uses world name "world_abyss".
+
+StructureManager.java (49,819 B) — Chunk-based generation with 300-block minimum spacing, biome filtering, and programmatic block placement for all 40 structure types. StructureBuilder.java (8,714 B) — Block placement API. StructureLootPopulator.java (8,554 B) — Chest filling per structure type/tier. StructureBossManager.java (14,554 B) — Mini-boss spawning, health bar management, and tracking.
+
+utility Package (7 files)
+BestBuddiesListener.java (11,609 B) — Wolf/dog armor system with 95% damage reduction for tamed wolves wearing armor. DropRateListener.java (3,289 B) — 35% trident drop rate boost from Drowned, plus breeze wind charge drops. EnchantTransferListener.java (7,135 B) — Transfer enchantments between items. InventorySortListener.java (5,282 B) — Shift-click on empty inventory slot to auto-sort. LootBoosterListener.java (8,991 B) — Enhanced chest/mob loot tables. PaleGardenFogTask.java (1,356 B) — Fog visual effect when players are in the Pale Garden biome. VillagerTradeListener.java (4,244 B) — 50% price reduction on all villager trades, removes trade locking.
+
+weapons Package (13 files)
+BattleAxeManager.java (8,303 B), BattleBowManager.java (4,871 B), BattleMaceManager.java (4,279 B), BattlePickaxeManager.java (7,168 B), BattleShovelManager.java (8,451 B), BattleSpearManager.java (8,339 B), BattleSwordManager.java (6,821 B), BattleTridentManager.java (4,737 B), SickleManager.java (8,061 B), SpearManager.java (11,128 B), SuperToolManager.java (22,176 B) — 11 non-legendary weapon type managers creating tiered variants (wood through netherite) with custom attributes.
+
+WeaponAbilityListener.java (81,738 B) — The third-largest source file. Implements 20+ non-legendary weapon abilities for battle tools and super tools.
+
+WeaponMasteryManager.java (9,803 B) — Kill-based mastery progression: Novice (0 kills), Fighter (100 kills, +1% damage), Experienced Fighter (500 kills, +5%), Master (1000 kills, +15%).
+
+D. LEGENDARY WEAPONS — COMPLETE TABLE (63 weapons)
+COMMON Tier (20 weapons, damage 12–15, particle budget 10)
+#	ID	Display Name	Material	Dmg	CMD	Texture Name	Primary Ability	Alt Ability	PCD	ACD
+1	amethyst_shuriken	Amethyst Shuriken	DIAMOND_SWORD	13	30012	amethyst_shuriken	Shuriken Barrage	Shadow Step	5	10
+2	gravescepter	Gravescepter	DIAMOND_SWORD	13	30026	revenants_gravescepter	Grave Rise	Death's Grasp	5	12
+3	lycanbane	Lycanbane	DIAMOND_SWORD	14	30027	lycanbane	Silver Strike	Hunter's Sense	5	14
+4	gloomsteel_katana	Gloomsteel Katana	DIAMOND_SWORD	13	30028	gloomsteel_katana	Quick Draw	Shadow Stance	3	12
+5	viridian_cleaver	Viridian Cleaver	DIAMOND_AXE	15	30029	viridian_greataxe	Verdant Slam	Overgrowth	5	15
+6	crescent_edge	Crescent Edge	DIAMOND_AXE	14	30030	crescent_greataxe	Lunar Cleave	Crescent Guard	5	14
+7	gravecleaver	Gravecleaver	DIAMOND_SWORD	14	30031	revenants_gravecleaver	Bone Shatter	Undying Rage	5	18
+8	amethyst_greatblade	Amethyst Greatblade	DIAMOND_SWORD	13	30032	amethyst_greatblade	Crystal Burst	Gem Resonance	5	18
+9	flamberge	Flamberge	DIAMOND_SWORD	14	30033	flamberge	Flame Slash	Fire Wall	5	15
+10	crystal_frostblade	Crystal Frostblade	DIAMOND_SWORD	13	30034	crystal_frostblade	Frost Strike	Blizzard Shield	5	15
+11	demonslayer	Demonslayer	DIAMOND_SWORD	15	30035	demonslayer	Demon Cleave	Infernal Rage	5	18
+12	vengeance	Vengeance	DIAMOND_SWORD	14	30036	vengeance	Retribution	Blood Price	5	15
+13	oculus	Oculus	DIAMOND_SWORD	12	30037	oculus	All-Seeing Strike	Mind's Eye	5	12
+14	ancient_greatslab	Ancient Greatslab	DIAMOND_SWORD	15	30038	ancient_greatslab	Ground Slam	Stone Wall	5	18
+15	neptunes_fang	Neptune's Fang	TRIDENT	14	30039	neptunes_fang	Tidal Strike	Ocean Shield	5	15
+16	tidecaller	Tidecaller	TRIDENT	13	30040	tidecaller	Wave Crash	Riptide Dash	5	12
+17	stormfork	Stormfork	TRIDENT	14	30041	stormfork	Thunder Bolt	Storm Shield	5	15
+18	jade_reaper	Jade Reaper	DIAMOND_SWORD	13	30042	jade_reaper	Jade Slash	Emerald Shield	3	10
+19	vindicator	Vindicator	DIAMOND_AXE	15	30043	vindicator	Cleaving Strike	Berserker Rush	5	15
+20	spider_fang	Spider Fang	DIAMOND_SWORD	12	30044	spider_fang	Venom Strike	Web Trap	5	12
+RARE Tier (8 weapons, damage 14–17, particle budget 25)
+#	ID	Display Name	Material	Dmg	CMD	Texture Name	Primary	Alt	PCD	ACD
+21	oceans_rage	Ocean's Rage	DIAMOND_SWORD	16	30001	oceansrage	Tsunami Strike	Maelstrom	6	20
+22	aquatic_sacred_blade	Aquatic Sacred Blade	DIAMOND_SWORD	15	30002	aquatic_sacred_blade	Sacred Torrent	Blessing of the Deep	6	22
+23	royal_chakram	Royal Chakram	DIAMOND_SWORD	14	30003	royal_chakram	Chakram Throw	Shield of Blades	5	18
+24	acidic_cleaver	Acidic Cleaver	DIAMOND_AXE	17	30004	acidic_cleaver	Acid Splash	Corrode	6	22
+25	muramasa	Muramasa	DIAMOND_SWORD	16	30005	muramasa	Bloodlust	Cursed Edge	5	18
+26	windreaper	Windreaper	DIAMOND_SWORD	15	30006	windreaper	Gale Slash	Tempest	6	20
+27	moonlight	Moonlight	DIAMOND_SWORD	15	30007	moonlight	Lunar Beam	Eclipse	6	22
+28	talonbrand	Talonbrand	DIAMOND_SWORD	16	30008	talonbrand	Raptor Strike	Falcon Dive	5	18
+EPIC Tier (7 weapons, damage 17–20, particle budget 50)
+#	ID	Display Name	Material	Dmg	CMD	Texture Name	Primary	Alt	PCD	ACD
+29	berserkers_greataxe	Berserker's Greataxe	DIAMOND_AXE	20	30009	berserkers_greataxe	Rampage	War Cry	7	25
+30	black_iron_greatsword	Black Iron Greatsword	DIAMOND_SWORD	19	30010	black_iron_greatsword	Iron Curtain	Unstoppable Force	7	25
+31	solstice	Solstice	DIAMOND_SWORD	18	30011	solstice	Solar Flare	Equinox	7	28
+32	grand_claymore	Grand Claymore	DIAMOND_SWORD	19	30013	grand_claymore	Heavy Cleave	Counter Stance	7	25
+33	calamity_blade	Calamity Blade	DIAMOND_SWORD	18	30014	calamity_blade	Disaster Strike	Chaos Zone	7	28
+34	emerald_greatcleaver	Emerald Greatcleaver	DIAMOND_AXE	20	30015	emerald_greatcleaver	Emerald Shatter	Jade Fortify	7	25
+35	demons_blood_blade	Demon's Blood Blade	DIAMOND_SWORD	19	30016	demons_blood_blade	Blood Drain	Demon Form	7	30
+MYTHIC Tier (24 weapons, damage 20–30, particle budget 100)
+#	ID	Display Name	Material	Dmg	CMD	Texture Name	Primary	Alt	PCD	ACD
+36	true_excalibur	True Excalibur	DIAMOND_SWORD	25	30017	true_excalibur	Holy Smite	Divine Shield	8	30
+37	requiem_of_the_ninth_abyss	Requiem of the Ninth Abyss	DIAMOND_SWORD	26	30018	requiem_ninth	Abyss Scream	Void Embrace	8	35
+38	phoenixs_grace	Phoenix's Grace	DIAMOND_SWORD	24	30019	phoenixs_grace	Phoenix Strike	Rebirth Flame	8	30
+39	soul_collector	Soul Collector	DIAMOND_SWORD	23	30020	soul_collector	Soul Harvest	Soul Storm	8	30
+40	valhakyra	Valhakyra	DIAMOND_AXE	27	30021	valhakyra	Valkyrie's Descent	Wings of War	8	35
+41	phantomguard	Phantomguard	DIAMOND_SWORD	22	30022	phantomguard	Phase Shift	Spectral Army	8	35
+42	zenith	Zenith	DIAMOND_SWORD	25	30023	zenith	Zenith Strike	Heavenly Light	8	30
+43	dragon_sword	Dragon Sword	DIAMOND_SWORD	26	30024	dragon_sword	Dragon Breath	Scale Shield	8	30
+44	nocturne	Nocturne	DIAMOND_SWORD	24	30025	nocturne	Night Slash	Shadow Realm	8	35
+45	divine_axe_rhitta	Divine Axe Rhitta	DIAMOND_AXE	30	30045	divineaxerhitta	Cruel Sun	Sunshine	10	40
+46	yoru	Yoru	DIAMOND_SWORD	26	30046	yoru	Black Blade	Worlds Strongest Slash	8	35
+47	tengens_blade	Tengen's Blade	DIAMOND_SWORD	24	30047	tengensblade	Sound Breathing	Festival Performance	8	30
+48	edge_astral_plane	Edge of the Astral Plane	DIAMOND_SWORD	25	30048	edge_astral_plane	Astral Slash	Dimension Rift	8	35
+49	fallen_gods_spear	Fallen God's Spear	TRIDENT	27	30049	fallen_gods_spear	God's Judgment	Divine Wrath	10	40
+50	nature_sword	Nature Sword	DIAMOND_SWORD	23	30050	nature_sword	Vine Whip	Nature's Wrath	8	30
+51	heavenly_partisan	Heavenly Partisan	DIAMOND_SWORD	25	30051	heavenly_partisan	Heaven's Strike	Celestial Judgment	8	35
+52	soul_devourer	Soul Devourer	DIAMOND_SWORD	26	30052	soul_devourer	Devour	Soul Explosion	8	35
+53	mjolnir	Mjölnir	DIAMOND_AXE	28	30053	mjolnir	Thunder God	Worthy	10	40
+54	thousand_demon_daggers	Thousand Demon Daggers	DIAMOND_SWORD	22	30054	thousanddemondaggers	Demon Barrage	Hellstorm	5	28
+55	star_edge	Star Edge	DIAMOND_SWORD	25	30055	star_edge	Star Slash	Constellation	8	30
+56	rivers_of_blood	Rivers of Blood	DIAMOND_SWORD	24	30056	riversofblood	Corpse Piler	Blood Loss	5	25
+57	dragon_slaying_blade	Dragon Slaying Blade	DIAMOND_SWORD	27	30057	dragonslayingblade	Dragon Cleave	Dragon Fear	8	35
+58	stop_sign	Stop Sign	DIAMOND_SWORD	20	30058	stop_sign	STOP	Yield	8	30
+59	creation_splitter	Creation Splitter	DIAMOND_AXE	30	30059	creationsplitter	Reality Rift	World Break	10	50
+ABYSSAL Tier (4 weapons, damage 28–40, particle budget 200)
+#	ID	Display Name	Material	Dmg	CMD	Texture Name	Primary	Alt	PCD	ACD
+60	requiem_awakened	Requiem Awakened	NETHERITE_SWORD	38	30060	requiem_awakened	Abyss Annihilation	Void Apocalypse	12	50
+61	excalibur_awakened	Excalibur Awakened	NETHERITE_SWORD	34	30061	excalibur_awakened	Holy Annihilation	Sacred Apocalypse	12	45
+62	creation_splitter_awakened	Creation Splitter Awakened	NETHERITE_AXE	40	30062	creation_splitter_awakened	Creation's End	Dimensional Collapse	12	50
+63	whisperwind_awakened	Whisperwind Awakened	NETHERITE_SWORD	30	30063	whisperwind_awakened	Silent Storm	Zephyr's Embrace	10	40
+Weapons with Fuzzy Texture Name Mappings
+Some weapons have texture names that differ from their IDs due to model pack naming conventions: divine_axe_rhitta → divineaxerhitta, tengens_blade → tengensblade, thousand_demon_daggers → thousanddemondaggers, rivers_of_blood → riversofblood, dragon_slaying_blade → dragonslayingblade, creation_splitter → creationsplitter.
+
+E. ARMOR SETS — COMPLETE TABLE (13 sets)
+Craftable Armor Sets (6)
+Set Name	Tier	Total Defense	Material	Helmet CMD	Chest CMD	Legs CMD	Boots CMD	Set Bonus
+Reinforced Leather	COMMON	12	LEATHER	30101	30102	30103	30104	Minor protection boost
+Copper Armor	COMMON	14	IRON	30111	30112	30113	30114	Electrical resistance
+Chainmail Reinforced	COMMON	15	CHAINMAIL	30121	30122	30123	30124	Projectile reduction
+Amethyst Armor	RARE	16	DIAMOND	30131	30132	30133	30134	Crystal resonance
+Bone Armor	COMMON	16	IRON	30141	30142	30143	30144	Undead affinity
+Sculk Armor	RARE	18	DIAMOND	30151	30152	30153	30154	Vibration sensing
+Legendary Armor Sets (7)
+Set Name	Tier	Total Defense	Material	Set Bonus Description
+Shadow Stalker	RARE	24	NETHERITE	Stealth + speed in darkness
+Blood Moon	EPIC	30	NETHERITE	Lifesteal on hit
+Nature's Embrace	EPIC	28	NETHERITE	Regeneration in forests/jungles
+Frost Warden	EPIC	30	NETHERITE	Freeze aura + ice resistance
+Void Walker	MYTHIC	36	NETHERITE	Teleport dash + void resistance
+Dragon Knight	MYTHIC	40	NETHERITE	Fire immunity + dragon breath
+Abyssal Plate	ABYSSAL	50	NETHERITE	+30% damage, Wither immunity
+All sets have per-piece passives (helmet, chestplate, leggings, boots) in addition to the full-set bonus. Inventory icons use string-based CMD. Worn textures use the equippable component's asset_id pointing to assets/minecraft/equipment/<set_name>.json.
 
 F. POWER-UP ITEMS (7)
-Heart Crystal (+2 HP, max 40 crystals), Soul Fragment (+1% damage, max 100), Titan's Resolve (+10% knockback resistance), Phoenix Feather (auto-revive on death), KeepInventorer (permanent keep-inventory), Vitality Shard (+2 HP, max 20), Berserker Mark (+2% damage, max 10)
+Item	Base Material	CMD String	Effect	Max Uses	Cumulative Max
+Heart Crystal	RED_DYE	heart_crystal	+2 max HP	40	+80 HP
+Soul Fragment	PURPLE_DYE	soul_fragment	+1% damage	100	+100%
+Titan's Resolve	IRON_NUGGET	titans_resolve	+10% KB resist + 2% DR	5	50% KB + 10% DR
+Phoenix Feather	FEATHER	phoenix_feather	Auto-revive on death (4 hearts)	Stackable	Consumes 1 per death
+KeepInventorer	ENDER_EYE	keep_inventorer	Permanent keep-inventory	1	One-time toggle
+Vitality Shard	PRISMARINE_SHARD	vitality_shard	+5% DR	10	50% DR
+Berserker's Mark	BLAZE_POWDER	berserker_mark	+3% attack speed	10	30% attack speed
+Total passive damage reduction capped at 75% across all sources.
 
 G. INFINITY GAUNTLET SYSTEM
-Thanos boss (800 HP, 2 phases) drops Thanos Glove. Six Infinity Stone fragments (Power/Space/Reality/Soul/Time/Mind) drop during Blood Moon at 0.1% rate. Fragment + Nether Star in anvil = finished Stone. Thanos Glove + all 6 Stones = Infinity Gauntlet. Right-click snap kills 50% of loaded hostile mobs, 300s cooldown.
+The Thanos boss (800 HP, 2 phases) drops the Thanos Glove on death. Six Infinity Stone fragments (Power/Space/Reality/Soul/Time/Mind) have a 0.1% drop chance from any mob killed during a Blood Moon event. Each fragment is combined with a Nether Star in the custom anvil to create a finished Stone. The Thanos Glove combined with all 6 finished Stones in the anvil produces the Infinity Gauntlet. Right-clicking with the Infinity Gauntlet triggers the "snap" ability: kills 50% of all loaded hostile mobs in the current dimension, plays a dimensional shockwave animation with particles and sounds. Cooldown: 300 seconds. The Thanos Glove, individual Stones, and the Infinity Gauntlet each have unique custom textures.
 
 H. EVENTS (6 active)
-Nether Storm, Piglin Uprising, Void Collapse, Pillager War Party, Pillager Siege, End Rift. All managed by EventManager.java.
+All events are managed by EventManager.java, which runs a check every 60 seconds with 10-minute per-world cooldowns.
 
-I. STRUCTURES (39 types)
-25 Overworld, 7 Nether, 5 End, 3 Abyss (counting Abyssal Castle, Void Nexus, Shattered Cathedral). Each has optional mini-boss and tier-appropriate loot.
+Nether Storm — Ghast swarms, enhanced Blaze spawns, fire rain visual. Boss: Infernal Overlord (Ghast, 400 HP). Piglin Uprising — Massive Piglin army. Boss: Piglin Emperor (Piglin Brute, 500 HP). Void Collapse — Void particles pulling players down. Boss: Void Leviathan (Elder Guardian variant, 500 HP). Pillager War Party — Overworld Pillager raid with escalating waves. Pillager Siege — Nighttime siege event with Fortress Warlord boss. End Rift — 15×15 portal, wave-based End mob spawns. Boss: End Rift Dragon (600 HP).
+
+I. STRUCTURES (40 types)
+24 Overworld structures, 7 Nether structures, 5 End structures, 3 Abyss structures (Abyssal Castle 120×80×120, Void Nexus, Shattered Cathedral), plus the Ender Dragon Death Chest. Generation chances range from 0.8% (COMMON) to 0.05% (ABYSSAL) per chunk. Each structure supports an optional mini-boss with custom HP, attack patterns, and a health bar. Loot is tier-appropriate, drawn from StructureLootPopulator.java. Minimum spacing between structures: 300 blocks.
 
 J. OTHER SYSTEMS
-64 custom enchantments, Blessings (C-Bless heal, Ami-Bless damage, La-Bless defense), Guilds, Blood Moon event (15% chance per night), King Mobs (1 per 50 spawns, 10× HP), Mob Difficulty scaling by distance, Boss Mastery Titles, Weapon Mastery (Novice/Fighter/Experienced/Master), NPC Wizard, Quest system (6 quest lines), Creative Menu, Guide Book (PT-BR), 11 battle weapon types, Roaming Bosses (6: The Watcher, Hellfire Drake, Frostbound Colossus, Jungle Predator, End Wraith, Abyssal Leviathan).
+64 Custom Enchantments — Defined in CustomEnchantManager.java with level caps, conflict pairs, and item type restrictions. Effects implemented in EnchantmentEffectListener.java (69.5 KB).
 
-K. DEPLOYMENT PROCEDURE
+Blessings — Three types of blessing crystals: C-Bless (heal, +1 HP per use, max 10), Ami-Bless (damage, +2% per use, max 10), La-Bless (defense, +2% per use, max 10).
+
+Guilds — Create, invite, join, leave, kick, disband. Max 10 members. Friendly fire toggle. Persistence via flat-file storage.
+
+Blood Moon — 15% chance per night. Red sky, all mob stats buffed, boss-tier mob every 10th spawn, double drops, 0.1% Infinity Stone fragment drops.
+
+King Mobs — Every 100th mob spawn becomes a "King" with 7× HP, 2.5× damage, diamond drops.
+
+Mob Difficulty Scaling — Distance-from-spawn progressive scaling from 350 to 5000 blocks.
+
+Boss Mastery Titles — 6 titles with cumulative passive bonuses up to +25% damage / +20% defense.
+
+Weapon Mastery — 4 tiers: Novice (0 kills), Fighter (100, +1%), Experienced (500, +5%), Master (1000, +15%).
+
+NPC Wizard — Archmage villager selling exclusive MYTHIC weapons, power-ups, and blessing crystals.
+
+Quest System — 6 quest lines (Overworld, Nether, End, Special, Boss, Explorer).
+
+Creative Menu — GUI inventory browser for all plugin items by category/tier.
+
+Guide Book — Multi-volume written books in Portuguese (PT-BR).
+
+11 Battle Weapon Types — Sword, axe, bow, mace, shovel, pickaxe, trident, spear, sickle, super tools (diamond + netherite).
+
+6 Roaming World Bosses — The Watcher (800 HP), Hellfire Drake (600 HP), Frostbound Colossus (700 HP), Jungle Predator (500 HP), End Wraith (900 HP), Abyssal Leviathan (1200 HP).
+
+Dog Armor System — 95% damage reduction for tamed wolves.
+
+Villager Trade Modifications — 50% price reduction, no trade locking.
+
+K. DEPLOYMENT PROCEDURES
 Build & Deploy Plugin
 Copy$sshKey = "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key"
 $remoteHost = "ubuntu@144.22.198.184"
@@ -163,600 +376,174 @@ Deploy Resource Pack (new version)
 Copy# 1. Zip the pack (use 7-Zip, NOT Compress-Archive)
 # 2. Get SHA-1
 $sha1 = (Get-FileHash -Path $zipPath -Algorithm SHA1).Hash.ToLower()
-# 3. Upload to GitHub as new release (e.g., v6.0)
-gh release create v6.0 $zipPath --repo JGlims/JGlimsPlugin --title "Resource Pack v6.0" --notes "SHA-1: $sha1"
+# 3. Upload to GitHub as new release
+gh release create v10.0 $zipPath --repo JGlims/JGlimsPlugin --title "Resource Pack v10.0" --notes "SHA-1: $sha1"
 # 4. Update docker-compose.yml on server with new URL + SHA-1
 # 5. docker compose down && docker compose up -d
-CRITICAL RULES FOR FILE WRITING
-Always use [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false)) to avoid BOM
-NEVER use PowerShell Compress-Archive for resource packs
-ALWAYS edit docker-compose.yml for resource pack URL/SHA-1 changes (NOT server.properties)
-ALWAYS use docker compose down && docker compose up -d (not just docker restart)
-SSH user is ubuntu, not opc
-L. PROBLEMS SOLVED IN THIS SESSION (2026-03-13)
-BOM build failure: PowerShell's default UTF-8 BOM corrupted BossEnhancer.java. Fixed by restoring from GitHub and stripping BOM.
-Particle throttle for lag reduction: Added spawnThrottled, trackTask, trackSummon, cleanupPlayer methods to LegendaryAbilityContext.java.
-Missing Particle import: LegendaryAbilityContext.java was missing the org.bukkit.Particle import after patching. Fixed by rewriting the full file with correct imports.
-Resource pack URL pointing to nonexistent file: server.properties pointed to v4.1.0/JGlimsResourcePack-v4.1.0.zip which didn't exist on GitHub. Created v5.0 release with the working pack.
-docker-compose.yml overwriting server.properties: Discovered that itzg/minecraft-server Docker image regenerates server.properties from env vars on every start. All resource pack config changes must go in docker-compose.yml.
-server.properties AccessDeniedException: docker cp sets file ownership to root, but the container runs as uid 1000. Fixed with sudo chown 1000:1000 on the host bind mount.
-sed escaping issues: The \: in Minecraft's properties format was getting eaten by shell layers. Fixed by using sed only on the version/path portion (no special characters).
-M. THINGS TO DO NEXT (PRIORITY ORDER)
-1. Fix Current Bugs + Power-Up & Armor Worn Textures
-Priority: HIGHEST — complete what's broken
+L. PROBLEMS SOLVED (historical)
+BOM build failure: PowerShell's default UTF-8 BOM corrupted BossEnhancer.java — fixed by restoring from GitHub and stripping BOM. Particle throttle for lag reduction: added spawnThrottled, trackTask, trackSummon, cleanupPlayer to LegendaryAbilityContext.java. Missing Particle import after patching. Resource pack URL pointing to nonexistent file (v4.1.0 path). Docker-compose overwriting server.properties on every start. File ownership (docker cp sets root, container runs as uid 1000). Sed escaping issues with Minecraft property file colons. Infinity Stone texture rendering (fixed in v7.0). Creation Splitter particle effects (fixed in v7.0). Dragon model visual issues (fixed v8.0 → v9.0). Phantom Ender Dragon boss bar in world_abyss (fixed by disableVanillaDragonBattle()).
 
-A. Creation Splitter ability bug: Identify which ability (primary or alt) is bugged, inspect LegendaryPrimaryAbilities.java and LegendaryAltAbilities.java for the CREATION_SPLITTER case, and fix.
+M. MANDATORY DEVELOPMENT RULES
+Always use [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false)) to avoid BOM when writing Java files from PowerShell.
+NEVER use PowerShell Compress-Archive for resource packs — use 7-Zip CLI.
+Resource pack URL/SHA-1 changes go in docker-compose.yml, NOT server.properties.
+After docker-compose changes: docker compose down && docker compose up -d.
+SSH user is ubuntu, NOT opc.
+Each resource pack update gets a new major version (v10.0, v11.0, etc.) — never overwrite.
+Use Adventure API exclusively (no deprecated ChatColor).
+All custom item metadata via PersistentDataContainer with NamespacedKey.
+String-based CustomModelDataComponent for all item textures.
+Two abilities per weapon: primary (right-click) and alternate (crouch + right-click).
+Particle budgets per tier: COMMON 10, RARE 25, EPIC 50, MYTHIC 100, ABYSSAL 200.
+All legendary items must be indestructible (Unbreakable: true).
+Resource pack pack_format: 75.
+Item JSON files in assets/minecraft/items/*.json use string-based custom_model_data.
+File-size limit per source file: ~120 KB; split if exceeding.
+N. FULL EXPANSION ROADMAP (from README)
+Phases 20–35 are planned: End Rift Event enhancements, Enhanced Pillager Warfare, Infinity Gauntlet + Thanos improvements, Quest Villagers & NPC Wizard expansions, Abyss Dimension full rework, Legendary Ranged Weapons (15 bows/crossbows), Ocean Expansion (6 structures + Kraken event), World Bosses (4 Overworld + 3 Nether + 1 End), Dungeon Generator (procedural multi-room dungeons), Legendary Shields & Off-hand Items (16 items), Pet System (8 tameable mythical pets), Seasons & Weather system, Fishing Overhaul, Guild Wars & Territories, Hardcore Challenge Modes. Total planned content: 75+ legendary weapons, 15+ armor sets, 43+ structures, 8+ events, 8 world bosses, 8 pets, procedural dungeon system, full quest system, guild territory/war PvP, 4+ dimensions.
 
-B. Power-up textures: Update PowerUpManager.java to use string-based CustomModelDataComponent (it likely still uses integer CMD). Verify that assets/minecraft/items/amethyst_shard.json (or the correct base material JSON) has when cases matching the strings set by the plugin. Missing PNGs for keep_inventorer.png and berserker_mark.png need to be created (16×16 pixel art).
+O. ABYSS DIMENSION — DETAILED TECHNICAL STATE
+World Generation (AbyssChunkGenerator.java)
+The Abyss is a custom THE_END environment world named world_abyss. Terrain is generated within a 210-block radius from origin using layered sinusoidal noise (sin(wx * 0.03) * cos(wz * 0.03) * 8 + sin(wx * 0.07 + 2) * cos(wz * 0.05 + 1) * 4 + sin(wx * 0.12) * cos(wz * 0.12) * 2), producing rolling surface at ~Y50. Surface materials transition from deepslate tiles (inner) through polished blackstone to purpur/end stone (outer). Subsurface layers use obsidian and crying obsidian. Decorative features include amethyst columns (1.2% chance, 4–12 blocks tall), obsidian spikes (0.8%, 5–17 blocks), end rods (1.5%), crying obsidian boulders (2.5%), and soul campfires (0.6%). Beyond radius 160, floating islands generate at random Y levels (30–100) with 7–21 block radius and 5-block thickness. Void rivers are carved between radius 130–200 using sinusoidal noise.
 
-C. Armor worn textures: In Minecraft 1.21.4+, worn armor uses the equippable component with an asset_id. Create assets/minecraft/equipment/<set_name>.json files for each of the 13 armor sets. Each equipment JSON references textures at assets/minecraft/textures/entity/equipment/humanoid/<set_name>.png and humanoid_leggings/<set_name>.png. Update LegendaryArmorManager.java to set the equippable component with the correct asset_id and slot. Verify all 26 worn texture PNGs (13 sets × 2 layers) exist.
+The Abyssal Citadel (AbyssCitadelBuilder.java)
+The citadel is built at (0, surfaceY, 0) facing south (+Z direction). It is the most complex programmatic structure in the plugin at 54 KB. Key dimensions: foundation platform ellipse 110×140, center spire 180 blocks tall, nave 80 blocks long by 60 wide by 50 tall, facade 120 blocks wide by 80 tall, boss arena at z=-120 with 40-block radius. The build is executed in 8 sequential phases: foundation platform, main cathedral body (nave + transept + apse + facade), spires (1 center + 6 flanker + 15 minor), gothic details (buttresses + windows + roof), interior (nave clearance + chapels + weapon chambers), arena, environment (rocky terrain + floating crystals + courtyard), and delayed population (chests + guards). The arena floor is bedrock with barrier walls extending to Y+50, 8 end stone pillars with amethyst caps at the perimeter, and a soul campfire at the center.
 
-2. Fix the Abyss Portal
-Priority: HIGH — core game feature
+Dragon Boss Fight (AbyssDragonBoss.java + AbyssDragonModel.java)
+The fight is triggered via /jglims admin command (calls manualTrigger(Player)). The dragon has 1500 HP with 25% passive damage reduction. The model is a Zombie (hitbox) + ItemDisplay (visual) pair. The ItemDisplay renders a custom item model referenced by CMD string "abyss_dragon" / integer 40000, scaled to 5.0× (6.25× when enraged). The fight has 4 phases with escalating attacks: void breath (8+ damage), lightning strikes, wing gust (knockback), minion summoning (3–6 Endermen/Wither Skeletons), ground pound (AoE 10 damage), void pull (physics pull toward dragon), and enrage lightning barrage (8 rapid strikes). Death drops guaranteed ABYSSAL weapon + major loot.
 
-The AbyssDimensionManager.java portal detection (onPlayerInteract) doesn't activate the portal when right-clicking the purpur frame with the Abyssal Key. Needs investigation: check if the click event fires (add debug logging), verify the portal frame detection algorithm checks adjacent blocks correctly (purpur block recognition, frame shape validation), and ensure the Abyssal Key item is identified correctly via PersistentDataContainer. The portal texture (visual particle effect filling the frame) also needs to be implemented or fixed. The Abyssal Key also needs a unique custom texture (currently uses vanilla Echo Shard appearance).
+Current Problem: Dragon Model Quality
+The current abyss_dragon.json model is a basic 11-element cuboid representation. It looks like a small blocky shape that gets scaled up 5×. This is unsatisfactory. The plan is to replace it with a high-quality Sketchfab/Blockbench model.
 
-3. Improve Server Performance
-Priority: HIGH — playability
+P. ABYSS DRAGON REWORK — SKETCHFAB MODEL IMPLEMENTATION PLAN
+The Problem
+The current dragon model is a basic 11-cuboid blocky shape in assets/minecraft/models/item/abyss/abyss_dragon.json. When rendered on the ItemDisplay at 5× scale, it looks like a scaled-up simple shape rather than a convincing dragon. Minecraft Java Edition item models have a hard limit: coordinates must be within [-16, -16, -16] to [32, 32, 32] (a 48-unit cube), and while there's no hard cap on the number of cuboid elements, complex models with hundreds of elements become unwieldy and may cause client-side rendering performance issues. The practical sweet spot is 100–300 elements for a detailed item model.
 
-The particle throttle was added to LegendaryAbilityContext.java but more optimization is needed. Investigate TPS during gameplay with /tps. Potential improvements: limit entity counts from abilities (max 6 summoned entities per player), cancel previous BukkitRunnables before starting new ones for the same ability, reduce particle counts per tier, throttle structure generation checks, optimize RoamingBossManager.java (57 KB — may have expensive tick operations), review EnchantmentEffectListener.java (69 KB — likely runs checks every tick).
+Recommended Sketchfab Models (Ranked)
+After extensive research, these are the best candidates for the Abyss Dragon, all available for free download under CC Attribution licenses and designed in Blockbench (meaning they use cuboid elements compatible with Minecraft's JSON model format):
 
-4. Create World Weapons (New Weapon Category)
-Priority: MEDIUM — content expansion
+1. "Void Dragon — Animated Blockbench File" by ArtsByKev URL: https://sketchfab.com/3d-models/void-dragon-animated-blockbench-file-0cc42f82012f4a4785802bc6323c310c This is the top recommendation. It is explicitly a "Void Dragon" (thematically perfect for the Abyss), created in Blockbench (native .bbmodel format), fully animated, and released under CC Attribution. The artist (ArtsByKev) is a well-known Blockbench creator. The void/dark aesthetic aligns perfectly with the Abyss dimension's deepslate/obsidian/crying obsidian/purple palette.
 
-Create a new weapon category called "World Weapons" with the same structure as legendary weapons (same enum pattern, same ability system, same model/texture system). These weapons use the remaining unused textures from Fantasy 3D and Blades of Majestica packs. Damage level sits between COMMON legendaries and MYTHIC legendaries. Same ability type structure (primary + alt). Requires new files: WorldWeapon.java (enum), WorldWeaponManager.java (item creation), WorldWeaponAbilities.java (abilities), WorldWeaponListener.java (event handling). Add item definition JSON cases for each world weapon. Integrate with existing loot tables.
+2. "Void Dragon" by okenshield13 URL: https://sketchfab.com/3d-models/void-dragon-09591e422ab44f97833342b62c26875c Free download, CC license, specifically described as coming "from the void and live in the outer end" — perfect thematic match. Designed for Blockbench. 31 downloads, lower poly count. Good backup option.
 
-5. Create Magic Items (New Item Category)
-Priority: MEDIUM — unique gameplay
+3. "Dragon Blockbench (exercise)" by EndangeredOx URL: https://sketchfab.com/3d-models/dragon-blockbench-exercise-e9f5ad1fdad548c991cbfaa53c007501 1.6K triangles, 1.1K vertices. CC Attribution. Fully rigged, Blockbench + Blender. A simple but well-crafted dragon that could be retextured in dark purple/void colors.
 
-A new category of items that work similarly to legendary weapons but are more unique from each other, with custom textures made by JGlims. Requires new dedicated files and folders (magic/ package). Examples:
+4. "Dragon Minecraft BlockBench" by mohamedo URL: https://sketchfab.com/3d-models/dragon-minecraft-blockbench-8ea88fbda79b4c36a6d783992ab708e3 360 triangles, 240 vertices. CC Attribution. Very low-poly Minecraft-style, might be too simple but easily convertible.
 
-Wand of Wands: Left-click fires a basic red particle shot (few particles, spammable). Right-click fires a "Vingardium Leviosa" shot (shulker-like homing effect that makes the hit mob float for several seconds). Crouch+right-click fires "Avada Kedavra" — a green beam that instantly kills any non-mini-boss/non-boss mob at 50% HP or below.
+5. "Realistic Dragon Minecraft" by unknown URL: https://sketchfab.com/3d-models/realistic-dragon-minecraft-baa9076343ea459dbe441d5ad89cecca CC Attribution, uploaded with Blockbench, "realistic" Minecraft-style dragon.
 
-New files needed: magic/MagicItem.java (enum), magic/MagicItemManager.java, magic/MagicAbilities.java, magic/MagicItemListener.java.
+Implementation Workflow
+Step 1: Download the Blockbench model. Download the .bbmodel file from Sketchfab (use the "Download 3D Model" button; select the original format). The ArtsByKev Void Dragon is the primary choice.
 
-6. More Structures, Mini-Bosses, and Bosses
-Priority: MEDIUM — world content
+Step 2: Open in Blockbench and convert to Java Block/Item format. Open the .bbmodel file in Blockbench (https://blockbench.net). If it's a Generic Model, convert it via File → Convert Project → Java Block/Item. This is necessary because Minecraft Java Edition resource packs only understand the Java Block/Item JSON format for item models.
 
-Add significantly more structures across all dimensions. Add more mini-bosses with unique mechanics. Add world bosses (scheduled massive bosses requiring multiple players). See the existing roadmap Phases 21 (Pillager Warfare), 26 (Ocean Expansion), 27 (World Bosses) for detailed plans already written.
+Step 3: Check element count and simplify if needed. Minecraft item models can have many elements but practical limits apply. If the model exceeds ~200-300 elements, use Blockbench's editing tools to simplify (merge adjacent cubes, remove internal geometry, reduce detail on unseen faces). The model coordinates must all fit within the [-16, -16, -16] to [32, 32, 32] coordinate space.
 
-7. More Custom Items and Ideas
-Priority: MEDIUM — creativity
+Step 4: Retexture for the Abyss theme. If the downloaded model doesn't match the dark-purple/void aesthetic, retexture it in Blockbench. Use dark purples (#2d002d, #4a0080), deep blacks (#0d0d0d), glowing purple accents (#aa00ff, #7700cc), and touches of soul-fire blue (#00bbff) and crying-obsidian magenta (#cc00cc). The texture should be a power-of-two PNG (64×64, 128×128, or 256×256 depending on detail level).
 
-Research Minecraft addons, mods, and community ideas for inspiration. Create more interesting custom items with unique mechanics. JGlims creates the textures, then we implement the items. Examples from the roadmap: legendary shields, legendary fishing rods, pets, consumable battle items (War Horn, Grappling Hook, Warp Scroll).
+Step 5: Export as Java Block/Item Model. File → Export → Export Block/Item Model. This produces a .json file and associated .png texture. Name them abyss_dragon.json and abyss_dragon.png.
 
-8. Lunar Dimension
-Priority: LOW — future expansion
+Step 6: Place in the resource pack.
 
-A new dimension with moon-like reduced gravity. Space-themed structures. Some tech-themed textures from Fantasy 3D or Majestica for world weapons found in this area. Portal: Nether portal shape (4×5 frame) built with End Stone blocks. Opened with flint and steel, just like the nether portal. Requires: custom world generator with low gravity simulation (reduced fall speed, higher jump), space-themed structures, unique mobs, loot tables.
+Model JSON → assets/minecraft/models/item/abyss/abyss_dragon.json
+Texture PNG → assets/minecraft/textures/item/abyss/abyss_dragon.png
+Ensure the model JSON references the texture correctly: "textures": {"0": "item/abyss/abyss_dragon"}
+Step 7: Verify the item definition. Ensure assets/minecraft/items/paper.json has a "when": "abyss_dragon" case that points to "model": {"type": "minecraft:model", "model": "item/abyss/abyss_dragon"}.
 
-9. Aether Dimension
-Priority: LOW — future expansion
+Step 8: Test in-game. Build the resource pack (7-Zip), upload as v10.0, update docker-compose.yml, restart. Use /jglims legendary or the creative menu to verify the ItemDisplay renders the new model. Then trigger the dragon fight to test at scale 5.0.
 
-Adapted from the classic Aether mod. Same portal (water bucket on glowstone frame), same aesthetic (floating sky islands, blue sky, cloud blocks), mobs that can fly, the full Aether experience rebuilt as a server-side plugin. Legendary and world weapons in structure chests, enchanted books, good loot. Requires extensive research on the original Aether mod to faithfully recreate structures, mobs, mechanics, and aesthetics.
+Alternative: Multi-Part Display Entity Dragon
+If a single-item-model approach doesn't produce satisfactory results (too blocky, too few elements allowed), an alternative is to construct the dragon from multiple ItemDisplay entities riding the same base Zombie (via Entity.addPassenger()), each displaying a different body part (head, body, left wing, right wing, tail, legs). This allows each part to have its own model with up to ~300 elements, effectively creating a 1200+ element composite dragon. Each part would have its own scale and rotation offset via Transformation. The AbyssDragonModel.java would need to be refactored to manage multiple displays and animate them semi-independently (wings flapping, head turning toward target, tail swaying). This is significantly more complex but would produce a dramatically better visual.
 
-N. FULL EXPANSION ROADMAP (from README — preserved)
-All the phases from the original README (Phases 20–35) remain planned: End Rift Event, Enhanced Pillager Warfare, Infinity Gauntlet + Thanos, Quest Villagers & NPC Wizard, Abyss Dimension enhancements, Legendary Ranged Weapons (15 bows/crossbows), Ocean Expansion (6 structures + Kraken event), World Bosses (4 Overworld + 3 Nether + 1 End), Dungeon Generator (procedural multi-room dungeons), Legendary Shields & Off-hand Items (16 items), Pet System (8 tameable mythical pets), Seasons & Weather, Fishing Overhaul, Guild Wars & Territories, Hardcore Challenge Modes. Total planned content after all phases: 75+ legendary weapons, 15+ armor sets, 43+ structures, 8+ events, 8 world bosses, 8 pets, procedural dungeon system, full quest system, guild territory/war PvP, 4+ dimensions.
+Multi-part approach code sketch:
 
-O. MANDATORY DEVELOPMENT RULES
-Always use UTF-8 without BOM for Java files: [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))
-NEVER use Compress-Archive for resource packs — use 7-Zip CLI or manual zip
-Resource pack changes go in docker-compose.yml, NOT server.properties
-After docker-compose.yml changes: docker compose down && docker compose up -d
-SSH user is ubuntu, not opc
-Each resource pack update gets a new major version (v6.0, v7.0, v8.0...) — never overwrite
-Use Adventure API exclusively (no deprecated ChatColor)
-All custom item metadata via PersistentDataContainer with NamespacedKey
-String-based CustomModelDataComponent for all item textures
-Two abilities per weapon: primary (right-click) and alternate (crouch + right-click)
-Particle budgets per tier: COMMON 10, RARE 25, EPIC 50, MYTHIC 100, ABYSSAL 200
-All legendary items must be indestructible (Unbreakable: true)
-Resource pack pack_format: 75
-Item JSON files in assets/minecraft/items/*.json use string-based custom_model_data
-File-size limit per source file: ~120 KB; split if exceeding
-END OF DEFINITIVE SUMMARY v10.0
-(ALL OF THE LEGENDARY WEAPONS HAVE WORKING TEXTURES AND ABILITIES, THATS DONE).
+Copy// In AbyssDragonModel spawn():
+ItemDisplay body = spawnPart(location, "abyss_dragon_body", 5.0f);
+ItemDisplay head = spawnPart(location.add(0, 1, 3), "abyss_dragon_head", 4.0f);
+ItemDisplay leftWing = spawnPart(location.add(-3, 0.5, 0), "abyss_dragon_wing_left", 5.0f);
+ItemDisplay rightWing = spawnPart(location.add(3, 0.5, 0), "abyss_dragon_wing_right", 5.0f);
+ItemDisplay tail = spawnPart(location.add(0, 0, -4), "abyss_dragon_tail", 4.5f);
 
+baseEntity.addPassenger(body);
+baseEntity.addPassenger(head);
+baseEntity.addPassenger(leftWing);
+baseEntity.addPassenger(rightWing);
+baseEntity.addPassenger(tail);
 
+// Animation: use interpolated transformations for wing flapping
+// body.setTransformation(...); body.setInterpolationDuration(10);
+This approach leverages Paper's setTeleportDuration() and setInterpolationDuration() for smooth client-side animation without server-side tick overhead.
 
+Q. OUTSTANDING WORK — ALL TASKS (Priority Order)
+PRIORITY 1: HIGHEST — Abyss Dragon Rework
+1a. Replace the Abyss Dragon model — Download the ArtsByKev "Void Dragon" from Sketchfab, convert to Java Block/Item format in Blockbench, retexture if needed to match the Abyss color palette (dark purple, void black, soul-fire accents), export as abyss_dragon.json + abyss_dragon.png, place in the resource pack, test at 5× scale on ItemDisplay.
 
+Required resource pack files:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-PLUS SECTION (MORE INFORMATION): 
-JGLIMSPLUGIN — PLUS SECTION (Addendum to Project Summary v10.0)
-Compiled: 2026-03-13 | Covers all missing detail from the main summary
-
-P1. EXACT CURRENT STATE OF ALL SOURCE FILES (68 Java files + 2 resources)
-The repository tree SHA is 9177e26ebe0fffde0b98746b7aca17e9580635be. The plugin.yml declares version 2.0.0 (api-version 1.21), despite the README referencing 1.4.0. The build output is JGlimsPlugin-2.0.0.jar. The full file inventory (with exact sizes from the GitHub API) is:
-
-Root package — com.jglims.plugin: JGlimsPlugin.java (34,896 B) — main class, onEnable() wiring, all command handlers (/jglims, /guild, /guia).
-
-abyss package: AbyssChunkGenerator.java (7,341 B) — custom void-based chunk generation for the Abyss dimension (world_abyss). AbyssDimensionManager.java (12,440 B) — creates and manages world_abyss world with THE_END environment, portal detection (4×5 purpur frame + Abyssal Key interaction), and player teleportation. AbyssDragonBoss.java (13,844 B) — the Abyss Dragon boss fight logic, HP scaling, special attacks (void breath, soul fire rain, summoned minions), and ABYSSAL-tier weapon drops.
-
-blessings package: BlessingListener.java (3,452 B) — listens for blessing crystal use events. BlessingManager.java (10,296 B) — manages C-Bless (heal +1 HP/use, max 10), Ami-Bless (+2% damage/use, max 10), La-Bless (+2% defense/use, max 10); shows stats via /jglims stats.
-
-config package: ConfigManager.java (29,211 B) — reads all config.yml values; provides getters for every tunable parameter. The config.yml (3,851 B, shown above in full) has sections for mob difficulty (distance-based scaling from 350 to 5000 blocks), biome multipliers, boss enhancer (dragon 3.5× HP, wither 1.0×, warden 1.0×, elder guardian 2.0× HP), creeper reduction (50% cancel), pale garden fog, loot booster, blessings, anvil (remove "too expensive" + 50% XP reduction), toggles for 10 features, drop rate booster (35% trident drop), villager trade modifications (50% price reduction, no trade locking), king mob (every 100th mob, 7× HP), axe nerf (0.5 attack speed), weapon mastery (max 1000 kills → +20% bonus), blood moon (15% chance, 12× boss HP), guilds (max 10 members, no friendly fire), dog armor (95% DR), super tools (2% bonus per enchant for netherite), and ore detect radii.
-
-crafting package: RecipeManager.java (34,774 B) — registers all custom recipes: battle tools (sword, axe, bow, mace, shovel, pickaxe, trident, spear), super tools (diamond and netherite), sickles, Infinity Stone combining (colored stone + redstone → finished stone), Infinity Gauntlet (glove + 6 stones), and all craftable armor sets (6 sets × 4 pieces = 24 recipes). VanillaRecipeRemover.java (588 B) — removes conflicting vanilla recipes.
-
-enchantments package: AnvilRecipeListener.java (33,648 B) — custom anvil UI interceptor for enchant combining, Infinity Stone combining, and enchant conflict detection. CustomEnchantManager.java (8,853 B) — defines all 64 custom enchantments with level caps, conflict pairs, and applicable item types. EnchantmentEffectListener.java (69,495 B) — implements all 64 enchantment effects (the largest single file). EnchantmentType.java (1,942 B) — enum of enchantment types/categories. SoulboundListener.java (7,961 B) — prevents Soulbound-enchanted items from dropping on death.
-
-events package: EventManager.java (10,367 B) — central scheduler checking every 60 seconds (1200 ticks) for random events; manages cooldowns (10-minute per-world), broadcasts, boss tagging, weapon drops, and misc loot drops. NetherStormEvent.java (11,421 B) — Ghast swarms, enhanced Blaze spawns, fire rain, Infernal Overlord boss (Ghast, 400 HP). PiglinUprisingEvent.java (8,956 B) — massive Piglin army, Piglin Emperor boss (Piglin Brute, 500 HP). VoidCollapseEvent.java (8,961 B) — void particles pulling players down, Void Leviathan boss (Elder Guardian variant, 500 HP). PillagerWarPartyEvent.java (19,957 B) — overworld Pillager raid with waves. PillagerSiegeEvent.java (19,146 B) — nighttime Pillager siege with Fortress Warlord boss. EndRiftEvent.java (30,058 B) — 15×15 portal, wave spawns, End Rift Dragon (600 HP variant Ender Dragon).
-
-guilds package: GuildListener.java (1,456 B) — guild event hooks. GuildManager.java (13,679 B) — full CRUD, invitations, friendly fire toggle, persistence via file storage.
-
-legendary package (15 files, core of the plugin): LegendaryTier.java (3,673 B) — 5-tier enum: COMMON (12–15 dmg, 10 particles, 1.0× CD multiplier), RARE (14–17 dmg, 25 particles, 0.95×), EPIC (17–20 dmg, 50 particles, 0.9×), MYTHIC (20–30 dmg, 100 particles, 0.85×), ABYSSAL (28–40 dmg, 200 particles, 0.8×). Includes fromId() with backward compat ("LEGENDARY" → EPIC, "UNCOMMON" → COMMON) and validation methods. LegendaryWeapon.java (15,034 B) — enum of 63 weapons: 20 COMMON, 8 RARE, 7 EPIC, 24 MYTHIC, 4 ABYSSAL. Each entry stores: id, displayName, baseMaterial, baseDamage, customModelData (30001–30063), tier, textureName (used for resource pack item JSON lookup), primaryAbilityName, altAbilityName, primaryCooldown, altCooldown. Provides fromId(), byTier(), byMaterial(). LegendaryWeaponManager.java (7,937 B) — creates weapon ItemStacks with string-based CustomModelDataComponent (rule A.14), PersistentDataContainer tags, tier-colored display names, and lore showing abilities/cooldowns. LegendaryAbilityListener.java (18,032 B) — dispatches right-click (primary) and crouch+right-click (alternate) events to the correct ability handler. LegendaryPrimaryAbilities.java (69,951 B) — implementation of all 63 primary abilities. LegendaryAltAbilities.java (73,055 B) — implementation of all 63 alternate abilities. LegendaryAbilityContext.java (4,941 B) — shared state maps (bloodlust stacks, retribution damage, soul counts, phase shift active, etc.) and utility methods (getNearbyEnemies, dealDamage, getTargetEntity, rotateY). LegendaryArmorSet.java (16,160 B) — enum of 13 armor sets (6 craftable, 7 legendary). Each set has 4 pieces with individual CMD values (30101–30254), base material, texture names, passive descriptions, and total defense (12–50). Craftable: Reinforced Leather (12 def), Copper (14), Chainmail Reinforced (15), Amethyst (16), Bone (16), Sculk (18). Legendary: Shadow Stalker (24, RARE), Blood Moon (30, EPIC), Nature's Embrace (28, EPIC), Frost Warden (30, EPIC), Void Walker (36, MYTHIC), Dragon Knight (40, MYTHIC), Abyssal Plate (50, ABYSSAL). LegendaryArmorManager.java (16,059 B) — creates armor ItemStacks. LegendaryArmorListener.java (38,729 B) — implements all set bonuses and piece passives. LegendaryLootListener.java (22,565 B) — drop table logic for bosses, structures, and chests. InfinityStoneManager.java (8,029 B) — 6 stone types (Power=purple, Space=blue, Reality=red, Soul=orange, Time=green, Mind=yellow), fragment creation, finished stone creation, anvil combining. InfinityGauntletManager.java (23,370 B) — Thanos Glove creation, Infinity Gauntlet creation and right-click ability (kills 50% hostile mobs in dimension, 300s cooldown), snap animation.
-
-menu package: CreativeMenuManager.java (45,503 B) — GUI inventory menus for browsing all weapons, armor, power-ups, stones by category/tier. GuideBookManager.java (29,396 B) — generates multi-volume written books explaining the plugin's systems (Portuguese, "guia").
-
-mobs package: BiomeMultipliers.java (3,080 B) — biome-specific scaling lookups. BloodMoonManager.java (12,329 B) — Blood Moon event: red sky, mob buffs, boss spawn every 10th mob, double drops, 0.1% Infinity Stone fragment chance. BossEnhancer.java (19,998 B) — dragon/wither/warden/elder guardian stat scaling, custom abilities per boss. BossMasteryManager.java (12,294 B) — tracks boss kill participation, awards titles (Wither Slayer +5%, Guardian Slayer +7%, Warden Slayer +10%, Dragon Slayer +15%, Abyssal Conqueror +20%, God Slayer +25%/+20% dmg). KingMobManager.java (5,972 B) — every Nth mob spawn (configurable, default 100) becomes a King mob with 7× HP, 2.5× damage, diamond drops. MobDifficultyManager.java (4,744 B) — distance-from-spawn scaling. RoamingBossManager.java (57,427 B) — 6 roaming world bosses: The Watcher (Deep Dark, Warden, 800 HP, EPIC drops, Darkness/Mining Fatigue aura), Hellfire Drake (Nether, Ghast, 600 HP, EPIC, triple fireball salvo), Frostbound Colossus (Snowy biomes, Iron Golem, 700 HP, EPIC, freeze aura + ground pound), Jungle Predator (Jungle, Ravager, 500 HP, RARE/EPIC, stealth pounce + poison fog), End Wraith (The End outer islands, Phantom size 6, 900 HP, MYTHIC, void beam + phase shift + shadow clones at 50% HP), Abyssal Leviathan (Abyss dimension, 1200 HP, ABYSSAL drops). Each has a 2–4% spawn chance per 2-minute check, auto-despawn after 10 minutes, custom particle effects, and special attack patterns.
-
-powerups package: PowerUpManager.java (26,207 B) — 7 power-ups with string-based CustomModelDataComponent: Heart Crystal (RED_DYE, +2 HP, max 40 → +80 HP), Soul Fragment (PURPLE_DYE, +1.0% damage, max 100 → +100%), Titan's Resolve (IRON_NUGGET, +10% KB resist + 2% DR, max 5 → 50% KB + 10% DR), Phoenix Feather (FEATHER, auto-revive, stackable), KeepInventorer (ENDER_EYE, permanent keep-inventory, one-time), Vitality Shard (PRISMARINE_SHARD, +5% DR, max 10 → 50%), Berserker's Mark (BLAZE_POWDER, +3% attack speed, max 10 → 30%). Max total passive DR capped at 75%. PowerUpListener.java (5,607 B) — handles right-click consumption and death events (Phoenix Feather auto-revive, KeepInventory enforcement).
-
-quests package: QuestManager.java (27,940 B) — 6 quest lines (Overworld, Nether, End, Special, Boss, Explorer) with tracking, rewards, and scheduler. QuestProgressListener.java (3,231 B) — monitors kills, exploration, item collection. NpcWizardManager.java (15,501 B) — Archmage NPC villager (purple robes), sells exclusive MYTHIC weapons (rotating stock of 3 for 48 diamonds + 16 Nether Stars), Heart Crystals, Phoenix Feathers, KeepInventorer (64 diamonds + 32 emeralds), and Blessing Crystals.
-
-structures package: StructureType.java (10,780 B) — enum of 40 structure types: 24 Overworld (including Thanos Temple, Pillager Fortress, Pillager Airship, Frost Dungeon, Bandit Hideout, Sunken Ruins, Cursed Graveyard, Sky Altar), 7 Nether, 5 End, 3 Abyss (Abyssal Castle 120×80×120, Void Nexus, Shattered Cathedral), plus the Ender Dragon Death Chest structure. Generation chances range from 0.8% (COMMON) to 0.05% (ABYSSAL) per chunk. StructureManager.java (49,819 B) — chunk-based generation with 300-block minimum spacing, biome filtering, and programmatic block placement. StructureBuilder.java (8,714 B) — block placement API. StructureLootPopulator.java (8,554 B) — chest filling per structure type/tier. StructureBossManager.java (14,554 B) — mini-boss spawning, health bars, and tracking.
-
-utility package: BestBuddiesListener.java (11,609 B) — wolf/dog armor system with 95% DR. DropRateListener.java (3,289 B) — trident 35% drop boost, breeze wind charges. EnchantTransferListener.java (7,135 B) — transfer enchantments between items. InventorySortListener.java (5,282 B) — shift-click empty slot to sort. LootBoosterListener.java (8,991 B) — enhanced chest/mob loot. PaleGardenFogTask.java (1,356 B) — fog effect in Pale Garden biome. VillagerTradeListener.java (4,244 B) — price reduction and trade unlock.
-
-weapons package (12 files): BattleAxeManager.java (8,303 B), BattleBowManager.java (4,871 B), BattleMaceManager.java (4,279 B), BattlePickaxeManager.java (7,168 B), BattleShovelManager.java (8,451 B), BattleSpearManager.java (8,339 B), BattleSwordManager.java (6,821 B), BattleTridentManager.java (4,737 B), SickleManager.java (8,061 B), SpearManager.java (11,128 B), SuperToolManager.java (22,176 B), WeaponAbilityListener.java (81,738 B) — 20 non-legendary weapon abilities, WeaponMasteryManager.java (9,803 B) — kill-based mastery (Novice 0, Fighter 100, Experienced Fighter 500, Master 1000 kills → +1%/+5%/+10%/+15% damage).
-
-Total codebase size: ~1.27 MB of Java source across 68 files.
-
-P2. COMPLETE WEAPON TABLE (63 weapons, exact values from LegendaryWeapon.java)
-COMMON (20 weapons, damage 12–15, PCD 3–5s, ACD 10–18s, 10 particles):
-
-#	ID	Display Name	Material	Dmg	CMD	Texture	Primary	Alt	PCD	ACD
-1	amethyst_shuriken	Amethyst Shuriken	DIAMOND_SWORD	13	30012	amethyst_shuriken	Shuriken Barrage	Shadow Step	5	10
-2	gravescepter	Gravescepter	DIAMOND_SWORD	13	30026	revenants_gravescepter	Grave Rise	Death's Grasp	5	12
-3	lycanbane	Lycanbane	DIAMOND_SWORD	14	30027	lycanbane	Silver Strike	Hunter's Sense	5	14
-4	gloomsteel_katana	Gloomsteel Katana	DIAMOND_SWORD	13	30028	gloomsteel_katana	Quick Draw	Shadow Stance	3	12
-5	viridian_cleaver	Viridian Cleaver	DIAMOND_AXE	15	30029	viridian_greataxe	Verdant Slam	Overgrowth	5	15
-6	crescent_edge	Crescent Edge	DIAMOND_AXE	14	30030	crescent_greataxe	Lunar Cleave	Crescent Guard	5	14
-7	gravecleaver	Gravecleaver	DIAMOND_SWORD	14	30031	revenants_gravecleaver	Bone Shatter	Undying Rage	5	18
-8	amethyst_greatblade	Amethyst Greatblade	DIAMOND_SWORD	13	30032	amethyst_greatblade	Crystal Burst	Gem Resonance	5	18
-9	flamberge	Flamberge	DIAMOND_SWORD	14	30033	flamberge	Flame Wave	Ember Shield	5	12
-10	crystal_frostblade	Crystal Frostblade	DIAMOND_SWORD	13	30034	crystal_frostblade	Frost Spike	Permafrost	5	15
-11	demonslayer	Demonslayer	DIAMOND_SWORD	15	30035	demonslayers_greatsword	Holy Rend	Purifying Aura	5	14
-12	vengeance	Vengeance	DIAMOND_SWORD	12	30036	vengeance_blade	Retribution	Grudge Mark	5	10
-13	oculus	Oculus	DIAMOND_SWORD	13	30037	oculus	All-Seeing Strike	Third Eye	5	18
-14	ancient_greatslab	Ancient Greatslab	DIAMOND_SWORD	15	30038	ancient_greatslab	Seismic Slam	Stone Skin	5	15
-15	neptunes_fang	Neptune's Fang	TRIDENT	14	30039	neptunes_fang	Riptide Slash	Maelstrom	5	15
-16	tidecaller	Tidecaller	TRIDENT	13	30040	tidecaller	Tidal Spear	Depth Ward	5	14
-17	stormfork	Stormfork	TRIDENT	15	30041	stormfork	Lightning Javelin	Thunder Shield	5	18
-18	jade_reaper	Jade Reaper	DIAMOND_HOE	14	30042	jadehalberd	Jade Crescent	Emerald Harvest	5	18
-19	vindicator	Vindicator	DIAMOND_AXE	13	30043	vindicator	Executioner's Chop	Rally Cry	5	18
-20	spider_fang	Spider Fang	DIAMOND_SWORD	12	30044	spider_sword	Web Trap	Wall Crawler	5	14
-RARE (8 weapons, damage 14–16, PCD 5–7s, ACD 14–22s, 25 particles):
-
-#	ID	Display Name	Material	Dmg	CMD	Texture	Primary	Alt	PCD	ACD
-21	oceans_rage	Ocean's Rage	TRIDENT	16	30001	oceans_rage	Stormbringer	Riptide Surge	5	18
-22	aquatic_sacred_blade	Aquatic Sacred Blade	DIAMOND_SWORD	15	30002	aquantic_sacred_blade	Aqua Heal	Depth Pressure	7	18
-23	royal_chakram	Royal Chakram	DIAMOND_SWORD	14	30005	royalchakram	Chakram Throw	Spinning Shield	5	14
-24	acidic_cleaver	Acidic Cleaver	DIAMOND_AXE	16	30007	treacherous_cleaver	Acid Splash	Corrosive Aura	7	18
-25	muramasa	Muramasa	DIAMOND_SWORD	15	30009	muramasa	Crimson Flash	Bloodlust	5	14
-26	windreaper	Windreaper	DIAMOND_SWORD	15	30014	windreaper	Gale Slash	Cyclone	5	14
-27	moonlight	Moonlight	DIAMOND_SWORD	15	30016	moonlight	Lunar Beam	Eclipse	7	22
-28	talonbrand	Talonbrand	DIAMOND_SWORD	15	30022	talonbrand	Talon Strike	Predator's Mark	5	14
-EPIC (7 weapons, damage 17–20, PCD 5–8s, ACD 18–28s, 50 particles):
-
-#	ID	Display Name	Material	Dmg	CMD	Texture	Primary	Alt	PCD	ACD
-29	berserkers_greataxe	Berserker's Greataxe	DIAMOND_AXE	20	30006	berserkers_greataxe	Berserker Slam	Blood Rage	7	22
-30	black_iron_greatsword	Black Iron Greatsword	DIAMOND_SWORD	18	30008	black_iron_greatsword	Dark Slash	Iron Fortress	5	22
-31	solstice	Solstice	DIAMOND_SWORD	17	30018	solstice	Solar Flare	Daybreak	7	18
-32	grand_claymore	Grand Claymore	DIAMOND_SWORD	19	30019	grand_claymore	Titan Swing	Colossus Stance	7	22
-33	calamity_blade	Calamity Blade	DIAMOND_AXE	18	30020	calamity_blade	Cataclysm	Doomsday	8	25
-34	emerald_greatcleaver	Emerald Greatcleaver	DIAMOND_AXE	19	30023	emerald_greatcleaver	Emerald Storm	Gem Barrier	7	28
-35	demons_blood_blade	Demon's Blood Blade	DIAMOND_SWORD	18	30024	demons_blood_blade	Blood Rite	Demonic Form	5	25
-MYTHIC (24 weapons, damage 26–30, PCD 5–7s, ACD 15–28s, 100 particles):
-
-#	ID	Display Name	Material	Dmg	CMD	Texture	Primary	Alt	PCD	ACD
-36	true_excalibur	True Excalibur	DIAMOND_SWORD	28	30003	excalibur	Holy Smite	Divine Shield	5	20
-37	requiem_ninth_abyss	Requiem of the Ninth Abyss	DIAMOND_SWORD	28	30004	requiem_of_hell	Soul Devour	Abyss Gate	5	28
-38	phoenixs_grace	Phoenix's Grace	DIAMOND_AXE	28	30010	gilded_phoenix_greataxe	Phoenix Strike	Rebirth Flame	5	28
-39	soul_collector	Soul Collector	DIAMOND_SWORD	27	30011	soul_collector	Soul Harvest	Spirit Army	5	15
-40	valhakyra	Valhakyra	DIAMOND_SWORD	26	30013	valhakyra	Valkyrie Dive	Wings of Valor	5	20
-41	phantomguard	Phantomguard Greatsword	DIAMOND_SWORD	27	30015	phantomguard_greatsword	Spectral Cleave	Phase Shift	5	18
-42	zenith	Zenith	DIAMOND_SWORD	30	30017	zenith	Final Judgment	Ascension	7	28
-43	dragon_sword	Dragon Sword	DIAMOND_SWORD	26	30021	dragon_sword	Dragon Breath	Draconic Roar	5	20
-44	nocturne	Nocturne	DIAMOND_SWORD	26	30025	nocturne	Shadow Slash	Night Cloak	5	20
-45	divine_axe_rhitta	Divine Axe Rhitta	DIAMOND_AXE	30	30045	divine_axe_rhitta	Cruel Sun	Sunshine	5	25
-46	yoru	Yoru	DIAMOND_SWORD	28	30046	yoru	World's Strongest Slash	Dark Mirror	6	26
-47	tengens_blade	Tengen's Blade	DIAMOND_SWORD	27	30047	tengens_blade	Sound Breathing	Constant Flux	5	20
-48	edge_astral_plane	Edge of the Astral Plane	DIAMOND_SWORD	29	30048	edge_astral_plane	Astral Rend	Planar Shift	6	28
-49	fallen_gods_spear	Fallen God's Spear	DIAMOND_SWORD	28	30049	fallen_gods_spear	Divine Impale	Heaven's Fall	5	25
-50	nature_sword	Nature Sword	DIAMOND_SWORD	26	30050	nature_sword	Gaia's Wrath	Overgrowth Surge	5	20
-51	heavenly_partisan	Heavenly Partisan	DIAMOND_SWORD	27	30051	heavenly_partisan	Holy Lance	Celestial Judgment	5	22
-52	soul_devourer	Soul Devourer	DIAMOND_SWORD	28	30052	soul_devourer	Soul Rip	Devouring Maw	5	25
-53	mjolnir	Mjölnir	MACE	30	30053	mjolnir	Thunderstrike	Bifrost Slam	6	26
-54	thousand_demon_daggers	Thousand Demon Daggers	DIAMOND_SWORD	26	30054	thousand_demon_daggers	Demon Barrage	Infernal Dance	5	18
-55	star_edge	Star Edge	DIAMOND_SWORD	28	30055	star_edge	Cosmic Slash	Supernova	6	26
-56	rivers_of_blood	Rivers of Blood	DIAMOND_SWORD	27	30056	rivers_of_blood	Corpse Piler	Blood Tsunami	5	20
-57	dragon_slaying_blade	Dragon Slaying Blade	DIAMOND_SWORD	28	30057	dragon_slaying_blade	Dragon Pierce	Slayer's Fury	5	25
-58	stop_sign	Stop Sign	DIAMOND_AXE	26	30058	stop_sign	Full Stop	Road Rage	5	18
-59	creation_splitter	Creation Splitter	DIAMOND_SWORD	30	30059	creation_splitter	Reality Cleave	Genesis Break	7	28
-ABYSSAL (4 weapons, damage 34–40, PCD 5–8s, ACD 28–40s, 200 particles):
-
-#	ID	Display Name	Material	Dmg	CMD	Texture	Primary	Alt	PCD	ACD
-60	requiem_awakened	Requiem of the Ninth Abyss (Awakened)	DIAMOND_SWORD	38	30060	requiem_awakened	Abyssal Devour	Void Collapse	6	35
-61	excalibur_awakened	True Excalibur (Awakened)	DIAMOND_SWORD	36	30061	excalibur_awakened	Divine Annihilation	Sacred Realm	5	30
-62	creation_splitter_awakened	Creation Splitter (Awakened)	DIAMOND_SWORD	40	30062	creation_splitter_awakened	Reality Shatter	Big Bang	8	40
-63	whisperwind_awakened	Whisperwind (Awakened)	DIAMOND_SWORD	34	30063	whisperwind_awakened	Silent Storm	Phantom Cyclone	5	28
-P3. COMPLETE ARMOR SET TABLE (13 sets, exact values from LegendaryArmorSet.java)
-Craftable Sets (6):
-
-Set	Tier	Mat Base	Def	CMD Range	Set Bonus	Helmet	Chestplate	Leggings	Boots
-Reinforced Leather	COMMON	LEATHER	12	30201–30204	Speed I + 10% dodge	Peripheral Vision (mob HP 8 blocks)	Padded Core (+2 HP)	Flexible Joints (no water slow)	Soft Landing (−30% fall)
-Copper Armor	COMMON	CHAINMAIL	14	30211–30214	Lightning Rod (no dmg, Speed II 5s)	Static Charge (1 shock to attackers)	Conductive (lightning immune)	Copper Patina (+10% mining)	Grounded (Slowness immune)
-Chainmail Reinforced	COMMON	CHAINMAIL	15	30221–30224	Iron Will (+15% KB resist, Mining Fatigue immune)	Chain Mesh (−10% projectile dmg)	Linked Rings (thorns 1)	Chainmail Grip (no KB penalty)	Steel Treads (no soul sand slow)
-Amethyst Armor	COMMON	IRON	16	30231–30234	Resonance (auto XP, +20% XP)	Crystal Clarity (Blindness/Darkness immune)	Harmonic Core (Regen I below 30%)	Amethyst Pulse (mobs glow 6 blocks)	Gem Steps (amethyst particles)
-Bone Armor	COMMON	IRON	16	30241–30244	Undead Camouflage (undead ignore)	Skull Helm (Wither immune)	Rib Cage (−15% undead dmg)	Bone Marrow (Regen I at night)	Ossified (Slowness immune)
-Sculk Armor	RARE	IRON	18	30251–30254	Echo Sense (see thru walls 12 blocks)	Sonic Sight (Night Vision in caves y<50)	Sculk Tendrils (Slowness I 3s to attackers)	Deep Dark (Darkness immune, +10% speed)	Silent Steps (no vibrations)
-Legendary Sets (7):
-
-Set	Tier	Mat Base	Def	CMD Range	Set Bonus	Helmet	Chestplate	Leggings	Boots
-Shadow Stalker	RARE	DIAMOND	24	30141–30144	Invisible while crouching + 50% sneak dmg	Dark Vision (Night Vision sneaking)	Shadow Cloak (+4 sneak dmg, 15% dodge)	Silent Movement (no sound, Speed I sneak)	Shadow Step (no particles, no fall dmg sneak)
-Blood Moon	EPIC	NETHERITE	30	30111–30114	8% lifesteal + 4 HP/kill (max 20)	Blood Sight (glow 40 blocks at night)	Crimson Heart (+4 HP/kill, heal 2)	Blood Rush (Speed II night, Str I <50%)	Silent Predator (no sound, no aggro 5+ night)
-Nature's Embrace	EPIC	NETHERITE	28	30131–30134	Regen II in forest, Poison/Wither immune	Photosynthesis (Regen I sunlight, Poison immune)	Living Bark (thorns 4, +4 HP)	Root Grip (KB immune forest, vine climb)	Nature's Path (3x crop growth, flowers)
-Frost Warden	EPIC	NETHERITE	30	30151–30154	Freeze 5-block aura, cold immune	Frost Resist (Slowness/Freeze/powder immune)	Blizzard Aura (Slowness II + Mining Fatigue 4 blocks)	Permafrost (Ice Walk 3 blocks, +20% ice speed)	Frost Treads (lava→obsidian, fire immune, water freeze)
-Void Walker	MYTHIC	NETHERITE	36	30121–30124	Void Step (crouch+jump TP 12 blocks, 4s CD)	Ender Sight (see invis, Blindness immune)	Void Shield (20% negate damage)	Rift Walk (Slow Falling, phase 1-block walls)	Void Anchor (no fall/void damage)
-Dragon Knight	MYTHIC	NETHERITE	40	30101–30104	+35% vs dragon/ender, Dragon Roar (15 dmg, 8 blocks, 30s CD)	Dragon's Eye (Resp III, see entities 20 blocks)	Dragon Heart (+8 HP, permanent Fire Resist)	Dragon Scales (60% KB resist, +15% melee)	Dragon Talons (Feather Fall V, double jump 3s CD)
-Abyssal Plate	ABYSSAL	NETHERITE	50	30161–30164	+40% melee, Wither/Poison/Darkness immune, soul-fire thorns 12	Abyssal Vision (Night Vision, all immunity)	Soul Furnace (thorns 12, Wither immune, +10 HP)	Abyssal Stride (Speed II, 80% KB resist, +20% melee)	Obsidian Walker (fire/lava/magma immune, lava walk, no fall)
-P4. RESOURCE PACK TEXTURE WORKFLOW (How It Actually Works)
-The texture system uses Minecraft 1.21's string-based custom_model_data (not the deprecated integer CMD). The chain is:
-
-The plugin creates an ItemStack (e.g., Material.DIAMOND_SWORD) and sets CustomModelDataComponent with a string list, e.g., cmd.setStrings(List.of("excalibur")).
-
-The resource pack must contain at assets/minecraft/items/diamond_sword.json an item definition that maps the string flag "excalibur" to a specific model path. This JSON file defines multiple model overrides keyed by custom_model_data string values.
-
-The model file (e.g., assets/minecraft/models/item/excalibur.json) references the texture file (e.g., assets/minecraft/textures/item/excalibur.png).
-
-For 3D weapons, the model JSON includes element definitions (cubes, rotation, display transforms) instead of a flat generated item.
-
-For armor, the held/inventory texture uses the same CMD string system. The worn texture (what you see on the player model) requires equipment JSON files at assets/minecraft/equipment/<set_id>.json referencing humanoid layer textures at assets/minecraft/textures/entity/equipment/humanoid/<set_id>.png and humanoid_leggings/<set_id>.png.
-
-Current broken items:
-
-Power-up textures exist in the resource pack at assets/minecraft/textures/item/powerups/ (7 PNG files: heart_crystal, soul_fragment, titan_resolve, phoenix_feather, keep_inventorer, vitality_shard, berserker_mark). The code correctly sets the string CMD. The missing link is the item definition JSON: assets/minecraft/items/red_dye.json, purple_dye.json, iron_nugget.json, feather.json, ender_eye.json, prismarine_shard.json, blaze_powder.json — each needs a custom_model_data override that maps the string (e.g., "heart_crystal") to a model pointing to the power-up texture.
-
-Armor worn textures show vanilla netherite because the resource pack is missing the assets/minecraft/equipment/ directory and the corresponding humanoid PNG files.
-
-P5. COMPLETE STRUCTURE CATALOG (40 structures from StructureType.java)
-Overworld (24): Ruined Colosseum (40×25×40, EPIC, Gladiator King 300 HP, Plains/Savanna), Druid's Grove (30×20×30, RARE, Ancient Treant 200 HP, Forest/Dark Forest), Shrek House (15×10×15, EPIC, Shrek 400 HP, Swamp), Mage Tower (12×45×12, EPIC, Arch Mage 250 HP, any biome), Gigantic Castle (80×50×80, MYTHIC, Castle Lord 350 HP, Plains/Mountains), Fortress (50×30×50, EPIC, Warlord 300 HP, Taiga/Stony), Camping Small (10×5×10, COMMON, no boss), Camping Large (20×8×20, RARE, Bandit Leader 150 HP), Ultra Village (100×20×100, RARE, no boss, has NPC Wizard), Witch House Swamp (12×12×12, RARE, Coven Witch 180 HP), Witch House Forest (10×10×10, COMMON, Shadow Witch 150 HP), Allay Sanctuary (25×15×25, RARE, friendly, spawns 5 Allays), Volcano (40×60×40, EPIC, Magma Titan 400 HP, Badlands), Ancient Temple (35×25×35, EPIC, Temple Guardian 250 HP, Jungle/Desert), Abandoned House (12×8×12, COMMON, Restless Spirit 100 HP), House-Tree (15×25×15, COMMON, no boss, Forest), Dungeon Deep (30×15×30, EPIC, Dungeon Keeper 300 HP, underground Y<30), Thanos Temple (50×40×50, MYTHIC, Thanos 800 HP, Badlands), Pillager Fortress (60×35×60, EPIC, Fortress Warlord 400 HP), Pillager Airship (30×25×15, RARE, Sky Captain 250 HP), Frost Dungeon (35×20×35, EPIC, Frost Warden 350 HP, Snowy), Bandit Hideout (25×15×25, RARE, Bandit King 200 HP, Badlands/Desert), Sunken Ruins (30×15×30, EPIC, Drowned Warlord 300 HP, Ocean), Cursed Graveyard (25×12×25, EPIC, Grave Revenant 350 HP, Dark Forest/Swamp), Sky Altar (20×30×20, MYTHIC, Celestial Guardian 500 HP, Mountain peaks).
-
-Nether (7): Crimson Citadel (40×30×40, EPIC, Crimson Warlord 350 HP), Soul Sanctum (30×20×30, RARE, Soul Reaper 250 HP), Basalt Spire (20×50×20, EPIC, Basalt Golem 400 HP), Nether Dungeon (30×15×30, RARE, Blaze Lord 300 HP), Piglin Palace (50×30×50, EPIC, Piglin King 400 HP), Wither Sanctum (40×35×40, EPIC, Wither Priest 450 HP), Blaze Colosseum (45×25×45, EPIC, Infernal Champion 400 HP).
-
-End (5): Void Shrine (25×20×25, MYTHIC, Void Sentinel 300 HP), Ender Monastery (40×25×40, MYTHIC, Ender Monk 250 HP), Dragon's Hoard (20×10×20, MYTHIC, no boss), End Rift Arena (50×20×50, MYTHIC, End Rift Dragon 600 HP), Dragon Death Chest (10×5×10, MYTHIC, no boss).
-
-Abyss (3): Abyssal Castle (120×80×120, ABYSSAL, Abyssal Overlord 1200 HP), Void Nexus (30×40×30, ABYSSAL, Void Arbiter 800 HP), Shattered Cathedral (50×45×50, ABYSSAL, Fallen Archbishop 1000 HP).
-
-P6. ALL COMMANDS AND PERMISSIONS
-Commands are defined in plugin.yml and handled in JGlimsPlugin.java:
-
-/jglims — Main admin command. Subcommands: reload (reloads config), stats <player> (blessing stats), enchants (list 64 enchantments), sort (info), mastery (weapon kill mastery), legendary <id|list|tier> (give/list weapons, OP only), armor <set|list> [slot|all] (give/list armor, OP only), powerup <type|stats> [player] (give power-ups, OP only; types: heart, soul, titan, phoenix, keep, vitality, berserker), bosstitles (view boss mastery titles), gauntlet <glove|gauntlet|stone|fragment> [type] (give Infinity items, OP only), menu (creative GUI browser), guia (Portuguese guide books), quests (quest progress), help.
-
-/guild — Guild management: create <name>, invite <player>, join, leave, kick <player>, disband, info, list.
-
-/guia (alias: /guide) — Gives all guide book volumes.
-
-Permission jglims.admin (default: OP) required for admin subcommands.
-
-P7. RESOURCE PACK VERSION HISTORY AND CURRENT STATE
-Version	Size (MB)	SHA-1	Status
-v4.0.0	3.04	63b8e30d08453c8c18e0cd0472f940a0536818a9	Archive
-v4.0.2	3.09	626edf299107f76711835507bda1962740b35474	Archive
-v4.0.3	3.17	6cd61288886ea80f091698eab0249b44c25af90a	Archive
-v4.0.4	3.19	ca60f59fa3f3dfbeff2d8dfb3339574807b8546b	Archive
-v4.0.5	3.19	2147a804f8f0af488c6521ef1c035f4f7feee77d	Archive
-v4.0.6	3.19	7d03a10899f13461a2dfb59554dde9ccfcfd9340	Archive
-v4.0.7	3.17	c433786cb712d2514c3ad8d89ff2078774742d84	Archive
-v4.0.8	3.17	45aeea8ad07ca1512aeccc81ea1d8251bdfe2589	Archive
-v4.0.9	3.17	1b9f9e6c7b2d03c114a6ee4f057454ae856a1035	Archive
-v4.1.0	3.52	a7a0e72c67c052f8710b2957b7193b94dc0c9824	Last working version
-v4.1.1	3.60	649367c93319eb5f9949b0008e3c7d94977d858f	Local only (never confirmed working)
-v4.1.2	3.56	ca440d43458f7d7b54c0b25a499ce1b43901a883	Local only
-v5.0 (GitHub)	3.52	a7a0e72c67c052f8710b2957b7193b94dc0c9824	Currently deployed (copy of v4.1.0)
-v4.1.1 (GitHub, broken)	9.50	dc5cdce0f7a7800c40681ea9e75e9a7528bd6b4d	Broken (wrong internal structure)
-Current server state (docker-compose.yml): RESOURCE_PACK=https://github.com/JGlims/JGlimsPlugin/releases/download/v5.0/JGlimsResourcePack-v5.0.zip, RESOURCE_PACK_SHA1=dc5cdce0f7a7800c40681ea9e75e9a7528bd6b4d.
-
-Problem: The SHA-1 in docker-compose.yml (dc5cdce...) is the hash of the broken 9.5 MB pack, but the v5.0 release on GitHub now contains the correct 3.52 MB file (SHA-1 a7a0e72c67c052f8710b2957b7193b94dc0c9824). This SHA-1 mismatch causes Minecraft to reject the download. Fix required: Change RESOURCE_PACK_SHA1 in docker-compose.yml to a7a0e72c67c052f8710b2957b7193b94dc0c9824 and recreate the container.
-
-P8. DEPLOYMENT PIPELINE (COMPLETE REFERENCE)
-Build: cd C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin && .\gradlew clean build → produces build\libs\JGlimsPlugin-2.0.0.jar.
-
-Deploy Plugin JAR:
-
-Copy$sshKey = "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key"
-$remoteHost = "ubuntu@144.22.198.184"
-scp -i $sshKey build\libs\JGlimsPlugin-2.0.0.jar "${remoteHost}:/tmp/JGlimsPlugin.jar"
-ssh -i $sshKey $remoteHost "docker cp /tmp/JGlimsPlugin.jar mc-crossplay:/data/plugins/JGlimsPlugin.jar && docker restart mc-crossplay"
-Deploy Resource Pack (complete procedure):
-
-Build the zip using 7-Zip (never Compress-Archive): 7z a -tzip JGlimsResourcePack-v6.0.zip .\* -xr!.git from inside the resource pack root directory (where pack.mcmeta lives).
-Compute SHA-1: (Get-FileHash -Path $zipPath -Algorithm SHA1).Hash.ToLower().
-Create GitHub release: gh release create v6.0 $zipPath --repo JGlims/JGlimsPlugin --title "Resource Pack v6.0" --notes "SHA-1: $sha1".
-Update docker-compose.yml on the server via SSH: change RESOURCE_PACK URL and RESOURCE_PACK_SHA1 values.
-Recreate: cd /home/ubuntu/minecraft-server && docker compose down && docker compose up -d.
-Critical rules: Always edit docker-compose.yml, not server.properties (Docker init overwrites it). The SSH user is ubuntu, not opc. The resource pack URL in docker-compose.yml does NOT need escaped colons (the Docker env var handles this). Write all files as UTF-8 without BOM.
-
-P9. KNOWN BUGS AND ISSUES (COMPREHENSIVE)
-Resource pack SHA-1 mismatch in docker-compose.yml — Currently set to dc5cdce0f7a7800c40681ea9e75e9a7528bd6b4d (the broken pack) but the actual file is the correct 3.52 MB with SHA-1 a7a0e72c67c052f8710b2957b7193b94dc0c9824. This causes "failed to download" on client connect.
-
-Power-up textures show vanilla — The 7 power-up items use string-based CMD but the resource pack is missing the item definition JSONs for their base materials (red_dye.json, purple_dye.json, etc.) or the JSONs don't include the string-key overrides.
-
-Armor worn textures show vanilla netherite — Missing assets/minecraft/equipment/ directory and assets/minecraft/textures/entity/equipment/humanoid/ PNG files in the resource pack.
-
-Abyss portal does not activate — The 4×5 purpur frame + Abyssal Key interaction has never been confirmed working in production.
-
-Creation Splitter ability bug — An unspecified bug in the "Reality Cleave" or "Genesis Break" ability implementation.
-
-Missing weapon 3D models/textures — At least 9 newer weapons (e.g., divine_axe_rhitta, yoru, tengens_blade, edge_astral_plane, etc.) likely have no corresponding JSON model or PNG texture in the current resource pack, as it was built before these weapons existed.
-
-Awakened weapon animations — The 4 ABYSSAL weapons (requiem_awakened, excalibur_awakened, creation_splitter_awakened, whisperwind_awakened) are designed to have animated textures (spritesheet + mcmeta), but these were partially implemented only for excalibur and requiem; creation_splitter_awakened and whisperwind_awakened have none.
-
-[ERROR] Failed to update server.properties — The Docker mc-image-helper SetPropertiesCommand fails when it can't write to server.properties. This was resolved by fixing file ownership (chown 1000:1000) but may recur if Docker image updates change behavior.
-
-README version mismatch — README says version 1.4.0, plugin.yml says 2.0.0, resource pack is v5.0. These should be unified.
-
-P10. THINGS TO DO NEXT (DETAILED)
-Priority 1 — Fix the immediate broken state: Fix the SHA-1 in docker-compose.yml from dc5cdce0f7a7800c40681ea9e75e9a7528bd6b4d to a7a0e72c67c052f8710b2957b7193b94dc0c9824, then docker compose down && docker compose up -d. This will restore the working resource pack download.
-
-Priority 2 — Fix power-up textures: Create item definition JSON files for each power-up's base material. For example, assets/minecraft/items/red_dye.json needs a custom_model_data entry mapping "heart_crystal" to models/item/powerups/heart_crystal which points to textures/item/powerups/heart_crystal.png. Repeat for all 7 power-ups (purple_dye→soul_fragment, iron_nugget→titan_resolve, feather→phoenix_feather, ender_eye→keep_inventorer, prismarine_shard→vitality_shard, blaze_powder→berserker_mark).
-
-Priority 3 — Fix armor worn textures: Create assets/minecraft/equipment/<set_id>.json files for each of the 13 armor sets, and generate the 64×32 humanoid and humanoid_leggings PNG texture sheets. Place them at assets/minecraft/textures/entity/equipment/humanoid/ and humanoid_leggings/.
-
-Priority 4 — Fix Creation Splitter ability bug: Debug LegendaryPrimaryAbilities.java and LegendaryAltAbilities.java for the creation_splitter entry. The "Reality Cleave" primary or "Genesis Break" alternate is causing an error (likely a null entity reference or radius miscalculation).
-
-Priority 5 — Fix Abyss portal: Test and debug AbyssDimensionManager.java portal detection logic. Verify the purpur frame dimensions, Abyssal Key NamespacedKey tag, and world_abyss creation.
-
-Priority 6 — Add missing weapon textures/models: Create 3D model JSONs and PNG textures for the 15 newer MYTHIC weapons (CMD 30045–30059) and 4 ABYSSAL weapons (30060–30063). Each needs: assets/minecraft/models/item/<texture_name>.json (with element definitions or flat generated model) and assets/minecraft/textures/item/<texture_name>.png. Add overrides to assets/minecraft/items/diamond_sword.json, diamond_axe.json, and mace.json.
-
-Priority 7 — Awakened weapon animations: Complete spritesheet + .mcmeta animation files for creation_splitter_awakened and whisperwind_awakened.
-
-Priority 8 — Performance optimization: Implement entity summon caps (max simultaneous summoned entities per ability), particle throttle (reduce count when TPS < 18), task tracking (cancel orphaned BukkitRunnables), and event mob cleanup timers.
-
-Priority 9 — World Weapons category: New enum WorldWeapon.java with the same structure as LegendaryWeapon. Use remaining unused Fantasy 3D and Majestica textures from blades_of_majestica_v2.0.zip and nongko's_Fantasy_Weapons_v1.17A.zip. Damage comparable to COMMON/RARE legendary weapons. New WorldWeaponManager.java, WorldWeaponAbilityListener.java, and item definitions.
-
-Priority 10 — Magic Items: New enum and manager for magic wand items (Wand of Wands, Vingardium Leviosa → levitation spell, Avada Kedavra → instant high damage with long cooldown). Base material: BLAZE_ROD with custom models. New MagicItemManager.java, MagicAbilityListener.java.
-
-Priority 11 — More bosses and structures: Add mini-bosses to boss-less structures (Camping Small, Allay Sanctuary, Ultra Village, House-Tree, Dragon's Hoard). Add new structure types per README roadmap. Increase roaming boss variety.
-
-Priority 12 — Lunar dimension: New dimension with AbyssChunkGenerator-style void generation, moon-surface terrain (end stone + white concrete), reduced gravity (Slow Falling permanent + increased jump), space-themed structures, portal built from end stone (4×5 frame, opened with flint and steel).
-
-Priority 13 — Aether dimension: Classic Aether-inspired: portal from glowstone frame + water bucket, sky islands with grass/trees, flying mobs (Aether variants), structures (sky temples, cloud castles), loot (legendary/world weapons, enchanted books), Aether Dragon boss.
-
-P11. INFINITY GAUNTLET SYSTEM (COMPLETE DETAIL)
-Crafting chain: Step 1: Find Thanos Temple structure (MYTHIC, Badlands, 50×40×50), defeat Thanos (Iron Golem, 800 HP, custom attacks) → drops Thanos Glove (100%). Step 2: During Blood Moon, any mob has 0.1% chance to drop a random Colored Stone (6 types: Power=purple, Space=blue, Reality=red, Soul=orange, Time=green, Mind=yellow). Step 3: Combine each Colored Stone + 1 Redstone in Anvil → Infinity Stone. Step 4: Shapeless recipe: Thanos Glove + all 6 Infinity Stones → Infinity Gauntlet.
-
-Ability: Right-click kills 50% of all loaded hostile mobs in the player's dimension. Excluded: all bosses, mini-bosses, event bosses, King mobs, Blood Moon bosses. Cooldown: 300 seconds. Visual: gold + soul fire particle burst, screen shake, dramatic sound. Indestructible.
-
-Commands: /jglims gauntlet glove (gives Thanos Glove), /jglims gauntlet gauntlet (gives completed Infinity Gauntlet), /jglims gauntlet stone <type> (gives finished stone), /jglims gauntlet fragment <type> (gives colored stone fragment).
-
-P12. QUEST SYSTEM (COMPLETE DETAIL)
-6 quest lines managed by QuestManager.java (27,940 B) with periodic scheduler. Quest progress tracked in player PersistentDataContainer. Categories: Overworld (kill zombies, find structures, survive Blood Moon), Nether (kill Blazes, clear citadel, defeat Piglin King), End (kill Endermen, defeat End Rift Dragon, find Dragon's Hoard), Special (collect all 6 Infinity Stones, defeat all 5 bosses, earn God Slayer), Boss (damage each boss type), Explorer (visit biomes, find structures). Rewards include Soul Fragments, Heart Crystals, COMMON/RARE/MYTHIC weapons, Phoenix Feathers, Blessing Crystals, exclusive titles, one ABYSSAL weapon choice.
-
-The NPC Wizard (NpcWizardManager.java, 15,501 B) spawns in Mage Towers and Ultra Villages. Sells: 3 rotating exclusive MYTHIC weapons (48 diamonds + 16 Nether Stars), Heart Crystal (16 diamonds), Phoenix Feather (32 diamonds), KeepInventorer (64 diamonds + 32 emeralds), Blessing Crystals (8 diamonds each).
-
-P13. EVENT SYSTEM TIMING AND PROBABILITIES
-Events are checked every 60 seconds (1200 ticks). After any event ends, a 10-minute cooldown applies per world before another can start.
-
-Event	Dimension	Trigger Chance	Duration	Final Boss	Boss HP	Drops
-Pillager War Party	Overworld	6% per check	5 min	Fortress Warlord	400	EPIC weapons
-Pillager Siege	Overworld (night only)	4% per check	5 min	—	—	RARE weapons
-Nether Storm	Nether	10% per check	5 min	Infernal Overlord (Ghast)	400	EPIC weapons
-Piglin Uprising	Nether	8% per check	5 min	Piglin Emperor (Piglin Brute)	500	EPIC weapons + gold
-Void Collapse	The End	5% per check	5 min	Void Leviathan (Elder Guardian)	500	MYTHIC weapons
-End Rift	Overworld (triggered by Dragon kill)	10% on Dragon death	15 min	End Rift Dragon	600	1–2 MYTHIC from pool (Tengen's, Soul Devourer, Star Edge, Creation Splitter, Stop Sign)
-Blood Moon	Overworld (night)	15% per check (separate scheduler)	Full night	Blood Moon King (Wither Skeleton, 6000 HP)	12× base	5–15 diamonds + RARE weapon + EPIC chance
-P14. ROAMING BOSS COMPLETE SPECIFICATIONS
-Checked every 2 minutes (2400 ticks). Only one of each type can exist at a time. Auto-despawn after 10 minutes.
-
-Boss	Entity	Dimension/Biome	HP	Spawn %	Drops	Special Attacks
-The Watcher	Warden	Deep Dark (y<0)	800	3%	EPIC weapons	Darkness/Mining Fatigue aura (20 blocks), Sculk particles
-Hellfire Drake	Ghast	Nether Wastes/Soul Sand	600	4%	EPIC weapons	Triple fireball salvo, flame/lava ambient particles
-Frostbound Colossus	Iron Golem	Snowy biomes	700	3%	EPIC weapons	Slowness aura (15 blocks), freeze ticks, ground pound AoE (10 dmg, 10 blocks, 8s CD)
-Jungle Predator	Ravager	Jungle biomes	500	4%	RARE/EPIC	Stealth pounce (invis 3s → leap + 12 dmg + poison), poison fog (8 blocks)
-End Wraith	Phantom (size 6)	The End (outer islands)	900	2%	MYTHIC weapons	Phase shift (TP behind target), void beam (14 dmg + Levitation), shadow clones at 50% HP (3× Phantom size 3, 100 HP each)
-Abyssal Leviathan	—	Abyss dimension	1200	3%	ABYSSAL weapons	(Implementation continues in truncated file)
-P15. DOCKER ENVIRONMENT CONFIGURATION
-docker-compose.yml location: /home/ubuntu/minecraft-server/docker-compose.yml
-
-Critical environment variables that affect server.properties:
-
-RESOURCE_PACK — URL to the zip (Docker init writes this with escaped colons into server.properties)
-RESOURCE_PACK_SHA1 — SHA-1 hash
-RESOURCE_PACK_ENFORCE — TRUE
-RESOURCE_PACK_PROMPT — "JGlims Server requires a resource pack for custom weapons"
-Data mount: Bind mount from /home/ubuntu/minecraft-server/data to /data inside the container (rw, rprivate).
-
-Container name: mc-crossplay. Image: itzg/minecraft-server (Java 25, buildtime 2026-03-13). Container runs as UID 1000:GID 1000.
-
-Key lesson learned: Never edit /data/server.properties inside the container — the Docker init script overwrites it on every start using the environment variables. Always modify docker-compose.yml and recreate the container. 
-
-
-
-
-
-
-JGLIMSPLUGIN — DEFINITIVE PROJECT SUMMARY v11.0
-Compiled: 2026-03-16 | Author: JGlims (jg.melo.lima2005@gmail.com) | Plugin Version: 2.0.0 | Target Version: 3.0.0 Latest Commit: fc442b48 (2026-03-16 06:01 UTC) | Repository: https://github.com/JGlims/JGlimsPlugin
-
-A. SERVER & INFRASTRUCTURE
-The plugin runs inside a Docker container named mc-crossplay on an Oracle Cloud ARM64 instance at IP 144.22.198.184. Java edition connects on port 25565, Bedrock edition on port 19132. The server runs Paper 1.21.11-127 on Java 25 (OpenJDK 25.0.2+10-LTS, Eclipse Adoptium Temurin). Crossplay is handled by GeyserMC 2.9.4-SNAPSHOT paired with Floodgate 2.2.5-SNAPSHOT. Additional server plugins include SkinsRestorer 15.11.0 and Chunky 1.4.40. The JVM has 8 GB of memory allocated. Online mode is disabled to allow crossplay. The default game mode is creative, with a maximum of 15 players, view distance 10, and simulation distance 6.
-
-SSH access uses the key file at C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key connecting as user ubuntu (confirmed — not opc). The Docker Compose file is located at /home/ubuntu/minecraft-server/docker-compose.yml and the server data is a bind mount from /home/ubuntu/minecraft-server/data to /data inside the container (not a Docker volume). The local development path is C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin and the resource pack working directory is C:\Users\jgmel\Documents\projects\JGlimsPlugin\resourcepack-work\JGlimsResourcePack.
-
-B. RESOURCE PACK
-The server currently runs resource pack v5.0 (SHA-1 a7a0e72c67c052f8710b2957b7193b94dc0c9824, 3.52 MB), which is byte-identical to v4.1.0. It is hosted on GitHub Releases and configured via docker-compose.yml environment variables: RESOURCE_PACK (URL), RESOURCE_PACK_SHA1, and RESOURCE_PACK_ENFORCE=TRUE. The Docker image itzg/minecraft-server overwrites server.properties from these env vars on every container start, so editing server.properties directly is useless — all changes must go in docker-compose.yml followed by docker compose down && docker compose up -d.
-
-Minecraft 1.21.4+ uses item model definitions in assets/minecraft/items/*.json with type minecraft:select and property minecraft:custom_model_data. The Java plugin sets the string via CustomModelDataComponent.setStrings(List.of("texture_name")) and the JSON when value must exactly match.
-
-What works right now: all 63 legendary weapon textures and 3D models, all 63 primary and alternate abilities, armor set item icons in inventory (13 sets), armor worn textures (FIXED — now uses equippable component with asset_id pointing to equipment JSONs and humanoid PNGs), Infinity Gauntlet and Thanos Glove textures, Infinity Stone textures, Abyss portal activation (FIXED), and the plugin loads cleanly.
-
-What does NOT work: power-up item textures (7 items still show vanilla — PowerUpManager.java may still use integer CMD instead of string-based CMD, and item definition JSONs may lack the correct when cases; also missing PNGs for keep_inventorer.png and berserker_mark.png), missing animated textures for Whisperwind, True Excalibur Awakened, Creation Splitter, and Edge of the Astral Plane (awakened weapons should have animations as their only visual difference from base versions), and one unidentified Creation Splitter ability bug.
-
-Resource pack version history spans v4.0.0 (3.04 MB, pack_format 75, initial 63 weapons) through v5.0 (current — identical copy of v4.1.0). The 9.5 MB "v4.1.1" file on the v4.1.0 release was created by PowerShell's Compress-Archive and is broken. Updates must use 7-Zip, generate SHA-1, upload as a new GitHub release (v6.0, v7.0, etc. — never overwrite), update docker-compose.yml on the server, then recreate the container.
-
-C. CODEBASE
-The repository tree SHA is fe2676dc897462c4a021d0530e49fa7a48255269. The plugin.yml declares version 2.0.0 with api-version 1.21. The build output is JGlimsPlugin-2.0.0.jar. The codebase consists of 70+ Java files across 13 packages totaling approximately 1.3 MB of source code.
-
-C.1 Root Package — com.jglims.plugin
-JGlimsPlugin.java (38,319 B) — the main plugin class. Contains onEnable() which registers every manager and listener, all three command handlers (/jglims, /guild, /guia), and subcommand routing. The /jglims command supports subcommands including menu (opens creative GUI), stats (shows player stats), abyss tp (teleports to Abyss), abyss boss (manually triggers dragon fight), abyss key (gives Abyssal Key), give <weapon_id> (gives a legendary weapon), and various admin utilities. The /guild command manages guild CRUD operations. The /guia command opens the Portuguese-language guide book. Lines 286–310 contain the Abyss subcommand handler which delegates to AbyssDimensionManager.teleportPlayer() and AbyssDragonBoss.manualTrigger(). Lines 507–520 wire the AbyssDragonBoss listener registration.
-
-C.2 abyss Package (5 files — the dimension system)
-AbyssChunkGenerator.java (6,727 B) — custom void-based chunk generation. Uses multi-octave sine/cosine noise to generate terrain within a 210-block radius of the world origin. Three noise octaves (wavelengths 0.03, 0.07, 0.12) produce an undulating surface centered around Y=50. Surface materials vary by distance from origin: within 110 blocks it places DEEPSLATE_TILES; between 110 and 150 it mixes POLISHED_BLACKSTONE (20%) and DEEPSLATE_TILES; beyond 150 it mixes PURPUR_BLOCK (20%) and END_STONE. Subsurface layers use POLISHED_BLACKSTONE, DEEPSLATE, OBSIDIAN, and CRYING_OBSIDIAN at varying depths. The generator also creates amethyst crystal spires (1.2% chance, height 4–12), obsidian pillars (0.8% chance, height 5–17), end rod lights (1.5%), crying obsidian accents (2.5%), and soul campfires (0.6%) in the outer terrain beyond 120 blocks. At distance 160+, floating islands spawn (12% chance per 28-block grid cell) with randomized radii (7–21 blocks), composed of deepslate, obsidian, end stone, and purpur, topped with soul lanterns and amethyst clusters. Void rivers carve through terrain between distance 130–200 where a sine-based noise function crosses near zero, clearing blocks down to Y=1. All vanilla generation (noise, surface, caves, decorations, mobs, structures) is disabled.
-
-AbyssDimensionManager.java (18,891 B) — creates and manages the world_abyss world. Current committed state: the world is created with World.Environment.NORMAL (was changed from THE_END by a previous fix attempt). The world name is "world_abyss", arena center Z is -120. On initialization, if the world doesn't exist it creates it with the custom chunk generator, then sets game rules: DO_DAYLIGHT_CYCLE false, DO_WEATHER_CYCLE false, DO_MOB_SPAWNING false, KEEP_INVENTORY true, MOB_GRIEFING false, DO_FIRE_TICK false. Time is set to 18000 (midnight). A BukkitRunnable repeats every 6000 ticks to enforce midnight and clear weather. A comment says "No vanilla dragon cleanup needed — NORMAL environment." The ambient spawner runs every 400+ ticks, spawning Void Wanderers (Endermen, 60% chance, 50 HP, purple name) and Abyssal Sentinels (Wither Skeletons, 40% chance, 40 HP, dark red name, stone sword), up to 12 total, avoiding a 50-block exclusion zone around the arena at (0, y, -120). The Abyssal Key is an Echo Shard with CMD 9001 and custom lore. Portal activation listens for RIGHT_CLICK_BLOCK on PURPUR_BLOCK while holding the key, searches for a valid 4×5 frame in both X-axis and Z-axis orientations, fills the interior with purple particles on a repeating task, and teleports the player after 3 seconds to (0.5, safeY, 115.5) facing north (180° yaw). The file also contains findSafeY(), findPortalFrame(), checkFrame(), and activatePortal() methods. On fresh worlds, it calls AbyssCitadelBuilder.build() to construct the cathedral.
-
-AbyssDragonBoss.java (33,876 B) — the boss fight controller. Constants: DRAGON_HP = 1500.0, DAMAGE_REDUCTION = 0.20, ARENA_R = 40, ARENA_CENTER_Z = -120, MAX_MINIONS = 6, RESPAWN_COOLDOWN_MS = 30 minutes. State fields: active boolean, lastDeathTime, attackTick, arenaCenter Location, arenaY int, combatLoop and movementAI BukkitRunnables, a custom Adventure API BossBar (purple, PROGRESS overlay), 8-waypoint movement system, 4-phase tracking. The walk-on trigger (onPlayerMove) checks: player is in world_abyss, the boss isn't already active, respawn cooldown has passed, the block below is solid and one of BEDROCK/OBSIDIAN/CRYING_OBSIDIAN/END_STONE_BRICKS/DEEPSLATE_BRICKS/POLISHED_BLACKSTONE_BRICKS/BLACKSTONE, findArenaY() returns a valid Y, the player is within 6 blocks of arena Y, and the player is within ARENA_R of (0, y, -120). Manual trigger via manualTrigger(Player) bypasses floor checks, falls back to player Y if arena floor isn't found, and teleports the player to arenaCenter + 15 on Z. The startFight() method cleans up previous entities and minions, generates 8 flight waypoints in a circle at varying heights (15–25 above arena), spawns the dragon model at arenaCenter + 25 Y, creates the boss bar, shows a title announcement to all Abyss players, strikes 4 decorative lightning bolts, and starts two loops — combatLoop (every 40 ticks / 2 seconds for attacks) and movementAI (every 10 ticks / 0.5 seconds for waypoint navigation). Phase transitions occur at 75% HP (phase 2), 50% (phase 3), 25% (phase 4), and 10% (enrage). Attacks include: void breath (dragon breath particles + soul fire towards nearest player, 8-15 damage), soul fire rain (fire charges from sky on random arena positions, 6-12 damage), lightning strikes (at player positions, 10 damage), ground pound (AOE knockback + damage when dragon dives low, 12-20 damage within 8 blocks), void pull (drags all players toward arena center for 3 seconds), and minion summons (spawns Wither Skeletons tagged abyss_minion, max 6). Movement AI navigates between the 8 waypoints at 0.6 speed (0.8 in phase 3+, 1.0 in phase 4+). On death: plays ENDER_DRAGON_DEATH sound, explosion particles, drops 1-2 random ABYSSAL tier weapons and 3-5 power-up items, clears boss bar, resets active flag, records lastDeathTime, and spawns an exit portal (end gateway) at arena center. The findArenaY() method scans from Y 200 down to -64 at coordinates (0, y, ARENA_CENTER_Z) looking for BEDROCK, OBSIDIAN, CRYING_OBSIDIAN, END_STONE_BRICKS, DEEPSLATE_BRICKS, POLISHED_BLACKSTONE_BRICKS, or BLACKSTONE. If no floor is found, it logs a warning and returns -1 (manual trigger falls back to player Y - 1). Damage handling intercepts EntityDamageEvent on the dragon's base zombie entity, applies 20% reduction, calls dragonModel.damageFlash(), and triggers phase checks.
-
-AbyssDragonModel.java (15,498 B) — visual representation of the dragon. Uses an invisible Zombie as the base entity with an ItemDisplay (PAPER item with CMD 40000) mounted as a passenger. Scale is 5.0. THE CRITICAL BUG (current committed code): Inside the spawn() method, the zombie is spawned with a lambda that sets MAX_HEALTH and calls setHealth(maxHp) inside the spawn callback, which causes an IllegalArgumentException because Paper validates health against the not-yet-applied max health attribute. This is the root cause of the dragon not spawning. The spawn also sets the zombie to invisible, silent, no AI, no gravity, non-invulnerable, named "Abyssal Void Dragon" (dark purple bold), adult, can't pick up items, doesn't despawn, and tagged abyss_dragon_base. The SCALE attribute is set to 3.0 if available. The ItemDisplay uses FIXED billboard, 1.5 view range, tag abyss_dragon_part, a Transformation with translation offset (-SCALE/2, -0.5, -SCALE/2) and uniform scale, interpolation duration 3, shadow radius 4.0, shadow strength 0.6. The hover animation runs every 2 ticks, oscillating with a sine wave (amplitude 0.4, frequency 0.08), spawning DRAGON_BREATH particles at body, END_ROD at head, and PORTAL particles at wings. Phase 3+ adds SOUL_FIRE_FLAME particles, phase 4+ adds REVERSE_PORTAL. The display entity rotates with a slow sinusoidal yaw. Other methods: setTarget(Location) moves toward target at 0.6 speed, moveToward(Location, double speed) for variable speed movement, breathAttackVisual(Location target) draws a DRAGON_BREATH + SOUL_FIRE_FLAME particle beam, wingGustVisual() creates a 360° CLOUD particle ring + EXPLOSION, phaseTransition(int) and setPhase(int) handle visual phase changes (phase 2: growl + dragon breath, phase 3: wither ambient + soul fire + 1.15× scale increase, phase 4: dragon death sound + reverse portal + explosions), damageFlash() briefly tints the display red, getHealth() / getMaxHealth() / getLocation() / isAlive() delegate to the base zombie, cleanup() cancels animation task and removes both entities.
-
-AbyssCitadelBuilder.java (54,230 B) — the largest abyss file. Builds a massive gothic cathedral centered at the world origin. Block palette defines 25+ material constants. The NB bug (current committed code): NB is still defined as Material.NETHER_BRICKS at line ~46, which should be DEEPSLATE_BRICKS. Other materials: DS = DEEPSLATE_BRICKS (primary wall), DT = DEEPSLATE_TILES (secondary wall), PD = POLISHED_DEEPSLATE (accents), CD = CHISELED_DEEPSLATE (trim), RNB = RED_NETHER_BRICKS (accent), BL = BLACKSTONE (foundation), PBL = POLISHED_BLACKSTONE (floor accent), PBB = POLISHED_BLACKSTONE_BRICKS (floor), OBS = OBSIDIAN, CRY = CRYING_OBSIDIAN (glow accent), AME = AMETHYST_BLOCK, AMC = AMETHYST_CLUSTER, PGP = PURPLE_STAINED_GLASS_PANE (windows), PG = PURPLE_STAINED_GLASS, MG = MAGENTA_STAINED_GLASS_PANE, IB = IRON_BARS, SL = SOUL_LANTERN, SF = SOUL_CAMPFIRE, ER = END_ROD, ES = END_STONE_BRICKS (arena pillars), BK = BEDROCK (arena floor), BA = BARRIER (arena walls), STR = DEEPSLATE_BRICK_STAIRS, PIL = POLISHED_DEEPSLATE (pillars), PUR = PURPUR_BLOCK. Key dimensions: center spire 180 blocks tall, nave length 80 (z=-40 to z=40), nave half-width 30, nave height 50, facade half-width 60, facade height 80, arena radius 40, arena 120 blocks behind cathedral at z=-120. The build executes in 8 phases: (1) elliptical foundation platform (110×140) with blackstone fill and polished blackstone brick surface, plus a circular courtyard at z=65 radius 40 with crying obsidian accent rings; (2) nave body from z=-40 to z=40 with gothic tapering walls (walls narrow as they rise), transept arms extending ±40 on X at z=-10, apse (semicircular rear at z=-40); (3) central mega-spire (180 blocks, octagonal tapering), 2 flanker spires at ±20 X (120 blocks each), and 10+ minor spires at various positions (60–90 blocks); (4) flying buttresses connecting nave walls to outer piers, gothic arched windows with purple glass, and the roof line (buildRoofLine() — pointed roof along the nave with material selection using NB for high progress values, which is where some nether bricks appear and where roof holes exist); (5) interior nave with ribbed vaulting, 8 interior pillars, 4 interior chapels with chests, 4 abyssal weapon guardian chambers (each containing one ABYSSAL tier weapon in a chest, guarded by Wither Skeletons), and stairs descending to the arena; (6) arena at z=-120 with bedrock floor, barrier walls at radius 40, obsidian structural pillars at 8 cardinal+diagonal positions, crying obsidian accents, a rune circle pattern on the floor; (7) environmental decoration including rocky terrain outcrops around the foundation, floating amethyst crystals above the cathedral, glowing crying obsidian court lines, and a lit approach path from the courtyard to the entrance; (8) delayed chest population (60 ticks after build) placing ABYSSAL and MYTHIC tier weapons in chambers, power-ups, and enchanted books, plus guard spawning (Wither Skeletons and Endermen at strategic positions).
-
-The buildFrontFacade() method creates a gothic pointed-arch facade facing south (+Z). It builds the pointed arch shape using the formula where each column's height follows a pointed arch curve. The method constructs a grand entrance arch (10 blocks wide, 15 tall), a rose window (circular pattern with purple glass and chiseled deepslate frame at height ~40), decorative blind arcading, and two corner buttress towers. Material selection uses DS for the main body, NB for high-ratio structural elements (where it shows as nether bricks — this is the "plain front" issue), CD for trim at arch edges, OBS for the entrance frame, and PGP/PG for the rose window glass.
-
-The buildRoofLine() method creates a pointed pitched roof running the length of the nave. It iterates from z=-40 to z=40, calculating a cross-section at each Z. The roof peak is at x=0 and slopes down to the nave walls. Material selection uses DS for the main roof surface but switches to NB when progress > 0.85 and returns NB as the default fallback — this is why nether bricks appear on the roof and likely why there are gaps (the formula may not cover all blocks at the apex and edges).
-
-C.3 blessings Package (2 files)
-BlessingListener.java (3,452 B) listens for blessing crystal consumption events. BlessingManager.java (10,296 B) manages three blessing types: C-Bless (+1 HP per use, max 10 uses), Ami-Bless (+2% damage per use, max 10), La-Bless (+2% defense per use, max 10). Stats viewable via /jglims stats. Data persists per-player in the plugin's data folder.
-
-C.4 config Package (1 file)
-ConfigManager.java (29,211 B) reads config.yml with sections for: mob difficulty (distance-based scaling from 350 to 5000 blocks, base multipliers 1.0–3.0), biome multipliers (specific biomes get extra scaling), boss enhancer (Ender Dragon 3.5× HP, Wither 1.0×, Warden 1.0×, Elder Guardian 2.0×), creeper explosion reduction (50% cancel chance), pale garden fog, loot booster, blessings, anvil modifications (removes "Too Expensive" cap, 50% XP reduction), feature toggles for 10+ systems, drop rate booster (35% trident drop rate), villager trade modifications (50% price reduction, no trade locking), king mob settings (every 100th mob, 7× HP), axe attack speed nerf (0.5), weapon mastery (max 1000 kills for +20% bonus), blood moon (15% nightly chance, 12× boss HP), guilds (max 10 members, no friendly fire), dog armor (95% damage reduction), super tools (2% bonus per enchant level for netherite), and ore detection radii.
-
-C.5 crafting Package (2 files)
-RecipeManager.java (34,774 B) registers all custom shaped and shapeless recipes: 8 battle tool types (sword, axe, bow, mace, shovel, pickaxe, trident, spear), super tools (diamond and netherite tiers), sickles, Infinity Stone combining (6 colored glass + redstone = finished stone for each of the 6 types), Infinity Gauntlet assembly (Thanos Glove + all 6 stones), and all 24 craftable armor piece recipes (6 sets × 4 pieces). VanillaRecipeRemover.java (588 B) removes conflicting vanilla recipes on server start.
-
-C.6 enchantments Package (5 files)
-64 custom enchantments defined in CustomEnchantManager.java (8,853 B) with level caps, conflict pairs, and applicable item type restrictions. EnchantmentEffectListener.java (69,495 B) is the largest single file in the project, implementing all 64 enchantment effects triggered on hit, defense, tick, and various game events. AnvilRecipeListener.java (33,648 B) intercepts the anvil GUI for custom enchant combining, Infinity Stone assembly, and enchant conflict detection. EnchantmentType.java (1,942 B) is an enum of enchantment categories. SoulboundListener.java (7,961 B) prevents items with the Soulbound enchantment from dropping on player death.
-
-C.7 events Package (7 files)
-6 active world events managed by EventManager.java (10,367 B) which checks every 60 seconds (1200 ticks) with 10-minute per-world cooldowns. NetherStormEvent.java (11,421 B) — Ghast swarms, enhanced Blazes, fire rain, Infernal Overlord boss (Ghast, 400 HP). PiglinUprisingEvent.java (8,956 B) — massive Piglin army, Piglin Emperor boss (Piglin Brute, 500 HP). VoidCollapseEvent.java (8,961 B) — void particles pulling players, Void Leviathan boss (Elder Guardian variant, 500 HP). PillagerWarPartyEvent.java (19,957 B) — overworld Pillager raid with escalating waves. PillagerSiegeEvent.java (19,146 B) — nighttime siege with Fortress Warlord boss. EndRiftEvent.java (30,058 B) — 15×15 portal, wave-based spawns, End Rift Dragon boss (600 HP Ender Dragon variant).
-
-C.8 guilds Package (2 files)
-GuildManager.java (13,679 B) — full CRUD for player guilds: create, invite, accept, decline, leave, disband, list, info, promote, demote, set name/tag. Max 10 members per guild. Optional friendly-fire toggle. Data persists via YAML files per guild. GuildListener.java (1,456 B) hooks into damage and chat events for guild integration.
-
-C.9 legendary Package (15 files — the plugin's core)
-LegendaryTier.java (3,673 B) — 5-tier enum: COMMON (12–15 damage, 10 particles, 1.0× cooldown multiplier), RARE (14–17 damage, 25 particles, 0.95×), EPIC (17–20 damage, 50 particles, 0.9×), MYTHIC (20–30 damage, 100 particles, 0.85×), ABYSSAL (28–40 damage, 200 particles, 0.8×). Includes backward compatibility mapping ("LEGENDARY" → EPIC, "UNCOMMON" → COMMON).
-
-LegendaryWeapon.java (15,034 B) — enum of all 63 weapons. Each stores: id, displayName, baseMaterial, baseDamage, customModelData (30001–30063), tier, textureName (must match resource pack JSON when value), primaryAbilityName, altAbilityName, primaryCooldown, altCooldown. 20 COMMON: Amethyst Shuriken, Gravescepter, Lycanbane, Gloomsteel Katana, Viridian Cleaver, Crescent Edge, Gravecleaver, Amethyst Greatblade, Flamberge, Crystal Frostblade, Demonslayer, Vengeance, Oculus, Ancient Greatslab, Neptune's Fang, Tidecaller, Stormfork, Jade Reaper, Vindicator, Spider Fang. 8 RARE: Ocean's Rage, Aquatic Sacred Blade, Royal Chakram, Acidic Cleaver, Muramasa, Windreaper, Moonlight, Talonbrand. 7 EPIC: Berserker's Greataxe, Black Iron Greatsword, Solstice, Grand Claymore, Calamity Blade, Emerald Greatcleaver, Demon's Blood Blade. 24 MYTHIC: True Excalibur, Requiem of the Ninth Abyss, Phoenix's Grace, Soul Collector, Valhakyra, Phantomguard, Zenith, Dragon Sword, Nocturne, Divine Axe Rhitta, Yoru, Tengen's Blade, Edge of the Astral Plane, Fallen God's Spear, Nature Sword, Heavenly Partisan, Soul Devourer, Mjölnir, Thousand Demon Daggers, Star Edge, Rivers of Blood, Dragon Slaying Blade, Stop Sign, Creation Splitter. 4 ABYSSAL: Requiem Awakened (38 dmg), Excalibur Awakened (34 dmg), Creation Splitter Awakened (40 dmg), Whisperwind Awakened (30 dmg).
-
-LegendaryWeaponManager.java (7,937 B) — creates weapon ItemStacks with string-based CustomModelDataComponent, PersistentDataContainer tags, tier-colored display names, and lore. LegendaryAbilityListener.java (18,032 B) — dispatches right-click (primary) and crouch+right-click (alt) to ability handlers. LegendaryPrimaryAbilities.java (69,951 B) and LegendaryAltAbilities.java (73,043 B) — implementations of all 126 abilities (63 primary + 63 alternate). LegendaryAbilityContext.java (7,661 B) — shared state maps (bloodlust, retribution, soul counts, phase shift, etc.), utility methods (getNearbyEnemies, dealDamage, getTargetEntity, rotateY), and particle throttle system (spawnThrottled, trackTask, trackSummon, cleanupPlayer).
-
-LegendaryArmorSet.java (16,160 B) — 13 armor sets. 6 craftable: Reinforced Leather (12 def), Copper (14), Chainmail Reinforced (15), Amethyst (16), Bone (16), Sculk (18). 7 legendary: Shadow Stalker (24, RARE), Blood Moon (30, EPIC), Nature's Embrace (28, EPIC), Frost Warden (30, EPIC), Void Walker (36, MYTHIC), Dragon Knight (40, MYTHIC), Abyssal Plate (50, ABYSSAL — +30% damage, Wither immunity). LegendaryArmorManager.java (16,059 B) creates armor ItemStacks with equippable component and asset_id (FIXED). LegendaryArmorListener.java (38,729 B) implements all set bonuses and piece passives. LegendaryLootListener.java (22,565 B) handles boss, structure, and chest drop tables. InfinityStoneManager.java (8,029 B) — 6 stone types (Power/Space/Reality/Soul/Time/Mind), fragment creation, finished stone creation, anvil combining. InfinityGauntletManager.java (23,370 B) — Thanos Glove, Infinity Gauntlet creation, snap ability (kills 50% hostiles in dimension, 300s cooldown), Thanos boss fight (800 HP, 2 phases).
-
-C.10 menu Package (2 files)
-CreativeMenuManager.java (45,503 B) — multi-page GUI inventory menus for browsing all weapons, armor, power-ups, and Infinity Stones by category and tier. GuideBookManager.java (29,396 B) — generates multi-volume written books explaining all plugin systems in Portuguese.
-
-C.11 mobs Package (7 files)
-BloodMoonManager.java (12,329 B) — 15% nightly chance, red sky visual effect, mob stat buffs, boss spawn every 10th kill, double drops, 0.1% Infinity Stone fragment chance from any kill. BossEnhancer.java (19,995 B) — scaling and custom abilities for vanilla bosses (Dragon 3.5× HP, Wither 1.0×, Warden 1.0×, Elder Guardian 2.0×). BossMasteryManager.java (12,294 B) — tracks participation in boss kills, awards permanent titles: Wither Slayer (+5% damage), Guardian Slayer (+7%), Warden Slayer (+10%), Dragon Slayer (+15%), Abyssal Conqueror (+20%), God Slayer (+25% damage + 20% DR). KingMobManager.java (5,972 B) — every 100th mob spawn becomes a King mob with 7× HP, 2.5× damage, drops diamonds. MobDifficultyManager.java (4,744 B) — distance-from-spawn scaling. BiomeMultipliers.java (3,080 B) — biome-specific scaling lookups. RoamingBossManager.java (57,427 B) — 6 roaming world bosses: The Watcher (Deep Dark biomes, Warden base, 800 HP, EPIC drops, Darkness/Mining Fatigue aura), Hellfire Drake (Nether, Ghast base, 600 HP, EPIC drops, triple fireball salvo), Frostbound Colossus (Snowy biomes, Iron Golem base, 700 HP, EPIC drops, freeze aura + ground pound), Jungle Predator (Jungle, Ravager base, 500 HP, RARE/EPIC drops, stealth pounce + poison fog), End Wraith (End outer islands, Phantom size 6, 900 HP, MYTHIC drops, void beam + phase shift + shadow clones at 50% HP), Abyssal Leviathan (Abyss dimension, 1200 HP, ABYSSAL drops). Each has 2–4% spawn chance per 2-minute check cycle, auto-despawn after 10 minutes, custom particle effects, and multi-stage attack patterns.
-
-C.12 powerups Package (2 files)
-PowerUpManager.java (26,207 B) — 7 consumable power-ups: Heart Crystal (RED_DYE, +2 max HP, max 40 uses = +80 HP), Soul Fragment (PURPLE_DYE, +1% damage, max 100 = +100%), Titan's Resolve (IRON_NUGGET, +10% knockback resistance + 2% DR, max 5 = 50% KB resist + 10% DR), Phoenix Feather (FEATHER, auto-revive on death, stackable), KeepInventorer (ENDER_EYE, permanent keep-inventory, one-time), Vitality Shard (PRISMARINE_SHARD, +5% DR, max 10 = 50% DR), Berserker's Mark (BLAZE_POWDER, +3% attack speed, max 10 = 30%). Maximum total passive DR capped at 75%. Uses string-based CustomModelDataComponent. PowerUpListener.java (5,607 B) handles right-click consumption and death event integration (Phoenix Feather auto-revive, KeepInventory enforcement).
-
-C.13 quests Package (3 files)
-QuestManager.java (27,940 B) — 6 quest lines (Overworld, Nether, End, Special, Boss, Explorer) with multi-step tracking, reward distribution, and scheduler. QuestProgressListener.java (3,231 B) monitors kills, exploration events, and item collection for quest progress. NpcWizardManager.java (15,501 B) — spawns the Archmage NPC (custom Villager with purple robes) who sells exclusive MYTHIC weapons (rotating stock of 3 for 48 diamonds + 16 Nether Stars), Heart Crystals, Phoenix Feathers, KeepInventorer (64 diamonds + 32 emeralds), and Blessing Crystals.
-
-C.14 structures Package (5 files)
-StructureType.java (10,780 B) — enum of 40 structure types: 24 Overworld (including Thanos Temple, Pillager Fortress, Pillager Airship, Frost Dungeon, Bandit Hideout, Sunken Ruins, Cursed Graveyard, Sky Altar, Ancient Library, Abandoned Mine, Dark Tower, Crystal Cave, Ruined Castle, Witch Hut, and others), 7 Nether, 5 End, 3 Abyss (Abyssal Castle 120×80×120, Void Nexus, Shattered Cathedral), and the Ender Dragon Death Chest. Generation chances range from 0.8% (COMMON) to 0.05% (ABYSSAL) per chunk. StructureManager.java (49,819 B) — chunk-based generation with 300-block minimum spacing, biome filtering, and programmatic block placement. StructureBuilder.java (8,714 B) — block placement API. StructureLootPopulator.java (8,554 B) — fills chests per structure type and tier. StructureBossManager.java (14,554 B) — spawns mini-bosses at structures, manages boss health bars and tracking.
-
-C.15 utility Package (7 files)
-BestBuddiesListener.java (11,609 B) — wolf/dog armor system giving tamed wolves 95% damage reduction. DropRateListener.java (3,289 B) — 35% trident drop rate boost, breeze wind charge drops. EnchantTransferListener.java (7,135 B) — transfer enchantments between items at anvil. InventorySortListener.java (5,282 B) — shift-click on empty inventory slot to auto-sort. LootBoosterListener.java (8,991 B) — enhanced chest and mob loot generation. PaleGardenFogTask.java (1,356 B) — applies fog effect to players in Pale Garden biome. VillagerTradeListener.java (4,244 B) — 50% price reduction on villager trades and removes trade locking.
-
-C.16 weapons Package (13 files)
-11 battle weapon types, each in its own manager: BattleSwordManager.java (6,821 B), BattleAxeManager.java (8,303 B), BattleBowManager.java (4,871 B), BattleMaceManager.java (4,279 B), BattleShovelManager.java (8,451 B), BattlePickaxeManager.java (7,168 B), BattleSpearManager.java (8,339 B), BattleTridentManager.java (4,737 B), SickleManager.java (8,061 B), SpearManager.java (11,128 B), SuperToolManager.java (22,176 B). WeaponAbilityListener.java (81,738 B) implements 20 non-legendary weapon abilities. WeaponMasteryManager.java (9,803 B) — kill-based mastery levels: Novice (0 kills), Fighter (100, +1% damage), Experienced Fighter (500, +5%), Master (1000, +15%).
-
-D. ABYSS DIMENSION — CURRENT BUGS AND ROOT CAUSE ANALYSIS
-D.1 Bug: Ender Dragon Health Bar Appears
-Root cause: The committed code uses World.Environment.NORMAL but the world level.dat may still contain THE_END from a previous creation. The environment type is baked into level.dat at world creation time and changing the code after the world already exists has no effect. Alternatively, if the world was successfully recreated with NORMAL, the user wants the dark void sky of THE_END anyway (they said the lighting is too bright and want it to feel like the End). The fix is to use THE_END environment and aggressively remove the vanilla Ender Dragon and its boss bar via a repeating task.
-
-D.2 Bug: Abyssal Dragon Does Not Spawn (Chicken Appears Instead)
-Root cause confirmed from code: In AbyssDragonModel.java, the spawn() method calls Objects.requireNonNull(zombie.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(maxHp) followed by zombie.setHealth(maxHp) inside the entity spawn lambda callback. On Paper 1.21+, the setHealth() call validates that the value does not exceed MAX_HEALTH, but the attribute modification hasn't been flushed yet at that point in entity initialization. This throws an IllegalArgumentException from Guava's Preconditions.checkArgument. The exception propagates up and leaves the active flag stuck at true in AbyssDragonBoss.java (no try-catch exists in the committed startFight() method), which is why subsequent /jglims abyss boss commands respond "The Abyssal Dragon is already active!" The "chicken" appearance is likely a default entity that Paper substitutes when the spawn callback crashes.
-
-Fix required: Move setAttribute(MAX_HEALTH) and setHealth() outside the spawn lambda, after the entity is fully constructed. Wrap the spawn call in AbyssDragonBoss.startFight() with try-catch to reset active on failure.
-
-D.3 Bug: Nether Bricks on Citadel Front and Roof
-Root cause confirmed from code: AbyssCitadelBuilder.java line ~46 defines NB = Material.NETHER_BRICKS. The previous fix-all-v2.ps1 was supposed to change this to DEEPSLATE_BRICKS, but the committed code still has NETHER_BRICKS. The PowerShell regex replacement failed silently due to an em-dash encoding mismatch (Unicode \u2014 in the comment vs the ASCII dash the regex expected). Every method that uses NB — including buildFrontFacade(), buildRoofLine(), and nave walls — places nether bricks.
-
-D.4 Bug: Plain Front Wall
-Root cause: The buildFrontFacade() method exists and has extensive gothic architecture code (pointed arch, rose window, entrance, buttress towers), but NB material makes large sections appear as plain brown nether bricks instead of the intended dark deepslate aesthetic. Additionally, the facade design may need architectural expansion (wider, taller, more decorative elements, a dramatic entrance gate).
-
-D.5 Bug: Roof Holes and Bedrock Altar
-Root cause: The buildRoofLine() method uses NB as a fallback material and for high-progress values. The coverage formula likely doesn't account for all blocks at the apex and edges, leaving gaps. The bedrock End portal altar is a vanilla artifact from the THE_END environment that auto-generates End spawn structures (the 5-block bedrock platform + end portal frame). Switching to THE_END and removing this structure programmatically, or using the chunk generator to override it, will fix it.
-
-D.6 Bug: active Flag Not Reset on Spawn Failure
-Root cause: AbyssDragonBoss.startFight() does not have a try-catch around dragonModel.spawn(). When the spawn throws, active stays true permanently until server restart.
-
-E. COMPLETE FIX PLAN (WHAT THE NEXT SCRIPT MUST DO)
-Fix 1 — AbyssDragonModel.java: Move MAX_HEALTH + setHealth() + SCALE attribute out of the spawn lambda. The zombie spawn lambda should only set properties that don't need post-initialization flushing (invisible, silent, no AI, no gravity, name, tags, etc.). After world.spawn() returns the Zombie reference, then set the health attributes.
-
-Fix 2 — AbyssDragonBoss.java: Wrap the dragonModel.spawn(spawnLoc, DRAGON_HP) call in try-catch. On exception: log error, set active = false, call cleanupDragonEntities(world), notify trigger player, and return.
-
-Fix 3 — AbyssDimensionManager.java: Change environment back to World.Environment.THE_END for the dark void sky. Add a repeating BukkitRunnable (every 40 ticks) that removes all vanilla EnderDragon entities, suppresses the vanilla dragon boss bar by iterating world players and hiding any ender dragon boss bars, and keeps time at 18000.
-
-Fix 4 — AbyssCitadelBuilder.java: Change NB = Material.NETHER_BRICKS to NB = Material.DEEPSLATE_BRICKS. This single-line fix propagates to every method that uses the NB constant.
-
-Fix 5 — Delete world_abyss: The world MUST be deleted on the server and the server restarted so it regenerates with the correct THE_END environment and the rebuilt citadel uses deepslate bricks.
-
-F. DEPLOYMENT PROCEDURE
-Build:
-
-cd C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin
-.\gradlew clean build
-Deploy plugin + delete world:
-
-Copy$sshKey = "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key"
-$remote = "ubuntu@144.22.198.184"
-ssh -i $sshKey $remote "cd /home/ubuntu/minecraft-server && docker compose down"
-ssh -i $sshKey $remote "sudo rm -rf /home/ubuntu/minecraft-server/data/world_abyss && echo 'world_abyss DELETED'"
-ssh -i $sshKey $remote "sudo rm -f /home/ubuntu/minecraft-server/data/plugins/JGlimsPlugin*.jar"
-scp -i $sshKey "build\libs\JGlimsPlugin-2.0.0.jar" "${remote}:/tmp/JGlimsPlugin-2.0.0.jar"
-ssh -i $sshKey $remote "sudo cp /tmp/JGlimsPlugin-2.0.0.jar /home/ubuntu/minecraft-server/data/plugins/JGlimsPlugin-2.0.0.jar && sudo chown 1000:1000 /home/ubuntu/minecraft-server/data/plugins/JGlimsPlugin-2.0.0.jar"
-ssh -i $sshKey $remote "cd /home/ubuntu/minecraft-server && docker compose up -d"
-Update resource pack (when needed): Edit files in resourcepack-work\JGlimsResourcePack, zip with 7-Zip, get SHA-1, upload as new GitHub release, update docker-compose.yml env vars, recreate container.
-
-G. REMAINING KNOWN BUGS (post armor/portal fix)
-Abyss Dragon does not spawn — setHealth(maxHp) inside spawn lambda crashes (IllegalArgumentException). CRITICAL.
-active flag stuck — no try-catch around spawn, subsequent commands say "already active." CRITICAL.
-Ender Dragon health bar — world environment mismatch or lack of vanilla dragon cleanup. HIGH.
-Nether bricks in citadel — NB = Material.NETHER_BRICKS still in code. HIGH.
-Roof holes — buildRoofLine() coverage gaps and NB fallback. MEDIUM.
-Bedrock altar on roof — vanilla End spawn structure from THE_END environment. MEDIUM.
-Plain front facade — NB material + potential need for richer architecture. MEDIUM.
-Dimension too bright — NORMAL environment gives overworld sky instead of void. MEDIUM.
-Power-up textures — 7 items show vanilla (may need string CMD + missing PNGs). LOW.
-Missing animated textures — 4 awakened weapons. LOW.
-Creation Splitter ability bug — unidentified. LOW.
-H. THINGS TO DO NEXT (UPDATED PRIORITY ORDER)
-Fix Abyss Dragon spawn crash, active flag, environment, and NB material — the 5 fixes described in Section E. HIGHEST.
-Improve citadel front facade architecture — after NB→DS fix, expand the facade with more gothic detail, dramatic entrance gate, additional blind arcading, candelabras, banners. HIGH.
-Fix roof holes and remove bedrock altar — improve buildRoofLine() coverage, clear vanilla End structures. HIGH.
-Fix power-up textures — update PowerUpManager to string CMD, verify item JSONs, create missing PNGs. MEDIUM.
-Fix missing animated textures — Whisperwind, Excalibur Awakened, Creation Splitter, Edge of the Astral Plane. MEDIUM.
-Fix Creation Splitter ability bug — identify and fix. MEDIUM.
-Improve server performance — particle throttle expansion, entity limits, TPS monitoring. MEDIUM.
-Create World Weapons — new weapon category between COMMON and MYTHIC legendaries. MEDIUM.
-Create Magic Items — Wand of Wands and others. MEDIUM.
-More structures, mini-bosses, world bosses — Phases 21, 26, 27. MEDIUM.
-Lunar Dimension — moon-like reduced gravity. LOW.
-Aether Dimension — classic Aether recreation. LOW.
-I. MANDATORY DEVELOPMENT RULES
-Always write Java files with [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false)) to avoid BOM. Never use Compress-Archive for resource packs — use 7-Zip. Resource pack URL/SHA-1 changes go in docker-compose.yml, not server.properties. After docker-compose changes: docker compose down && docker compose up -d. SSH user is ubuntu, not opc. Each resource pack update gets a new major version (never overwrite). Use Adventure API exclusively (no deprecated ChatColor). All custom item metadata via PersistentDataContainer with NamespacedKey. String-based CustomModelDataComponent for all item textures. Two abilities per weapon (primary = right-click, alternate = crouch + right-click). Particle budgets per tier: COMMON 10, RARE 25, EPIC 50, MYTHIC 100, ABYSSAL 200. All legendary items are Unbreakable. Resource pack pack_format: 75. Max source file size ~120 KB; split if exceeding.
-
-END OF DEFINITIVE PROJECT SUMMARY v11.0
+assets/minecraft/models/item/abyss/abyss_dragon.json — new high-quality model JSON
+assets/minecraft/textures/item/abyss/abyss_dragon.png — new high-quality texture PNG (64×64 or 128×128)
+assets/minecraft/items/paper.json — verify "when": "abyss_dragon" case exists and points to the correct model
+1b. Evaluate multi-part display entity approach — If the single-model approach is still insufficient, refactor AbyssDragonModel.java to use multiple ItemDisplay passengers (body, head, wings, tail), each with their own model file. This requires creating 5 model JSONs and 5 texture PNGs (or a shared texture atlas), and refactoring the animation/movement code.
+
+1c. Tune the Abyss Dragon boss fight — The fight mechanics in AbyssDragonBoss.java work but the experience needs polish: better attack visual feedback, more dramatic phase transitions, refined movement patterns (the dragon should swoop and dive rather than linearly slide between waypoints), and difficulty balancing.
+
+1d. Test and fix the Abyssal Citadel — Verify the citadel generates correctly, check for structural gaps or floating blocks, ensure all 4 weapon chambers have correctly populated chests, verify the arena is sealed (barrier walls), and confirm the walkway connects properly to the arena.
+
+PRIORITY 2: HIGH — Bug Fixes
+2a. Creation Splitter ability bug — One of the two abilities (either "Reality Rift" primary or "World Break" alt) for the MYTHIC Creation Splitter (CMD 30059) or the ABYSSAL Creation Splitter Awakened (CMD 30062, "Creation's End" / "Dimensional Collapse") has a bug. Need to inspect both LegendaryPrimaryAbilities.java and LegendaryAltAbilities.java for the CREATION_SPLITTER and CREATION_SPLITTER_AWAKENED switch cases and test in-game.
+
+2b. Abyssal Key custom texture — The Abyssal Key currently uses the vanilla Echo Shard texture. It needs a unique custom model/texture (purple crystal key design). Requires adding a model JSON, a texture PNG, and a "when" case in assets/minecraft/items/echo_shard.json for CMD 9001 / string "abyssal_key".
+
+PRIORITY 3: HIGH — Missing Animated Textures
+3a. Whisperwind Awakened animated texture — needs .png.mcmeta animation file. 3b. Creation Splitter Awakened animated texture — needs .png.mcmeta. 3c. Edge of the Astral Plane animated texture — needs .png.mcmeta. (Excalibur Awakened already has working animation from v4.0.6–v4.0.9. Requiem Awakened status needs verification.)
+
+PRIORITY 4: MEDIUM — Performance Optimization
+4a. Investigate TPS during gameplay with /tps. 4b. Limit entity counts from abilities (max 6 summoned entities per player). 4c. Cancel previous BukkitRunnables before starting new ones for the same ability. 4d. Reduce particle counts per tier if causing lag. 4e. Throttle structure generation checks in StructureManager.java (49 KB). 4f. Optimize RoamingBossManager.java (57 KB — may have expensive tick operations). 4g. Review EnchantmentEffectListener.java (69 KB — likely runs checks every damage/interact event).
+
+PRIORITY 5: MEDIUM — New Content
+5a. World Weapons category — New weapon type between COMMON and MYTHIC damage. New files: WorldWeapon.java (enum), WorldWeaponManager.java, WorldWeaponAbilities.java, WorldWeaponListener.java. Uses remaining unused Fantasy 3D / Majestica textures.
+
+5b. Magic Items category — Unique items with 3 ability modes (left-click, right-click, crouch+right-click). Example: Wand of Wands (red shot, Vingardium Leviosa, Avada Kedavra). New package: magic/. Custom textures by JGlims.
+
+5c. More structures, mini-bosses, world bosses — Follow existing roadmap Phases 21, 26, 27.
+
+5d. Additional custom items — Legendary shields, fishing rods, pets, consumable battle items (War Horn, Grappling Hook, Warp Scroll).
+
+PRIORITY 6: LOW — Future Dimensions
+6a. Lunar Dimension — Moon-themed reduced-gravity dimension. Portal: 4×5 End Stone frame + flint and steel. Custom world generator with low gravity, space-themed structures, unique mobs.
+
+6b. Aether Dimension — Classic Aether mod recreation. Portal: water bucket on glowstone frame. Floating sky islands, cloud blocks, flying mobs.
+
+R. SUMMARY OF CURRENT STATUS
+System	Status	Notes
+63 Legendary Weapons (textures)	COMPLETE	All textures and 3D models working
+63 Legendary Weapons (abilities)	COMPLETE	Except Creation Splitter bug
+13 Armor Sets (inventory icons)	COMPLETE	All custom textures working
+13 Armor Sets (worn textures)	COMPLETE	Equipment JSON + humanoid PNGs implemented
+7 Power-Up Items (textures)	COMPLETE	String CMD working
+7 Power-Up Items (effects)	COMPLETE	All functional
+Infinity Gauntlet System	COMPLETE	Stones, Glove, Gauntlet, snap ability
+Abyss Portal Activation	COMPLETE	4×5 purpur frame + key working
+Abyss Dimension (world gen)	COMPLETE	Custom terrain generates correctly
+Abyssal Citadel	BUILT	Needs testing/refinement
+Abyss Dragon Model	NEEDS REWORK	Current model too basic, Sketchfab replacement planned
+Abyss Dragon Boss Fight	FUNCTIONAL	Mechanics work, visual polish needed
+Creation Splitter Ability	BUG	One ability malfunctioning
+Abyssal Key Texture	MISSING	Uses vanilla Echo Shard appearance
+Awakened Weapon Animations	PARTIAL	Excalibur Awakened done; 3 others missing
+6 Server Events	COMPLETE	All functional
+40 Structures	COMPLETE	All generating with loot and bosses
+6 Roaming Bosses	COMPLETE	All spawning and functional
+64 Custom Enchantments	COMPLETE	All effects implemented
+Guild System	COMPLETE	CRUD, invites, friendly fire
+Quest System	COMPLETE	6 quest lines
+Blood Moon	COMPLETE	15% nightly chance
+Guide Book (PT-BR)	COMPLETE	Multi-volume
+Creative Menu	COMPLETE	All items browsable
+World Weapons	NOT STARTED	Planned
+Magic Items	NOT STARTED	Planned
+Lunar Dimension	NOT STARTED	Planned
+Aether Dimension	NOT STARTED	Planned
+
+ACTUALLY THE CITADEL NEEDS FULL REWORK, AND THE DRAGON ISNT APPEARING WHEN I TYPE THE COMMAND, SO, THERE ARE EVEN MORE THINGS TO DO, AND WE STILL NEED TO MAKE THE SKETCHFAB MODELS WORK, IF IT WORK FOR THE ABYSS DRAGON, THEN WE WILL MAKE IT FOR ALL THE CUSTOM BOSSES/MINI-BOSSES AND MORE, CREATE THE MAGICAL MOBS, MUCH MORE THINGS, USING THE SKETCHFAB MOB MODELS AND STRUCTURES, YOU CAN SEE MY COLLECTIONS AT https://sketchfab.com/JGlims/collections and the github in https://github.com/JGlims/JGlimsPlugin, it is public. we will prioritize the models that have animation. read the instructions-citadel for more details building the citadel and read the schematic images
+END OF DEFINITIVE PROJECT SUMMARY v12.0 
