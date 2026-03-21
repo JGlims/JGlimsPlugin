@@ -413,7 +413,7 @@ public class EndRiftEvent implements Listener {
 
         // Massive spawn VFX
         riftWorld.spawnParticle(Particle.REVERSE_PORTAL, spawnLoc, 30, 5, 5, 5, 0.5);
-        riftWorld.spawnParticle(Particle.DRAGON_BREATH, spawnLoc, 25, 3, 3, 3, 0.1);
+        riftWorld.spawnParticle(Particle.SOUL_FIRE_FLAME, spawnLoc, 25, 3, 3, 3, 0.1);
         riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, spawnLoc, 2, 2, 2, 2);
         riftWorld.playSound(spawnLoc, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.4f);
 
@@ -448,7 +448,7 @@ public class EndRiftEvent implements Listener {
                 double dist = bossLoc.distance(target.getLocation());
                 for (double t = 0; t < dist; t += 0.5) {
                     Location point = bossLoc.clone().add(dir.clone().multiply(t));
-                    riftWorld.spawnParticle(Particle.DRAGON_BREATH, point, 3, 0.1, 0.1, 0.1, 0);
+                    riftWorld.spawnParticle(Particle.SOUL_FIRE_FLAME, point, 3, 0.1, 0.1, 0.1, 0);
                 }
                 riftWorld.playSound(bossLoc, Sound.ENTITY_ENDER_DRAGON_HURT, 0.8f, 0.3f);
             }
@@ -489,7 +489,7 @@ public class EndRiftEvent implements Listener {
         }
 
         // Boss ambient particles
-        riftWorld.spawnParticle(Particle.DRAGON_BREATH, bossLoc, 15, 2, 2, 2, 0.02);
+        riftWorld.spawnParticle(Particle.SOUL_FIRE_FLAME, bossLoc, 15, 2, 2, 2, 0.02);
         riftWorld.spawnParticle(Particle.REVERSE_PORTAL, bossLoc, 10, 1.5, 1.5, 1.5, 0.05);
     }
 
@@ -548,7 +548,7 @@ public class EndRiftEvent implements Listener {
 
         // Massive VFX
         riftWorld.spawnParticle(Particle.REVERSE_PORTAL, loc, 30, 5, 5, 5, 0.5);
-        riftWorld.spawnParticle(Particle.DRAGON_BREATH, loc, 25, 3, 3, 3, 0.2);
+        riftWorld.spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 25, 3, 3, 3, 0.2);
         riftWorld.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 2, 3, 3, 3);
         riftWorld.spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 30, 2, 4, 2, 0.5);
         riftWorld.playSound(loc, Sound.ENTITY_ENDER_DRAGON_DEATH, 2.0f, 0.5f);

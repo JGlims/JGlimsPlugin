@@ -24,12 +24,11 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * AbyssDragonBoss v9.0 — Complete boss fight controller.
- * Manages spawning, combat phases, attacks, and loot.
+ * AbyssDragonBoss v10.0 — Complete boss fight controller.
+ * Fixed: arena detection, spawn safety, damage race condition, arena platform.
  */
 public class AbyssDragonBoss implements Listener {
 
-    // Boss stats
     private static final double DRAGON_HP = 1500.0;
     private static final double DAMAGE_REDUCTION = 0.25;
     private static final int ARENA_RADIUS = 40;
@@ -43,7 +42,6 @@ public class AbyssDragonBoss implements Listener {
     private boolean fightActive = false;
     private long lastFightEnd = 0;
 
-    // Combat state
     private int combatTaskId = -1;
     private int movementTaskId = -1;
     private List<Location> waypoints = new ArrayList<>();
@@ -70,10 +68,12 @@ public class AbyssDragonBoss implements Listener {
             return;
         }
 
+        plugin.getLogger().info("[DragonBoss] Abyss world name: " + abyss.getName());
+
         if (!player.getWorld().getName().equals(abyss.getName())) {
-            player.sendMessage(Component.text("You must be in the Abyss!", NamedTextColor.RED));
-            plugin.getLogger().warning("[DragonBoss] Player not in Abyss world. Player in: " +
-                player.getWorld().getName() + ", Abyss is: " + abyss.getName());
+            player.sendMessage(Component.text("You must be in the Abyss! Use /jglims abyss tp first.", NamedTextColor.RED));
+            plugin.getLogger().warning("[DragonBoss] Player not in Abyss. Player world: " +
+                player.getWorld().getName() + ", Abyss world: " + abyss.getName());
             return;
         }
 
@@ -90,6 +90,7 @@ public class AbyssDragonBoss implements Listener {
             return;
         }
 
+        player.sendMessage(Component.text("Summoning the Abyssal Dragon...", NamedTextColor.DARK_PURPLE));
         startFight(player);
     }
 
@@ -104,13 +105,18 @@ public class AbyssDragonBoss implements Listener {
             return;
         }
 
-        // Find arena center
+        // Find arena center — use player's location as fallback
         int arenaY = findArenaY(abyss);
+        plugin.getLogger().info("[DragonBoss] Detected arena Y: " + arenaY);
+
+        // SAFETY: Ensure there's a solid platform at the arena
+        ensureArenaPlatform(abyss, arenaY);
+
         Location spawnLoc = new Location(abyss, 0.5, arenaY + 15, AbyssDimensionManager.ARENA_CENTER_Z + 0.5);
-        plugin.getLogger().info("[DragonBoss] Arena Y: " + arenaY + ", Spawn location: " +
+        plugin.getLogger().info("[DragonBoss] Dragon spawn location: " +
             spawnLoc.getBlockX() + "," + spawnLoc.getBlockY() + "," + spawnLoc.getBlockZ());
 
-        // Generate waypoints around the arena
+        // Generate waypoints
         generateWaypoints(spawnLoc, arenaY);
 
         // Create dragon model
@@ -118,14 +124,15 @@ public class AbyssDragonBoss implements Listener {
         boolean spawned = dragonModel.spawn(spawnLoc, DRAGON_HP);
 
         if (!spawned) {
-            plugin.getLogger().severe("[DragonBoss] Dragon model failed to spawn!");
+            plugin.getLogger().severe("[DragonBoss] Dragon model failed to spawn! Check [DragonModel] logs above.");
             trigger.sendMessage(Component.text(
-                "The dragon could not manifest. Check server logs for [DragonModel] errors.",
-                NamedTextColor.RED));
+                "The dragon could not manifest! Check server logs.", NamedTextColor.RED));
+            trigger.sendMessage(Component.text(
+                "Common fix: spigot.yml attribute.maxHealth.max must be >= 2048", NamedTextColor.YELLOW));
             return;
         }
 
-        plugin.getLogger().info("[DragonBoss] Dragon model spawned successfully!");
+        plugin.getLogger().info("[DragonBoss] Dragon model spawned successfully! HP: " + dragonModel.getHealth());
 
         // Create boss bar
         bossBar = BossBar.bossBar(
@@ -160,20 +167,82 @@ public class AbyssDragonBoss implements Listener {
         startCombatLoop(abyss);
         startMovementLoop(abyss);
 
-        plugin.getLogger().info("[DragonBoss] Fight started! Dragon HP: " + dragonModel.getHealth());
+        plugin.getLogger().info("[DragonBoss] Fight fully initialized! Dragon alive: " + dragonModel.isAlive());
     }
 
+    /**
+     * Finds the arena floor Y level by scanning downward at the arena center.
+     * Falls back to player-relative Y or absolute 64 if nothing found.
+     */
     private int findArenaY(World abyss) {
-        // The arena should have a bedrock or solid floor at z=-120
-        for (int y = 100; y > 30; y--) {
-            Material mat = abyss.getBlockAt(0, y, AbyssDimensionManager.ARENA_CENTER_Z).getType();
+        int centerZ = AbyssDimensionManager.ARENA_CENTER_Z;
+
+        // Scan from Y=150 down to Y=1 at several positions around arena center
+        int[][] checkPositions = {{0, centerZ}, {5, centerZ}, {-5, centerZ}, {0, centerZ+5}, {0, centerZ-5}};
+
+        for (int[] pos : checkPositions) {
+            for (int y = 150; y > 1; y--) {
+                Material mat = abyss.getBlockAt(pos[0], y, pos[1]).getType();
+                if (mat.isSolid() && mat != Material.BARRIER) {
+                    plugin.getLogger().info("[DragonBoss] Found arena floor at Y=" + y +
+                        " (block: " + mat + " at " + pos[0] + "," + y + "," + pos[1] + ")");
+                    return y;
+                }
+            }
+        }
+
+        // Fallback: scan where the terrain generator places ground (~Y50)
+        for (int y = 80; y > 30; y--) {
+            Material mat = abyss.getBlockAt(0, y, 0).getType();
             if (mat.isSolid()) {
-                plugin.getLogger().info("[DragonBoss] Found arena floor at Y=" + y + " (material: " + mat + ")");
+                plugin.getLogger().info("[DragonBoss] No arena floor found at z=" + centerZ +
+                    ". Using terrain level Y=" + y + " at origin.");
                 return y;
             }
         }
-        plugin.getLogger().warning("[DragonBoss] No solid arena floor found! Using default Y=64");
-        return 64;
+
+        plugin.getLogger().warning("[DragonBoss] No solid ground found anywhere! Using default Y=50");
+        return 50;
+    }
+
+    /**
+     * Ensures there's a bedrock platform at the arena center so the fight
+     * can proceed even if the citadel hasn't built properly.
+     */
+    private void ensureArenaPlatform(World abyss, int floorY) {
+        int centerZ = AbyssDimensionManager.ARENA_CENTER_Z;
+        Material floorCheck = abyss.getBlockAt(0, floorY, centerZ).getType();
+
+        // If the floor is already solid, we're good
+        if (floorCheck.isSolid() && floorCheck != Material.BARRIER) {
+            plugin.getLogger().info("[DragonBoss] Arena floor verified: " + floorCheck + " at Y=" + floorY);
+            return;
+        }
+
+        // Build emergency bedrock platform
+        plugin.getLogger().warning("[DragonBoss] Arena floor not solid! Building emergency platform at Y=" + floorY);
+        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
+            for (int z = centerZ - ARENA_RADIUS; z <= centerZ + ARENA_RADIUS; z++) {
+                double dist = Math.sqrt(x * x + (z - centerZ) * (z - centerZ));
+                if (dist <= ARENA_RADIUS) {
+                    abyss.getBlockAt(x, floorY, z).setType(Material.BEDROCK);
+                }
+            }
+        }
+        // Clear air above for the fight
+        for (int x = -ARENA_RADIUS; x <= ARENA_RADIUS; x++) {
+            for (int z = centerZ - ARENA_RADIUS; z <= centerZ + ARENA_RADIUS; z++) {
+                double dist = Math.sqrt(x * x + (z - centerZ) * (z - centerZ));
+                if (dist <= ARENA_RADIUS) {
+                    for (int y = floorY + 1; y <= floorY + 40; y++) {
+                        if (abyss.getBlockAt(x, y, z).getType().isSolid()) {
+                            abyss.getBlockAt(x, y, z).setType(Material.AIR);
+                        }
+                    }
+                }
+            }
+        }
+        plugin.getLogger().info("[DragonBoss] Emergency arena platform built.");
     }
 
     private void generateWaypoints(Location center, int arenaY) {
@@ -182,7 +251,6 @@ public class AbyssDragonBoss implements Listener {
         double cz = center.getZ();
         World w = center.getWorld();
 
-        // Circle of waypoints around the arena at varying heights
         for (int i = 0; i < 8; i++) {
             double angle = (2 * Math.PI * i) / 8;
             double x = cx + Math.cos(angle) * (ARENA_RADIUS - 5);
@@ -190,9 +258,7 @@ public class AbyssDragonBoss implements Listener {
             double y = arenaY + 10 + Math.random() * 15;
             waypoints.add(new Location(w, x, y, z));
         }
-        // Center high point
         waypoints.add(new Location(w, cx, arenaY + 25, cz));
-        // Dive points
         waypoints.add(new Location(w, cx + 15, arenaY + 5, cz));
         waypoints.add(new Location(w, cx - 15, arenaY + 5, cz));
 
@@ -206,17 +272,21 @@ public class AbyssDragonBoss implements Listener {
             @Override
             public void run() {
                 if (!fightActive || dragonModel == null || !dragonModel.isAlive()) {
+                    plugin.getLogger().info("[DragonBoss] Combat loop ended. fightActive=" + fightActive +
+                        " dragonAlive=" + (dragonModel != null ? dragonModel.isAlive() : "null"));
+                    if (fightActive && (dragonModel == null || !dragonModel.isAlive())) {
+                        // Dragon entity died unexpectedly
+                        onDragonDeath(abyss);
+                    }
                     cancel();
                     return;
                 }
 
-                // Update boss bar
                 double maxHp = DRAGON_HP;
                 double currentHp = dragonModel.getHealth();
                 float progress = (float) Math.max(0, Math.min(1, currentHp / maxHp));
                 bossBar.progress(progress);
 
-                // Check phase transitions
                 double hpPercent = currentHp / maxHp;
                 if (hpPercent <= 0.10 && dragonModel.getPhase() < 4) {
                     dragonModel.setPhase(4);
@@ -229,30 +299,27 @@ public class AbyssDragonBoss implements Listener {
                     phaseAnnounce(abyss, 2, "The dragon enters a rage!");
                 }
 
-                // Show boss bar to any new players
                 for (Player p : abyss.getPlayers()) {
                     fightParticipants.add(p.getUniqueId());
                     p.showBossBar(bossBar);
                 }
 
-                // Attack logic
                 attackCooldown--;
                 if (attackCooldown <= 0) {
                     List<Player> nearby = getPlayersInArena(abyss);
                     if (!nearby.isEmpty()) {
                         Player target = nearby.get((int)(Math.random() * nearby.size()));
                         performAttack(target, abyss);
-                        attackCooldown = 3 + (int)(Math.random() * 3); // 6-12 seconds
+                        attackCooldown = 3 + (int)(Math.random() * 3);
                     }
                 }
 
-                // Check death
                 if (currentHp <= 0) {
                     onDragonDeath(abyss);
                     cancel();
                 }
             }
-        }.runTaskTimer(plugin, 40L, 40L).getTaskId(); // every 2 seconds
+        }.runTaskTimer(plugin, 40L, 40L).getTaskId();
     }
 
     private void startMovementLoop(World abyss) {
@@ -263,16 +330,13 @@ public class AbyssDragonBoss implements Listener {
                     cancel();
                     return;
                 }
-
                 if (waypoints.isEmpty()) return;
 
                 Location target = waypoints.get(currentWaypoint);
                 dragonModel.moveToward(target, 0.8 + (dragonModel.getPhase() * 0.2));
 
-                // Reached waypoint?
                 Location dragonLoc = dragonModel.getLocation();
                 if (dragonLoc != null && dragonLoc.distance(target) < 3.0) {
-                    // Sometimes fly toward a player instead
                     List<Player> nearby = getPlayersInArena(abyss);
                     if (!nearby.isEmpty() && Math.random() < 0.3) {
                         Player p = nearby.get((int)(Math.random() * nearby.size()));
@@ -282,7 +346,7 @@ public class AbyssDragonBoss implements Listener {
                     currentWaypoint = (currentWaypoint + 1) % waypoints.size();
                 }
             }
-        }.runTaskTimer(plugin, 10L, 10L).getTaskId(); // every 0.5 seconds
+        }.runTaskTimer(plugin, 10L, 10L).getTaskId();
     }
 
     // ==================== ATTACKS ====================
@@ -292,7 +356,6 @@ public class AbyssDragonBoss implements Listener {
         double roll = Math.random();
 
         if (phase >= 4) {
-            // Enrage: lightning barrage + void pull
             enrageLightningBarrage(abyss, target);
         } else if (phase >= 3) {
             if (roll < 0.3) voidBreath(target);
@@ -347,8 +410,7 @@ public class AbyssDragonBoss implements Listener {
         for (Player p : getPlayersInArena(abyss)) {
             if (p.getLocation().distance(loc) < 15) {
                 p.damage(10.0);
-                Vector up = new Vector(0, 1.5, 0);
-                p.setVelocity(p.getVelocity().add(up));
+                p.setVelocity(p.getVelocity().add(new Vector(0, 1.5, 0)));
             }
         }
     }
@@ -424,11 +486,22 @@ public class AbyssDragonBoss implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!fightActive || dragonModel == null) return;
-        if (dragonModel.getBaseEntity() == null) return;
+        if (dragonModel.getBaseEntity() == null || dragonModel.getBaseEntity().isDead()) return;
         if (!event.getEntity().getUniqueId().equals(dragonModel.getBaseEntity().getUniqueId())) return;
 
-        // Block environmental damage
+        // Block environmental damage (fire, fall, suffocation, etc.)
         if (!(event instanceof EntityDamageByEntityEvent)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        EntityDamageByEntityEvent dmgEvent = (EntityDamageByEntityEvent) event;
+
+        // Only count damage from players (not from minions hitting the zombie)
+        Entity damager = dmgEvent.getDamager();
+        if (damager instanceof Projectile proj && proj.getShooter() instanceof Player) {
+            // Projectile from player — allow
+        } else if (!(damager instanceof Player)) {
             event.setCancelled(true);
             return;
         }
@@ -440,19 +513,23 @@ public class AbyssDragonBoss implements Listener {
 
         dragonModel.damageFlash();
 
-        // Check if dragon died
-        double newHp = dragonModel.getHealth() - reduced;
-        if (newHp <= 0) {
-            event.setCancelled(true); // We handle death ourselves
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (fightActive) {
-                        onDragonDeath(dragonModel.getLocation().getWorld());
-                    }
-                }
-            }.runTaskLater(plugin, 1L);
+        // Track participant
+        if (damager instanceof Player p) {
+            fightParticipants.add(p.getUniqueId());
         }
+
+        // Schedule death check for next tick to avoid race condition
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!fightActive || dragonModel == null) return;
+                double hp = dragonModel.getHealth();
+                if (hp <= 0) {
+                    onDragonDeath(dragonModel.getLocation() != null ?
+                        dragonModel.getLocation().getWorld() : dimensionManager.getAbyssWorld());
+                }
+            }
+        }.runTaskLater(plugin, 1L);
     }
 
     // ==================== DEATH / LOOT ====================
@@ -464,25 +541,21 @@ public class AbyssDragonBoss implements Listener {
 
         plugin.getLogger().info("[DragonBoss] Dragon defeated!");
 
-        // Cancel tasks
         if (combatTaskId != -1) Bukkit.getScheduler().cancelTask(combatTaskId);
         if (movementTaskId != -1) Bukkit.getScheduler().cancelTask(movementTaskId);
         combatTaskId = -1;
         movementTaskId = -1;
 
-        // Boss bar
         bossBar.progress(0);
         bossBar.name(Component.text("DEFEATED", NamedTextColor.GRAY, TextDecoration.STRIKETHROUGH));
-
-        // Death animation
-        if (dragonModel != null) {
-            dragonModel.playDeathAnimation();
-        }
 
         Location deathLoc = dragonModel != null && dragonModel.getLocation() != null ?
             dragonModel.getLocation() : new Location(abyss, 0, 80, AbyssDimensionManager.ARENA_CENTER_Z);
 
-        // Victory message
+        if (dragonModel != null) {
+            dragonModel.playDeathAnimation();
+        }
+
         for (Player p : abyss.getPlayers()) {
             p.showTitle(Title.title(
                 Component.text("VICTORY!", NamedTextColor.GOLD, TextDecoration.BOLD),
@@ -491,8 +564,8 @@ public class AbyssDragonBoss implements Listener {
             ));
             p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
-            // Fireworks
             for (int i = 0; i < 5; i++) {
+                final int delay = i;
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -501,16 +574,16 @@ public class AbyssDragonBoss implements Listener {
                         abyss.spawnParticle(Particle.FIREWORK, fw, 50, 2, 2, 2, 0.1);
                         abyss.playSound(fw, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.0f);
                     }
-                }.runTaskLater(plugin, 20L + i * 20L);
+                }.runTaskLater(plugin, 20L + delay * 20L);
             }
         }
 
         // Drop loot after death animation
+        final Location finalDeathLoc = deathLoc;
         new BukkitRunnable() {
             @Override
             public void run() {
-                dropLoot(abyss, deathLoc);
-                // Remove boss bar after 10 seconds
+                dropLoot(abyss, finalDeathLoc);
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -520,7 +593,7 @@ public class AbyssDragonBoss implements Listener {
                     }
                 }.runTaskLater(plugin, 200L);
 
-                // Clean up minions
+                // Clean up named minions
                 abyss.getEntitiesByClass(Enderman.class).forEach(e -> {
                     if (e.customName() != null) e.remove();
                 });
@@ -532,17 +605,15 @@ public class AbyssDragonBoss implements Listener {
     }
 
     private void dropLoot(World abyss, Location loc) {
-        // Dragon Egg
         abyss.dropItemNaturally(loc, new ItemStack(Material.DRAGON_EGG, 1));
-        // Nether Star
         abyss.dropItemNaturally(loc, new ItemStack(Material.NETHER_STAR, 2));
-        // Experience
+
         for (int i = 0; i < 20; i++) {
             Location xpLoc = loc.clone().add((Math.random()-0.5)*5, Math.random()*3, (Math.random()-0.5)*5);
             abyss.spawn(xpLoc, ExperienceOrb.class, orb -> orb.setExperience(50));
         }
 
-        // Abyssal weapon drop (guaranteed)
+        // Guaranteed ABYSSAL weapon drop
         try {
             LegendaryWeapon[] abyssals = LegendaryWeapon.byTier(LegendaryTier.ABYSSAL);
             if (abyssals.length > 0) {
@@ -557,7 +628,6 @@ public class AbyssDragonBoss implements Listener {
             plugin.getLogger().warning("[DragonBoss] Failed to drop legendary weapon: " + e.getMessage());
         }
 
-        // Extra items
         abyss.dropItemNaturally(loc, new ItemStack(Material.NETHERITE_INGOT, 3));
         abyss.dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 16));
         abyss.dropItemNaturally(loc, new ItemStack(Material.EMERALD, 32));
@@ -588,4 +658,25 @@ public class AbyssDragonBoss implements Listener {
     }
 
     public boolean isFightActive() { return fightActive; }
+
+    /**
+     * Force cleanup — call this if the fight gets stuck.
+     */
+    public void forceCleanup() {
+        fightActive = false;
+        if (combatTaskId != -1) Bukkit.getScheduler().cancelTask(combatTaskId);
+        if (movementTaskId != -1) Bukkit.getScheduler().cancelTask(movementTaskId);
+        combatTaskId = -1;
+        movementTaskId = -1;
+        if (dragonModel != null) {
+            dragonModel.cleanup();
+            dragonModel = null;
+        }
+        if (bossBar != null) {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                p.hideBossBar(bossBar);
+            }
+        }
+        plugin.getLogger().info("[DragonBoss] Force cleanup completed.");
+    }
 }

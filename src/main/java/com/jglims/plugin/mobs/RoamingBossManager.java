@@ -526,7 +526,7 @@ public class RoamingBossManager implements Listener {
                                 for (Player p : wraith.getLocation().getNearbyPlayers(12)) {
                                     p.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 40, 1, false, false));
                                     p.damage(14.0, wraith);
-                                    p.getWorld().spawnParticle(Particle.DRAGON_BREATH, p.getLocation(), 20, 0.5, 1, 0.5, 0.02);
+                                    p.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, p.getLocation(), 20, 0.5, 1, 0.5, 0.02);
                                 }
                                 wraith.getWorld().playSound(wraith.getLocation(), Sound.ENTITY_PHANTOM_BITE, 1.5f, 0.4f);
                             }

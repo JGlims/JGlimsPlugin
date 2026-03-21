@@ -350,7 +350,7 @@ public class LegendaryArmorListener implements Listener {
                 }
             }
             case DRAGON_KNIGHT -> {
-                player.getWorld().spawnParticle(Particle.DRAGON_BREATH, player.getLocation().add(0, 0.5, 0),
+                player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, player.getLocation().add(0, 0.5, 0),
                         3, 0.5, 0.2, 0.5, 0.01);
             }
             case ABYSSAL_PLATE -> {
@@ -385,7 +385,7 @@ public class LegendaryArmorListener implements Listener {
                 if (targetType.contains("dragon") || targetType.contains("ender") || targetType.contains("enderman")
                         || targetType.contains("shulker") || targetType.contains("endermite")) {
                     event.setDamage(event.getDamage() * 1.35);
-                    attacker.getWorld().spawnParticle(Particle.DRAGON_BREATH, target.getLocation().add(0, 1, 0), 20, 0.4, 0.6, 0.4, 0.05);
+                    attacker.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, target.getLocation().add(0, 1, 0), 20, 0.4, 0.6, 0.4, 0.05);
                 }
                 event.setDamage(event.getDamage() * 1.15);
             }
@@ -610,7 +610,7 @@ public class LegendaryArmorListener implements Listener {
                 if (now - dragonKnightRoarCooldown.getOrDefault(uid, 0L) >= 30000) {
                     dragonKnightRoarCooldown.put(uid, now);
                     player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.6f);
-                    player.getWorld().spawnParticle(Particle.DRAGON_BREATH, player.getLocation().add(0, 1, 0), 60, 4, 2, 4, 0.1);
+                    player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, player.getLocation().add(0, 1, 0), 60, 4, 2, 4, 0.1);
                     for (Entity e : player.getNearbyEntities(8, 8, 8)) {
                         if (e instanceof LivingEntity le && !(le instanceof Player)) {
                             le.damage(15.0, player);

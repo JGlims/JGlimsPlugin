@@ -283,7 +283,7 @@ public class LegendaryLootListener implements Listener {
             }
 
             // VFX
-            loc.getWorld().spawnParticle(Particle.DRAGON_BREATH, chestLoc.clone().add(0.5, 1, 0.5), 100, 1, 2, 1, 0.05);
+            loc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, chestLoc.clone().add(0.5, 1, 0.5), 100, 1, 2, 1, 0.05);
             loc.getWorld().spawnParticle(Particle.END_ROD, chestLoc.clone().add(0.5, 2, 0.5), 50, 0.5, 3, 0.5, 0.02);
             loc.getWorld().playSound(chestLoc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 2.0f, 1.0f);
 

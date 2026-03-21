@@ -419,18 +419,6 @@ P. ABYSS DRAGON REWORK — SKETCHFAB MODEL IMPLEMENTATION PLAN
 The Problem
 The current dragon model is a basic 11-cuboid blocky shape in assets/minecraft/models/item/abyss/abyss_dragon.json. When rendered on the ItemDisplay at 5× scale, it looks like a scaled-up simple shape rather than a convincing dragon. Minecraft Java Edition item models have a hard limit: coordinates must be within [-16, -16, -16] to [32, 32, 32] (a 48-unit cube), and while there's no hard cap on the number of cuboid elements, complex models with hundreds of elements become unwieldy and may cause client-side rendering performance issues. The practical sweet spot is 100–300 elements for a detailed item model.
 
-Recommended Sketchfab Models (Ranked)
-After extensive research, these are the best candidates for the Abyss Dragon, all available for free download under CC Attribution licenses and designed in Blockbench (meaning they use cuboid elements compatible with Minecraft's JSON model format):
-
-1. "Void Dragon — Animated Blockbench File" by ArtsByKev URL: https://sketchfab.com/3d-models/void-dragon-animated-blockbench-file-0cc42f82012f4a4785802bc6323c310c This is the top recommendation. It is explicitly a "Void Dragon" (thematically perfect for the Abyss), created in Blockbench (native .bbmodel format), fully animated, and released under CC Attribution. The artist (ArtsByKev) is a well-known Blockbench creator. The void/dark aesthetic aligns perfectly with the Abyss dimension's deepslate/obsidian/crying obsidian/purple palette.
-
-2. "Void Dragon" by okenshield13 URL: https://sketchfab.com/3d-models/void-dragon-09591e422ab44f97833342b62c26875c Free download, CC license, specifically described as coming "from the void and live in the outer end" — perfect thematic match. Designed for Blockbench. 31 downloads, lower poly count. Good backup option.
-
-3. "Dragon Blockbench (exercise)" by EndangeredOx URL: https://sketchfab.com/3d-models/dragon-blockbench-exercise-e9f5ad1fdad548c991cbfaa53c007501 1.6K triangles, 1.1K vertices. CC Attribution. Fully rigged, Blockbench + Blender. A simple but well-crafted dragon that could be retextured in dark purple/void colors.
-
-4. "Dragon Minecraft BlockBench" by mohamedo URL: https://sketchfab.com/3d-models/dragon-minecraft-blockbench-8ea88fbda79b4c36a6d783992ab708e3 360 triangles, 240 vertices. CC Attribution. Very low-poly Minecraft-style, might be too simple but easily convertible.
-
-5. "Realistic Dragon Minecraft" by unknown URL: https://sketchfab.com/3d-models/realistic-dragon-minecraft-baa9076343ea459dbe441d5ad89cecca CC Attribution, uploaded with Blockbench, "realistic" Minecraft-style dragon.
 
 Implementation Workflow
 Step 1: Download the Blockbench model. Download the .bbmodel file from Sketchfab (use the "Download 3D Model" button; select the original format). The ArtsByKev Void Dragon is the primary choice.

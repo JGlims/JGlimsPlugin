@@ -242,7 +242,7 @@ public class BossEnhancer implements Listener {
         summonDragonEndermanWave(dragon); // Double wave on enrage
 
         // Visual effects
-        world.spawnParticle(Particle.DRAGON_BREATH, dragon.getLocation(), 200, 10, 5, 10, 0.1);
+        world.spawnParticle(Particle.SOUL_FIRE_FLAME, dragon.getLocation(), 200, 10, 5, 10, 0.1);
         world.playSound(dragon.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 3.0f, 0.2f);
 
         plugin.getLogger().info("Ender Dragon enraged at 20% HP!");
