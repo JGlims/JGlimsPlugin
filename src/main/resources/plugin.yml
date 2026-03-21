@@ -25,3 +25,4 @@ permissions:
   jglims.admin:
     description: Access to all JGlimsPlugin admin commands
     default: op
+softdepend: [BetterModel]
