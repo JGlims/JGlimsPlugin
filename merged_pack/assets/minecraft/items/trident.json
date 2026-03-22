@@ -1,0 +1,17 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      { "when": "neptunes_fang", "model": { "type": "minecraft:model", "model": "minecraft:item/neptunes_fang" } },
+      { "when": "tidecaller", "model": { "type": "minecraft:model", "model": "minecraft:item/tidecaller" } },
+      { "when": "stormfork", "model": { "type": "minecraft:model", "model": "minecraft:item/stormfork" } },
+      { "when": "oceans_rage", "model": { "type": "minecraft:model", "model": "minecraft:item/oceans_rage" } }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/trident"
+    }
+  }
+}

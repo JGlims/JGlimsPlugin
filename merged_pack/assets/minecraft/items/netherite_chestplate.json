@@ -1,0 +1,16 @@
+﻿{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      { "when": "blood_moon_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/blood_moon_chestplate" } },
+      { "when": "natures_embrace_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/natures_embrace_chestplate" } },
+      { "when": "frost_warden_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/frost_warden_chestplate" } },
+      { "when": "void_walker_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/void_walker_chestplate" } },
+      { "when": "dragon_knight_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/dragon_knight_chestplate" } },
+      { "when": "abyssal_plate_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/abyssal_plate_chestplate" } }
+    ],
+    "fallback": { "type": "minecraft:model", "model": "minecraft:item/netherite_chestplate" }
+  }
+}

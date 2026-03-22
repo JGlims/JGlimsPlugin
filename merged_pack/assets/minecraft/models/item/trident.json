@@ -1,0 +1,1 @@
+{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/trident"},"overrides":[{"predicate":{"custom_model_data":30039},"model":"minecraft:item/frostaxe"},{"predicate":{"custom_model_data":30040},"model":"minecraft:item/aquantic_sacred_blade"},{"predicate":{"custom_model_data":30041},"model":"minecraft:item/stormbringer"}]}

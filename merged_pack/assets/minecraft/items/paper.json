@@ -1,0 +1,26 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/paper"
+    },
+    "cases": [
+      {
+        "when": "abyss_dragon",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/abyss_dragon"
+        }
+      },
+      {
+        "when": "40000",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/abyss/abyss_dragon"
+        }
+      }
+    ]
+  }
+}

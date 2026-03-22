@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "minecraft:blood_moon"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "minecraft:blood_moon"
+      }
+    ]
+  }
+}

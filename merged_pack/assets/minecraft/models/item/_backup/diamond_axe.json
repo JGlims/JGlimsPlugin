@@ -1,0 +1,19 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:component",
+    "component": "minecraft:custom_name",
+    "cases": [
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Calamity Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/calamity_blade"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Jade Halberd"}], "model": {"type": "minecraft:model", "model": "minecraft:item/jadehalberd"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Frost Scythe"}], "model": {"type": "minecraft:model", "model": "minecraft:item/frostscythe"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Divine Reaper"}], "model": {"type": "minecraft:model", "model": "minecraft:item/divine_reaper"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Star's Edge"}], "model": {"type": "minecraft:model", "model": "minecraft:item/stars_edge"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Emberblade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/emberblade"}}
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond_axe"
+    }
+  }
+}

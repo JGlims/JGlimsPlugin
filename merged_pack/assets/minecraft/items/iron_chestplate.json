@@ -1,0 +1,13 @@
+﻿{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      { "when": "amethyst_armor_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/amethyst_armor_chestplate" } },
+      { "when": "bone_armor_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/bone_armor_chestplate" } },
+      { "when": "sculk_armor_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/sculk_armor_chestplate" } }
+    ],
+    "fallback": { "type": "minecraft:model", "model": "minecraft:item/iron_chestplate" }
+  }
+}

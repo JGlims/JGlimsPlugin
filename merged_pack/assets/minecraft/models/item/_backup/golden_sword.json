@@ -1,0 +1,18 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:component",
+    "component": "minecraft:custom_name",
+    "cases": [
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Grand Claymore"}], "model": {"type": "minecraft:model", "model": "minecraft:item/grand_claymore"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Gilded Phoenix Greataxe"}], "model": {"type": "minecraft:model", "model": "minecraft:item/gilded_phoenix_greataxe"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Vengeance Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/vengeance_blade"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Azure Dagger"}], "model": {"type": "minecraft:model", "model": "minecraft:item/azure_dagger"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Oculus"}], "model": {"type": "minecraft:model", "model": "minecraft:item/oculus"}}
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/golden_sword"
+    }
+  }
+}

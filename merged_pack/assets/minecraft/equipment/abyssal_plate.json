@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "minecraft:abyssal_plate"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "minecraft:abyssal_plate"
+      }
+    ]
+  }
+}

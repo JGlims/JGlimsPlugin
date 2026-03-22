@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "minecraft:shadow_stalker"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "minecraft:shadow_stalker"
+      }
+    ]
+  }
+}

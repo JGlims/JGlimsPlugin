@@ -1,0 +1,16 @@
+﻿{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      { "when": "blood_moon_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/blood_moon_boots" } },
+      { "when": "natures_embrace_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/natures_embrace_boots" } },
+      { "when": "frost_warden_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/frost_warden_boots" } },
+      { "when": "void_walker_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/void_walker_boots" } },
+      { "when": "dragon_knight_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/dragon_knight_boots" } },
+      { "when": "abyssal_plate_boots", "model": { "type": "minecraft:model", "model": "minecraft:item/abyssal_plate_boots" } }
+    ],
+    "fallback": { "type": "minecraft:model", "model": "minecraft:item/netherite_boots" }
+  }
+}

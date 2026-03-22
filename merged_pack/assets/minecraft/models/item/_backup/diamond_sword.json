@@ -1,0 +1,42 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:component",
+    "component": "minecraft:custom_name",
+    "cases": [
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Ocean's Rage"}], "model": {"type": "minecraft:model", "model": "minecraft:item/aquantictrident"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"True Excalibur"}], "model": {"type": "minecraft:model", "model": "minecraft:item/excalibur"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Muramasa"}], "model": {"type": "minecraft:model", "model": "minecraft:item/muramasa"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Soul Collector"}], "model": {"type": "minecraft:model", "model": "minecraft:item/soul_collector"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Void Oculus"}], "model": {"type": "minecraft:model", "model": "minecraft:item/void_oculus"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Dragon Sword"}], "model": {"type": "minecraft:model", "model": "minecraft:item/dragon_sword"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Gloomsteel Katana"}], "model": {"type": "minecraft:model", "model": "minecraft:item/gloomsteel_katana"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Ravenous Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/ravenous_blade"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Legendary Sword"}], "model": {"type": "minecraft:model", "model": "minecraft:item/legendarysword"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Pheonix Grace"}], "model": {"type": "minecraft:model", "model": "minecraft:item/pheonixgrace"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Bramblethorn"}], "model": {"type": "minecraft:model", "model": "minecraft:item/bramblethorn"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Abominable Great Saber"}], "model": {"type": "minecraft:model", "model": "minecraft:item/abominablegreatsaber"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Demonic Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/demonicblade"}},
+      {"when": [{"bold":true,"italic":false,"color":"dark_purple","text":"Molten Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/moltenblade"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Nocturne"}], "model": {"type": "minecraft:model", "model": "minecraft:item/nocturne"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Windreaper"}], "model": {"type": "minecraft:model", "model": "minecraft:item/windreaper"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Zenith"}], "model": {"type": "minecraft:model", "model": "minecraft:item/zenith"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Crystal Frostblade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/crystal_frostblade"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Talonbrand"}], "model": {"type": "minecraft:model", "model": "minecraft:item/talonbrand"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Ethereal Frostblade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/ethereal_frostblade"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Lycanbane"}], "model": {"type": "minecraft:model", "model": "minecraft:item/lycanbane"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Vesper"}], "model": {"type": "minecraft:model", "model": "minecraft:item/vesper"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Moonlight"}], "model": {"type": "minecraft:model", "model": "minecraft:item/moonlight"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Solstice"}], "model": {"type": "minecraft:model", "model": "minecraft:item/solstice"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Winterthorn"}], "model": {"type": "minecraft:model", "model": "minecraft:item/winterthorn"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Demon's Blood Blade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/demons_blood_blade"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Demonic Sword"}], "model": {"type": "minecraft:model", "model": "minecraft:item/demonic_sword"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Nature Sword"}], "model": {"type": "minecraft:model", "model": "minecraft:item/nature_sword"}},
+      {"when": [{"bold":true,"italic":false,"color":"gold","text":"Amethyst Greatblade"}], "model": {"type": "minecraft:model", "model": "minecraft:item/amethyst_greatblade"}}
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond_sword"
+    }
+  }
+}
