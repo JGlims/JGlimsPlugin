@@ -1,4 +1,4 @@
-﻿package com.jglims.plugin.abyss;
+package com.jglims.plugin.abyss;
 
 import java.lang.reflect.Method;
 import java.util.logging.Logger;
