@@ -552,3 +552,154 @@ IN PROGRESS: Dragon animation (using Code View plugin in Blockbench + VS Code JS
 REMAINING: Complete dragon animations → deploy via BetterModel → fix dragon visibility → citadel rework → bug fixes (Creation Splitter, Abyssal Key texture, 3 awakened weapon animations) → replace all boss models with Sketchfab/BetterModel → new content (World Weapons, Magic Items, Magical Mobs).
 
 END OF ULTIMATE DEFINITIVE PROJECT SUMMARY v17.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+JGLIMSPLUGIN — PROJECT CONTINUATION SUMMARY v17.1
+Compiled: 2026-03-27 | Continues from: v17.0 README (already in repo) | Purpose: Paste this at the start of the next chat so the AI has full context to complete the remaining dragon animation + code integration work.
+
+WHAT THE v17.0 README ALREADY COVERS (do NOT repeat)
+The full v17.0 README is committed to https://github.com/JGlims/JGlimsPlugin and covers: project metadata, build system, server environment (OCI ARM64, Docker, Paper 1.21.1-1), local dev paths, resource pack state (self-hosted nginx, SHA-1 0e6151b6, pack format 75, ~3.68 MB standalone / ~6.5 MB merged), all 63 weapons, 13 armor sets, 7 power-ups, Infinity Gauntlet, 64 enchantments, 6 events, 6 roaming bosses, 40 structures, quest system, guild system, Abyss dimension, citadel, full codebase overview (68 Java files, ~1.27 MB), deployment procedures, and the complete outstanding work priority list.
+
+DO NOT regenerate any of the above. Start from the state described below.
+
+CURRENT STATE OF THE ABYSS DRAGON (as of 2026-03-27)
+A. The .bbmodel File
+Location: C:\Users\jgmel\Downloads\abyss_dragon.bbmodel File size: ~481,816 bytes (after JSON fix) Backups exist: .bak, .bak2, .bak3 in the same directory Geometry: Full dragon model with 40+ bones including body, head, jaw, left_wing, right_wing, tail, and many sub-bones (bone1 through bone43) Textures: 3 embedded PNGs — a.png (1024×1024, 133 KB primary), b.png (61 KB secondary), c.png (38 KB tertiary)
+
+B. Animation Status — NEEDS COMPLETE REDO
+The file currently contains 7 animations that were injected via PowerShell: idle, fly, attack, fire_breath, walk, spawn, death. However, these animations are fundamentally inadequate:
+
+Too short: Most are under 1 second effective duration despite nominal lengths of 2–5 seconds
+Not fluid: Keyframes use basic interpolation with insufficient intermediate poses
+Minimal bone coverage: Only animate body, head, jaw, left_wing, right_wing, tail — the 40+ sub-bones (wing segments, tail segments, leg bones, neck segments) are untouched, making the animation look stiff and puppet-like
+Not vivid: Small rotation/position values, no dramatic sweeps or weight-shifts
+Red laser artifact: The model may contain a beam/laser bone group that should be deleted in Blockbench (Edit mode → right-click bone → Delete)
+What good animations need:
+
+idle (4+ seconds, LOOP): Deep breathing body bob, slow head sway with neck segments, wing micro-adjustments across all wing sub-bones, sinuous tail wave propagating through tail segments, occasional jaw open/close
+fly (3+ seconds, LOOP): Powerful wing strokes with proper down-stroke/up-stroke across all wing segments (not just root bone), body pitch oscillation, tail streaming, head angled down
+attack (2.5+ seconds, PLAY_ONCE): Wind-up rear-back with weight shift, explosive forward lunge, jaw snap at peak, wing flare for balance, tail whip, full recovery to neutral
+fire_breath (4+ seconds, PLAY_ONCE): Head raises, jaw opens wide (45°+), head sweeps left-to-right during 2.5s burn, neck segments follow with delay, wings spread and brace, body leans back, recovery. NO laser/beam bone animation — attacks are custom-coded with particles
+walk (3+ seconds, LOOP): Ground-level body sway, gentle wing half-beats, head look-around, tail counter-swing, if leg bones exist they should animate
+spawn (5+ seconds, PLAY_ONCE): Dramatic entrance — rise from below ground, spin, scale from tiny to full size, wings unfold from folded position, jaw roar, head reveal
+death (5+ seconds, HOLD last frame): Head rears in pain, body spirals and tilts, wings go limp and droop, body falls and shrinks, tail trails behind
+The interpolation must use catmullrom or smooth for fluidity, not linear.
+
+C. Previous Injection Attempt — FAILED
+A PowerShell script was provided to replace the animations block in the .bbmodel file. The script did not execute — it hung because the terminal was waiting for the here-string closure ('@). The script needs to be provided in a way that can actually be pasted and run in PowerShell without hanging (either as a .ps1 file to execute, or with the JSON written to a temp file first, or split into manageable chunks).
+
+Lesson for next session: Do NOT use inline PowerShell here-strings with massive JSON. Instead, either:
+
+Write the JSON to a separate .json temp file first, then have a short script read and inject it, OR
+Provide a downloadable .ps1 script file, OR
+Provide the complete .bbmodel file content for manual replacement
+D. AbyssDragonModel.java — NEEDS FULL REWRITE
+Current file: src/main/java/com/jglims/plugin/abyss/AbyssDragonModel.java (17,894 bytes, ~800 lines) Current approach: Old ItemDisplay + CustomModelData approach with reflection-based BetterModel soft-dependency. Contains manual Java-driven animation loop (every 2 ticks), sinusoidal bob, Y-axis rotation, particle effects, phase scaling, all coded in Java.
+
+Target approach: Complete rewrite as a BetterModel tracker wrapper using the direct API (no reflection). The new version must:
+
+Use BetterModel's direct API — BetterModel.model("abyss_dragon"), renderer.getOrCreate(BaseEntity.of(zombie)), tracker.animate(name, modifier, callback)
+Keep all existing public methods that AbyssDragonBoss.java calls — spawn(Location), playAttackAnimation(), playFireBreathAnimation(), playWalkAnimation(), playFlyAnimation(), playDeathAnimation(), damageFeedback(), onPhaseChange(int), moveTo(Location), cleanup(), getLocation(), isAlive(), getHitboxEntity()
+Add proper AnimationModifier presets for each animation:
+idle: LOOP, 10-tick lerp-in/out
+fly: LOOP, 8-tick lerp
+walk: LOOP, 5-tick lerp
+attack: PLAY_ONCE, 3-tick lerp-in, 5-tick lerp-out, override=true
+fire_breath: PLAY_ONCE, 5-tick lerp-in, 8-tick lerp-out, override=true
+spawn: PLAY_ONCE, 0-tick lerp-in, 10-tick lerp-out, override=true
+death: HOLD, 5-tick lerp-in, 0-tick lerp-out, override=true
+Include TrackerUpdateAction calls for phase transitions (glow, tint, brightness)
+Include damageTint() for hit feedback
+Keep particle effects (DRAGON_BREATH ambient, phase transition particles) using Bukkit scheduler alongside the BetterModel animation — BetterModel handles the model animation, but particles and sounds are still our responsibility
+Be comprehensive — not a skeleton 180-line file. Include all the helper methods, logging, null-safety, state tracking, and robustness of the original 800-line version. Target ~400–600 lines.
+A draft 180-line version was provided in the previous session but was deemed too short. The next session must produce the full, production-ready replacement.
+
+E. AbyssDragonBoss.java — NEEDS ATTACK METHOD UPDATES
+Current file: src/main/java/com/jglims/plugin/abyss/AbyssDragonBoss.java (23,877 bytes) What works: Boss fight flow (manual trigger, arena detection, emergency platform, boss bar, lightning, combat loop, movement loop, phase changes, 8 attack types, death handling, loot drops, exit portal). All attack DAMAGE LOGIC is functional.
+
+What needs to change:
+
+Attack methods (voidBreath, lightningStrike, wingGust, groundPound, voidPull, summonMinions, enrageLightningBarrage) currently do NOT trigger model animations — they just do damage/particles. Each must now call the appropriate model.playXxxAnimation(callback) method to synchronize visuals with mechanics.
+The movement loop must call model.playFlyAnimation() or model.playWalkAnimation() depending on whether the dragon is airborne or ground-level.
+onDragonDeath() must call model.playDeathAnimation(afterDeath) where afterDeath contains the loot/fireworks/portal/cleanup logic.
+Phase change handler must call model.onPhaseChange(newPhase).
+The damage handler must call model.damageFeedback().
+The startFight() method must create the model with model.spawn(location) which triggers the spawn animation automatically.
+The integration pattern is: model animations are VISUAL ONLY and run in parallel with the game-logic timers. The boss code starts a BukkitRunnable for damage/particles, and separately triggers the model animation. The animation callback (when the animation finishes) transitions back to idle/fly.
+
+F. BetterModel API Quick Reference (for code generation)
+Maven artifact: io.github.toxicity188:bettermodel-bukkit-api:2.1.0 Package: kr.toxicity.model.api
+
+Copy// Get model renderer
+Optional<ModelRenderer> renderer = BetterModel.model("abyss_dragon");
+
+// Create or get tracker attached to a living entity
+EntityTracker tracker = renderer.get().getOrCreate(BaseEntity.of(zombieEntity));
+
+// Play animations
+tracker.animate("idle");                                              // default loop
+tracker.animate("attack", AnimationModifier.DEFAULT_WITH_PLAY_ONCE);  // play once
+tracker.animate("death", modifier, () -> { /* on complete */ });      // with callback
+
+// Stop / replace
+tracker.stopAnimation("walk");
+tracker.replace("idle", "fly", AnimationModifier.DEFAULT);
+
+// AnimationModifier builder
+AnimationModifier mod = AnimationModifier.builder()
+    .start(10)              // lerp-in ticks
+    .end(5)                 // lerp-out ticks
+    .speed(1.5F)            // playback speed
+    .type(AnimationIterator.Type.LOOP)       // LOOP, PLAY_ONCE, HOLD
+    .override(true)         // override other animations on same bones
+    .build();
+
+// Visual effects
+tracker.damageTint();                                        // red flash on hit
+tracker.damageTintValue(0xFF0000);                          // custom tint color
+tracker.update(TrackerUpdateAction.glow(true));             // outline glow
+tracker.update(TrackerUpdateAction.glowColor(0x8800AA));    // glow color
+tracker.update(TrackerUpdateAction.tint(0xFF0000));         // model tint
+tracker.update(TrackerUpdateAction.brightness(15, 15));     // full bright
+tracker.update(TrackerUpdateAction.composite(               // combine multiple
+    TrackerUpdateAction.glow(true),
+    TrackerUpdateAction.glowColor(0xFF0000),
+    TrackerUpdateAction.brightness(15, 15)
+));
+
+// Lifecycle
+tracker.close();          // remove model + despawn packets
+tracker.despawn();        // despawn without closing
+tracker.isClosed();       // check state
+tracker.handleCloseEvent((t, reason) -> { ... });
+
+// Movement — EntityTracker follows the entity automatically,
+// so just teleport the zombie: hitboxEntity.teleport(targetLocation);
+Copy
+G. Deployment Checklist (after code is done)
+Rename abyss_dragon.bbmodel if needed (filename = model name in API)
+scp abyss_dragon.bbmodel ubuntu@144.22.198.184:/tmp/
+docker cp /tmp/abyss_dragon.bbmodel mc-crossplay:/data/plugins/BetterModel/models/
+In-game: /bettermodel reload
+Copy generated textures from plugins/BetterModel/build/assets/bettermodel/ into local merged resource pack
+Re-zip with 7-Zip, compute SHA-1, SCP to nginx, update docker-compose.yml, recreate container
+Build plugin: .\gradlew clean build
+Deploy JAR via SCP + docker cp
+Restart container
+In-game: trigger boss fight, verify all 7 animations, verify damage sync, verify phase transitions, verify death sequence
+H. Files the Next Session Must Produce
+Working PowerShell injection script (or alternative method) that replaces the .bbmodel animations with long, fluid, multi-bone, catmullrom/smooth animations — must NOT hang in terminal
+Complete AbyssDragonModel.java (~400–600 lines) — full BetterModel tracker wrapper with all public methods, animation presets, phase effects, particle helpers, movement, cleanup, logging, null-safety
+Updated AbyssDragonBoss.java — all attack methods wired to model animations, movement loop calls fly/walk animations, death calls death animation with callback, phase changes call visual effects, damage calls damageTint
+END OF CONTINUATION SUMMARY v17.1 — Paste this at the start of the next chat session.
