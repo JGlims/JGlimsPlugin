@@ -59,24 +59,32 @@ public class StructureManager implements Listener {
         int surfaceY = world.getHighestBlockYAt(centerX, centerZ);
         Biome biome = world.getBiome(centerX, surfaceY, centerZ);
 
-        // Determine candidate structures
-        StructureType[] candidates;
-        if (world.getName().equalsIgnoreCase("world_abyss")) {
-            candidates = StructureType.abyssStructures();
-        } else {
-            candidates = StructureType.byDimension(world.getEnvironment());
-        }
-
+        // Determine candidate structures based on world name
+        String worldName = world.getName();
         List<StructureType> eligible = new ArrayList<>();
-        for (StructureType type : candidates) {
-            if (!type.isValidBiome(biome)) continue;
+
+        for (StructureType type : StructureType.values()) {
+            // Skip event-only structures
             if (type == StructureType.END_RIFT_ARENA || type == StructureType.DRAGON_DEATH_CHEST) continue;
             if (type == StructureType.DUNGEON_DEEP && surfaceY > 30) continue;
-            // Skip Abyss structures in normal End
-            if (type.isAbyssDimension() && !world.getName().equalsIgnoreCase("world_abyss")) continue;
-            // Skip normal End structures in Abyss
-            if (!type.isAbyssDimension() && world.getName().equalsIgnoreCase("world_abyss")) continue;
-            eligible.add(type);
+            if (!type.isValidBiome(biome)) continue;
+
+            // Custom dimension structures: must match exact world name
+            if (type.isCustomDimension()) {
+                if (worldName.equals(type.getTargetWorldName())) {
+                    eligible.add(type);
+                }
+                continue;
+            }
+
+            // Standard structures: match by environment, but skip in custom dimension worlds
+            if (worldName.equals("world_abyss") || worldName.equals("world_aether")
+                    || worldName.equals("world_lunar") || worldName.equals("world_jurassic")) {
+                continue; // Don't spawn standard structures in custom dimensions
+            }
+            if (type.getDimension() == world.getEnvironment()) {
+                eligible.add(type);
+            }
         }
         if (eligible.isEmpty()) return;
         for (StructureType type : eligible) {
@@ -111,44 +119,92 @@ public class StructureManager implements Listener {
 
     private void buildStructure(StructureType type, StructureBuilder b) {
         switch (type) {
-            case CAMPING_SMALL -> buildCampingSmall(b);
-            case CAMPING_LARGE -> buildCampingLarge(b);
-            case ABANDONED_HOUSE -> buildAbandonedHouse(b);
-            case WITCH_HOUSE_FOREST -> buildWitchHouseForest(b);
-            case WITCH_HOUSE_SWAMP -> buildWitchHouseSwamp(b);
-            case HOUSE_TREE -> buildHouseTree(b);
-            case DRUIDS_GROVE -> buildDruidsGrove(b);
-            case ALLAY_SANCTUARY -> buildAllaySanctuary(b);
-            case MAGE_TOWER -> buildMageTower(b);
-            case RUINED_COLOSSEUM -> buildRuinedColosseum(b);
-            case SHREK_HOUSE -> buildShrekHouse(b);
-            case ANCIENT_TEMPLE -> buildAncientTemple(b);
-            case VOLCANO -> buildVolcano(b);
-            case FORTRESS -> buildFortress(b);
-            case GIGANTIC_CASTLE -> buildGiganticCastle(b);
-            case ULTRA_VILLAGE -> buildUltraVillage(b);
-            case DUNGEON_DEEP -> buildDungeonDeep(b);
-            case THANOS_TEMPLE -> buildThanosTemple(b);
-            case PILLAGER_FORTRESS -> buildPillagerFortress(b);
-            case PILLAGER_AIRSHIP -> buildPillagerAirship(b);
-            case FROST_DUNGEON -> buildFrostDungeon(b);
-            case BANDIT_HIDEOUT -> buildBanditHideout(b);
-            case SUNKEN_RUINS -> buildSunkenRuins(b);
-            case CURSED_GRAVEYARD -> buildCursedGraveyard(b);
-            case SKY_ALTAR -> buildSkyAltar(b);
-            case CRIMSON_CITADEL -> buildCrimsonCitadel(b);
-            case SOUL_SANCTUM -> buildSoulSanctum(b);
-            case BASALT_SPIRE -> buildBasaltSpire(b);
-            case NETHER_DUNGEON -> buildNetherDungeon(b);
-            case PIGLIN_PALACE -> buildPiglinPalace(b);
-            case WITHER_SANCTUM -> buildWitherSanctum(b);
-            case BLAZE_COLOSSEUM -> buildBlazeColosseum(b);
-            case VOID_SHRINE -> buildVoidShrine(b);
-            case ENDER_MONASTERY -> buildEnderMonastery(b);
-            case DRAGONS_HOARD -> buildDragonsHoard(b);
-            case ABYSSAL_CASTLE -> buildAbyssalCastle(b);
-            case VOID_NEXUS -> buildVoidNexus(b);
-            case SHATTERED_CATHEDRAL -> buildShatteredCathedral(b);
+            // ── Overworld (delegated to OverworldStructureBuilders) ──
+            case CAMPING_SMALL -> OverworldStructureBuilders.buildCampingSmall(b);
+            case CAMPING_LARGE -> OverworldStructureBuilders.buildCampingLarge(b);
+            case ABANDONED_HOUSE -> OverworldStructureBuilders.buildAbandonedHouse(b);
+            case WITCH_HOUSE_FOREST -> OverworldStructureBuilders.buildWitchHouseForest(b);
+            case WITCH_HOUSE_SWAMP -> OverworldStructureBuilders.buildWitchHouseSwamp(b);
+            case HOUSE_TREE -> OverworldStructureBuilders.buildHouseTree(b);
+            case DRUIDS_GROVE -> OverworldStructureBuilders.buildDruidsGrove(b);
+            case ALLAY_SANCTUARY -> OverworldStructureBuilders.buildAllaySanctuary(b);
+            case MAGE_TOWER -> OverworldStructureBuilders.buildMageTower(b);
+            case RUINED_COLOSSEUM -> OverworldStructureBuilders.buildRuinedColosseum(b);
+            case SHREK_HOUSE -> OverworldStructureBuilders.buildShrekHouse(b);
+            case ANCIENT_TEMPLE -> OverworldStructureBuilders.buildAncientTemple(b);
+            case VOLCANO -> OverworldStructureBuilders.buildVolcano(b);
+            case FORTRESS -> OverworldStructureBuilders.buildFortress(b);
+            case GIGANTIC_CASTLE -> OverworldStructureBuilders.buildGiganticCastle(b);
+            case ULTRA_VILLAGE -> OverworldStructureBuilders.buildUltraVillage(b);
+            case DUNGEON_DEEP -> OverworldStructureBuilders.buildDungeonDeep(b);
+            case THANOS_TEMPLE -> OverworldStructureBuilders.buildThanosTemple(b);
+            case PILLAGER_FORTRESS -> OverworldStructureBuilders.buildPillagerFortress(b);
+            case PILLAGER_AIRSHIP -> OverworldStructureBuilders.buildPillagerAirship(b);
+            case FROST_DUNGEON -> OverworldStructureBuilders.buildFrostDungeon(b);
+            case BANDIT_HIDEOUT -> OverworldStructureBuilders.buildBanditHideout(b);
+            case SUNKEN_RUINS -> OverworldStructureBuilders.buildSunkenRuins(b);
+            case CURSED_GRAVEYARD -> OverworldStructureBuilders.buildCursedGraveyard(b);
+            case SKY_ALTAR -> OverworldStructureBuilders.buildSkyAltar(b);
+            case FORGE -> OverworldStructureBuilders.buildForge(b);
+            case OGRIN_HUT -> OverworldStructureBuilders.buildOgrinHut(b);
+            case FAIRY_GLADE -> OverworldStructureBuilders.buildFairyGlade(b);
+            case JAPANESE_TEMPLE -> OverworldStructureBuilders.buildJapaneseTemple(b);
+            case MONSTER_ISLAND -> OverworldStructureBuilders.buildMonsterIsland(b);
+            case WEREWOLF_DEN -> OverworldStructureBuilders.buildWerewolfDen(b);
+            case NECROMANCER_DUNGEON -> OverworldStructureBuilders.buildNecromancerDungeon(b);
+
+            // ── Nether (delegated to DimensionStructureBuilders) ──
+            case CRIMSON_CITADEL -> DimensionStructureBuilders.buildCrimsonCitadel(b);
+            case SOUL_SANCTUM -> DimensionStructureBuilders.buildSoulSanctum(b);
+            case BASALT_SPIRE -> DimensionStructureBuilders.buildBasaltSpire(b);
+            case NETHER_DUNGEON -> DimensionStructureBuilders.buildNetherDungeon(b);
+            case PIGLIN_PALACE -> DimensionStructureBuilders.buildPiglinPalace(b);
+            case WITHER_SANCTUM -> DimensionStructureBuilders.buildWitherSanctum(b);
+            case BLAZE_COLOSSEUM -> DimensionStructureBuilders.buildBlazeColosseum(b);
+            case NETHER_KINGS_CASTLE -> DimensionStructureBuilders.buildNetherKingsCastle(b);
+            case DEMON_FORTRESS -> DimensionStructureBuilders.buildDemonFortress(b);
+
+            // ── End ──
+            case VOID_SHRINE -> DimensionStructureBuilders.buildVoidShrine(b);
+            case ENDER_MONASTERY -> DimensionStructureBuilders.buildEnderMonastery(b);
+            case DRAGONS_HOARD -> DimensionStructureBuilders.buildDragonsHoard(b);
+            case END_RIFT_ARENA -> DimensionStructureBuilders.buildEndRiftArena(b);
+            case DRAGON_DEATH_CHEST -> DimensionStructureBuilders.buildDragonDeathChest(b);
+            case GLEEOK_ARENA -> DimensionStructureBuilders.buildGleeokArena(b);
+            case ILLIDAN_PRISON -> DimensionStructureBuilders.buildIllidanPrison(b);
+            case SKELETON_DRAGON_LAIR -> DimensionStructureBuilders.buildSkeletonDragonLair(b);
+
+            // ── Abyss ──
+            case ABYSSAL_CASTLE -> DimensionStructureBuilders.buildAbyssalCastle(b);
+            case VOID_NEXUS -> DimensionStructureBuilders.buildVoidNexus(b);
+            case SHATTERED_CATHEDRAL -> DimensionStructureBuilders.buildShatteredCathedral(b);
+
+            // ── Aether ──
+            case AETHER_VILLAGE -> DimensionStructureBuilders.buildAetherVillage(b);
+            case CRYSTAL_CAVERN -> DimensionStructureBuilders.buildCrystalCavern(b);
+            case STORM_PEAK_TOWER -> DimensionStructureBuilders.buildStormPeakTower(b);
+            case PITLORD_LAIR -> DimensionStructureBuilders.buildPitlordLair(b);
+            case WARRIOR_SKY_FORTRESS -> DimensionStructureBuilders.buildWarriorSkyFortress(b);
+            case DRAGONKIN_TEMPLE -> DimensionStructureBuilders.buildDragonkinTemple(b);
+            case AETHER_ANCIENT_RUINS -> DimensionStructureBuilders.buildAetherAncientRuins(b);
+
+            // ── Lunar ──
+            case INVADERLING_OUTPOST -> DimensionStructureBuilders.buildInvaderlingOutpost(b);
+            case UNDERGROUND_HIVE -> DimensionStructureBuilders.buildUndergroundHive(b);
+            case ALIEN_CITADEL -> DimensionStructureBuilders.buildAlienCitadel(b);
+            case METEOR_CRASH_SITE -> DimensionStructureBuilders.buildMeteorCrashSite(b);
+            case OBSERVATION_TOWER -> DimensionStructureBuilders.buildObservationTower(b);
+            case LUNAR_BASE -> DimensionStructureBuilders.buildLunarBase(b);
+
+            // ── Jurassic ──
+            case BONE_ARENA -> DimensionStructureBuilders.buildBoneArena(b);
+            case DINOBOT_ARENA -> DimensionStructureBuilders.buildDinobotArena(b);
+            case RAPTOR_NEST -> DimensionStructureBuilders.buildRaptorNest(b);
+            case WATERING_HOLE -> DimensionStructureBuilders.buildWateringHole(b);
+            case VOLCANIC_FORGE -> DimensionStructureBuilders.buildVolcanicForge(b);
+            case TAR_PIT -> DimensionStructureBuilders.buildTarPit(b);
+            case NESTING_GROUND -> DimensionStructureBuilders.buildNestingGround(b);
+
             default -> buildGenericStructure(b, type);
         }
     }

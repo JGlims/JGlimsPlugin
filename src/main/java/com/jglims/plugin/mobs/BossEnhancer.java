@@ -194,7 +194,8 @@ public class BossEnhancer implements Listener {
             AttributeInstance hp = enderman.getAttribute(Attribute.MAX_HEALTH);
             if (hp != null) { hp.setBaseValue(80); enderman.setHealth(80); }
             enderman.setTarget(target);
-            enderman.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //             enderman.setGlowing(true);
             enderman.customName(Component.text("Dragon's Servant", NamedTextColor.DARK_PURPLE));
             enderman.setCustomNameVisible(true);
         }
@@ -303,7 +304,8 @@ public class BossEnhancer implements Listener {
         // Increase size visually via name + glowing
         wither.customName(Component.text("Wither Storm", TextColor.color(80, 0, 80)).decorate(TextDecoration.BOLD));
         wither.setCustomNameVisible(true);
-        wither.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         wither.setGlowing(true);
 
         // Boost damage further
         Double currentMult = wither.getPersistentDataContainer().get(KEY_DAMAGE_MULT, PersistentDataType.DOUBLE);
@@ -321,7 +323,8 @@ public class BossEnhancer implements Listener {
             if (hp != null) { hp.setBaseValue(60); ws.setHealth(60); }
             ws.customName(Component.text("Storm Guard", NamedTextColor.DARK_GRAY));
             ws.setCustomNameVisible(true);
-            ws.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //             ws.setGlowing(true);
         }
 
         world.spawnParticle(Particle.SMOKE, loc, 200, 5, 5, 5, 0.1);

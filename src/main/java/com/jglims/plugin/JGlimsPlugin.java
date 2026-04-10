@@ -3,6 +3,7 @@ package com.jglims.plugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -11,6 +12,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.jglims.plugin.abyss.AbyssDimensionManager;
 import com.jglims.plugin.abyss.AbyssDragonBoss;
+import com.jglims.plugin.custommobs.CustomMobListener;
+import com.jglims.plugin.custommobs.CustomMobManager;
+import com.jglims.plugin.custommobs.CustomMobSpawnManager;
+import com.jglims.plugin.dimensions.AetherDimensionManager;
+import com.jglims.plugin.dimensions.DimensionPortalManager;
+import com.jglims.plugin.dimensions.JurassicDimensionManager;
+import com.jglims.plugin.dimensions.LunarDimensionManager;
+import com.jglims.plugin.magic.MagicItemListener;
+import com.jglims.plugin.magic.MagicItemManager;
+import com.jglims.plugin.vampire.VampireListener;
+import com.jglims.plugin.vampire.VampireManager;
 import com.jglims.plugin.blessings.BlessingListener;
 import com.jglims.plugin.blessings.BlessingManager;
 import com.jglims.plugin.config.ConfigManager;
@@ -112,6 +124,14 @@ public class JGlimsPlugin extends JavaPlugin {
     private InfinityGauntletManager infinityGauntletManager;
     private QuestManager questManager;
     private NpcWizardManager npcWizardManager;
+    private CustomMobManager customMobManager;
+    private CustomMobSpawnManager customMobSpawnManager;
+    private VampireManager vampireManager;
+    private MagicItemManager magicItemManager;
+    private DimensionPortalManager dimensionPortalManager;
+    private AetherDimensionManager aetherDimensionManager;
+    private LunarDimensionManager lunarDimensionManager;
+    private JurassicDimensionManager jurassicDimensionManager;
 
     @Override
     public void onEnable() {
@@ -146,6 +166,18 @@ public class JGlimsPlugin extends JavaPlugin {
         abyssDragonBoss = new AbyssDragonBoss(this, abyssDimensionManager);
         eventManager = new EventManager(this);
         eventManager.initialize();
+        customMobManager = new CustomMobManager(this);
+        customMobSpawnManager = new CustomMobSpawnManager(this, customMobManager);
+        vampireManager = new VampireManager(this);
+        magicItemManager = new MagicItemManager(this);
+        dimensionPortalManager = new DimensionPortalManager(this);
+        registerDimensionPortals();
+        aetherDimensionManager = new AetherDimensionManager(this);
+        aetherDimensionManager.initialize();
+        lunarDimensionManager = new LunarDimensionManager(this);
+        lunarDimensionManager.initialize();
+        jurassicDimensionManager = new JurassicDimensionManager(this);
+        jurassicDimensionManager.initialize();
         questManager = new QuestManager(this);
         npcWizardManager = new NpcWizardManager(this);
         creativeMenuManager = new CreativeMenuManager(this);
@@ -212,6 +244,15 @@ public class JGlimsPlugin extends JavaPlugin {
         pm.registerEvents(questManager, this);
         pm.registerEvents(new QuestProgressListener(this, questManager), this);
         pm.registerEvents(npcWizardManager, this);
+        pm.registerEvents(new CustomMobListener(this, customMobManager), this);
+        VampireListener vampireListener = new VampireListener(this, vampireManager);
+        pm.registerEvents(vampireListener, this);
+        vampireListener.startDayNightCycle();
+        pm.registerEvents(new MagicItemListener(this, magicItemManager), this);
+        pm.registerEvents(dimensionPortalManager, this);
+        pm.registerEvents(aetherDimensionManager, this);
+        pm.registerEvents(lunarDimensionManager, this);
+        pm.registerEvents(jurassicDimensionManager, this);
         pm.registerEvents(creativeMenuManager, this);
         pm.registerEvents(guideBookManager, this);
 
@@ -233,6 +274,7 @@ public class JGlimsPlugin extends JavaPlugin {
         if (configManager.isPaleGardenFogEnabled()) new PaleGardenFogTask(this).start(configManager.getPaleGardenFogCheckInterval());
         if (configManager.isBloodMoonEnabled()) bloodMoonManager.startScheduler();
         roamingBossManager.startScheduler();
+        customMobSpawnManager.startScheduler();
         questManager.startScheduler();
         npcWizardManager.startScheduler();
 
@@ -241,7 +283,11 @@ public class JGlimsPlugin extends JavaPlugin {
     }
 
     @Override
-    public void onDisable() { getLogger().info("JGlimsPlugin disabled."); }
+    public void onDisable() {
+        if (customMobManager != null) customMobManager.despawnAll();
+        if (vampireManager != null) vampireManager.saveAll();
+        getLogger().info("JGlimsPlugin disabled.");
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -301,10 +347,11 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims abyss <key|tp>", NamedTextColor.YELLOW).append(Component.text(" - Abyss dimension commands (OP)", NamedTextColor.GRAY)));
             }
+            case "vampire" -> handleVampireCommand(sender, args);
             case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
             case "menu" -> { if (sender instanceof Player player) creativeMenuManager.openMainMenu(player); else sender.sendMessage(Component.text("Only players can open the menu.", NamedTextColor.RED)); }
             case "guia" -> { if (sender instanceof Player player) guideBookManager.giveAllVolumes(player); else sender.sendMessage(Component.text("Only players can receive the guide.", NamedTextColor.RED)); }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, abyss, menu, guia, quests, help", NamedTextColor.RED));
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, abyss, vampire, menu, guia, quests, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -497,6 +544,29 @@ public class JGlimsPlugin extends JavaPlugin {
     public RoamingBossManager getRoamingBossManager() { return roamingBossManager; }
     public QuestManager getQuestManager() { return questManager; }
     public NpcWizardManager getNpcWizardManager() { return npcWizardManager; }
+    public CustomMobManager getCustomMobManager() { return customMobManager; }
+    public VampireManager getVampireManager() { return vampireManager; }
+    public MagicItemManager getMagicItemManager() { return magicItemManager; }
+    public DimensionPortalManager getDimensionPortalManager() { return dimensionPortalManager; }
+    public AetherDimensionManager getAetherDimensionManager() { return aetherDimensionManager; }
+    public LunarDimensionManager getLunarDimensionManager() { return lunarDimensionManager; }
+    public JurassicDimensionManager getJurassicDimensionManager() { return jurassicDimensionManager; }
+
+    /**
+     * Registers all dimension portal definitions.
+     */
+    private void registerDimensionPortals() {
+        dimensionPortalManager.registerPortal(new DimensionPortalManager.PortalDefinition(
+                "aether", Material.GLOWSTONE, Material.WATER_BUCKET, Material.LIGHT_BLUE_STAINED_GLASS,
+                "world_aether", TextColor.color(100, 200, 255), "Aether"));
+        dimensionPortalManager.registerPortal(new DimensionPortalManager.PortalDefinition(
+                "lunar", Material.END_STONE, Material.ENDER_EYE, Material.GRAY_STAINED_GLASS,
+                "world_lunar", TextColor.color(180, 180, 200), "Lunar"));
+        dimensionPortalManager.registerPortal(new DimensionPortalManager.PortalDefinition(
+                "jurassic", Material.BONE_BLOCK, Material.FLINT_AND_STEEL, Material.GREEN_STAINED_GLASS,
+                "world_jurassic", TextColor.color(100, 180, 60), "Jurassic"));
+    }
+    public CustomMobSpawnManager getCustomMobSpawnManager() { return customMobSpawnManager; }
     public CreativeMenuManager getCreativeMenuManager() { return creativeMenuManager; }
     public GuideBookManager getGuideBookManager() { return guideBookManager; }
 
@@ -546,6 +616,50 @@ public class JGlimsPlugin extends JavaPlugin {
                 dest.setYaw(180f);
             }
             default -> sender.sendMessage(Component.text("Usage: /jglims abyss <key|tp|boss>", NamedTextColor.YELLOW));
+        }
+    }
+
+    private void handleVampireCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (args.length < 3) {
+            sender.sendMessage(Component.text("Usage: /jglims vampire <player> <set|remove|info|reset|essence>", NamedTextColor.YELLOW));
+            return;
+        }
+        Player target = getServer().getPlayer(args[1]);
+        if (target == null) { sender.sendMessage(Component.text("Player not found!", NamedTextColor.RED)); return; }
+        switch (args[2].toLowerCase()) {
+            case "set" -> {
+                if (args.length < 4) { sender.sendMessage(Component.text("Usage: /jglims vampire <player> set <FLEDGLING|VAMPIRE|ELDER_VAMPIRE|VAMPIRE_LORD|DRACULA>", NamedTextColor.RED)); return; }
+                try {
+                    com.jglims.plugin.vampire.VampireLevel level = com.jglims.plugin.vampire.VampireLevel.valueOf(args[3].toUpperCase());
+                    com.jglims.plugin.vampire.VampireState state = vampireManager.getOrCreateState(target.getUniqueId());
+                    if (!state.isVampire()) { state.setVampire(true); }
+                    state.setLevel(level);
+                    state.recalculateLevel();
+                    vampireManager.save(state);
+                    sender.sendMessage(Component.text("Set " + target.getName() + " to " + level.getDisplayName(), NamedTextColor.GREEN));
+                } catch (IllegalArgumentException e) { sender.sendMessage(Component.text("Invalid level! Use: FLEDGLING, VAMPIRE, ELDER_VAMPIRE, VAMPIRE_LORD, DRACULA", NamedTextColor.RED)); }
+            }
+            case "remove" -> {
+                vampireManager.removeVampirism(target);
+                sender.sendMessage(Component.text("Removed vampirism from " + target.getName(), NamedTextColor.GREEN));
+            }
+            case "info" -> vampireManager.showVampireInfo(target, sender);
+            case "reset" -> {
+                com.jglims.plugin.vampire.VampireState state = vampireManager.getOrCreateState(target.getUniqueId());
+                state.setBloodConsumed(0);
+                state.setEvolversConsumed(0);
+                state.setSuperBloodConsumed(0);
+                state.setLevel(com.jglims.plugin.vampire.VampireLevel.FLEDGLING);
+                state.recalculateLevel();
+                vampireManager.save(state);
+                sender.sendMessage(Component.text("Reset vampire progression for " + target.getName(), NamedTextColor.GREEN));
+            }
+            case "essence" -> {
+                target.getInventory().addItem(vampireManager.createVampireEssence());
+                sender.sendMessage(Component.text("Gave Vampire Essence to " + target.getName(), NamedTextColor.GREEN));
+            }
+            default -> sender.sendMessage(Component.text("Unknown sub: set, remove, info, reset, essence", NamedTextColor.RED));
         }
     }
 }

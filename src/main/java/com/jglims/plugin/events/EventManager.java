@@ -172,7 +172,8 @@ public class EventManager {
         entity.customName(Component.text(name, color).decorate(TextDecoration.BOLD));
         entity.setCustomNameVisible(true);
         if (entity.getAttribute(Attribute.MAX_HEALTH) != null) { entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(hp); entity.setHealth(hp); }
-        entity.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         entity.setGlowing(true);
     }
 
     public void dropEventWeapons(Location loc, LegendaryTier tier, int count) {

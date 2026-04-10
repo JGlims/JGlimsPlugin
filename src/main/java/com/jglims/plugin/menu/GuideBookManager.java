@@ -49,7 +49,8 @@ public class GuideBookManager implements Listener {
         player.getInventory().addItem(buildVolume1());
         player.getInventory().addItem(buildVolume2());
         player.getInventory().addItem(buildVolume3());
-        player.sendMessage(Component.text("Voce recebeu o Guia do JGlims! Sao 3 volumes.", NamedTextColor.GOLD));
+        player.getInventory().addItem(buildVolume4());
+        player.sendMessage(Component.text("Voce recebeu o Guia do JGlims! Sao 4 volumes.", NamedTextColor.GOLD));
     }
 
     // ========================================
@@ -617,6 +618,144 @@ public class GuideBookManager implements Listener {
         ));
 
         for (Component page : pages) { meta.addPages(page); }
+        book.setItemMeta(meta);
+        return book;
+    }
+
+    // =============================================
+    // VOLUME 4: Dimensoes + Vampiros + Mobs + Magia
+    // =============================================
+    private ItemStack buildVolume4() {
+        ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
+        BookMeta meta = (BookMeta) book.getItemMeta();
+        meta.setTitle("Guia JGlims Vol.4");
+        meta.setAuthor("JGlims");
+
+        // Page 1 — Novas Dimensoes
+        meta.addPages(buildPage(
+                "\u00a76\u00a7l=== Novas Dimensoes ===\u00a7r\n\n" +
+                "\u00a7bAether (Ceu)\u00a7r\n" +
+                "Portal: Moldura 4x5 de\n" +
+                "Glowstone + Balde de Agua\n" +
+                "Ilhas flutuantes, gravidade\n" +
+                "reduzida, mobs de cristal.\n\n" +
+                "\u00a77Lunar (Lua)\u00a7r\n" +
+                "Portal: Moldura 4x5 de\n" +
+                "End Stone + Olho de Ender\n" +
+                "Terreno lunar, crateras,\n" +
+                "Invaderlings hostis."
+        ));
+
+        // Page 2 — Jurassic + Abyss
+        meta.addPages(buildPage(
+                "\u00a72Jurassic (Dinossauros)\u00a7r\n" +
+                "Portal: Moldura 4x5 de\n" +
+                "Bone Block + Isqueiro\n" +
+                "Selva pre-historica, vulcoes,\n" +
+                "T-Rex, velociraptors!\n\n" +
+                "\u00a74Abismo (Abyss)\u00a7r\n" +
+                "Portal: Moldura 4x5 de\n" +
+                "Purpur + Chave Abissal\n" +
+                "Dimensao sombria com a\n" +
+                "Cidadela e o Dragao Abissal."
+        ));
+
+        // Page 3 — Sistema Vampiro
+        meta.addPages(buildPage(
+                "\u00a74\u00a7l=== Vampirismo ===\u00a7r\n\n" +
+                "Mate o \u00a7cRei do Nether\u00a7r para\n" +
+                "obter a \u00a74Essencia Vampirica\u00a7r.\n\n" +
+                "Use sem armadura para se\n" +
+                "transformar. CUIDADO: todos\n" +
+                "os buffs serao resetados!\n\n" +
+                "\u00a7cNiveis:\u00a7r Neofito > Vampiro >\n" +
+                "Vampiro Anciao > Lorde >\n" +
+                "Dracula"
+        ));
+
+        // Page 4 — Vampiro Progressao
+        meta.addPages(buildPage(
+                "\u00a74Progressao Vampirica:\u00a7r\n\n" +
+                "\u00a7cSangue\u00a7r: Mate aldeaos para\n" +
+                "conseguir. Consuma 100 para\n" +
+                "evoluir para Vampiro.\n\n" +
+                "\u00a75Evoluidor\u00a7r: Encontre em baus\n" +
+                "do End. 10 = Anciao, 20 = Lorde\n\n" +
+                "\u00a74Super Sangue\u00a7r: Mate mobs no\n" +
+                "Abismo. 5 = Dracula!\n\n" +
+                "\u00a76Anel Vampirico\u00a7r: Imunidade solar"
+        ));
+
+        // Page 5 — Dragoes Montaveis
+        meta.addPages(buildPage(
+                "\u00a76\u00a7l=== Dragoes Montaveis ===\u00a7r\n\n" +
+                "\u00a7bAergia Wingwalker\u00a7r\n" +
+                "Montanhas. Sem armadura +\n" +
+                "maos vazias para domar.\n" +
+                "Monte 60s, carne + sela.\n" +
+                "VOA! Bola de fogo (pulo).\n\n" +
+                "\u00a74Demonic Wingwalker\u00a7r\n" +
+                "Nether. Mesmo processo.\n" +
+                "Mais forte, imune a fogo.\n\n" +
+                "\u00a7fIce Wyvern\u00a7r\n" +
+                "Biomas gelados. Monte 30s."
+        ));
+
+        // Page 6 — Unicornios
+        meta.addPages(buildPage(
+                "\u00a7d\u00a7l=== Unicornios ===\u00a7r\n\n" +
+                "\u00a7dUnicornio\u00a7r: Cerejeiras.\n" +
+                "Maca dourada para domar.\n" +
+                "Mais rapido que cavalos!\n\n" +
+                "\u00a7dUnicornio Alado (Pegasus)\u00a7r\n" +
+                "Clareira de Fadas. Sem armadura.\n" +
+                "O melhor cavalo do jogo!\n" +
+                "Rainbow dash com pulo.\n\n" +
+                "\u00a72Unicornio Selvagem\u00a7r\n" +
+                "Pantano. Imune a veneno."
+        ));
+
+        // Page 7 — Varinha das Varinhas
+        meta.addPages(buildPage(
+                "\u00a75\u00a7l=== Varinha das Varinhas ===\u00a7r\n\n" +
+                "Item magico encontrado em\n" +
+                "baus do Abismo (3%) ou\n" +
+                "comprado do Arquimago.\n\n" +
+                "\u00a7cClique Esq\u00a7r: Stupefy\n" +
+                "  Projetil vermelho, 8 dano\n\n" +
+                "\u00a7eClique Dir\u00a7r: Leviosa\n" +
+                "  Projetil dourado, levita\n\n" +
+                "\u00a7aAgachar+Dir\u00a7r: Avada Kedavra\n" +
+                "  Projetil verde, morte!"
+        ));
+
+        // Page 8 — Mobs Customizados
+        meta.addPages(buildPage(
+                "\u00a76\u00a7l=== Mobs Customizados ===\u00a7r\n\n" +
+                "72 mobs unicos com modelos\n" +
+                "3D via BetterModel!\n\n" +
+                "\u00a7cChefes Mundiais:\u00a7r Godzilla,\n" +
+                "Ghidorah, Rei do Nether,\n" +
+                "Lobisomem, Wendigo, Frostmaw\n\n" +
+                "\u00a7eNPCs:\u00a7r Steve, Natalie, Garret,\n" +
+                "Arquimago, Anjo, Centauro,\n" +
+                "Glare, Dragao Japones"
+        ));
+
+        // Page 9 — Pedras do Infinito
+        meta.addPages(buildPage(
+                "\u00a76\u00a7l=== Manopla do Infinito ===\u00a7r\n\n" +
+                "\u00a76Luva de Thanos\u00a7r:\n" +
+                "Baus do Abismo (10%)\n\n" +
+                "\u00a7bPedras do Aether:\u00a7r\n" +
+                "Espaco, Realidade, Mente\n" +
+                "(2% em baus do Aether)\n\n" +
+                "\u00a77Pedras da Lua:\u00a7r\n" +
+                "Poder, Alma, Tempo\n" +
+                "(2% em baus Lunares)\n\n" +
+                "Combine na bigorna!"
+        ));
+
         book.setItemMeta(meta);
         return book;
     }

@@ -1,6 +1,9 @@
 package com.jglims.plugin.structures;
 
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.custommobs.CustomMobEntity;
+import com.jglims.plugin.custommobs.CustomMobManager;
+import com.jglims.plugin.custommobs.CustomMobType;
 import com.jglims.plugin.legendary.LegendaryWeapon;
 import com.jglims.plugin.legendary.LegendaryWeaponManager;
 import com.jglims.plugin.powerups.PowerUpManager;
@@ -44,10 +47,14 @@ public class StructureBossManager implements Listener {
 
     /**
      * Spawn a mini-boss for the given structure type at the specified location.
+     * Covers all 73 structure types. Structures with hasBoss=false return early.
+     * New custom-model bosses use the CustomMobManager (BetterModel integration).
      */
     public void spawnStructureBoss(StructureType type, Location location) {
+        if (!type.hasBoss()) return;
+
         LivingEntity boss = switch (type) {
-            // ── Original Overworld ──
+            // ── Overworld (vanilla entity bosses) ──
             case RUINED_COLOSSEUM -> spawnBoss(location, IronGolem.class, type);
             case DRUIDS_GROVE -> spawnBoss(location, Zombie.class, type);
             case SHREK_HOUSE -> spawnBoss(location, IronGolem.class, type);
@@ -64,28 +71,70 @@ public class StructureBossManager implements Listener {
             case THANOS_TEMPLE -> spawnBoss(location, IronGolem.class, type);
             case PILLAGER_FORTRESS -> spawnBoss(location, Vindicator.class, type);
             case PILLAGER_AIRSHIP -> spawnBoss(location, Pillager.class, type);
-            // ── NEW Overworld (Plus Part 2) ──
             case FROST_DUNGEON -> spawnFrostWarden(location, type);
             case BANDIT_HIDEOUT -> spawnBoss(location, Pillager.class, type);
             case SUNKEN_RUINS -> spawnDrownedWarlord(location, type);
             case CURSED_GRAVEYARD -> spawnGraveRevenant(location, type);
             case SKY_ALTAR -> spawnBoss(location, Evoker.class, type);
-            // ── Original Nether ──
+
+            // ── Overworld (custom model bosses) ──
+            case FORGE -> spawnCustomMob(location, type, CustomMobType.PROTECTOR_OF_FORGE);
+            case OGRIN_HUT -> spawnCustomMob(location, type, CustomMobType.OGRIN_GIANT);
+            case FAIRY_GLADE -> spawnCustomMob(location, type, CustomMobType.WINGED_UNICORN);
+            case MONSTER_ISLAND -> random.nextBoolean()
+                ? spawnCustomMob(location, type, CustomMobType.GODZILLA)
+                : spawnCustomMob(location, type, CustomMobType.GHIDORAH);
+            case WEREWOLF_DEN -> spawnCustomMob(location, type, CustomMobType.WHULVK_WEREWOLF);
+            case NECROMANCER_DUNGEON -> spawnCustomMob(location, type, CustomMobType.NECROMANCER);
+
+            // ── Nether (vanilla entity bosses) ──
             case CRIMSON_CITADEL -> spawnBoss(location, Hoglin.class, type);
             case SOUL_SANCTUM -> spawnBoss(location, WitherSkeleton.class, type);
             case BASALT_SPIRE -> spawnBoss(location, IronGolem.class, type);
             case NETHER_DUNGEON -> spawnBoss(location, Blaze.class, type);
             case PIGLIN_PALACE -> spawnBoss(location, PiglinBrute.class, type);
-            // ── NEW Nether (Plus Part 2) ──
             case WITHER_SANCTUM -> spawnWitherPriest(location, type);
             case BLAZE_COLOSSEUM -> spawnInfernalChampion(location, type);
-            // ── Original End ──
+
+            // ── Nether (custom model bosses) ──
+            case NETHER_KINGS_CASTLE -> spawnCustomMob(location, type, CustomMobType.NETHER_KING);
+            case DEMON_FORTRESS -> spawnCustomMob(location, type, CustomMobType.DEMON_GUY);
+
+            // ── End (vanilla entity bosses) ──
             case VOID_SHRINE -> spawnBoss(location, Enderman.class, type);
             case ENDER_MONASTERY -> spawnBoss(location, Enderman.class, type);
-            // ── NEW Abyss (Plus Part 2) ──
+
+            // ── End (custom model bosses) ──
+            case GLEEOK_ARENA -> spawnCustomMob(location, type, CustomMobType.KING_GLEEOK);
+            case ILLIDAN_PRISON -> spawnCustomMob(location, type, CustomMobType.ILLIDAN);
+            case SKELETON_DRAGON_LAIR -> spawnCustomMob(location, type, CustomMobType.SKELETON_DRAGON);
+            case END_RIFT_ARENA -> spawnCustomMob(location, type, CustomMobType.REALISTIC_DRAGON);
+
+            // ── Abyss (vanilla entity bosses — legacy) ──
             case ABYSSAL_CASTLE -> spawnAbyssalOverlord(location, type);
             case VOID_NEXUS -> spawnVoidArbiter(location, type);
             case SHATTERED_CATHEDRAL -> spawnFallenArchbishop(location, type);
+
+            // ── Aether ──
+            case CRYSTAL_CAVERN -> spawnBoss(location, Zombie.class, type);
+            case STORM_PEAK_TOWER -> spawnCustomMob(location, type, CustomMobType.THE_KEEPER);
+            case PITLORD_LAIR -> spawnCustomMob(location, type, CustomMobType.PITLORD);
+            case WARRIOR_SKY_FORTRESS -> spawnCustomMob(location, type, CustomMobType.THE_WARRIOR);
+            case DRAGONKIN_TEMPLE -> spawnCustomMob(location, type, CustomMobType.JAVION_DRAGONKIN);
+            case AETHER_ANCIENT_RUINS -> spawnCustomMob(location, type, CustomMobType.ANCIENT_RUNIC_PORTAL);
+
+            // ── Lunar ──
+            case INVADERLING_OUTPOST -> spawnCustomMob(location, type, CustomMobType.INVADERLING_SOLDIER);
+            case UNDERGROUND_HIVE -> spawnBoss(location, Zombie.class, type);
+            case ALIEN_CITADEL -> spawnCustomMob(location, type, CustomMobType.INVADERLING_COMMANDER);
+
+            // ── Jurassic ──
+            case BONE_ARENA -> spawnCustomMob(location, type, CustomMobType.T_REX);
+            case DINOBOT_ARENA -> spawnCustomMob(location, type, CustomMobType.DINOBOT);
+            case VOLCANIC_FORGE -> spawnBoss(location, MagmaCube.class, type);
+            case NESTING_GROUND -> spawnCustomMob(location, type, CustomMobType.PARASAUROLOPHUS);
+
+            // ── Structures with no boss (hasBoss=false caught above, but be explicit) ──
             default -> null;
         };
 
@@ -101,6 +150,24 @@ public class StructureBossManager implements Listener {
         T entity = loc.getWorld().spawn(loc, entityClass);
         configureBoss(entity, type);
         return entity;
+    }
+
+    /**
+     * Spawns a custom BetterModel mob via CustomMobManager.
+     * Falls back to a vanilla Zombie boss if CustomMobManager is unavailable or spawn fails.
+     */
+    private LivingEntity spawnCustomMob(Location loc, StructureType type, CustomMobType mobType) {
+        CustomMobManager mobManager = plugin.getCustomMobManager();
+        if (mobManager == null) return spawnBoss(loc, Zombie.class, type); // fallback
+        CustomMobEntity mob = mobManager.spawnMob(mobType, loc);
+        if (mob != null && mob.getHitboxEntity() != null) {
+            // Tag the hitbox entity so death handling works
+            LivingEntity hitbox = mob.getHitboxEntity();
+            hitbox.getPersistentDataContainer().set(KEY_STRUCTURE_BOSS, PersistentDataType.INTEGER, 1);
+            hitbox.getPersistentDataContainer().set(KEY_BOSS_STRUCTURE_TYPE, PersistentDataType.STRING, type.name());
+            return hitbox;
+        }
+        return spawnBoss(loc, Zombie.class, type); // fallback
     }
 
     private void configureBoss(LivingEntity entity, StructureType type) {
@@ -127,7 +194,7 @@ public class StructureBossManager implements Listener {
         configureBoss(entity, type);
         // Frost aura: permanent Slowness I to self (visual cue), Resistance I
         entity.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 1, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -138,7 +205,7 @@ public class StructureBossManager implements Listener {
         entity.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
         entity.getEquipment().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING, Integer.MAX_VALUE, 0, false, false));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -149,7 +216,7 @@ public class StructureBossManager implements Listener {
         entity.getEquipment().setChestplate(new ItemStack(Material.CHAINMAIL_CHESTPLATE));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1, false, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -160,7 +227,7 @@ public class StructureBossManager implements Listener {
         entity.getEquipment().setHelmet(new ItemStack(Material.NETHERITE_HELMET));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0, false, false));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -168,7 +235,7 @@ public class StructureBossManager implements Listener {
         Blaze entity = loc.getWorld().spawn(loc, Blaze.class);
         configureBoss(entity, type);
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 2, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -184,7 +251,7 @@ public class StructureBossManager implements Listener {
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 3, false, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 2, false, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -193,7 +260,7 @@ public class StructureBossManager implements Listener {
         configureBoss(entity, type);
         entity.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 2, false, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 2, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 
@@ -202,7 +269,7 @@ public class StructureBossManager implements Listener {
         configureBoss(entity, type);
         entity.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 2, false, true));
         entity.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, 1, false, true));
-        entity.setGlowing(true);
+
         return entity;
     }
 

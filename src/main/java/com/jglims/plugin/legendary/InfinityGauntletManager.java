@@ -323,7 +323,8 @@ public class InfinityGauntletManager implements Listener {
         if (entity.getAttribute(Attribute.MOVEMENT_SPEED) != null) {
             entity.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(0.28);
         }
-        entity.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         entity.setGlowing(true);
         entity.setRemoveWhenFarAway(false);
         entity.setPersistent(true);
 

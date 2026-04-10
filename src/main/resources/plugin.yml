@@ -6,12 +6,13 @@ author: JGlims
 description: >-
   Custom enchantments, battle weapons, super tools, 63 legendary weapons,
   13 armor sets, 7 power-ups, infinity gauntlet, 64 enchantments,
-  blood moon events, guilds, quests, structures, abyss dimension, and more.
+  blood moon events, guilds, quests, 72 custom mobs, 4 dimensions (Abyss,
+  Aether, Lunar, Jurassic), vampire transformation, magic items, and more.
 
 commands:
   jglims:
     description: JGlimsPlugin admin commands
-    usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|menu|guia|help>
+    usage: /jglims <reload|stats|enchants|sort|mastery|legendary|armor|powerup|bosstitles|gauntlet|vampire|abyss|menu|guia|help>
     permission: jglims.admin
   guild:
     description: Guild management commands

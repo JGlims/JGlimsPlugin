@@ -131,7 +131,8 @@ public class RoamingBossManager implements Listener {
         }
         watcher.setPersistent(true);
         watcher.setRemoveWhenFarAway(false);
-        watcher.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         watcher.setGlowing(true);
         watcher.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         watcher.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "WATCHER");
         activeWatcherUUID = watcher.getUniqueId();
@@ -194,7 +195,8 @@ public class RoamingBossManager implements Listener {
         }
         drake.setPersistent(true);
         drake.setRemoveWhenFarAway(false);
-        drake.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         drake.setGlowing(true);
         drake.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         drake.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "HELLFIRE_DRAKE");
         activeHellfireDrakeUUID = drake.getUniqueId();
@@ -289,7 +291,8 @@ public class RoamingBossManager implements Listener {
         }
         colossus.setPersistent(true);
         colossus.setRemoveWhenFarAway(false);
-        colossus.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         colossus.setGlowing(true);
         colossus.setPlayerCreated(false);
         colossus.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         colossus.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "FROST_COLOSSUS");
@@ -374,7 +377,8 @@ public class RoamingBossManager implements Listener {
         }
         predator.setPersistent(true);
         predator.setRemoveWhenFarAway(false);
-        predator.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         predator.setGlowing(true);
         predator.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         predator.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "JUNGLE_PREDATOR");
         activeJunglePredatorUUID = predator.getUniqueId();
@@ -408,14 +412,15 @@ public class RoamingBossManager implements Listener {
                         stealthActive = true;
                         lastSpecialAttack.put(predator.getUniqueId(), now);
                         predator.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60, 0, false, false));
-                        predator.setGlowing(false);
+//                         predator.setGlowing(false);
                         bossLoc.getWorld().playSound(bossLoc, Sound.ENTITY_CAT_HISS, 1.0f, 0.5f);
                         // After 3 seconds, leap and deal damage
                         new BukkitRunnable() {
                             @Override public void run() {
                                 if (predator.isDead() || !predator.isValid()) return;
                                 stealthActive = false;
-                                predator.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //                                 predator.setGlowing(true);
                                 predator.removePotionEffect(PotionEffectType.INVISIBILITY);
                                 Player nearest = findNearestPlayer(predator.getLocation(), 20);
                                 if (nearest != null) {
@@ -486,7 +491,8 @@ public class RoamingBossManager implements Listener {
         }
         wraith.setPersistent(true);
         wraith.setRemoveWhenFarAway(false);
-        wraith.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         wraith.setGlowing(true);
         wraith.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         wraith.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "END_WRAITH");
         activeEndWraithUUID = wraith.getUniqueId();
@@ -601,7 +607,8 @@ public class RoamingBossManager implements Listener {
         }
         leviathan.setPersistent(true);
         leviathan.setRemoveWhenFarAway(false);
-        leviathan.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         leviathan.setGlowing(true);
         leviathan.getPersistentDataContainer().set(KEY_ROAMING_BOSS, PersistentDataType.BYTE, (byte) 1);
         leviathan.getPersistentDataContainer().set(KEY_ROAMING_TYPE, PersistentDataType.STRING, "ABYSSAL_LEVIATHAN");
         activeAbyssalLeviathanUUID = leviathan.getUniqueId();

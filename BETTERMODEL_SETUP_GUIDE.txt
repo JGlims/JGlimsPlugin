@@ -1,0 +1,291 @@
+================================================================================
+  BETTERMODEL CUSTOM MOB SETUP GUIDE — Step by Step
+  JGlimsPlugin — From Blockbench to In-Game
+================================================================================
+
+This guide explains the complete process of creating a custom mob model in
+Blockbench, animating it, exporting it, and deploying it to the Minecraft
+server so JGlimsPlugin can render it via the BetterModel plugin.
+
+================================================================================
+  PART 1: CREATING THE MODEL IN BLOCKBENCH
+================================================================================
+
+1. Open Blockbench (https://www.blockbench.net/ — free, desktop or web)
+
+2. Create a new project:
+   - Click "File > New > Bedrock Entity" (NOT Java Block/Item)
+   - Bedrock Entity format is what BetterModel uses (.bbmodel)
+   - Set a project name matching the mob's model name exactly:
+     Example: "abyss_dragon" (must match the modelName in CustomMobType.java)
+
+3. Build your model:
+   - Use cubes and groups (bones) to create the mob's shape
+   - Organize bones in a hierarchy: root > body > head, legs, tail, wings, etc.
+   - Each bone group can be animated independently
+   - TIP: Keep the model centered on the origin (0, 0, 0)
+   - TIP: Scale matters — 1 cube unit = 1/16 of a Minecraft block
+
+4. Texture the model:
+   - Click the "Paint" tab in Blockbench
+   - Create a new texture: right-click in Textures panel > "Create Texture"
+   - Set resolution (64x64 is standard, 128x128 for detailed mobs)
+   - Paint directly on the model or use "UV Editor" for precise texturing
+   - You can also import existing textures from image files
+
+5. UV Mapping:
+   - Each face of each cube needs UV coordinates
+   - Blockbench auto-maps UVs when you create cubes
+   - For complex shapes, manually adjust UVs in the UV Editor panel
+   - TIP: Use "Auto UV" button for quick setup, then refine
+
+================================================================================
+  PART 2: ANIMATING THE MODEL
+================================================================================
+
+Every mob in JGlimsPlugin expects specific animation names. The Java code calls
+these names via BetterModel's animate() API. If an animation name doesn't exist
+in the .bbmodel, it silently fails (no crash, just no animation).
+
+REQUIRED ANIMATIONS FOR ALL MOBS:
+  - idle        : Default standing/breathing loop
+  - walk        : Movement loop (leg/body movement)
+  - attack      : Basic attack swing/bite (play once)
+  - death       : Death animation (hold on last frame)
+
+ADDITIONAL ANIMATIONS BY MOB TYPE:
+
+  Boss mobs also need:
+  - spawn       : Dramatic entrance animation
+  - enrage      : Visual change for rage phase
+  - roar        : Roar/scream animation
+
+  Flying mobs also need:
+  - fly         : Flying loop (wing flapping)
+  - fire_breath : Breath attack animation
+  - special_1   : First special attack
+  - special_2   : Second special attack
+
+  Rideable mobs also need:
+  - idle_mounted : Idle while being ridden
+  - walk_mounted : Walking while being ridden
+  - fly_mounted  : Flying while being ridden (if applicable)
+  - jump         : Jump animation
+
+  NPC mobs need:
+  - idle        : Standing still
+  - talk        : Talking/gesturing animation
+  - walk        : Walking (optional, most NPCs are stationary)
+
+HOW TO CREATE ANIMATIONS IN BLOCKBENCH:
+
+1. Switch to "Animate" tab (top-right)
+
+2. Click the "+" button in the Animations panel to create a new animation
+
+3. Name it EXACTLY as listed above (e.g., "idle", "walk", "attack")
+   - Names are case-sensitive!
+
+4. Set animation properties:
+   - Loop: "loop" for idle/walk/fly, "once" for attack/death/spawn
+   - Length: depends on the animation (idle: 2-4s, attack: 0.5-1s, death: 2s)
+
+5. Create keyframes:
+   - Select a bone group in the outliner
+   - Move the timeline cursor to the desired time
+   - Change position/rotation/scale of the bone
+   - Blockbench auto-creates keyframes
+   - Use the "Rotation" channel for most animations
+
+6. Tips for good animations:
+   - Idle: Subtle breathing (body rises/lowers 1-2 units over 3 seconds)
+   - Walk: Alternate legs, slight body sway, 0.5-1 second cycle
+   - Attack: Fast wind-up (0.2s), quick strike (0.1s), recovery (0.3s)
+   - Death: Dramatic fall, body goes limp over 1-2 seconds
+   - Flying: Wings up/down cycle, 0.5-1 second, body tilts slightly
+
+7. Test animations:
+   - Use the play button in the timeline to preview
+   - Check all bones move correctly and nothing clips
+
+================================================================================
+  PART 3: EXPORTING THE MODEL
+================================================================================
+
+1. Save the project:
+   - File > Save Project As > choose location
+   - File extension: .bbmodel
+   - Name MUST match the modelName in the Java code exactly
+     Example: abyss_dragon.bbmodel, godzilla.bbmodel, steve_npc.bbmodel
+
+2. The .bbmodel file contains EVERYTHING:
+   - Model geometry
+   - Textures (embedded in the file)
+   - All animations
+   - No separate texture files needed for BetterModel
+
+3. DO NOT export as .json or any other format
+   - BetterModel reads .bbmodel files directly
+
+================================================================================
+  PART 4: UPLOADING TO THE SERVER
+================================================================================
+
+1. Connect to the server via SSH:
+   ssh -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" ubuntu@144.22.198.184
+
+2. Copy the .bbmodel file to the BetterModel models folder:
+   LOCAL (from PowerShell):
+   scp -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" `
+       "C:\path\to\your\model.bbmodel" `
+       ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+
+   OR if using the Docker volume:
+   scp -i $sshKey model.bbmodel ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+
+3. The file goes in:
+   /home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+
+   This maps to the Docker container path:
+   /data/plugins/BetterModel/models/
+
+4. Reload BetterModel (in-game or via console):
+   /bettermodel reload
+
+5. BetterModel will:
+   - Parse the .bbmodel file
+   - Generate item display textures
+   - Build its resource pack in: plugins/BetterModel/build/
+   - The model is now available via BetterModel.model("model_name")
+
+================================================================================
+  PART 5: MERGING RESOURCE PACKS
+================================================================================
+
+BetterModel generates its own resource pack that must be merged with the
+JGlims resource pack before players can see the models.
+
+1. Download BetterModel's generated pack from the server:
+   scp -i $sshKey ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/BetterModel/build/BetterModel.zip ./
+
+2. Extract both packs:
+   - JGlims pack: resourcepack-work/JGlimsResourcePack/
+   - BetterModel pack: extract BetterModel.zip
+
+3. Merge into merged_pack/:
+   - Copy assets/minecraft/ from JGlims pack
+   - Copy assets/bettermodel/ from BetterModel pack
+   - They use separate namespaces so there are NO conflicts
+
+4. ZIP the merged pack:
+   & "C:\Program Files\7-Zip\7z.exe" a -tzip "JGlimsResourcePack.zip" "merged_pack\*"
+   NEVER use PowerShell Compress-Archive (creates broken ZIPs)
+
+5. Compute SHA-1:
+   (Get-FileHash -Path "JGlimsResourcePack.zip" -Algorithm SHA1).Hash.ToLower()
+
+6. Upload to nginx on server:
+   scp -i $sshKey JGlimsResourcePack.zip ubuntu@144.22.198.184:/var/www/resourcepack/JGlimsResourcePack.zip
+
+7. Update SHA-1 in docker-compose.yml on the server:
+   ssh -i $sshKey ubuntu@144.22.198.184
+   cd /home/ubuntu/minecraft-server
+   # Edit docker-compose.yml: update RESOURCE_PACK_SHA1 value
+   nano docker-compose.yml
+   # Then recreate the container:
+   docker compose down && docker compose up -d
+
+8. Players will auto-download the updated pack on next join.
+
+================================================================================
+  PART 6: VERIFYING IN-GAME
+================================================================================
+
+1. Join the server
+
+2. Accept the resource pack prompt
+
+3. Test mob spawning (requires OP):
+   /jglims abyss boss          — spawns the Abyss Dragon (if in Abyss)
+
+   Or use the custom mob system directly via the Creative Menu:
+   /jglims menu                 — opens the creative item/mob menu
+
+4. Check the console for:
+   [CustomMob] Spawned <MobName> at ...
+   or
+   [CustomMob] Model not found: <model_name> for <MobName>
+   (means the .bbmodel isn't in the models/ folder or name doesn't match)
+
+5. If the model doesn't appear but the hitbox entity exists:
+   - Check /bettermodel reload was run after uploading
+   - Check the .bbmodel filename matches EXACTLY (case-sensitive)
+   - Check the server console for BetterModel errors
+
+================================================================================
+  PART 7: REPLACING THE ABYSS DRAGON (NO-ANIMATION → ANIMATED)
+================================================================================
+
+When your new animated abyss_dragon.bbmodel is ready:
+
+1. Delete the old file:
+   ssh -i $sshKey ubuntu@144.22.198.184
+   rm /home/ubuntu/minecraft-server/data/plugins/BetterModel/models/abyss_dragon.bbmodel
+
+2. Upload the new one:
+   scp -i $sshKey abyss_dragon.bbmodel ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+
+3. Reload:
+   /bettermodel reload
+
+4. The Java code already calls these animation names:
+   - idle, fly, attack, fire_breath, walk, spawn, death
+   - Make sure your new .bbmodel has ALL of these animations
+
+5. No Java code changes needed — AbyssDragonModel.java already uses the
+   correct BetterModel API calls.
+
+================================================================================
+  QUICK REFERENCE: ALL 72 MODEL FILES NEEDED
+================================================================================
+
+See RESOURCE_PACK_ADDITIONS.md in the project root for the complete list of
+all 72 .bbmodel files with their exact filenames and required animations.
+
+Each filename in that document corresponds to a modelName in CustomMobType.java.
+The name must match EXACTLY (no extension, case-sensitive).
+
+Example: CustomMobType.GODZILLA has modelName "godzilla"
+         → file must be: godzilla.bbmodel
+         → placed in: plugins/BetterModel/models/godzilla.bbmodel
+         → Java calls: BetterModel.model("godzilla")
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+Problem: Mob spawns but is invisible (no model)
+  → Check /bettermodel reload was run
+  → Check filename matches modelName exactly
+  → Check console for "Model not found" errors
+
+Problem: Model appears but no animations play
+  → Check animation names match exactly (idle, walk, attack, death)
+  → Check animations are set to correct loop mode in Blockbench
+  → Run /bettermodel reload after re-uploading
+
+Problem: Model is too big or too small
+  → Adjust model scale in Blockbench (Edit > Scale)
+  → The hitbox entity has SCALE attribute set in code
+
+Problem: Resource pack not updating for players
+  → Make sure you updated the SHA-1 in docker-compose.yml
+  → docker compose down && docker compose up -d
+  → Players need to rejoin to get the new pack
+
+Problem: Textures look wrong
+  → Check UV mapping in Blockbench
+  → Make sure texture is embedded (not linked externally)
+  → Re-export and re-upload the .bbmodel
+
+================================================================================

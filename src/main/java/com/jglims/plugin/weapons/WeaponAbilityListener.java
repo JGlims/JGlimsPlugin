@@ -326,7 +326,8 @@ public class WeaponAbilityListener implements Listener {
 
             BlockDisplay display = world.spawn(oreLoc, BlockDisplay.class, entity -> {
                 entity.setBlock(oreLoc.getBlock().getBlockData());
-                entity.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //                 entity.setGlowing(true);
                 entity.setGlowColorOverride(oreType.getGlowColor());
                 entity.setVisibleByDefault(false);
                 entity.setPersistent(false);
@@ -1199,7 +1200,8 @@ public class WeaponAbilityListener implements Listener {
                         Arrow bolt = player.launchProjectile(Arrow.class, dir);
                         bolt.setDamage(18.0);
                         bolt.setFireTicks(60);
-                        bolt.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //                         bolt.setGlowing(true);
                         bolt.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
                         bolt.setLifetimeTicks(60);
                         bolt.setShooter(player);

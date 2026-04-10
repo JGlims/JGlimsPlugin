@@ -152,47 +152,22 @@ public class BloodMoonManager implements Listener {
             ThreadLocalRandom.current().nextInt(-20, 21));
         spawnLoc.setY(world.getHighestBlockYAt(spawnLoc) + 1);
 
-        Zombie king = world.spawn(spawnLoc, Zombie.class, zombie -> {
-            zombie.setAdult();
-            zombie.setBaby(false);
-            zombie.setShouldBurnInDay(false);
-            zombie.customName(Component.text("Blood Moon King", NamedTextColor.DARK_RED)
-                .decoration(TextDecoration.BOLD, true));
-            zombie.setCustomNameVisible(true);
-            zombie.setGlowing(true);
-            zombie.setRemoveWhenFarAway(false);
-
-            AttributeInstance maxHealth = zombie.getAttribute(Attribute.MAX_HEALTH);
-            if (maxHealth != null) {
-                double health = 20.0 * config.getBloodMoonBossHealthMult();
-                maxHealth.setBaseValue(health);
-                zombie.setHealth(health);
+        // Spawn Ripper Zombie custom mob instead of vanilla zombie boss
+        com.jglims.plugin.custommobs.CustomMobManager mobManager = plugin.getCustomMobManager();
+        if (mobManager != null) {
+            com.jglims.plugin.custommobs.CustomMobEntity mob = mobManager.spawnMob(
+                    com.jglims.plugin.custommobs.CustomMobType.RIPPER_ZOMBIE, spawnLoc);
+            if (mob != null && mob.getHitboxEntity() != null) {
+                bloodMoonKingUUID = mob.getHitboxEntity().getUniqueId();
             }
-            AttributeInstance attackDamage = zombie.getAttribute(Attribute.ATTACK_DAMAGE);
-            if (attackDamage != null) {
-                attackDamage.setBaseValue(3.0 * config.getBloodMoonBossDamageMult());
-            }
-
-            zombie.getEquipment().setHelmet(new ItemStack(Material.DIAMOND_HELMET));
-            zombie.getEquipment().setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
-            zombie.getEquipment().setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS));
-            zombie.getEquipment().setBoots(new ItemStack(Material.DIAMOND_BOOTS));
-            zombie.getEquipment().setItemInMainHand(new ItemStack(Material.NETHERITE_SWORD));
-            zombie.getEquipment().setHelmetDropChance(0f);
-            zombie.getEquipment().setChestplateDropChance(0f);
-            zombie.getEquipment().setLeggingsDropChance(0f);
-            zombie.getEquipment().setBootsDropChance(0f);
-            zombie.getEquipment().setItemInMainHandDropChance(0f);
-        });
-
-        bloodMoonKingUUID = king.getUniqueId();
+        }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage(Component.text("The Blood Moon King has risen!", NamedTextColor.DARK_RED)
+            p.sendMessage(Component.text("The Ripper Zombie has risen!", NamedTextColor.DARK_RED)
                 .decoration(TextDecoration.BOLD, true));
         }
 
-        plugin.getLogger().info("Blood Moon King spawned at " +
+        plugin.getLogger().info("Blood Moon Ripper Zombie spawned at " +
             spawnLoc.getBlockX() + ", " + spawnLoc.getBlockY() + ", " + spawnLoc.getBlockZ());
     }
 
@@ -249,28 +224,8 @@ public class BloodMoonManager implements Listener {
             return;
         }
 
-        // Infinity Stone fragment drop during Blood Moon (0.1% per normal mob kill)
-        if (bloodMoonActive && entity instanceof Monster
-                && entity.getWorld().getEnvironment() == World.Environment.NORMAL
-                && entity.getKiller() != null) {
-            if (ThreadLocalRandom.current().nextDouble() < 0.001) {
-                InfinityStoneManager stoneManager = plugin.getInfinityStoneManager();
-                if (stoneManager != null) {
-                    ItemStack fragment = stoneManager.createRandomFragment();
-                    event.getDrops().add(fragment);
-                    Player killer = entity.getKiller();
-                    killer.playSound(killer.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.5f);
-                    killer.playSound(killer.getLocation(), org.bukkit.Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.5f);
-                    killer.sendMessage(Component.text("  \u2726 ", TextColor.color(255, 215, 0))
-                            .append(Component.text("A mysterious fragment dropped...", NamedTextColor.GOLD)
-                                    .decorate(TextDecoration.ITALIC)));
-                    entity.getLocation().getWorld().spawnParticle(
-                            Particle.TOTEM_OF_UNDYING, entity.getLocation().add(0, 1, 0),
-                            20, 0.3, 0.5, 0.3, 0.1);
-                    plugin.getLogger().info("Infinity Stone fragment dropped for " + killer.getName() + " during Blood Moon!");
-                }
-            }
-        }
+        // Infinity Stone fragments now drop exclusively from Aether/Lunar dimension chests.
+        // Blood Moon stone drops have been removed per the Gauntlet rework.
 
         // Double drops during Blood Moon
         if (bloodMoonActive && config.isBloodMoonDoubleDrops()) {

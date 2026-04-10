@@ -105,7 +105,8 @@ public class KingMobManager implements Listener {
         entity.setCustomNameVisible(true);
 
         // Glowing effect
-        entity.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         entity.setGlowing(true);
 
         // Prevent natural despawn
         entity.setRemoveWhenFarAway(false);

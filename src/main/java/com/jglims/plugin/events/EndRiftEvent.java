@@ -362,7 +362,8 @@ public class EndRiftEvent implements Listener {
             entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(hp);
             entity.setHealth(hp);
         }
-        entity.setGlowing(true);
+// Glowing removed — replaced by particle effects
+            //         entity.setGlowing(true);
         entity.setRemoveWhenFarAway(false);
         entity.setPersistent(true);
     }
@@ -389,26 +390,27 @@ public class EndRiftEvent implements Listener {
             }
         }
 
-        // Spawn as a Wither (we cannot spawn a second EnderDragon cleanly in the overworld,
-        // so we use a Wither reskinned/renamed as the End Rift Dragon â€” same boss bar behavior)
-        boss = riftWorld.spawn(spawnLoc, Wither.class, w -> {
-            w.customName(Component.text("\u2620 End Rift Dragon \u2620", TextColor.color(120, 0, 200))
-                    .decorate(TextDecoration.BOLD));
-            w.setCustomNameVisible(true);
-        });
+        // Spawn Realistic Dragon custom mob via CustomMobManager
+        com.jglims.plugin.custommobs.CustomMobManager mobManager =
+                com.jglims.plugin.JGlimsPlugin.getInstance().getCustomMobManager();
+        if (mobManager != null) {
+            com.jglims.plugin.custommobs.CustomMobEntity dragonMob = mobManager.spawnMob(
+                    com.jglims.plugin.custommobs.CustomMobType.REALISTIC_DRAGON, spawnLoc);
+            if (dragonMob != null && dragonMob.getHitboxEntity() != null) {
+                boss = (org.bukkit.entity.LivingEntity) dragonMob.getHitboxEntity();
+            }
+        }
+        // Fallback: spawn a Wither if custom mob system fails
+        if (boss == null) {
+            boss = riftWorld.spawn(spawnLoc, Wither.class, w -> {
+                w.customName(Component.text("End Rift Dragon", TextColor.color(120, 0, 200))
+                        .decorate(TextDecoration.BOLD));
+                w.setCustomNameVisible(true);
+            });
+        }
 
-        // Configure boss stats
         eventManager.tagEventBoss(boss, "END_RIFT");
         boss.getPersistentDataContainer().set(KEY_RIFT_BOSS, PersistentDataType.BYTE, (byte) 1);
-
-        if (boss.getAttribute(Attribute.MAX_HEALTH) != null) {
-            boss.getAttribute(Attribute.MAX_HEALTH).setBaseValue(600);
-            boss.setHealth(600);
-        }
-        if (boss.getAttribute(Attribute.ATTACK_DAMAGE) != null) {
-            boss.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(16);
-        }
-        boss.setGlowing(true);
         boss.setRemoveWhenFarAway(false);
 
         // Massive spawn VFX
@@ -504,7 +506,7 @@ public class EndRiftEvent implements Listener {
             return;
         }
 
-        // Rift mob death â€” small XP bonus
+        // Rift mob death â€" small XP bonus
         if (entity.getPersistentDataContainer().has(KEY_RIFT_MOB, PersistentDataType.BYTE)) {
             event.setDroppedExp(event.getDroppedExp() * 2);
             // Small chance to drop ender pearls

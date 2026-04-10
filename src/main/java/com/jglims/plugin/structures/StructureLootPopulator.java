@@ -54,6 +54,9 @@ public class StructureLootPopulator {
         // ── Power-up chances ──
         addPowerUps(loot, tier);
 
+        // ── Dimension-specific loot (Infinity Stones, Thanos Glove, Vampire Evolver) ──
+        addDimensionLoot(loot, chestLoc);
+
         // ── Place loot in random slots ──
         for (ItemStack item : loot) {
             int slot = random.nextInt(inv.getSize());
@@ -189,5 +192,63 @@ public class StructureLootPopulator {
             case ABYSSAL -> LegendaryTier.MYTHIC;
             default -> null;
         };
+    }
+
+    /**
+     * Adds dimension-specific loot to chests based on which world the chest is in.
+     * <ul>
+     *   <li>Aether chests: 2% chance for Space, Reality, or Mind Infinity Stone fragment</li>
+     *   <li>Lunar chests: 2% chance for Power, Soul, or Time Infinity Stone fragment</li>
+     *   <li>Abyss chests: 10% chance for Thanos Glove, 3% chance for Wand of Wands</li>
+     *   <li>End City chests: 5% chance for Vampire Evolver</li>
+     * </ul>
+     */
+    private void addDimensionLoot(List<ItemStack> loot, Location chestLoc) {
+        String worldName = chestLoc.getWorld().getName();
+        var stoneManager = plugin.getInfinityStoneManager();
+        var gauntletManager = plugin.getInfinityGauntletManager();
+
+        switch (worldName) {
+            case "world_aether" -> {
+                // 2% chance for an Aether Infinity Stone fragment (Space, Reality, Mind)
+                if (random.nextDouble() < 0.02 && stoneManager != null) {
+                    com.jglims.plugin.legendary.InfinityStoneManager.StoneType[] aetherStones = {
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.SPACE,
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.REALITY,
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.MIND
+                    };
+                    loot.add(stoneManager.createFragment(aetherStones[random.nextInt(3)]));
+                }
+            }
+            case "world_lunar" -> {
+                // 2% chance for a Lunar Infinity Stone fragment (Power, Soul, Time)
+                if (random.nextDouble() < 0.02 && stoneManager != null) {
+                    com.jglims.plugin.legendary.InfinityStoneManager.StoneType[] lunarStones = {
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.POWER,
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.SOUL,
+                            com.jglims.plugin.legendary.InfinityStoneManager.StoneType.TIME
+                    };
+                    loot.add(stoneManager.createFragment(lunarStones[random.nextInt(3)]));
+                }
+            }
+            case "world_abyss" -> {
+                // 10% chance for Thanos Glove
+                if (random.nextDouble() < 0.10 && gauntletManager != null) {
+                    loot.add(gauntletManager.createThanosGlove());
+                }
+                // 3% chance for Wand of Wands
+                var magicManager = plugin.getMagicItemManager();
+                if (random.nextDouble() < 0.03 && magicManager != null) {
+                    loot.add(magicManager.createWandOfWands());
+                }
+            }
+            case "world_the_end" -> {
+                // 5% chance for Vampire Evolver in End City chests
+                var vampireManager = plugin.getVampireManager();
+                if (random.nextDouble() < 0.05 && vampireManager != null) {
+                    loot.add(vampireManager.createVampireEvolver());
+                }
+            }
+        }
     }
 }

@@ -11,6 +11,8 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.entity.*;
+
+import java.util.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -99,34 +101,47 @@ public class NpcWizardManager implements Listener {
         Location loc = nearPlayer.getLocation().add(random.nextInt(16) - 8, 0, random.nextInt(16) - 8);
         loc.setY(loc.getWorld().getHighestBlockYAt(loc.getBlockX(), loc.getBlockZ()) + 1);
 
-        WanderingTrader wizard = loc.getWorld().spawn(loc, WanderingTrader.class);
-        wizard.customName(Component.text("Archmage Eldric", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD));
-        wizard.setCustomNameVisible(true);
-        wizard.setAI(true);
-        wizard.setInvulnerable(true);
-        wizard.setPersistent(true);
-        wizard.setRemoveWhenFarAway(false);
-        wizard.setGlowing(true);
-        wizard.getPersistentDataContainer().set(KEY_WIZARD_NPC, PersistentDataType.BYTE, (byte) 1);
-        // Clear default trades
-        wizard.setRecipes(new ArrayList<>());
-        activeWizardUUID = wizard.getUniqueId();
+        // Spawn Arquimage BetterModel NPC via custom mob system
+        var mobManager = plugin.getCustomMobManager();
+        if (mobManager != null) {
+            var mob = mobManager.spawnMob(
+                    com.jglims.plugin.custommobs.CustomMobType.ARQUIMAGE_NPC, loc);
+            if (mob != null && mob.getHitboxEntity() != null) {
+                activeWizardUUID = mob.getHitboxEntity().getUniqueId();
+                mob.getHitboxEntity().getPersistentDataContainer().set(
+                        KEY_WIZARD_NPC, PersistentDataType.BYTE, (byte) 1);
+            }
+        }
+        // Fallback: vanilla WanderingTrader if custom mob fails
+        if (activeWizardUUID == null) {
+            WanderingTrader wizard = loc.getWorld().spawn(loc, WanderingTrader.class);
+            wizard.customName(Component.text("The Arquimage", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD));
+            wizard.setCustomNameVisible(true);
+            wizard.setAI(true);
+            wizard.setInvulnerable(true);
+            wizard.setPersistent(true);
+            wizard.setRemoveWhenFarAway(false);
+            wizard.getPersistentDataContainer().set(KEY_WIZARD_NPC, PersistentDataType.BYTE, (byte) 1);
+            wizard.setRecipes(new ArrayList<>());
+            activeWizardUUID = wizard.getUniqueId();
+        }
 
         // Announce
-        Component msg = Component.text("\u2728 ", TextColor.color(100, 50, 200))
-            .append(Component.text("Archmage Eldric", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD))
+        Component msg = Component.text("The Arquimage", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD)
             .append(Component.text(" has appeared nearby!", NamedTextColor.LIGHT_PURPLE));
         for (Player p : loc.getNearbyPlayers(60)) {
             p.sendMessage(msg);
             p.playSound(p.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
         }
 
-        // Ambient particles
+        // Ambient particles + despawn timer using UUID reference
+        final UUID wizardUUID = activeWizardUUID;
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (wizard.isDead() || !wizard.isValid()) { cancel(); return; }
-                wizard.getWorld().spawnParticle(Particle.ENCHANT, wizard.getLocation().add(0, 2, 0), 10, 0.5, 0.5, 0.5, 0.5);
+                Entity e = plugin.getServer().getEntity(wizardUUID);
+                if (e == null || e.isDead() || !e.isValid()) { cancel(); return; }
+                e.getWorld().spawnParticle(Particle.ENCHANT, e.getLocation().add(0, 2, 0), 10, 0.5, 0.5, 0.5, 0.5);
             }
         }.runTaskTimer(plugin, 20L, 20L);
 
@@ -134,21 +149,21 @@ public class NpcWizardManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!wizard.isDead() && wizard.isValid()) {
-                    for (Player p : wizard.getLocation().getNearbyPlayers(40)) {
-                        p.sendMessage(Component.text("\u2728 ", TextColor.color(100, 50, 200))
-                            .append(Component.text("Archmage Eldric", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD))
+                Entity e = plugin.getServer().getEntity(wizardUUID);
+                if (e != null && !e.isDead() && e.isValid()) {
+                    for (Player p : e.getLocation().getNearbyPlayers(40)) {
+                        p.sendMessage(Component.text("The Arquimage", TextColor.color(100, 50, 200)).decorate(TextDecoration.BOLD)
                             .append(Component.text(" vanishes in a puff of smoke...", NamedTextColor.GRAY)));
                     }
-                    wizard.getWorld().spawnParticle(Particle.LARGE_SMOKE, wizard.getLocation(), 40, 0.5, 1, 0.5, 0.05);
-                    wizard.getWorld().playSound(wizard.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
-                    wizard.remove();
+                    e.getWorld().spawnParticle(Particle.LARGE_SMOKE, e.getLocation(), 40, 0.5, 1, 0.5, 0.05);
+                    e.getWorld().playSound(e.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
+                    e.remove();
                     activeWizardUUID = null;
                 }
             }
         }.runTaskLater(plugin, 12000L);
 
-        plugin.getLogger().info("Archmage Eldric spawned near " + nearPlayer.getName());
+        plugin.getLogger().info("The Arquimage spawned near " + nearPlayer.getName());
     }
 
     // ══════════════════════════════════════════════════════════════════

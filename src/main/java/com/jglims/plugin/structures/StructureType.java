@@ -110,6 +110,34 @@ public enum StructureType {
         20, 30, 20, true, "Celestial Guardian", 500,
         Set.of(Biome.STONY_PEAKS, Biome.WINDSWEPT_HILLS, Biome.MEADOW, Biome.JAGGED_PEAKS, Biome.FROZEN_PEAKS)),
 
+    FORGE("The Forge", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        60, 40, 60, true, "Protector of the Forge", 900,
+        Set.of(Biome.STONY_PEAKS, Biome.WINDSWEPT_HILLS, Biome.JAGGED_PEAKS)),
+
+    OGRIN_HUT("Ogrin's Hut", World.Environment.NORMAL, LegendaryTier.EPIC,
+        20, 15, 20, true, "Ogrin Giant", 400,
+        Set.of(Biome.SWAMP, Biome.MANGROVE_SWAMP)),
+
+    FAIRY_GLADE("Fairy Glade", World.Environment.NORMAL, LegendaryTier.RARE,
+        30, 20, 30, true, "Winged Unicorn", 300,
+        Set.of(Biome.CHERRY_GROVE)),
+
+    JAPANESE_TEMPLE("Japanese Temple", World.Environment.NORMAL, LegendaryTier.RARE,
+        25, 20, 25, false, null, 0,
+        Set.of(Biome.CHERRY_GROVE)),
+
+    MONSTER_ISLAND("Monster Island", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        200, 40, 200, true, "Godzilla", 3000,
+        Set.of(Biome.OCEAN, Biome.DEEP_OCEAN)),
+
+    WEREWOLF_DEN("Werewolf Den", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        20, 15, 20, true, "Whulvk Werewolf", 800,
+        Set.of(Biome.DARK_FOREST, Biome.TAIGA)),
+
+    NECROMANCER_DUNGEON("Necromancer Dungeon", World.Environment.NORMAL, LegendaryTier.RARE,
+        25, 20, 25, true, "Necromancer Lord", 300,
+        Set.of(Biome.DARK_FOREST)),
+
     // ── Nether Structures ──
     CRIMSON_CITADEL("Crimson Citadel", World.Environment.NETHER, LegendaryTier.EPIC,
         40, 30, 40, true, "Crimson Warlord", 350,
@@ -140,6 +168,14 @@ public enum StructureType {
         45, 25, 45, true, "Infernal Champion", 400,
         Set.of(Biome.NETHER_WASTES, Biome.BASALT_DELTAS)),
 
+    NETHER_KINGS_CASTLE("Nether King's Castle", World.Environment.NETHER, LegendaryTier.MYTHIC,
+        250, 60, 250, true, "Nether King", 1500,
+        Set.of(Biome.NETHER_WASTES, Biome.CRIMSON_FOREST)),
+
+    DEMON_FORTRESS("Demon Fortress", World.Environment.NETHER, LegendaryTier.EPIC,
+        40, 30, 40, true, "Demon Lord", 400,
+        Set.of(Biome.NETHER_WASTES, Biome.SOUL_SAND_VALLEY)),
+
     // ── End Structures ──
     VOID_SHRINE("Void Shrine", World.Environment.THE_END, LegendaryTier.MYTHIC,
         25, 20, 25, true, "Void Sentinel", 300,
@@ -161,6 +197,18 @@ public enum StructureType {
         10, 5, 10, false, null, 0,
         null),
 
+    GLEEOK_ARENA("Gleeok Arena", World.Environment.THE_END, LegendaryTier.MYTHIC,
+        80, 40, 80, true, "King Gleeok", 1800,
+        null),
+
+    ILLIDAN_PRISON("Illidan's Prison", World.Environment.THE_END, LegendaryTier.MYTHIC,
+        40, 30, 40, true, "Illidan", 1200,
+        null),
+
+    SKELETON_DRAGON_LAIR("Skeleton Dragon Lair", World.Environment.THE_END, LegendaryTier.MYTHIC,
+        35, 25, 35, true, "Skeleton Dragon", 800,
+        null),
+
     // ── NEW Abyss Structures (Plus Part 2) ──
     // Note: These use CUSTOM environment but are filtered by world name "world_abyss"
     // The Abyss dimension uses THE_END environment internally
@@ -174,6 +222,92 @@ public enum StructureType {
 
     SHATTERED_CATHEDRAL("Shattered Cathedral", World.Environment.THE_END, LegendaryTier.ABYSSAL,
         50, 45, 50, true, "Fallen Archbishop", 1000,
+        null),
+
+    // ── Aether Structures ──
+    // Note: Aether uses THE_END environment internally
+    AETHER_VILLAGE("Aether Village", World.Environment.THE_END, LegendaryTier.RARE,
+        80, 20, 80, false, null, 0,
+        null),
+
+    CRYSTAL_CAVERN("Crystal Cavern", World.Environment.THE_END, LegendaryTier.EPIC,
+        40, 30, 40, true, "Crystal Guardian", 300,
+        null),
+
+    STORM_PEAK_TOWER("Storm Peak Tower", World.Environment.THE_END, LegendaryTier.EPIC,
+        20, 50, 20, true, "Storm Keeper", 400,
+        null),
+
+    PITLORD_LAIR("Pitlord's Lair", World.Environment.THE_END, LegendaryTier.MYTHIC,
+        40, 30, 40, true, "Pitlord", 900,
+        null),
+
+    WARRIOR_SKY_FORTRESS("Warrior's Sky Fortress", World.Environment.THE_END, LegendaryTier.ABYSSAL,
+        100, 50, 100, true, "The Warrior", 2000,
+        null),
+
+    DRAGONKIN_TEMPLE("Dragonkin Temple", World.Environment.THE_END, LegendaryTier.MYTHIC,
+        50, 35, 50, true, "Javion Dragonkin", 1100,
+        null),
+
+    AETHER_ANCIENT_RUINS("Ancient Ruins", World.Environment.THE_END, LegendaryTier.EPIC,
+        30, 15, 30, true, "Ancient Portal Mimic", 120,
+        null),
+
+    // ── Lunar Structures ──
+    // Note: Lunar uses NORMAL environment
+    INVADERLING_OUTPOST("Invaderling Outpost", World.Environment.NORMAL, LegendaryTier.RARE,
+        20, 15, 20, true, "Invaderling Captain", 100,
+        null),
+
+    UNDERGROUND_HIVE("Underground Hive", World.Environment.NORMAL, LegendaryTier.EPIC,
+        40, 25, 40, true, "Hive Queen", 300,
+        null),
+
+    ALIEN_CITADEL("Alien Citadel", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        80, 40, 80, true, "Invaderling Commander", 1000,
+        null),
+
+    METEOR_CRASH_SITE("Meteor Crash Site", World.Environment.NORMAL, LegendaryTier.EPIC,
+        30, 10, 30, false, null, 0,
+        null),
+
+    OBSERVATION_TOWER("Observation Tower", World.Environment.NORMAL, LegendaryTier.RARE,
+        15, 40, 15, false, null, 0,
+        null),
+
+    LUNAR_BASE("Abandoned Lunar Base", World.Environment.NORMAL, LegendaryTier.EPIC,
+        40, 15, 40, false, null, 0,
+        null),
+
+    // ── Jurassic Structures ──
+    // Note: Jurassic uses NORMAL environment
+    BONE_ARENA("Bone Arena", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        60, 30, 60, true, "T-Rex", 1200,
+        null),
+
+    DINOBOT_ARENA("Dinobot Arena", World.Environment.NORMAL, LegendaryTier.MYTHIC,
+        50, 25, 50, true, "Dinobot", 800,
+        null),
+
+    RAPTOR_NEST("Raptor Nest", World.Environment.NORMAL, LegendaryTier.RARE,
+        15, 8, 15, false, null, 0,
+        null),
+
+    WATERING_HOLE("Watering Hole", World.Environment.NORMAL, LegendaryTier.COMMON,
+        30, 5, 30, false, null, 0,
+        null),
+
+    VOLCANIC_FORGE("Volcanic Forge", World.Environment.NORMAL, LegendaryTier.EPIC,
+        25, 20, 25, true, "Forge Golem", 400,
+        null),
+
+    TAR_PIT("Tar Pit", World.Environment.NORMAL, LegendaryTier.RARE,
+        20, 8, 20, false, null, 0,
+        null),
+
+    NESTING_GROUND("Nesting Ground", World.Environment.NORMAL, LegendaryTier.EPIC,
+        40, 10, 40, true, "Parasaurolophus", 500,
         null);
 
     private final String displayName;
@@ -219,6 +353,37 @@ public enum StructureType {
     /** Returns true if this structure belongs to the Abyss dimension. */
     public boolean isAbyssDimension() {
         return this == ABYSSAL_CASTLE || this == VOID_NEXUS || this == SHATTERED_CATHEDRAL;
+    }
+
+    /**
+     * Returns the target world name for this structure. Structures that belong
+     * to custom dimensions return the specific world name; others return null
+     * to indicate they use the standard dimension filtering.
+     */
+    public String getTargetWorldName() {
+        return switch (this) {
+            // Abyss structures
+            case ABYSSAL_CASTLE, VOID_NEXUS, SHATTERED_CATHEDRAL -> "world_abyss";
+            // Aether structures
+            case AETHER_VILLAGE, CRYSTAL_CAVERN, STORM_PEAK_TOWER, PITLORD_LAIR,
+                 WARRIOR_SKY_FORTRESS, DRAGONKIN_TEMPLE, AETHER_ANCIENT_RUINS -> "world_aether";
+            // Lunar structures
+            case INVADERLING_OUTPOST, UNDERGROUND_HIVE, ALIEN_CITADEL,
+                 METEOR_CRASH_SITE, OBSERVATION_TOWER, LUNAR_BASE -> "world_lunar";
+            // Jurassic structures
+            case BONE_ARENA, DINOBOT_ARENA, RAPTOR_NEST, WATERING_HOLE,
+                 VOLCANIC_FORGE, TAR_PIT, NESTING_GROUND -> "world_jurassic";
+            // Standard structures use dimension-based filtering
+            default -> null;
+        };
+    }
+
+    /**
+     * Returns true if this structure belongs to a specific custom dimension
+     * (Abyss, Aether, Lunar, or Jurassic).
+     */
+    public boolean isCustomDimension() {
+        return getTargetWorldName() != null;
     }
 
     public double getGenerationChance() {

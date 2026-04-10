@@ -51,6 +51,16 @@ public class QuestManager implements Listener {
     private final NamespacedKey KEY_DRAGON_PROGRESS;
     private final NamespacedKey KEY_ABYSSAL_STAGE;
     private final NamespacedKey KEY_ABYSSAL_PROGRESS;
+    private final NamespacedKey KEY_AETHER_STAGE;
+    private final NamespacedKey KEY_AETHER_PROGRESS;
+    private final NamespacedKey KEY_LUNAR_STAGE;
+    private final NamespacedKey KEY_LUNAR_PROGRESS;
+    private final NamespacedKey KEY_JURASSIC_STAGE;
+    private final NamespacedKey KEY_JURASSIC_PROGRESS;
+    private final NamespacedKey KEY_VAMPIRE_STAGE;
+    private final NamespacedKey KEY_VAMPIRE_PROGRESS;
+    private final NamespacedKey KEY_DRAGON_TAMING_STAGE;
+    private final NamespacedKey KEY_DRAGON_TAMING_PROGRESS;
 
     // Track active quest NPCs to prevent duplicates
     private final Set<UUID> activeQuestNPCs = new HashSet<>();
@@ -74,7 +84,22 @@ public class QuestManager implements Listener {
             new int[]{100, 1, 1}),
         ABYSSAL("Abyssal Descent", "Nihilus the Void-Touched", TextColor.color(170, 0, 0),
             new String[]{"Enter the Abyss dimension", "Kill 50 mobs in the Abyss", "Defeat the Abyssal Leviathan"},
-            new int[]{1, 50, 1});
+            new int[]{1, 50, 1}),
+        AETHER("Aether Explorer", "Seraphina the Skywalker", TextColor.color(100, 200, 255),
+            new String[]{"Enter the Aether dimension", "Kill 30 Aether mobs", "Defeat The Warrior"},
+            new int[]{1, 30, 1}),
+        LUNAR("Lunar Pioneer", "Commander Nova", TextColor.color(180, 180, 200),
+            new String[]{"Enter the Lunar dimension", "Kill 20 Invaderlings", "Defeat the Invaderling Commander"},
+            new int[]{1, 20, 1}),
+        JURASSIC("Jurassic Survivor", "Rex Hunter", TextColor.color(100, 180, 60),
+            new String[]{"Enter the Jurassic dimension", "Kill 15 dinosaurs", "Defeat the T-Rex"},
+            new int[]{1, 15, 1}),
+        VAMPIRE("Blood Path", "Carmilla the Ancient", TextColor.color(180, 40, 40),
+            new String[]{"Become a vampire", "Consume 50 blood items", "Reach Vampire Lord level"},
+            new int[]{1, 50, 1}),
+        DRAGON_TAMING("Dragon Tamer", "Eragon the Rider", TextColor.color(200, 150, 50),
+            new String[]{"Tame any rideable dragon", "Tame 3 different dragon species", "Fly 10000 blocks on a dragon"},
+            new int[]{1, 3, 10000});
 
         public final String displayName;
         public final String npcName;
@@ -107,6 +132,16 @@ public class QuestManager implements Listener {
         KEY_DRAGON_PROGRESS = new NamespacedKey(plugin, "quest_dragon_progress");
         KEY_ABYSSAL_STAGE = new NamespacedKey(plugin, "quest_abyssal_stage");
         KEY_ABYSSAL_PROGRESS = new NamespacedKey(plugin, "quest_abyssal_progress");
+        KEY_AETHER_STAGE = new NamespacedKey(plugin, "quest_aether_stage");
+        KEY_AETHER_PROGRESS = new NamespacedKey(plugin, "quest_aether_progress");
+        KEY_LUNAR_STAGE = new NamespacedKey(plugin, "quest_lunar_stage");
+        KEY_LUNAR_PROGRESS = new NamespacedKey(plugin, "quest_lunar_progress");
+        KEY_JURASSIC_STAGE = new NamespacedKey(plugin, "quest_jurassic_stage");
+        KEY_JURASSIC_PROGRESS = new NamespacedKey(plugin, "quest_jurassic_progress");
+        KEY_VAMPIRE_STAGE = new NamespacedKey(plugin, "quest_vampire_stage");
+        KEY_VAMPIRE_PROGRESS = new NamespacedKey(plugin, "quest_vampire_progress");
+        KEY_DRAGON_TAMING_STAGE = new NamespacedKey(plugin, "quest_dragon_taming_stage");
+        KEY_DRAGON_TAMING_PROGRESS = new NamespacedKey(plugin, "quest_dragon_taming_progress");
     }
 
     /**
@@ -130,7 +165,7 @@ public class QuestManager implements Listener {
             }
         }.runTaskTimer(plugin, 6000L, 6000L); // Every 5 minutes
 
-        plugin.getLogger().info("Quest NPC scheduler started (6 quest lines).");
+        plugin.getLogger().info("Quest NPC scheduler started (11 quest lines).");
     }
 
     /**
@@ -172,11 +207,16 @@ public class QuestManager implements Listener {
             case NETHER -> npc.setProfession(Villager.Profession.CLERIC);
             case DRAGON -> npc.setProfession(Villager.Profession.LIBRARIAN);
             case ABYSSAL -> npc.setProfession(Villager.Profession.NITWIT);
+            case AETHER -> npc.setProfession(Villager.Profession.CLERIC);
+            case LUNAR -> npc.setProfession(Villager.Profession.ARMORER);
+            case JURASSIC -> npc.setProfession(Villager.Profession.BUTCHER);
+            case VAMPIRE -> npc.setProfession(Villager.Profession.LEATHERWORKER);
+            case DRAGON_TAMING -> npc.setProfession(Villager.Profession.SHEPHERD);
         }
         npc.setVillagerLevel(5);
         npc.getPersistentDataContainer().set(KEY_QUEST_NPC, PersistentDataType.BYTE, (byte) 1);
         npc.getPersistentDataContainer().set(KEY_QUEST_NPC_TYPE, PersistentDataType.STRING, line.name());
-        npc.setGlowing(true);
+//         npc.setGlowing(true); // REMOVED: no glowing on mobs
         activeQuestNPCs.add(npc.getUniqueId());
 
         // Despawn after 20 minutes
@@ -346,6 +386,31 @@ public class QuestManager implements Listener {
             case ABYSSAL -> {
                 dropRandomWeapon(player, LegendaryTier.ABYSSAL);
                 player.sendMessage(Component.text("  Final Reward: ABYSSAL Weapon!", TextColor.color(170, 0, 0)).decorate(TextDecoration.BOLD));
+            }
+            case AETHER -> {
+                dropRandomWeapon(player, LegendaryTier.MYTHIC);
+                for (int i = 0; i < 3; i++) player.getInventory().addItem(pum.createPhoenixFeather());
+                player.sendMessage(Component.text("  Final Reward: MYTHIC Weapon + 3 Phoenix Feathers!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            }
+            case LUNAR -> {
+                dropRandomWeapon(player, LegendaryTier.EPIC);
+                player.getInventory().addItem(pum.createTitanResolve());
+                player.sendMessage(Component.text("  Final Reward: EPIC Weapon + Titan's Resolve!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            }
+            case JURASSIC -> {
+                dropRandomWeapon(player, LegendaryTier.MYTHIC);
+                for (int i = 0; i < 5; i++) player.getInventory().addItem(pum.createSoulFragment());
+                player.sendMessage(Component.text("  Final Reward: MYTHIC Weapon + 5 Soul Fragments!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            }
+            case VAMPIRE -> {
+                dropRandomWeapon(player, LegendaryTier.MYTHIC);
+                for (int i = 0; i < 3; i++) player.getInventory().addItem(pum.createHeartCrystal());
+                player.sendMessage(Component.text("  Final Reward: MYTHIC Weapon + 3 Heart Crystals!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            }
+            case DRAGON_TAMING -> {
+                dropRandomWeapon(player, LegendaryTier.MYTHIC);
+                player.getInventory().addItem(pum.createKeepInventorer());
+                player.sendMessage(Component.text("  Final Reward: MYTHIC Weapon + KeepInventorer!", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
             }
         }
     }
@@ -517,6 +582,11 @@ public class QuestManager implements Listener {
             case NETHER -> KEY_NETHER_STAGE;
             case DRAGON -> KEY_DRAGON_STAGE;
             case ABYSSAL -> KEY_ABYSSAL_STAGE;
+            case AETHER -> KEY_AETHER_STAGE;
+            case LUNAR -> KEY_LUNAR_STAGE;
+            case JURASSIC -> KEY_JURASSIC_STAGE;
+            case VAMPIRE -> KEY_VAMPIRE_STAGE;
+            case DRAGON_TAMING -> KEY_DRAGON_TAMING_STAGE;
         };
     }
 
@@ -528,6 +598,11 @@ public class QuestManager implements Listener {
             case NETHER -> KEY_NETHER_PROGRESS;
             case DRAGON -> KEY_DRAGON_PROGRESS;
             case ABYSSAL -> KEY_ABYSSAL_PROGRESS;
+            case AETHER -> KEY_AETHER_PROGRESS;
+            case LUNAR -> KEY_LUNAR_PROGRESS;
+            case JURASSIC -> KEY_JURASSIC_PROGRESS;
+            case VAMPIRE -> KEY_VAMPIRE_PROGRESS;
+            case DRAGON_TAMING -> KEY_DRAGON_TAMING_PROGRESS;
         };
     }
 
