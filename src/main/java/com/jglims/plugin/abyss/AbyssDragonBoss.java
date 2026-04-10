@@ -134,6 +134,17 @@ public class AbyssDragonBoss implements Listener {
 
         plugin.getLogger().info("[DragonBoss] Dragon model spawned successfully! HP: " + dragonModel.getHealth());
 
+        // Transition to fly animation after spawn animation finishes (~5s)
+        final Location spawnLocFinal = spawnLoc;
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (dragonModel != null && dragonModel.isAlive()) {
+                    dragonModel.playFlyAnimation(spawnLocFinal);
+                }
+            }
+        }.runTaskLater(plugin, 100L);
+
         // Create boss bar
         bossBar = BossBar.bossBar(
             Component.text("Abyssal Dragon", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD),
@@ -290,12 +301,15 @@ public class AbyssDragonBoss implements Listener {
                 double hpPercent = currentHp / maxHp;
                 if (hpPercent <= 0.10 && dragonModel.getPhase() < 4) {
                     dragonModel.setPhase(4);
+                    dragonModel.triggerAttack("special_2");
                     phaseAnnounce(abyss, 4, "ENRAGED — THE ABYSS CONSUMES ALL");
                 } else if (hpPercent <= 0.25 && dragonModel.getPhase() < 3) {
                     dragonModel.setPhase(3);
+                    dragonModel.triggerAttack("special_2");
                     phaseAnnounce(abyss, 3, "The dragon unleashes its true power!");
                 } else if (hpPercent <= 0.50 && dragonModel.getPhase() < 2) {
                     dragonModel.setPhase(2);
+                    dragonModel.triggerAttack("special_2");
                     phaseAnnounce(abyss, 2, "The dragon enters a rage!");
                 }
 
@@ -333,6 +347,7 @@ public class AbyssDragonBoss implements Listener {
                 if (waypoints.isEmpty()) return;
 
                 Location target = waypoints.get(currentWaypoint);
+                dragonModel.playFlyAnimation(target);
                 dragonModel.moveToward(target, 0.8 + (dragonModel.getPhase() * 0.2));
 
                 Location dragonLoc = dragonModel.getLocation();
@@ -375,12 +390,17 @@ public class AbyssDragonBoss implements Listener {
 
     private void voidBreath(Player target) {
         if (dragonModel == null) return;
+        dragonModel.triggerAttack("fire_breath", () ->
+            dragonModel.playAnimation("fly", AbyssDragonModel.FLY_MOD));
         dragonModel.breathAttackVisual(target.getLocation());
         target.damage(8.0 + dragonModel.getPhase() * 2.0);
         target.sendMessage(Component.text("The dragon's void breath burns!", NamedTextColor.DARK_PURPLE));
     }
 
     private void lightningStrike(World abyss, Player target) {
+        if (dragonModel != null) {
+            dragonModel.triggerAttack("special_1");
+        }
         abyss.strikeLightningEffect(target.getLocation());
         target.damage(6.0);
     }
@@ -404,6 +424,7 @@ public class AbyssDragonBoss implements Listener {
         Location loc = dragonModel.getLocation();
         if (loc == null) return;
 
+        dragonModel.triggerAttack("special_2");
         abyss.spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 2, 0, 2, 0.1);
         abyss.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.5f);
 
@@ -420,6 +441,7 @@ public class AbyssDragonBoss implements Listener {
         Location dragonLoc = dragonModel.getLocation();
         if (dragonLoc == null) return;
 
+        dragonModel.triggerAttack("attack");
         abyss.spawnParticle(Particle.PORTAL, dragonLoc, 200, 8, 8, 8, 0.5);
         abyss.playSound(dragonLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.3f);
 
@@ -435,6 +457,7 @@ public class AbyssDragonBoss implements Listener {
         Location loc = dragonModel.getLocation();
         if (loc == null) return;
 
+        dragonModel.triggerAttack("special_1");
         int count = Math.min(3 + dragonModel.getPhase(), 6);
         for (int i = 0; i < count; i++) {
             Location spawn = loc.clone().add(
@@ -456,6 +479,9 @@ public class AbyssDragonBoss implements Listener {
     }
 
     private void enrageLightningBarrage(World abyss, Player target) {
+        if (dragonModel != null) {
+            dragonModel.triggerAttack("special_2");
+        }
         new BukkitRunnable() {
             int strikes = 0;
             @Override
@@ -552,8 +578,27 @@ public class AbyssDragonBoss implements Listener {
         Location deathLoc = dragonModel != null && dragonModel.getLocation() != null ?
             dragonModel.getLocation() : new Location(abyss, 0, 80, AbyssDimensionManager.ARENA_CENTER_Z);
 
+        final Location deathLocFinal = deathLoc;
         if (dragonModel != null) {
-            dragonModel.playDeathAnimation();
+            dragonModel.deathSequence(() -> {
+                dropLoot(abyss, deathLocFinal);
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (bossBar != null) {
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                p.hideBossBar(bossBar);
+                            }
+                        }
+                        abyss.getEntitiesByClass(Enderman.class).forEach(e -> {
+                            if (e.customName() != null) e.remove();
+                        });
+                        abyss.getEntitiesByClass(WitherSkeleton.class).forEach(e -> {
+                            if (e.customName() != null) e.remove();
+                        });
+                    }
+                }.runTaskLater(plugin, 200L);
+            });
         }
 
         for (Player p : abyss.getPlayers()) {
@@ -578,30 +623,16 @@ public class AbyssDragonBoss implements Listener {
             }
         }
 
-        // Drop loot after death animation
-        final Location finalDeathLoc = deathLoc;
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                dropLoot(abyss, finalDeathLoc);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            p.hideBossBar(bossBar);
-                        }
-                    }
-                }.runTaskLater(plugin, 200L);
-
-                // Clean up named minions
-                abyss.getEntitiesByClass(Enderman.class).forEach(e -> {
-                    if (e.customName() != null) e.remove();
-                });
-                abyss.getEntitiesByClass(WitherSkeleton.class).forEach(e -> {
-                    if (e.customName() != null) e.remove();
-                });
+        // Loot drop and cleanup are now handled by deathSequence callback above.
+        // (Fallback: if dragonModel was null, drop immediately so loot is never lost.)
+        if (dragonModel == null) {
+            dropLoot(abyss, deathLoc);
+            if (bossBar != null) {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.hideBossBar(bossBar);
+                }
             }
-        }.runTaskLater(plugin, 80L);
+        }
     }
 
     private void dropLoot(World abyss, Location loc) {

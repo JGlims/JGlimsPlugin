@@ -852,66 +852,201 @@ public final class DimensionStructureBuilders {
      * end rod lighting, obsidian altar, chorus flower garden.
      */
     public static void buildVoidShrine(StructureBuilder b) {
-        // Central platform
-        b.filledCircle(0, 0, 0, 12, Material.END_STONE_BRICKS);
-        b.filledCircle(0, 1, 0, 10, Material.PURPUR_BLOCK);
+        // ─── Void Shrine: a sacred floating sanctuary in the End ───
+        // Central temple under a purpur dome, 4 floating sub-platforms connected
+        // by elegant arched bridges, chorus garden, scrying pool, void prayer hall.
 
-        // Outer floating platforms (4) connected by bridges
-        int[][] platforms = {{-20, 0}, {20, 0}, {0, -20}, {0, 20}};
-        for (int[] p : platforms) {
-            b.filledCircle(p[0], 0, p[1], 6, Material.END_STONE_BRICKS);
-            b.filledCircle(p[0], 1, p[1], 4, Material.PURPUR_BLOCK);
-            // End rod lights on each platform
-            b.setBlock(p[0], 3, p[1], Material.END_ROD);
-            b.setBlock(p[0] - 3, 2, p[1], Material.END_ROD);
-            b.setBlock(p[0] + 3, 2, p[1], Material.END_ROD);
+        // ─── Central temple platform: stepped octagonal base ───
+        b.filledCircle(0, -1, 0, 14, Material.END_STONE);
+        b.filledCircle(0, 0, 0, 14, Material.END_STONE_BRICKS);
+        b.filledCircle(0, 1, 0, 12, Material.PURPUR_BLOCK);
+        b.filledCircle(0, 2, 0, 10, Material.PURPUR_PILLAR);
+        // Decorative ring of inlay
+        for (int a = 0; a < 360; a += 1) {
+            int rx = (int) Math.round(11 * Math.cos(Math.toRadians(a)));
+            int rz = (int) Math.round(11 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx, 1, rz, Material.PURPUR_PILLAR);
+        }
+        // Stairs around the rim (cosmetic)
+        for (int a = 0; a < 360; a += 6) {
+            int sx = (int) Math.round(13 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(13 * Math.sin(Math.toRadians(a)));
+            org.bukkit.block.BlockFace facing = (Math.abs(sx) > Math.abs(sz))
+                    ? (sx > 0 ? org.bukkit.block.BlockFace.WEST : org.bukkit.block.BlockFace.EAST)
+                    : (sz > 0 ? org.bukkit.block.BlockFace.NORTH : org.bukkit.block.BlockFace.SOUTH);
+            b.setStairs(sx, 1, sz, Material.PURPUR_STAIRS, facing, false);
         }
 
-        // Bridges connecting to center
-        for (int[] p : platforms) {
-            int dx = Integer.signum(p[0]);
-            int dz = Integer.signum(p[1]);
-            for (int i = 7; i < 14; i++) {
-                int bx = dx * i;
-                int bz = dz * i;
-                b.setBlock(bx, 0, bz, Material.PURPUR_BLOCK);
-                b.setBlock(bx + (dz != 0 ? 1 : 0), 0, bz + (dx != 0 ? 1 : 0), Material.PURPUR_BLOCK);
-                b.setBlock(bx - (dz != 0 ? 1 : 0), 0, bz - (dx != 0 ? 1 : 0), Material.PURPUR_BLOCK);
+        // ─── 8 Pillar ring inside the temple holding up the dome ───
+        for (int i = 0; i < 8; i++) {
+            int a = i * 45;
+            int px = (int) Math.round(9 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(9 * Math.sin(Math.toRadians(a)));
+            // Tapered base
+            b.fillBox(px - 1, 2, pz - 1, px + 1, 3, pz + 1, Material.PURPUR_PILLAR);
+            // Main pillar
+            b.pillar(px, 4, 14, pz, Material.PURPUR_PILLAR);
+            // Capital
+            b.fillBox(px - 1, 14, pz - 1, px + 1, 14, pz + 1, Material.PURPUR_PILLAR);
+            b.setBlock(px, 15, pz, Material.END_ROD);
+        }
+
+        // ─── Grand purpur dome over the central temple ───
+        b.dome(0, 16, 0, 12, Material.PURPUR_BLOCK);
+        // Inner dome lining for richer texture
+        for (int yy = 0; yy <= 8; yy++) {
+            double r = Math.sqrt(100 - yy * yy);
+            for (int a = 0; a < 360; a += 15) {
+                int dx = (int) Math.round(r * 0.9 * Math.cos(Math.toRadians(a)));
+                int dz = (int) Math.round(r * 0.9 * Math.sin(Math.toRadians(a)));
+                b.setBlock(dx, 16 + yy, dz, Material.PURPUR_PILLAR);
+            }
+        }
+        // Oculus at the dome's apex
+        b.setBlock(0, 26, 0, Material.AIR);
+        b.setBlock(0, 25, 0, Material.END_ROD);
+        // Hanging end-rod chandeliers
+        b.chandelier(0, 24, 0, 6);
+        b.chandelier(-5, 22, 0, 4);
+        b.chandelier(5, 22, 0, 4);
+        b.chandelier(0, 22, -5, 4);
+        b.chandelier(0, 22, 5, 4);
+
+        // ─── Central altar: stepped obsidian throne with end gateway ───
+        b.fillBox(-3, 3, -3, 3, 3, 3, Material.OBSIDIAN);
+        b.fillBox(-2, 4, -2, 2, 4, 2, Material.CRYING_OBSIDIAN);
+        b.fillBox(-1, 5, -1, 1, 5, 1, Material.OBSIDIAN);
+        b.setBlock(0, 6, 0, Material.END_GATEWAY);
+        b.setBlock(0, 7, 0, Material.END_ROD);
+        // Altar candles
+        b.setBlock(-2, 4, -2, Material.SOUL_LANTERN);
+        b.setBlock(2, 4, -2, Material.SOUL_LANTERN);
+        b.setBlock(-2, 4, 2, Material.SOUL_LANTERN);
+        b.setBlock(2, 4, 2, Material.SOUL_LANTERN);
+        // Ender chest as the holy reliquary
+        b.setBlock(0, 4, 3, Material.ENDER_CHEST);
+
+        // ─── 4 satellite floating platforms with themed purposes ───
+
+        // North: Chorus garden (a sacred grove)
+        b.filledCircle(0, 0, -28, 7, Material.END_STONE_BRICKS);
+        b.filledCircle(0, 1, -28, 6, Material.END_STONE);
+        b.filledCircle(0, 2, -28, 5, Material.AIR);
+        for (int x = -4; x <= 4; x += 2)
+            for (int z = -32; z <= -24; z += 2) {
+                if ((x + z) % 4 == 0) {
+                    b.setBlock(x, 2, z, Material.CHORUS_PLANT);
+                    b.setBlock(x, 3, z, Material.CHORUS_PLANT);
+                    b.setBlock(x, 4, z, Material.CHORUS_FLOWER);
+                }
+            }
+        // Garden lanterns
+        b.setBlock(-5, 2, -28, Material.END_ROD);
+        b.setBlock(5, 2, -28, Material.END_ROD);
+        b.setBlock(0, 2, -33, Material.END_ROD);
+        b.placeChest(0, 2, -28);
+
+        // South: Scrying pool (water for divination)
+        b.filledCircle(0, 0, 28, 7, Material.END_STONE_BRICKS);
+        b.filledCircle(0, 1, 28, 6, Material.END_STONE);
+        b.filledCircle(0, 2, 28, 4, Material.WATER);
+        b.setBlock(0, 2, 28, Material.SEA_LANTERN);  // glowing center
+        // Pool ring with prismarine
+        for (int a = 0; a < 360; a += 30) {
+            int px = (int) Math.round(5 * Math.cos(Math.toRadians(a)));
+            int pz = 28 + (int) Math.round(5 * Math.sin(Math.toRadians(a)));
+            b.setBlock(px, 2, pz, Material.PRISMARINE_BRICKS);
+            if (a % 60 == 0) b.setBlock(px, 3, pz, Material.END_ROD);
+        }
+        b.placeChest(0, 2, 32);
+
+        // East: Prayer hall (rows of pews facing the center)
+        b.filledCircle(28, 0, 0, 7, Material.END_STONE_BRICKS);
+        b.filledCircle(28, 1, 0, 6, Material.END_STONE);
+        b.fillBox(24, 2, -5, 32, 7, 5, Material.END_STONE_BRICKS);
+        b.fillBox(25, 2, -4, 31, 6, 4, Material.AIR);
+        // Pews (stairs facing west toward central temple)
+        for (int z = -3; z <= 3; z += 2) {
+            b.setStairs(26, 2, z, Material.PURPUR_STAIRS, BlockFace.EAST, false);
+            b.setStairs(27, 2, z, Material.PURPUR_STAIRS, BlockFace.EAST, false);
+        }
+        b.setBlock(30, 3, 0, Material.LECTERN);
+        b.chandelier(28, 6, 0, 2);
+        b.placeChest(30, 2, -3);
+
+        // West: Meditation cell with monk supplies
+        b.filledCircle(-28, 0, 0, 7, Material.END_STONE_BRICKS);
+        b.filledCircle(-28, 1, 0, 6, Material.END_STONE);
+        b.fillBox(-32, 2, -5, -24, 7, 5, Material.END_STONE_BRICKS);
+        b.fillBox(-31, 2, -4, -25, 6, 4, Material.AIR);
+        // Meditation mat in the center
+        b.setBlock(-28, 2, 0, Material.PURPLE_CARPET);
+        // Bookshelves
+        for (int z = -3; z <= 3; z += 2) {
+            b.setBlock(-31, 3, z, Material.BOOKSHELF);
+            b.setBlock(-31, 4, z, Material.BOOKSHELF);
+        }
+        b.setBlock(-30, 3, -2, Material.ENCHANTING_TABLE);
+        b.chandelier(-28, 6, 0, 2);
+        b.placeChest(-30, 2, 3);
+
+        // ─── Arched bridges connecting central temple to each satellite ───
+        // North bridge
+        for (int z = -14; z >= -22; z--) {
+            int t = -14 - z;  // 0..8
+            int yArch = 1 + (int) Math.round(Math.sin(t * Math.PI / 8) * 2);
+            b.setBlock(-2, yArch, z, Material.PURPUR_BLOCK);
+            b.setBlock(-1, yArch, z, Material.PURPUR_BLOCK);
+            b.setBlock(0, yArch, z, Material.PURPUR_BLOCK);
+            b.setBlock(1, yArch, z, Material.PURPUR_BLOCK);
+            b.setBlock(2, yArch, z, Material.PURPUR_BLOCK);
+            // Side rails
+            if (t % 2 == 0) {
+                b.setBlock(-3, yArch + 1, z, Material.PURPUR_PILLAR);
+                b.setBlock(3, yArch + 1, z, Material.PURPUR_PILLAR);
+            }
+        }
+        // South bridge (mirrored)
+        for (int z = 14; z <= 22; z++) {
+            int t = z - 14;
+            int yArch = 1 + (int) Math.round(Math.sin(t * Math.PI / 8) * 2);
+            for (int dx = -2; dx <= 2; dx++) b.setBlock(dx, yArch, z, Material.PURPUR_BLOCK);
+            if (t % 2 == 0) {
+                b.setBlock(-3, yArch + 1, z, Material.PURPUR_PILLAR);
+                b.setBlock(3, yArch + 1, z, Material.PURPUR_PILLAR);
+            }
+        }
+        // East bridge
+        for (int x = 14; x <= 22; x++) {
+            int t = x - 14;
+            int yArch = 1 + (int) Math.round(Math.sin(t * Math.PI / 8) * 2);
+            for (int dz = -2; dz <= 2; dz++) b.setBlock(x, yArch, dz, Material.PURPUR_BLOCK);
+            if (t % 2 == 0) {
+                b.setBlock(x, yArch + 1, -3, Material.PURPUR_PILLAR);
+                b.setBlock(x, yArch + 1, 3, Material.PURPUR_PILLAR);
+            }
+        }
+        // West bridge
+        for (int x = -14; x >= -22; x--) {
+            int t = -14 - x;
+            int yArch = 1 + (int) Math.round(Math.sin(t * Math.PI / 8) * 2);
+            for (int dz = -2; dz <= 2; dz++) b.setBlock(x, yArch, dz, Material.PURPUR_BLOCK);
+            if (t % 2 == 0) {
+                b.setBlock(x, yArch + 1, -3, Material.PURPUR_PILLAR);
+                b.setBlock(x, yArch + 1, 3, Material.PURPUR_PILLAR);
             }
         }
 
-        // Central obsidian altar
-        b.fillBox(-2, 1, -2, 2, 3, 2, Material.OBSIDIAN);
-        b.fillBox(-1, 3, -1, 1, 3, 1, Material.CRYING_OBSIDIAN);
-        b.setBlock(0, 4, 0, Material.END_ROD);
-        b.setBlock(0, 5, 0, Material.END_ROD);
-
-        // Pillar ring around altar
-        for (int a = 0; a < 360; a += 45) {
-            int px = (int) (8 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (8 * Math.sin(Math.toRadians(a)));
-            b.pillar(px, 1, 10, pz, Material.PURPUR_PILLAR);
-            b.setBlock(px, 11, pz, Material.END_ROD);
+        // Floating end rod constellations between platforms
+        for (int i = 0; i < 12; i++) {
+            int a = i * 30 + 15;
+            int sx = (int) Math.round(18 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(18 * Math.sin(Math.toRadians(a)));
+            int sy = 6 + (i % 3) * 2;
+            b.setBlock(sx, sy, sz, Material.END_ROD);
         }
 
-        // Dome over central area
-        b.dome(0, 10, 0, 10, Material.PURPUR_BLOCK);
-
-        // Chorus flower garden (on east platform)
-        for (int x = 18; x <= 22; x += 2)
-            for (int z = -2; z <= 2; z += 2) {
-                b.setBlock(x, 2, z, Material.END_STONE);
-                b.setBlock(x, 3, z, Material.CHORUS_PLANT);
-                b.setBlock(x, 4, z, Material.CHORUS_FLOWER);
-            }
-
-        // Ender chest at altar
-        b.setBlock(0, 4, 1, Material.ENDER_CHEST);
-
-        b.placeChest(0, 2, 0);
-        b.placeChest(-20, 2, 0);
-        b.placeChest(0, 2, 20);
-        b.setBossSpawn(0, 2, 5);
+        b.setBossSpawn(0, 6, 0);
     }
 
     /**
@@ -1058,55 +1193,150 @@ public final class DimensionStructureBuilders {
      * positions, entry portal, spectator platforms, barrier edges.
      */
     public static void buildEndRiftArena(StructureBuilder b) {
-        // Arena floor
-        b.filledCircle(0, 0, 0, 50, Material.END_STONE_BRICKS);
-        b.filledCircle(0, 0, 0, 45, Material.END_STONE);
-        b.filledCircle(0, 0, 0, 5, Material.OBSIDIAN);
+        // ─── End Rift Arena: a torn-reality plaza where the End Rift Dragon emerges ───
+        // Black obsidian arena ringed with crying obsidian "rift cracks", 4 colossal
+        // crystal pillars holding end gateways, suspended spectator platforms.
 
-        // Barrier ring (edge wall)
-        for (int y = 1; y <= 4; y++) b.circle(0, y, 0, 50, Material.OBSIDIAN);
-
-        // Obsidian pillars (12 in a ring for cover)
-        for (int a = 0; a < 360; a += 30) {
-            int px = (int) (30 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (30 * Math.sin(Math.toRadians(a)));
-            b.fillBox(px - 1, 0, pz - 1, px + 1, 12, pz + 1, Material.OBSIDIAN);
-            // End rod atop
-            b.setBlock(px, 13, pz, Material.END_ROD);
+        // Arena floor: layered stonework with rift veins
+        b.filledCircle(0, 0, 0, 28, Material.OBSIDIAN);
+        b.filledCircle(0, 0, 0, 26, Material.END_STONE_BRICKS);
+        b.filledCircle(0, 0, 0, 24, Material.END_STONE);
+        // Crying obsidian "rift veins" radiating from center
+        for (int i = 0; i < 8; i++) {
+            int a = i * 45;
+            for (int d = 1; d <= 24; d++) {
+                int rx = (int) Math.round(d * Math.cos(Math.toRadians(a)));
+                int rz = (int) Math.round(d * Math.sin(Math.toRadians(a)));
+                if (d % 2 == 0) b.setBlock(rx, 0, rz, Material.CRYING_OBSIDIAN);
+                else b.setBlock(rx, 0, rz, Material.OBSIDIAN);
+            }
+        }
+        // Concentric rune circles
+        for (int a = 0; a < 360; a += 1) {
+            int rx = (int) Math.round(8 * Math.cos(Math.toRadians(a)));
+            int rz = (int) Math.round(8 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx, 0, rz, Material.CRYING_OBSIDIAN);
+            int rx2 = (int) Math.round(16 * Math.cos(Math.toRadians(a)));
+            int rz2 = (int) Math.round(16 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx2, 0, rz2, Material.CRYING_OBSIDIAN);
         }
 
-        // End crystal positions (4 cardinal pillars, taller)
-        int[][] crystalPillars = {{0, -35}, {0, 35}, {-35, 0}, {35, 0}};
+        // ─── Outer barrier ring: massive obsidian wall with embedded gateways ───
+        for (int yy = 1; yy <= 6; yy++) b.circle(0, yy, 0, 28, Material.OBSIDIAN);
+        // Battlements with end rod beacons
+        for (int a = 0; a < 360; a += 8) {
+            int wx = (int) Math.round(28 * Math.cos(Math.toRadians(a)));
+            int wz = (int) Math.round(28 * Math.sin(Math.toRadians(a)));
+            b.setBlock(wx, 7, wz, Material.OBSIDIAN);
+            if (a % 16 == 0) b.setBlock(wx, 8, wz, Material.END_ROD);
+        }
+
+        // ─── 4 Colossal end crystal pillars (cardinal directions, 24 high) ───
+        int[][] crystalPillars = {{0, -22}, {0, 22}, {-22, 0}, {22, 0}};
         for (int[] cp : crystalPillars) {
-            b.fillBox(cp[0] - 2, 0, cp[1] - 2, cp[0] + 2, 18, cp[1] + 2, Material.OBSIDIAN);
-            b.fillBox(cp[0] - 1, 18, cp[1] - 1, cp[0] + 1, 18, cp[1] + 1, Material.IRON_BARS);
-            b.setBlock(cp[0], 19, cp[1], Material.END_ROD);
+            // Tapered base
+            b.fillBox(cp[0] - 3, 0, cp[1] - 3, cp[0] + 3, 4, cp[1] + 3, Material.OBSIDIAN);
+            // Main shaft
+            b.fillBox(cp[0] - 2, 5, cp[1] - 2, cp[0] + 2, 18, cp[1] + 2, Material.OBSIDIAN);
+            // Crying obsidian veins running up the shaft
+            for (int yy = 5; yy <= 18; yy++) {
+                if (yy % 3 == 0) {
+                    b.setBlock(cp[0] - 2, yy, cp[1], Material.CRYING_OBSIDIAN);
+                    b.setBlock(cp[0] + 2, yy, cp[1], Material.CRYING_OBSIDIAN);
+                    b.setBlock(cp[0], yy, cp[1] - 2, Material.CRYING_OBSIDIAN);
+                    b.setBlock(cp[0], yy, cp[1] + 2, Material.CRYING_OBSIDIAN);
+                }
+            }
+            // End crystal cradle on top (iron bars cage)
+            b.fillBox(cp[0] - 1, 19, cp[1] - 1, cp[0] + 1, 22, cp[1] + 1, Material.IRON_BARS);
+            b.fillBox(cp[0], 20, cp[1], cp[0], 21, cp[1], Material.AIR);
+            // End gateway block at the top — this is the "rift" where the dragon comes through
+            b.setBlock(cp[0], 20, cp[1], Material.END_GATEWAY);
+            // Glowing end rods around the cage
+            b.setBlock(cp[0] - 2, 22, cp[1], Material.END_ROD);
+            b.setBlock(cp[0] + 2, 22, cp[1], Material.END_ROD);
+            b.setBlock(cp[0], 22, cp[1] - 2, Material.END_ROD);
+            b.setBlock(cp[0], 22, cp[1] + 2, Material.END_ROD);
+            b.setBlock(cp[0], 23, cp[1], Material.END_ROD);
         }
 
-        // Entry portal (south)
-        b.fillBox(-3, 0, -50, 3, 8, -46, Material.PURPUR_BLOCK);
-        b.fillBox(-2, 1, -50, 2, 6, -46, Material.AIR);
-        b.gothicArch(0, 1, -50, 4, 7, Material.PURPUR_PILLAR);
-        b.setBlock(0, 1, -48, Material.END_GATEWAY);
+        // ─── 8 cover pillars at varying heights for tactical use ───
+        for (int i = 0; i < 8; i++) {
+            int a = i * 45 + 22;
+            int px = (int) Math.round(13 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(13 * Math.sin(Math.toRadians(a)));
+            int h = 3 + (i % 3) * 2;
+            b.pillar(px, 1, h, pz, Material.OBSIDIAN);
+            b.setBlock(px, h + 1, pz, Material.CRYING_OBSIDIAN);
+        }
 
-        // Spectator platforms (4 elevated, outside the ring)
-        int[][] specPlats = {{-45, -45}, {45, -45}, {-45, 45}, {45, 45}};
+        // ─── Central altar: stepped obsidian dais where the rift opens ───
+        b.filledCircle(0, 1, 0, 4, Material.OBSIDIAN);
+        b.filledCircle(0, 2, 0, 3, Material.CRYING_OBSIDIAN);
+        b.filledCircle(0, 3, 0, 2, Material.OBSIDIAN);
+        b.setBlock(0, 4, 0, Material.END_GATEWAY);
+        b.setBlock(0, 5, 0, Material.END_ROD);
+        // Dragon head decorations on the altar corners
+        b.setBlock(-3, 2, 0, Material.DRAGON_HEAD);
+        b.setBlock(3, 2, 0, Material.DRAGON_HEAD);
+        b.setBlock(0, 2, -3, Material.DRAGON_HEAD);
+        b.setBlock(0, 2, 3, Material.DRAGON_HEAD);
+
+        // ─── Grand entry portal (south) — gateway tunnel through the wall ───
+        b.fillBox(-4, 1, -29, 4, 7, -27, Material.AIR);
+        b.gothicArch(0, 1, -28, 8, 7, Material.PURPUR_PILLAR);
+        // Approach causeway
+        for (int z = -32; z <= -29; z++) {
+            b.fillBox(-3, 0, z, 3, 0, z, Material.PURPUR_BLOCK);
+            b.setBlock(-4, 0, z, Material.PURPUR_PILLAR);
+            b.setBlock(4, 0, z, Material.PURPUR_PILLAR);
+        }
+        b.setBlock(-4, 1, -32, Material.END_ROD);
+        b.setBlock(4, 1, -32, Material.END_ROD);
+
+        // ─── 4 elevated spectator platforms (corners) ───
+        int[][] specPlats = {{-23, -23}, {23, -23}, {-23, 23}, {23, 23}};
         for (int[] sp : specPlats) {
-            b.fillBox(sp[0] - 5, 8, sp[1] - 5, sp[0] + 5, 8, sp[1] + 5, Material.PURPUR_BLOCK);
-            b.fillBox(sp[0] - 5, 9, sp[1] - 5, sp[0] + 5, 10, sp[1] - 5, Material.PURPUR_BLOCK);
-            b.setBlock(sp[0], 10, sp[1], Material.END_ROD);
+            // Support pillar
+            b.pillar(sp[0], 1, 8, sp[1], Material.OBSIDIAN);
+            // Platform top
+            b.fillBox(sp[0] - 3, 9, sp[1] - 3, sp[0] + 3, 9, sp[1] + 3, Material.PURPUR_BLOCK);
+            // Battlements around platform
+            b.battlements(sp[0] - 3, 10, sp[1] - 3, sp[0] + 3, sp[1] - 3, Material.PURPUR_PILLAR);
+            b.battlements(sp[0] - 3, 10, sp[1] + 3, sp[0] + 3, sp[1] + 3, Material.PURPUR_PILLAR);
+            b.battlements(sp[0] - 3, 10, sp[1] - 3, sp[0] - 3, sp[1] + 3, Material.PURPUR_PILLAR);
+            b.battlements(sp[0] + 3, 10, sp[1] - 3, sp[0] + 3, sp[1] + 3, Material.PURPUR_PILLAR);
+            // Center end rod
+            b.setBlock(sp[0], 11, sp[1], Material.END_ROD);
+            // Loot chest
+            b.placeChest(sp[0], 10, sp[1]);
         }
 
-        // Decorative rings on floor
-        b.circle(0, 0, 0, 15, Material.CRYING_OBSIDIAN);
-        b.circle(0, 0, 0, 25, Material.CRYING_OBSIDIAN);
+        // ─── Floating obsidian "rift fragments" suspended above the arena ───
+        for (int i = 0; i < 6; i++) {
+            int a = i * 60 + 30;
+            int fx = (int) Math.round(10 * Math.cos(Math.toRadians(a)));
+            int fz = (int) Math.round(10 * Math.sin(Math.toRadians(a)));
+            int fy = 14 + i % 3;
+            b.setBlock(fx, fy, fz, Material.CRYING_OBSIDIAN);
+            b.setBlock(fx + 1, fy, fz, Material.OBSIDIAN);
+            b.setBlock(fx, fy, fz + 1, Material.OBSIDIAN);
+        }
 
-        // Center pedestal
-        b.setBlock(0, 1, 0, Material.OBSIDIAN);
-        b.setBlock(0, 2, 0, Material.END_ROD);
+        // Sky end-rod constellation overhead
+        for (int i = 0; i < 12; i++) {
+            int a = i * 30;
+            int sx = (int) Math.round(20 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(20 * Math.sin(Math.toRadians(a)));
+            b.setBlock(sx, 22, sz, Material.END_ROD);
+        }
 
-        b.placeChest(5, 1, 5);
-        b.placeChest(-5, 1, -5);
+        // Central treasure
+        b.placeChest(0, 1, 4);
+        b.placeChest(0, 1, -4);
+        b.placeChest(4, 1, 0);
+        b.placeChest(-4, 1, 0);
+
         b.setBossSpawn(0, 1, 0);
     }
 
@@ -1150,66 +1380,164 @@ public final class DimensionStructureBuilders {
      * elevated platforms, grand entrance arch, 3 head-themed pillars.
      */
     public static void buildGleeokArena(StructureBuilder b) {
-        // Ground level arena floor
-        b.filledCircle(0, 0, 0, 38, Material.END_STONE_BRICKS);
-        b.filledCircle(0, 0, 0, 35, Material.END_STONE);
-        b.filledCircle(0, 0, 0, 8, Material.PURPUR_BLOCK);
-
-        // Outer wall ring
-        for (int y = 1; y <= 15; y++) b.circle(0, y, 0, 38, Material.END_STONE_BRICKS);
-
-        // Three head-themed pillars (at 120-degree intervals, representing 3 heads)
-        Material[] headColors = {Material.RED_CONCRETE, Material.BLUE_CONCRETE, Material.GREEN_CONCRETE};
-        for (int i = 0; i < 3; i++) {
-            int a = i * 120;
-            int px = (int) (25 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (25 * Math.sin(Math.toRadians(a)));
-            b.fillBox(px - 2, 0, pz - 2, px + 2, 18, pz + 2, Material.PURPUR_BLOCK);
-            // Head decoration on top
-            b.fillBox(px - 2, 18, pz - 2, px + 2, 20, pz + 2, headColors[i]);
-            b.setBlock(px, 21, pz, Material.END_ROD);
-            // Eyes
-            b.setBlock(px - 1, 19, pz - 2, Material.SEA_LANTERN);
-            b.setBlock(px + 1, 19, pz - 2, Material.SEA_LANTERN);
-        }
-
-        // Destructible pillars for cover (8 smaller)
-        for (int a = 22; a < 360; a += 45) {
-            int px = (int) (15 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (15 * Math.sin(Math.toRadians(a)));
-            b.pillar(px, 1, 8, pz, Material.END_STONE);
-        }
-
-        // Elevated platforms (second level at y=10)
-        int[][] elevPlats = {{-30, -30}, {30, -30}, {-30, 30}, {30, 30}};
-        for (int[] ep : elevPlats) {
-            b.fillBox(ep[0] - 4, 10, ep[1] - 4, ep[0] + 4, 10, ep[1] + 4, Material.PURPUR_BLOCK);
-            // Stairs up
-            for (int s = 0; s < 10; s++) {
-                int sx = ep[0] + (ep[0] > 0 ? -4 - s : 4 + s);
-                b.setBlock(sx, s, ep[1], Material.PURPUR_STAIRS);
+        // ─── Sunken arena bowl: floor at y=0 with terraced rim rising to y=24 ───
+        // Outer foundation ring (heavy structural mass)
+        for (int y = -3; y <= 0; y++) b.filledCircle(0, y, 0, 40, Material.END_STONE);
+        // Polished stepped tier (6 tiers of seating climbing the bowl wall)
+        for (int tier = 0; tier < 6; tier++) {
+            int r = 38 - tier * 2;
+            int yBase = tier * 3;
+            // Tier face
+            for (int yy = 0; yy < 3; yy++) b.circle(0, yBase + yy, 0, r, Material.PURPUR_BLOCK);
+            // Tier walkway behind
+            for (int a = 0; a < 360; a += 2) {
+                int wx = (int) Math.round((r - 1) * Math.cos(Math.toRadians(a)));
+                int wz = (int) Math.round((r - 1) * Math.sin(Math.toRadians(a)));
+                b.setBlock(wx, yBase + 2, wz, Material.PURPUR_PILLAR);
             }
-            b.setBlock(ep[0], 12, ep[1], Material.END_ROD);
+            // Stairs leading up the tier (used as seats, looking inward)
+            for (int a = 0; a < 360; a += 18) {
+                int sx = (int) Math.round(r * Math.cos(Math.toRadians(a)));
+                int sz = (int) Math.round(r * Math.sin(Math.toRadians(a)));
+                org.bukkit.block.BlockFace facing = (Math.abs(sx) > Math.abs(sz))
+                        ? (sx > 0 ? org.bukkit.block.BlockFace.WEST : org.bukkit.block.BlockFace.EAST)
+                        : (sz > 0 ? org.bukkit.block.BlockFace.NORTH : org.bukkit.block.BlockFace.SOUTH);
+                b.setStairs(sx, yBase + 2, sz, Material.PURPUR_STAIRS, facing, false);
+            }
         }
 
-        // Grand entrance arch (south)
-        b.fillBox(-5, 0, -38, 5, 0, -34, Material.PURPUR_BLOCK);
-        b.fillBox(-5, 1, -38, 5, 12, -38, Material.PURPUR_BLOCK);
-        b.fillBox(-4, 1, -38, 4, 10, -38, Material.AIR);
-        b.gothicArch(0, 1, -38, 8, 11, Material.PURPUR_PILLAR);
+        // ─── Arena floor (sunken to y=1, with elemental rune inlay) ───
+        b.filledCircle(0, 1, 0, 24, Material.END_STONE_BRICKS);
+        // Three concentric rings of element-coded stone
+        for (int a = 0; a < 360; a += 1) {
+            int rx = (int) Math.round(22 * Math.cos(Math.toRadians(a)));
+            int rz = (int) Math.round(22 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx, 1, rz, Material.OBSIDIAN);
+        }
+        // Three triangular sigils inscribed in floor (one per head element)
+        // Fire sigil (north): magma + crimson lines
+        for (int i = -8; i <= 8; i++) {
+            b.setBlock(i, 1, -16 + Math.abs(i), Material.MAGMA_BLOCK);
+            b.setBlock(i, 1, -14 + Math.abs(i), Material.NETHERRACK);
+        }
+        // Frost sigil (southwest): blue ice + packed ice lines
+        for (int i = -8; i <= 8; i++) {
+            int dx = (int) (i * 0.5);
+            int dz = (int) (i * 0.866);
+            b.setBlock(13 + dx + Math.abs(i)/3, 1, 8 + dz - Math.abs(i)/3, Material.BLUE_ICE);
+            b.setBlock(11 + dx + Math.abs(i)/3, 1, 6 + dz - Math.abs(i)/3, Material.PACKED_ICE);
+        }
+        // Storm sigil (southeast): lightning rod + amethyst
+        for (int i = -8; i <= 8; i++) {
+            int dx = (int) (i * 0.5);
+            int dz = (int) (i * 0.866);
+            b.setBlock(-13 - dx - Math.abs(i)/3, 1, 8 + dz - Math.abs(i)/3, Material.AMETHYST_BLOCK);
+        }
 
-        // Floor pattern — rings of obsidian
-        b.circle(0, 0, 0, 12, Material.OBSIDIAN);
-        b.circle(0, 0, 0, 20, Material.OBSIDIAN);
-        b.circle(0, 0, 0, 30, Material.CRYING_OBSIDIAN);
+        // Central altar: three-stepped purpur pyramid where Gleeok manifests
+        b.filledCircle(0, 2, 0, 6, Material.PURPUR_BLOCK);
+        b.filledCircle(0, 3, 0, 4, Material.PURPUR_PILLAR);
+        b.filledCircle(0, 4, 0, 2, Material.OBSIDIAN);
+        b.setBlock(0, 5, 0, Material.DRAGON_HEAD);
+        // End-rod ring around altar
+        for (int a = 0; a < 360; a += 30) {
+            int rx = (int) Math.round(7 * Math.cos(Math.toRadians(a)));
+            int rz = (int) Math.round(7 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx, 2, rz, Material.END_ROD);
+        }
 
-        // Central arena lighting
-        b.chandelier(0, 15, 0, 4);
+        // ─── Three head-pillars (one per head: Fire, Frost, Storm) ───
+        Material[] headBody = {Material.MAGMA_BLOCK, Material.BLUE_ICE, Material.AMETHYST_BLOCK};
+        Material[] headBrick = {Material.NETHER_BRICKS, Material.PACKED_ICE, Material.PURPUR_PILLAR};
+        Material[] headEye = {Material.SHROOMLIGHT, Material.SOUL_LANTERN, Material.SEA_LANTERN};
+        for (int i = 0; i < 3; i++) {
+            int a = i * 120 + 90;  // start at north
+            int px = (int) Math.round(20 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(20 * Math.sin(Math.toRadians(a)));
+            // Tapered base (3-block wide → 5-block wide)
+            for (int yy = 1; yy <= 4; yy++) b.fillBox(px - 2, yy, pz - 2, px + 2, yy, pz + 2, headBrick[i]);
+            for (int yy = 5; yy <= 12; yy++) b.fillBox(px - 1, yy, pz - 1, px + 1, yy, pz + 1, headBrick[i]);
+            // Element core
+            b.fillBox(px - 1, 5, pz - 1, px + 1, 11, pz + 1, headBody[i]);
+            // Crystal head shape on top (a stylized dragon skull)
+            b.fillBox(px - 3, 13, pz - 3, px + 3, 16, pz + 3, headBrick[i]);
+            b.fillBox(px - 2, 14, pz - 2, px + 2, 15, pz + 2, headBody[i]);
+            // Jaw protrusion
+            b.fillBox(px - 2, 12, pz - 2, px + 2, 13, pz + 2, headBody[i]);
+            // Eyes (two)
+            b.setBlock(px - 1, 15, pz, headEye[i]);
+            b.setBlock(px + 1, 15, pz, headEye[i]);
+            // Forehead horn / crest
+            b.setBlock(px, 17, pz, headEye[i]);
+            b.setBlock(px - 2, 17, pz, headBody[i]);
+            b.setBlock(px + 2, 17, pz, headBody[i]);
+            // Element flare beam shooting up
+            for (int yy = 18; yy <= 22; yy++) b.setBlock(px, yy, pz, headEye[i]);
+        }
 
+        // ─── Cover pillars: 6 destructible inner columns at varying heights ───
+        for (int i = 0; i < 6; i++) {
+            int a = i * 60 + 30;
+            int px = (int) Math.round(13 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(13 * Math.sin(Math.toRadians(a)));
+            int height = 5 + (i % 3) * 2;
+            b.pillar(px, 2, 2 + height, pz, Material.PURPUR_PILLAR);
+            b.setBlock(px, 3 + height, pz, Material.PURPUR_SLAB);
+        }
+
+        // ─── Grand triple-arch entrance (south, three gothic arches for the three heads) ───
+        b.fillBox(-12, 1, -42, 12, 1, -38, Material.END_STONE_BRICKS);
+        b.gothicArch(-7, 1, -40, 6, 8, Material.PURPUR_PILLAR);
+        b.gothicArch(0, 1, -40, 8, 12, Material.PURPUR_PILLAR);
+        b.gothicArch(7, 1, -40, 6, 8, Material.PURPUR_PILLAR);
+        // Clear the arch interiors
+        for (int x = -10; x <= 10; x++)
+            for (int y = 2; y <= 11; y++)
+                if (Math.abs(x) <= 3 || (Math.abs(x) >= 5 && Math.abs(x) <= 8))
+                    b.setBlock(x, y, -40, Material.AIR);
+        // Approach causeway with end rods
+        for (int z = -41; z <= -25; z++) {
+            b.setBlock(-3, 1, z, Material.PURPUR_PILLAR);
+            b.setBlock(3, 1, z, Material.PURPUR_PILLAR);
+            if (z % 4 == 0) {
+                b.setBlock(-3, 2, z, Material.END_ROD);
+                b.setBlock(3, 2, z, Material.END_ROD);
+            }
+        }
+
+        // ─── Suspended skylight: dome of end-rod stars overhead ───
+        for (int i = 0; i < 24; i++) {
+            int a = i * 15;
+            int sx = (int) Math.round(28 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(28 * Math.sin(Math.toRadians(a)));
+            b.setBlock(sx, 28, sz, Material.END_ROD);
+        }
+        // Central skylight chandelier
+        b.chandelier(0, 30, 0, 6);
+        for (int dx = -2; dx <= 2; dx++)
+            for (int dz = -2; dz <= 2; dz++)
+                if (dx*dx + dz*dz <= 4) b.setBlock(dx, 30, dz, Material.PURPUR_BLOCK);
+
+        // Spectator boss observation platforms above the heads
+        for (int i = 0; i < 3; i++) {
+            int a = i * 120 + 90;
+            int px = (int) Math.round(34 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(34 * Math.sin(Math.toRadians(a)));
+            b.fillBox(px - 3, 18, pz - 3, px + 3, 18, pz + 3, Material.PURPUR_BLOCK);
+            b.fillBox(px - 3, 19, pz - 3, px + 3, 21, pz + 3, Material.AIR);
+            b.battlements(px - 3, 19, pz - 3, px + 3, pz - 3, Material.PURPUR_PILLAR);
+            b.battlements(px - 3, 19, pz + 3, px + 3, pz + 3, Material.PURPUR_PILLAR);
+            b.battlements(px - 3, 19, pz - 3, px - 3, pz + 3, Material.PURPUR_PILLAR);
+            b.battlements(px + 3, 19, pz - 3, px + 3, pz + 3, Material.PURPUR_PILLAR);
+            b.placeChest(px, 19, pz);
+        }
+
+        // Treasure altar (under central altar)
         b.placeChest(0, 1, 0);
-        b.placeChest(25, 1, 0);
-        b.placeChest(-25, 1, 0);
-        b.setBossSpawn(0, 1, 5);
+        b.placeChest(0, 1, 6);
+        b.placeChest(0, 1, -6);
+
+        b.setBossSpawn(0, 5, 0);
     }
 
     /**
@@ -2724,66 +3052,149 @@ public final class DimensionStructureBuilders {
      * sand/coarse dirt floor, tiered bone seating, torches in eye sockets.
      */
     public static void buildBoneArena(StructureBuilder b) {
-        // Arena floor
-        b.filledCircle(0, 0, 0, 28, Material.SAND);
-        b.filledCircle(0, 0, 0, 25, Material.COARSE_DIRT);
+        // ─── Bone Arena: a colossal T-Rex skeleton's ribcage forms the arena ───
+        // The "spine" runs north-south; ribs arch overhead like a cathedral nave.
 
-        // Outer bone wall ring
-        for (int y = 1; y <= 10; y++) b.circle(0, y, 0, 28, Material.BONE_BLOCK);
+        // Arena floor: bleached sandstone with coarse dirt patches and bone fragments
+        b.filledCircle(0, 0, 0, 30, Material.SMOOTH_SANDSTONE);
+        b.filledCircle(0, 0, 0, 28, Material.SUSPICIOUS_SAND);
+        b.scatter(-30, 0, -30, 30, 0, 30, Material.SUSPICIOUS_SAND, Material.COARSE_DIRT, 0.35);
+        b.scatter(-30, 0, -30, 30, 0, 30, Material.SUSPICIOUS_SAND, Material.BONE_BLOCK, 0.05);
 
-        // Tiered bone seating (4 tiers)
-        for (int tier = 0; tier < 4; tier++) {
-            int r = 24 - tier * 2;
-            b.circle(0, tier + 1, 0, r, Material.BONE_BLOCK);
-        }
-
-        // Ribcage arches (8 massive ribs arching over the arena)
-        for (int a = 0; a < 360; a += 45) {
-            int bx = (int) (25 * Math.cos(Math.toRadians(a)));
-            int bz = (int) (25 * Math.sin(Math.toRadians(a)));
-            // Rib going from base to peak
-            for (int y = 5; y <= 18; y++) {
-                double t = (double) (y - 5) / 13;
-                int rx = (int) (bx * (1 - t * 0.7));
-                int rz = (int) (bz * (1 - t * 0.7));
-                b.setBlock(rx, y, rz, Material.BONE_BLOCK);
+        // Stepped seating tiers (5 tiers of bone bleachers)
+        for (int tier = 0; tier < 5; tier++) {
+            int r = 30 - tier * 2;
+            int yBase = tier * 2;
+            for (int yy = 0; yy < 2; yy++) b.circle(0, yBase + yy, 0, r, Material.BONE_BLOCK);
+            // Tier walkway with stairs as seating
+            for (int a = 0; a < 360; a += 12) {
+                int sx = (int) Math.round((r - 1) * Math.cos(Math.toRadians(a)));
+                int sz = (int) Math.round((r - 1) * Math.sin(Math.toRadians(a)));
+                org.bukkit.block.BlockFace facing = (Math.abs(sx) > Math.abs(sz))
+                        ? (sx > 0 ? org.bukkit.block.BlockFace.WEST : org.bukkit.block.BlockFace.EAST)
+                        : (sz > 0 ? org.bukkit.block.BlockFace.NORTH : org.bukkit.block.BlockFace.SOUTH);
+                b.setStairs(sx, yBase + 1, sz, Material.SMOOTH_SANDSTONE_STAIRS, facing, false);
             }
         }
 
-        // Skull gate entrance (south)
-        b.fillBox(-5, 0, -28, 5, 10, -25, Material.BONE_BLOCK);
-        b.fillBox(-3, 1, -28, 3, 8, -25, Material.AIR);
-        // Skull decoration over gate
-        b.fillBox(-4, 8, -28, 4, 13, -25, Material.BONE_BLOCK);
-        b.fillBox(-3, 9, -28, 3, 12, -25, Material.AIR);
-        // Eyes (torches in sockets)
-        b.setBlock(-2, 11, -28, Material.TORCH);
-        b.setBlock(2, 11, -28, Material.TORCH);
-        // Nose hole
-        b.setBlock(0, 9, -28, Material.AIR);
-        // Mouth
-        b.fillBox(-2, 8, -28, 2, 8, -28, Material.AIR);
-
-        // Interior combat pillars (bone)
-        for (int a = 0; a < 360; a += 60) {
-            int px = (int) (12 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (12 * Math.sin(Math.toRadians(a)));
-            b.pillar(px, 1, 6, pz, Material.BONE_BLOCK);
-            b.setBlock(px, 7, pz, Material.SKELETON_SKULL);
+        // ─── The spine: massive vertebrae running through the arena's center ───
+        // Each vertebra is a 3x3 bone block knot
+        for (int z = -26; z <= 26; z += 4) {
+            // Vertebra disc
+            b.fillBox(-1, 1, z - 1, 1, 2, z + 1, Material.BONE_BLOCK);
+            // Spinous process (a fin sticking up)
+            b.pillar(0, 3, 6, z, Material.BONE_BLOCK);
+            b.setBlock(0, 7, z, Material.BONE_BLOCK);
+            // Lateral processes
+            b.setBlock(-2, 2, z, Material.BONE_BLOCK);
+            b.setBlock(2, 2, z, Material.BONE_BLOCK);
         }
 
-        // Torches around the arena
-        b.wallLighting(0, 8, -28, 0, 28, 6, Material.TORCH);
+        // ─── Ribs: 14 paired ribs arching overhead from the spine ───
+        // Each rib is a parametric arc traced from spine vertebra outward and upward
+        for (int v = -6; v <= 6; v++) {
+            int spineZ = v * 4;
+            for (int side = -1; side <= 1; side += 2) {  // left and right
+                // Trace an arc using parametric (cosine for height, sine for outward)
+                for (int t = 0; t <= 28; t++) {
+                    double angle = Math.toRadians((double) t * 90 / 28);  // 0 to 90 deg
+                    int rx = (int) Math.round(side * 26 * Math.sin(angle));
+                    int ry = 1 + (int) Math.round(20 * Math.cos(angle) + 4);
+                    // The rib starts at the spine top and arches outward and down
+                    // Reverse the parameterization so t=0 is at spine top
+                    int finalX = (int) Math.round(side * 26 * Math.sin(angle));
+                    int finalY = 6 + (int) Math.round(18 * (1 - Math.cos(angle * 0.9)));
+                    int actualY = 26 - finalY;
+                    if (actualY > 1) {
+                        b.setBlock(finalX, actualY, spineZ, Material.BONE_BLOCK);
+                        // Thicker mid-section
+                        if (Math.abs(finalX) > 5 && Math.abs(finalX) < 22) {
+                            b.setBlock(finalX, actualY + 1, spineZ, Material.BONE_BLOCK);
+                        }
+                    }
+                }
+            }
+        }
 
-        // Trophy skulls on the wall
-        for (int a = 0; a < 360; a += 30)
-            b.setBlock((int) (27 * Math.cos(Math.toRadians(a))), 6,
-                    (int) (27 * Math.sin(Math.toRadians(a))), Material.SKELETON_SKULL);
+        // ─── The skull: massive T-Rex skull at the north end of the arena ───
+        // Skull chamber (a 14x12x18 block enclosure shaped like a skull)
+        b.fillBox(-7, 1, -42, 7, 14, -28, Material.BONE_BLOCK);
+        b.fillBox(-6, 2, -41, 6, 13, -29, Material.AIR);
+        // Tapered front (snout)
+        for (int z = -42; z <= -38; z++) {
+            int taper = (-42 - z) / 2 + 4;
+            b.fillBox(-taper, 2, z, taper, 6, z, Material.AIR);
+        }
+        // Eye sockets (large recessed circles)
+        for (int dy = -2; dy <= 2; dy++)
+            for (int dz = -2; dz <= 2; dz++)
+                if (dy * dy + dz * dz <= 4) {
+                    b.setBlock(-7, 10 + dy, -34 + dz, Material.AIR);
+                    b.setBlock(7, 10 + dy, -34 + dz, Material.AIR);
+                }
+        // Glowing eyes deep inside
+        b.setBlock(-6, 10, -34, Material.SOUL_LANTERN);
+        b.setBlock(6, 10, -34, Material.SOUL_LANTERN);
+        // Nostril holes on snout
+        b.setBlock(-1, 8, -42, Material.AIR);
+        b.setBlock(1, 8, -42, Material.AIR);
+        // Massive jaw teeth (lower jaw row)
+        for (int x = -6; x <= 6; x += 2) b.setBlock(x, 1, -38, Material.BONE_BLOCK);
+        // Upper teeth row
+        for (int x = -6; x <= 6; x += 2) b.setBlock(x, 5, -39, Material.BONE_BLOCK);
+        // Skull crest / horns
+        b.setBlock(-4, 14, -32, Material.BONE_BLOCK);
+        b.setBlock(4, 14, -32, Material.BONE_BLOCK);
+        b.setBlock(0, 15, -32, Material.BONE_BLOCK);
 
-        b.placeChest(0, 1, 0);
-        b.placeChest(10, 1, 10);
-        b.placeChest(-10, 1, -10);
-        b.setBossSpawn(0, 1, 5);
+        // ─── Tail at the south end: vertebrae tapering away ───
+        for (int z = 27; z <= 40; z++) {
+            int taper = Math.max(0, 2 - (z - 27) / 5);
+            b.fillBox(-taper, 1, z, taper, 1 + taper, z, Material.BONE_BLOCK);
+            if (z % 3 == 0) b.setBlock(0, 2 + taper, z, Material.BONE_BLOCK);
+        }
+
+        // ─── Combat features: 4 destructible bone formations for cover ───
+        for (int i = 0; i < 4; i++) {
+            int a = i * 90 + 45;
+            int px = (int) Math.round(14 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(14 * Math.sin(Math.toRadians(a)));
+            // Stalagmite-like bone formation
+            b.pillar(px, 1, 4, pz, Material.BONE_BLOCK);
+            b.setBlock(px, 5, pz, Material.SKELETON_SKULL);
+            b.setBlock(px - 1, 1, pz, Material.BONE_BLOCK);
+            b.setBlock(px + 1, 1, pz, Material.BONE_BLOCK);
+            b.setBlock(px, 1, pz - 1, Material.BONE_BLOCK);
+            b.setBlock(px, 1, pz + 1, Material.BONE_BLOCK);
+        }
+
+        // ─── Trophy skulls embedded in the seating walls ───
+        for (int a = 0; a < 360; a += 20) {
+            int sx = (int) Math.round(29 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(29 * Math.sin(Math.toRadians(a)));
+            b.setBlock(sx, 9, sz, Material.SKELETON_SKULL);
+            // Lit braziers between skulls
+            if (a % 40 == 0) {
+                int bx = (int) Math.round(28 * Math.cos(Math.toRadians(a + 10)));
+                int bz = (int) Math.round(28 * Math.sin(Math.toRadians(a + 10)));
+                b.setBlock(bx, 10, bz, Material.CAMPFIRE);
+            }
+        }
+
+        // Soul-fire braziers on the spine vertebrae for moody lighting
+        for (int z = -24; z <= 24; z += 8) {
+            b.setBlock(0, 8, z, Material.SOUL_CAMPFIRE);
+        }
+
+        // Loot caches: chests embedded between vertebrae and in the skull
+        b.placeChest(0, 2, 0);
+        b.placeChest(0, 2, 8);
+        b.placeChest(0, 2, -8);
+        b.placeChest(0, 5, -34);   // Inside the skull
+        b.placeChest(15, 1, 15);
+        b.placeChest(-15, 1, 15);
+
+        b.setBossSpawn(0, 1, 0);
     }
 
     /**
@@ -2791,58 +3202,166 @@ public final class DimensionStructureBuilders {
      * electrified floor, observation deck, launch pad.
      */
     public static void buildDinobotArena(StructureBuilder b) {
-        // Arena floor
-        b.filledCircle(0, 0, 0, 24, Material.IRON_BLOCK);
-        b.filledCircle(0, 0, 0, 22, Material.SMOOTH_STONE);
+        // ─── Dinobot Arena: a colossal mechanized factory amphitheater ───
+        // Industrial palette: iron blocks, polished blackstone, redstone lamps,
+        // copper accents, lightning conduits, hazard stripes.
 
-        // Electrified floor sections (redstone lamps in patterns)
-        b.circle(0, 0, 0, 8, Material.REDSTONE_LAMP);
-        b.circle(0, 0, 0, 16, Material.REDSTONE_LAMP);
+        // Foundation slab (4-block deep iron+blackstone substrate)
+        for (int y = -3; y <= 0; y++) b.filledCircle(0, y, 0, 28, Material.POLISHED_BLACKSTONE);
+        b.filledCircle(0, 0, 0, 26, Material.IRON_BLOCK);
+        b.filledCircle(0, 0, 0, 24, Material.SMOOTH_STONE);
 
-        // Outer wall
-        for (int y = 1; y <= 8; y++) b.circle(0, y, 0, 24, Material.IRON_BLOCK);
+        // Hexagonal hazard pattern across the arena floor
+        for (int x = -22; x <= 22; x++)
+            for (int z = -22; z <= 22; z++) {
+                if (x * x + z * z > 484) continue;
+                int hexId = ((x + 100) / 4 + (z + 100) / 4) % 3;
+                if (hexId == 0 && (x + z) % 6 == 0) b.setBlock(x, 0, z, Material.YELLOW_TERRACOTTA);
+                else if (hexId == 1 && (x + z) % 5 == 0) b.setBlock(x, 0, z, Material.BLACK_CONCRETE);
+            }
 
-        // Lightning rod pylons (6 around perimeter)
-        for (int a = 0; a < 360; a += 60) {
-            int px = (int) (20 * Math.cos(Math.toRadians(a)));
-            int pz = (int) (20 * Math.sin(Math.toRadians(a)));
-            b.pillar(px, 1, 14, pz, Material.IRON_BLOCK);
-            b.setBlock(px, 15, pz, Material.LIGHTNING_ROD);
-            b.setBlock(px, 14, pz, Material.REDSTONE_BLOCK);
-            // Connecting redstone lines
-            b.setBlock(px, 1, pz, Material.REDSTONE_BLOCK);
+        // ─── Electrified circuit rings (redstone trails along the floor) ───
+        for (int a = 0; a < 360; a += 1) {
+            int rx = (int) Math.round(8 * Math.cos(Math.toRadians(a)));
+            int rz = (int) Math.round(8 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx, 0, rz, Material.REDSTONE_LAMP);
+            int rx2 = (int) Math.round(16 * Math.cos(Math.toRadians(a)));
+            int rz2 = (int) Math.round(16 * Math.sin(Math.toRadians(a)));
+            b.setBlock(rx2, 0, rz2, Material.REDSTONE_LAMP);
+        }
+        // Spoke circuits connecting the rings (8 radial conduit lines)
+        for (int i = 0; i < 8; i++) {
+            int a = i * 45;
+            for (int d = 9; d <= 15; d++) {
+                int rx = (int) Math.round(d * Math.cos(Math.toRadians(a)));
+                int rz = (int) Math.round(d * Math.sin(Math.toRadians(a)));
+                b.setBlock(rx, 0, rz, Material.WAXED_COPPER_BLOCK);
+            }
         }
 
-        // Central arena platform
-        b.filledCircle(0, 0, 0, 4, Material.REDSTONE_BLOCK);
-        b.filledCircle(0, 1, 0, 2, Material.IRON_BLOCK);
-
-        // Observation deck (elevated, south)
-        b.fillBox(-10, 10, -24, 10, 10, -20, Material.IRON_BLOCK);
-        b.fillBox(-10, 11, -24, 10, 13, -24, Material.IRON_BLOCK);
-        b.fillBox(-8, 11, -24, 8, 12, -24, Material.GLASS_PANE);
-        // Stairs up to deck
-        for (int s = 0; s < 10; s++) b.setBlock(0, s + 1, -24 + s, Material.IRON_BLOCK);
-
-        // Launch pad (north, open platform)
-        b.fillBox(-8, 0, 20, 8, 0, 28, Material.IRON_BLOCK);
-        b.fillBox(-6, 0, 22, 6, 0, 26, Material.YELLOW_CONCRETE);
-        // Warning stripes
-        b.fillBox(-8, 0, 20, -8, 0, 28, Material.BLACK_CONCRETE);
-        b.fillBox(8, 0, 20, 8, 0, 28, Material.BLACK_CONCRETE);
-
-        // Redstone circuitry patterns on floor
-        b.scatter(-20, 0, -20, 20, 0, 20, Material.SMOOTH_STONE, Material.REDSTONE_BLOCK, 0.05);
-
-        // Interior combat obstacles
-        for (int[] pos : new int[][]{{-10, -10}, {10, -10}, {-10, 10}, {10, 10}}) {
-            b.fillBox(pos[0] - 2, 1, pos[1] - 2, pos[0] + 2, 4, pos[1] + 2, Material.IRON_BLOCK);
-            b.setBlock(pos[0], 5, pos[1], Material.REDSTONE_LAMP);
+        // ─── Outer wall: stepped industrial bulwark (3 tiers, 14 high total) ───
+        for (int yy = 1; yy <= 4; yy++) b.circle(0, yy, 0, 26, Material.IRON_BLOCK);
+        for (int yy = 5; yy <= 9; yy++) b.circle(0, yy, 0, 25, Material.POLISHED_BLACKSTONE);
+        for (int yy = 10; yy <= 14; yy++) b.circle(0, yy, 0, 24, Material.IRON_BARS);
+        // Battlements on top
+        for (int a = 0; a < 360; a += 8) {
+            int wx = (int) Math.round(24 * Math.cos(Math.toRadians(a)));
+            int wz = (int) Math.round(24 * Math.sin(Math.toRadians(a)));
+            b.setBlock(wx, 15, wz, Material.IRON_BLOCK);
+            if (a % 16 == 0) b.setBlock(wx, 16, wz, Material.LIGHTNING_ROD);
         }
 
+        // ─── 8 Lightning Pylons (massive Tesla coils around perimeter) ───
+        for (int i = 0; i < 8; i++) {
+            int a = i * 45;
+            int px = (int) Math.round(21 * Math.cos(Math.toRadians(a)));
+            int pz = (int) Math.round(21 * Math.sin(Math.toRadians(a)));
+            // Pylon base (3x3 with copper accents)
+            b.fillBox(px - 1, 1, pz - 1, px + 1, 4, pz + 1, Material.IRON_BLOCK);
+            b.setBlock(px - 1, 1, pz - 1, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px + 1, 1, pz - 1, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px - 1, 1, pz + 1, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px + 1, 1, pz + 1, Material.WAXED_COPPER_BLOCK);
+            // Tapering shaft
+            b.pillar(px, 5, 14, pz, Material.IRON_BLOCK);
+            b.pillar(px, 15, 18, pz, Material.LIGHTNING_ROD);
+            // Coil rings (copper bulbs at intervals)
+            b.setBlock(px - 1, 8, pz, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px + 1, 8, pz, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px, 8, pz - 1, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px, 8, pz + 1, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px - 1, 12, pz, Material.WAXED_COPPER_BLOCK);
+            b.setBlock(px + 1, 12, pz, Material.WAXED_COPPER_BLOCK);
+            // Power node at base (redstone block) with cable to ring
+            b.setBlock(px, 0, pz, Material.REDSTONE_BLOCK);
+            // Glowing crown
+            b.setBlock(px, 19, pz, Material.SEA_LANTERN);
+        }
+
+        // ─── Central command altar: raised hexagonal platform with control console ───
+        b.filledCircle(0, 1, 0, 5, Material.IRON_BLOCK);
+        b.filledCircle(0, 2, 0, 4, Material.POLISHED_BLACKSTONE);
+        b.filledCircle(0, 3, 0, 3, Material.WAXED_COPPER_BLOCK);
+        // Central reactor core
+        b.setBlock(0, 4, 0, Material.RESPAWN_ANCHOR);
+        b.setBlock(-1, 4, 0, Material.SEA_LANTERN);
+        b.setBlock(1, 4, 0, Material.SEA_LANTERN);
+        b.setBlock(0, 4, -1, Material.SEA_LANTERN);
+        b.setBlock(0, 4, 1, Material.SEA_LANTERN);
+        // Console pillars
+        for (int i = 0; i < 6; i++) {
+            int a = i * 60;
+            int cx = (int) Math.round(4 * Math.cos(Math.toRadians(a)));
+            int cz = (int) Math.round(4 * Math.sin(Math.toRadians(a)));
+            b.setBlock(cx, 4, cz, Material.LEVER);
+        }
+
+        // ─── 4 Combat obstacles: hardened iron pillboxes around the arena ───
+        for (int[] pos : new int[][]{{-12, -12}, {12, -12}, {-12, 12}, {12, 12}}) {
+            // Bunker base
+            b.fillBox(pos[0] - 3, 1, pos[1] - 3, pos[0] + 3, 5, pos[1] + 3, Material.POLISHED_BLACKSTONE);
+            b.fillBox(pos[0] - 2, 1, pos[1] - 2, pos[0] + 2, 4, pos[1] + 2, Material.AIR);
+            // Slit windows
+            b.setBlock(pos[0], 3, pos[1] - 3, Material.AIR);
+            b.setBlock(pos[0], 3, pos[1] + 3, Material.AIR);
+            b.setBlock(pos[0] - 3, 3, pos[1], Material.AIR);
+            b.setBlock(pos[0] + 3, 3, pos[1], Material.AIR);
+            // Top searchlight
+            b.setBlock(pos[0], 6, pos[1], Material.LIGHTNING_ROD);
+            b.setBlock(pos[0], 5, pos[1], Material.SEA_LANTERN);
+            // Loot inside
+            b.placeChest(pos[0], 1, pos[1]);
+        }
+
+        // ─── Observation deck: elevated command center on the south wall ───
+        b.fillBox(-12, 10, -26, 12, 13, -23, Material.POLISHED_BLACKSTONE);
+        b.fillBox(-11, 11, -25, 11, 12, -24, Material.AIR);
+        // Glass viewport
+        for (int x = -10; x <= 10; x++) b.setBlock(x, 12, -24, Material.GRAY_STAINED_GLASS_PANE);
+        // Banks of monitors (note blocks as displays)
+        for (int x = -8; x <= 8; x += 2) {
+            b.setBlock(x, 11, -25, Material.NOTE_BLOCK);
+            b.setBlock(x, 12, -25, Material.SEA_LANTERN);
+        }
+        // Stair access from arena floor
+        for (int s = 0; s < 10; s++) {
+            b.setBlock(0, s + 1, -22 - s, Material.POLISHED_BLACKSTONE_STAIRS);
+            b.setBlock(-1, s + 1, -22 - s, Material.POLISHED_BLACKSTONE);
+            b.setBlock(1, s + 1, -22 - s, Material.POLISHED_BLACKSTONE);
+        }
+        b.placeChest(-8, 11, -25);
+        b.placeChest(8, 11, -25);
+
+        // ─── Launch pad: heavy mechanical doors / hazard zone (north) ───
+        b.fillBox(-10, 0, 22, 10, 0, 30, Material.POLISHED_BLACKSTONE);
+        b.fillBox(-7, 0, 24, 7, 0, 28, Material.YELLOW_CONCRETE);
+        // Warning chevrons
+        for (int x = -8; x <= 8; x += 2) {
+            b.setBlock(x, 0, 22, Material.BLACK_CONCRETE);
+            b.setBlock(x, 0, 30, Material.BLACK_CONCRETE);
+        }
+        for (int z = 22; z <= 30; z += 2) {
+            b.setBlock(-9, 0, z, Material.BLACK_CONCRETE);
+            b.setBlock(9, 0, z, Material.BLACK_CONCRETE);
+        }
+        // Launch tower
+        b.pillar(-9, 1, 16, 22, Material.IRON_BLOCK);
+        b.pillar(9, 1, 16, 22, Material.IRON_BLOCK);
+        b.setBlock(-9, 17, 22, Material.LIGHTNING_ROD);
+        b.setBlock(9, 17, 22, Material.LIGHTNING_ROD);
+
+        // Suspended ceiling lights (sea lanterns at high points)
+        for (int i = 0; i < 12; i++) {
+            int a = i * 30;
+            int sx = (int) Math.round(18 * Math.cos(Math.toRadians(a)));
+            int sz = (int) Math.round(18 * Math.sin(Math.toRadians(a)));
+            b.setBlock(sx, 16, sz, Material.SEA_LANTERN);
+        }
+        b.chandelier(0, 18, 0, 5);
+
+        // Central treasure
         b.placeChest(0, 1, 0);
-        b.placeChest(-8, 11, -22);
-        b.setBossSpawn(0, 2, 3);
+        b.setBossSpawn(0, 4, 0);
     }
 
     /**

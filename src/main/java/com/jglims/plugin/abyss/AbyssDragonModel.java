@@ -12,6 +12,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Zombie;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import com.jglims.plugin.JGlimsPlugin;
 
@@ -21,6 +22,8 @@ import kr.toxicity.model.api.animation.AnimationModifier;
 import kr.toxicity.model.api.bukkit.platform.BukkitAdapter;
 import kr.toxicity.model.api.data.renderer.ModelRenderer;
 import kr.toxicity.model.api.tracker.EntityTracker;
+import kr.toxicity.model.api.tracker.TrackerModifier;
+import kr.toxicity.model.api.tracker.TrackerUpdateAction;
 import net.kyori.adventure.text.Component;
 
 /**
@@ -28,15 +31,15 @@ import net.kyori.adventure.text.Component;
  *
  * <p>Manages an invisible Zombie hitbox entity with a BetterModel
  * {@link EntityTracker} that renders the {@code abyss_dragon.bbmodel} model.
- * All visual animations (idle, fly, attack, fire_breath, spawn, death, etc.)
- * are driven by BetterModel's animation system.
+ * All visual animations (idle, fly, attack, fire_breath, walk, spawn, death,
+ * special_1, special_2) are driven by BetterModel's animation system using the
+ * keyframes auto-generated for the .bbmodel file.
  *
- * <p>Expected bbmodel file: {@code plugins/BetterModel/models/abyss_dragon.bbmodel}
- * <br>Expected animations: idle, fly, attack, fire_breath, walk, spawn, death,
- * special_1, special_2
+ * <p>Expected file: {@code plugins/BetterModel/models/abyss_dragon.bbmodel}
  *
- * <p>Called by {@link AbyssDragonBoss} to trigger attacks and phase transitions
- * during the boss fight.
+ * <p>Phase visuals (glow, glow color, tint, brightness, scale) are applied via
+ * {@link TrackerUpdateAction}. The model gracefully degrades to an invisible
+ * Zombie hitbox with particle ambiance when BetterModel is not loaded.
  */
 public class AbyssDragonModel {
 
@@ -51,6 +54,64 @@ public class AbyssDragonModel {
     /** Dragon max HP — must match AbyssDragonBoss.DRAGON_HP. */
     private static final double DRAGON_HP = 1500.0;
 
+    /** Hard cap (Paper attribute.maxHealth.max default ceiling). */
+    private static final double HP_CAP = 2048.0;
+
+    // ── Pre-built AnimationModifier constants ────────────────────────────
+
+    /** Looping idle animation, 10-tick blends. */
+    public static final AnimationModifier IDLE_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.LOOP)
+            .start(10).end(10)
+            .build();
+
+    /** Looping flight animation, 8-tick blends. */
+    public static final AnimationModifier FLY_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.LOOP)
+            .start(8).end(8)
+            .build();
+
+    /** Looping walk animation, 5-tick blends. */
+    public static final AnimationModifier WALK_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.LOOP)
+            .start(5).end(5)
+            .build();
+
+    /** Single-shot melee attack, override active animation. */
+    public static final AnimationModifier ATTACK_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.PLAY_ONCE)
+            .start(3).end(5)
+            .override(Boolean.TRUE)
+            .build();
+
+    /** Single-shot fire breath attack with longer recovery. */
+    public static final AnimationModifier FIRE_BREATH_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.PLAY_ONCE)
+            .start(5).end(8)
+            .override(Boolean.TRUE)
+            .build();
+
+    /** One-shot spawn animation, plays from frame 0. */
+    public static final AnimationModifier SPAWN_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.PLAY_ONCE)
+            .start(0).end(10)
+            .override(Boolean.TRUE)
+            .build();
+
+    /** Death animation — holds on the last frame. */
+    public static final AnimationModifier DEATH_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.HOLD_ON_LAST)
+            .start(5).end(0)
+            .override(Boolean.TRUE)
+            .build();
+
+    /** Generic special-ability animation (special_1, special_2, etc.). */
+    public static final AnimationModifier SPECIAL_MOD = AnimationModifier.builder()
+            .type(AnimationIterator.Type.PLAY_ONCE)
+            .start(3).end(5)
+            .override(Boolean.TRUE)
+            .build();
+
     // ── State ────────────────────────────────────────────────────────────
 
     private final JGlimsPlugin plugin;
@@ -64,6 +125,7 @@ public class AbyssDragonModel {
 
     private boolean alive = false;
     private int currentPhase = 1;
+    private String currentAnimation = null;
 
     /** Background task that enforces invisibility and ambient particles. */
     private int ambientTaskId = -1;
@@ -80,12 +142,8 @@ public class AbyssDragonModel {
     /**
      * Spawns the dragon at the given location.
      *
-     * <p>Creates an invisible Zombie hitbox, sets its HP to {@link #DRAGON_HP}
-     * (or {@code requestedHp} if provided), attaches the BetterModel tracker,
-     * and plays the spawn-then-idle animation sequence.
-     *
      * @param location  spawn location (world must not be null)
-     * @param requestedHp desired max HP (capped at 2048)
+     * @param requestedHp desired max HP (capped at {@link #HP_CAP})
      * @return true if spawn succeeded
      */
     public boolean spawn(Location location, double requestedHp) {
@@ -97,7 +155,7 @@ public class AbyssDragonModel {
                 return false;
             }
 
-            double hp = Math.min(requestedHp, 2048);
+            double hp = Math.min(requestedHp, HP_CAP);
 
             // ── Create invisible zombie hitbox ──
             hitboxEntity = (Zombie) world.spawnEntity(location, EntityType.ZOMBIE);
@@ -110,12 +168,10 @@ public class AbyssDragonModel {
             hitboxEntity.customName(Component.text("Abyss Dragon"));
             hitboxEntity.setCustomNameVisible(false);
 
-            // Remove default zombie equipment
             if (hitboxEntity.getEquipment() != null) {
                 hitboxEntity.getEquipment().clear();
             }
 
-            // Set health
             try {
                 hitboxEntity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(hp);
                 hitboxEntity.setHealth(hp);
@@ -123,7 +179,6 @@ public class AbyssDragonModel {
                 logger.warning("[DragonModel] Health setup error: " + e.getMessage());
             }
 
-            // Set scale
             try {
                 var scaleAttr = hitboxEntity.getAttribute(Attribute.SCALE);
                 if (scaleAttr != null) scaleAttr.setBaseValue(BASE_SCALE);
@@ -142,9 +197,8 @@ public class AbyssDragonModel {
             alive = true;
             startAmbientTask();
 
-            // ── Spawn animation: play "spawn" then transition to "idle" ──
-            playAnimation("spawn", AnimationIterator.Type.PLAY_ONCE, () ->
-                    playAnimation("idle", AnimationIterator.Type.LOOP));
+            // ── Spawn animation: spawn → idle ──
+            playAnimation("spawn", SPAWN_MOD, () -> playAnimation("idle", IDLE_MOD));
 
             logger.info("[DragonModel] Spawn complete. Tracker=" + (tracker != null));
             return true;
@@ -157,9 +211,7 @@ public class AbyssDragonModel {
         }
     }
 
-    /**
-     * Overload that uses default HP.
-     */
+    /** Spawn at default HP. */
     public boolean spawn(Location location) {
         return spawn(location, DRAGON_HP);
     }
@@ -167,9 +219,8 @@ public class AbyssDragonModel {
     // ── BetterModel attachment ───────────────────────────────────────────
 
     /**
-     * Attaches the BetterModel renderer to the hitbox entity.
-     * Does nothing (with a warning) if BetterModel is not loaded or the model
-     * is missing from the registry.
+     * Attaches the BetterModel renderer to the hitbox entity using a custom
+     * {@link TrackerModifier}: sightTrace=false, damageAnimation=true, damageTint=true.
      */
     private void attachModel() {
         if (!Bukkit.getPluginManager().isPluginEnabled("BetterModel")) {
@@ -177,105 +228,89 @@ public class AbyssDragonModel {
             return;
         }
         try {
-            Optional<ModelRenderer> renderer = BetterModel.model(MODEL_NAME);
-            if (renderer.isEmpty()) {
+            Optional<ModelRenderer> rendererOpt = BetterModel.model(MODEL_NAME);
+            if (rendererOpt.isEmpty()) {
                 logger.warning("[DragonModel] Model '" + MODEL_NAME
                         + "' not found! Ensure plugins/BetterModel/models/" + MODEL_NAME
                         + ".bbmodel exists and run /bettermodel reload");
                 return;
             }
-            tracker = renderer.get().getOrCreate(BukkitAdapter.adapt(hitboxEntity));
+            ModelRenderer renderer = rendererOpt.get();
+            TrackerModifier modifier = new TrackerModifier(false, true, true);
+            tracker = renderer.create(BukkitAdapter.adapt(hitboxEntity), modifier, t -> {
+                logger.info("[DragonModel] Tracker initializer fired");
+            });
             if (tracker != null) {
                 logger.info("[DragonModel] BetterModel EntityTracker attached for " + MODEL_NAME);
             } else {
-                logger.warning("[DragonModel] getOrCreate returned null for " + MODEL_NAME);
+                logger.warning("[DragonModel] create returned null for " + MODEL_NAME);
             }
         } catch (Exception e) {
             logger.warning("[DragonModel] Failed to attach BetterModel: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     // ── Animation ────────────────────────────────────────────────────────
 
     /**
-     * Plays a named BetterModel animation.
+     * Plays a named BetterModel animation with the given modifier.
      *
-     * @param name animation name (must exist in the .bbmodel)
-     * @param type loop behavior
+     * @param name      animation name
+     * @param modifier  pre-built {@link AnimationModifier}
      */
-    public void playAnimation(String name, AnimationIterator.Type type) {
+    public void playAnimation(String name, AnimationModifier modifier) {
         if (tracker == null) return;
         try {
-            tracker.animate(name, AnimationModifier.builder()
-                    .type(type)
-                    .start(5).end(5)
-                    .build());
+            tracker.animate(name, modifier);
+            currentAnimation = name;
         } catch (Exception e) {
             logger.fine("[DragonModel] Animation '" + name + "' not available: " + e.getMessage());
         }
     }
 
     /**
-     * Plays a named BetterModel animation with a completion callback.
-     * If the tracker is null (BetterModel absent), the callback fires after
-     * a 2-second fallback delay so the boss logic still progresses.
-     *
-     * @param name       animation name
-     * @param type       loop behavior
-     * @param callback   called when the animation finishes
+     * Plays a named animation with a completion callback. If the tracker is
+     * absent, the callback fires after a 2-second fallback delay.
      */
-    public void playAnimation(String name, AnimationIterator.Type type, Runnable callback) {
+    public void playAnimation(String name, AnimationModifier modifier, Runnable callback) {
         if (tracker == null) {
-            // Fallback: run callback after delay so boss logic doesn't stall
             if (callback != null) {
                 new BukkitRunnable() {
-                    @Override
-                    public void run() { callback.run(); }
+                    @Override public void run() { callback.run(); }
                 }.runTaskLater(plugin, 40L);
             }
             return;
         }
         try {
-            tracker.animate(name, AnimationModifier.builder()
-                    .type(type)
-                    .override(true)
-                    .start(5).end(5)
-                    .build(), callback);
+            tracker.animate(name, modifier, callback);
+            currentAnimation = name;
         } catch (Exception e) {
             logger.fine("[DragonModel] Animation '" + name + "' not available: " + e.getMessage());
             if (callback != null) {
                 new BukkitRunnable() {
-                    @Override
-                    public void run() { callback.run(); }
+                    @Override public void run() { callback.run(); }
                 }.runTaskLater(plugin, 40L);
             }
         }
     }
 
     /**
-     * Triggers a named attack animation (PLAY_ONCE).
-     * Recognized names: attack, fire_breath, special_1, special_2
-     *
-     * @param attackName the attack animation name
+     * Triggers a named one-shot attack animation using {@link #ATTACK_MOD}.
      */
     public void triggerAttack(String attackName) {
-        playAnimation(attackName, AnimationIterator.Type.PLAY_ONCE);
+        playAnimation(attackName, ATTACK_MOD);
     }
 
-    /**
-     * Triggers a named attack animation with a completion callback.
-     *
-     * @param attackName the attack animation name
-     * @param onComplete called when the animation finishes
-     */
+    /** Triggers a named attack animation with a completion callback. */
     public void triggerAttack(String attackName, Runnable onComplete) {
-        playAnimation(attackName, AnimationIterator.Type.PLAY_ONCE, onComplete);
+        playAnimation(attackName, ATTACK_MOD, onComplete);
     }
 
     // ── Damage tint ──────────────────────────────────────────────────────
 
     /**
-     * Flashes the model red to indicate damage.
+     * Flashes the model red to indicate damage (uses BetterModel's built-in damage tint).
      */
     public void damageTint() {
         if (tracker != null) {
@@ -288,8 +323,8 @@ public class AbyssDragonModel {
     }
 
     /**
-     * Visual damage feedback — red tint plus damage indicator particles.
-     * Called by AbyssDragonBoss on each hit.
+     * Visual damage feedback — red tint plus DAMAGE_INDICATOR particles.
+     * Called by {@link AbyssDragonBoss} on each hit.
      */
     public void damageFlash() {
         damageTint();
@@ -299,20 +334,14 @@ public class AbyssDragonModel {
         }
     }
 
-    /**
-     * Alias for {@link #damageFlash()}.
-     */
+    /** Alias for {@link #damageFlash()}. */
     public void damageFeedback() {
         damageFlash();
     }
 
     // ── Movement ─────────────────────────────────────────────────────────
 
-    /**
-     * Teleports the hitbox entity (and attached model) to the given location.
-     *
-     * @param location destination
-     */
+    /** Teleports the hitbox entity (and attached model) to the given location. */
     public void moveTo(Location location) {
         if (hitboxEntity != null && !hitboxEntity.isDead()) {
             hitboxEntity.teleport(location);
@@ -322,26 +351,19 @@ public class AbyssDragonModel {
     /**
      * Moves the dragon toward a target at the given speed (blocks per call).
      * Called each tick by AbyssDragonBoss's movement task.
-     *
-     * @param target destination
-     * @param speed  blocks per call
      */
     public void moveToward(Location target, double speed) {
         if (hitboxEntity == null || hitboxEntity.isDead()) return;
         Location current = hitboxEntity.getLocation();
-        var dir = target.toVector().subtract(current.toVector());
+        Vector dir = target.toVector().subtract(current.toVector());
         if (dir.lengthSquared() < 1) return;
-        var move = dir.normalize().multiply(speed);
+        Vector move = dir.normalize().multiply(speed);
         Location next = current.add(move);
         next.setYaw((float) Math.toDegrees(Math.atan2(-move.getX(), move.getZ())));
         hitboxEntity.teleport(next);
     }
 
-    /**
-     * Alias used by AbyssDragonBoss — moves toward target at default speed.
-     *
-     * @param target destination
-     */
+    /** Alias used by AbyssDragonBoss — moves toward target at default speed. */
     public void setTarget(Location target) {
         if (hitboxEntity != null && hitboxEntity.isValid()) {
             moveToward(target, 0.3);
@@ -352,19 +374,16 @@ public class AbyssDragonModel {
 
     /**
      * Plays the fire_breath animation and spawns a particle beam toward the target.
-     *
-     * @param target the breath target location
      */
     public void breathAttackVisual(Location target) {
-        playAnimation("fire_breath", AnimationIterator.Type.PLAY_ONCE);
+        playAnimation("fire_breath", FIRE_BREATH_MOD);
 
-        // Particle beam effect
         if (hitboxEntity == null || target == null) return;
         Location mouth = hitboxEntity.getLocation().add(0, 3, 0);
         World w = mouth.getWorld();
         if (w == null) return;
 
-        var beamDir = target.toVector().subtract(mouth.toVector()).normalize();
+        Vector beamDir = target.toVector().subtract(mouth.toVector()).normalize();
         double beamLength = Math.min(mouth.distance(target), 30);
         for (double d = 0; d < beamLength; d += 0.5) {
             Location p = mouth.clone().add(beamDir.clone().multiply(d));
@@ -374,12 +393,10 @@ public class AbyssDragonModel {
         w.playSound(mouth, Sound.ENTITY_ENDER_DRAGON_SHOOT, 1.5f, 0.5f);
     }
 
-    /**
-     * Plays the attack animation with a wing-gust visual.
-     */
+    /** Plays the attack animation with a wing-gust visual (CLOUD particles + sound). */
     public void wingGustVisual() {
         if (hitboxEntity == null) return;
-        playAnimation("attack", AnimationIterator.Type.PLAY_ONCE);
+        playAnimation("attack", ATTACK_MOD);
         Location loc = hitboxEntity.getLocation().add(0, 2, 0);
         World w = loc.getWorld();
         if (w != null) {
@@ -388,22 +405,14 @@ public class AbyssDragonModel {
         }
     }
 
-    /**
-     * Plays the walk animation (looping).
-     *
-     * @param target unused — kept for backward compatibility
-     */
+    /** Plays the walk animation (looping). */
     public void playWalkAnimation(Location target) {
-        playAnimation("walk", AnimationIterator.Type.LOOP);
+        playAnimation("walk", WALK_MOD);
     }
 
-    /**
-     * Plays the fly animation (looping).
-     *
-     * @param center unused — kept for backward compatibility
-     */
+    /** Plays the fly animation (looping). */
     public void playFlyAnimation(Location center) {
-        playAnimation("fly", AnimationIterator.Type.LOOP);
+        playAnimation("fly", FLY_MOD);
     }
 
     // ── Death sequence ───────────────────────────────────────────────────
@@ -412,13 +421,10 @@ public class AbyssDragonModel {
      * Plays the death animation with HOLD_ON_LAST, then runs the callback
      * and cleans up. A 5-second safety timeout ensures cleanup even if the
      * animation callback never fires.
-     *
-     * @param onComplete called after the death animation finishes
      */
     public void deathSequence(Runnable onComplete) {
         alive = false;
 
-        // Death particles and sound
         if (hitboxEntity != null && hitboxEntity.getWorld() != null) {
             Location loc = hitboxEntity.getLocation();
             World w = loc.getWorld();
@@ -428,7 +434,7 @@ public class AbyssDragonModel {
             w.strikeLightningEffect(loc);
         }
 
-        playAnimation("death", AnimationIterator.Type.HOLD_ON_LAST, () -> {
+        playAnimation("death", DEATH_MOD, () -> {
             if (onComplete != null) onComplete.run();
             cleanup();
         });
@@ -438,25 +444,19 @@ public class AbyssDragonModel {
             @Override
             public void run() {
                 if (hitboxEntity != null) {
-                    if (onComplete != null && alive) onComplete.run();
+                    if (onComplete != null) onComplete.run();
                     cleanup();
                 }
             }
         }.runTaskLater(plugin, 100L);
     }
 
-    /**
-     * Plays death animation without callback. Called by AbyssDragonBoss.
-     */
+    /** Plays death animation without callback. Called by AbyssDragonBoss. */
     public void playDeathAnimation() {
         deathSequence(null);
     }
 
-    /**
-     * Plays death animation with callback.
-     *
-     * @param onComplete called after death animation
-     */
+    /** Plays death animation with callback. */
     public void playDeathAnimation(Runnable onComplete) {
         deathSequence(onComplete);
     }
@@ -464,9 +464,8 @@ public class AbyssDragonModel {
     // ── Phase transitions ────────────────────────────────────────────────
 
     /**
-     * Updates the dragon's phase. Plays dramatic effects and scales the hitbox.
-     *
-     * @param phase new phase number (1-4)
+     * Updates the dragon's phase. Plays dramatic effects, scales the hitbox,
+     * and adjusts the model's glow color / brightness via TrackerUpdateAction.
      */
     public void setPhase(int phase) {
         int old = this.currentPhase;
@@ -492,12 +491,30 @@ public class AbyssDragonModel {
             }
         } catch (Exception ignored) {}
 
+        // Visual effects via TrackerUpdateAction
+        if (tracker != null) {
+            try {
+                int color;
+                switch (phase) {
+                    case 2: color = 0x6600AA; break;
+                    case 3: color = 0xAA0066; break;
+                    case 4: color = 0xFF0033; break;
+                    default: color = 0x8800AA;
+                }
+                tracker.update(TrackerUpdateAction.glow(true));
+                tracker.update(TrackerUpdateAction.glowColor(color));
+                if (phase >= 3) {
+                    tracker.update(TrackerUpdateAction.brightness(15, 15));
+                }
+            } catch (Exception e) {
+                logger.fine("[DragonModel] Phase visuals failed: " + e.getMessage());
+            }
+        }
+
         logger.info("[DragonModel] Phase " + old + " -> " + phase);
     }
 
-    /**
-     * Alias for {@link #setPhase(int)}.
-     */
+    /** Alias for {@link #setPhase(int)}. */
     public void phaseTransition(int phase) {
         setPhase(phase);
     }
@@ -516,10 +533,8 @@ public class AbyssDragonModel {
                     cancel();
                     return;
                 }
-                // Enforce invisibility (riders/interactions can break it)
                 hitboxEntity.setInvisible(true);
 
-                // Ambient particles
                 Location loc = hitboxEntity.getLocation().add(0, 2, 0);
                 World w = loc.getWorld();
                 if (w == null) return;
@@ -532,9 +547,7 @@ public class AbyssDragonModel {
 
     // ── Cleanup / Despawn ────────────────────────────────────────────────
 
-    /**
-     * Closes the BetterModel tracker, cancels tasks, and removes the hitbox entity.
-     */
+    /** Closes the BetterModel tracker, cancels tasks, removes the hitbox entity. */
     public void cleanup() {
         alive = false;
 
@@ -552,13 +565,12 @@ public class AbyssDragonModel {
             hitboxEntity.remove();
         }
         hitboxEntity = null;
+        currentAnimation = null;
 
         logger.info("[DragonModel] Cleanup complete.");
     }
 
-    /**
-     * Alias for {@link #cleanup()}.
-     */
+    /** Alias for {@link #cleanup()}. */
     public void despawn() {
         cleanup();
     }
@@ -570,12 +582,12 @@ public class AbyssDragonModel {
         return hitboxEntity;
     }
 
-    /** Alias — used by AbyssDragonBoss. */
+    /** Alias used by AbyssDragonBoss. */
     public Zombie getHitboxEntity() {
         return hitboxEntity;
     }
 
-    /** Alias — used by AbyssDragonBoss. */
+    /** Alias used by AbyssDragonBoss. */
     public Zombie getBaseEntity() {
         return hitboxEntity;
     }
@@ -603,6 +615,11 @@ public class AbyssDragonModel {
     /** Returns the current boss-fight phase (1-4). */
     public int getPhase() {
         return currentPhase;
+    }
+
+    /** Returns the name of the currently-playing animation, or null if none. */
+    public String getCurrentAnimation() {
+        return currentAnimation;
     }
 
     // ── Utility ──────────────────────────────────────────────────────────
