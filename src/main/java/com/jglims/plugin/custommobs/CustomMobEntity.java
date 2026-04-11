@@ -333,6 +333,40 @@ public abstract class CustomMobEntity {
                 }
             }
         }
+        // Centralized custom drops by mob type ID (in addition to getDrops() overrides).
+        // Ensures every mob drops its characteristic resource item with proper CMD.
+        DropItemManager dim = plugin.getDropItemManager();
+        if (dim == null) return;
+        ItemStack centralDrop = getCentralDropForMobType(dim, mobType.getId());
+        if (centralDrop != null) {
+            loc.getWorld().dropItemNaturally(loc, centralDrop);
+        }
+    }
+
+    /**
+     * Resolves the centralized drop item for a custom mob type. Returns null
+     * if the mob does not have a registered central drop.
+     * <p>
+     * This lets every mob get its correct textured resource item without
+     * having to edit each individual mob's {@link #getDrops(Player)} method.
+     */
+    private ItemStack getCentralDropForMobType(DropItemManager dim, String id) {
+        int rolled = 1 + (int) (Math.random() * 2);  // 1-2 drops
+        return switch (id) {
+            case "blue_troll", "low_poly_troll" -> dim.createTrollHide(rolled);
+            case "invaderling_soldier", "invaderling_archer" -> dim.createLunarFragment(rolled);
+            case "invaderling_rider" -> dim.createLunarBeastHide(1);
+            case "grizzly_bear" -> dim.createBearClaw(1);
+            case "velociraptor" -> dim.createRaptorClaw(1);
+            case "basilisk" -> dim.createBasiliskFang(1);
+            case "necromancer" -> dim.createDarkEssence(1);
+            case "the_keeper" -> dim.createVoidEssence(1);
+            case "soul_stealer" -> dim.createSoulFragment(rolled);
+            case "tremorsaurus" -> dim.createTremorScale(rolled);
+            case "grottoceratops" -> dim.createHorn(1);
+            case "spinosaurus" -> dim.createSpinosaurusSail(1);
+            default -> null;
+        };
     }
 
     // ── Subclass Hooks ─────────────────────────────────────────────────

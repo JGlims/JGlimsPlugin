@@ -173,10 +173,6 @@ public enum CustomMobType {
             EntityType.ZOMBIE, 250, 16, MobCategory.HOSTILE, null,
             false, false, "Aggressive golem that attacks players on sight."),
 
-    SHARK("shark", "Shark", "shark",
-            EntityType.ZOMBIE, 40, 12, MobCategory.HOSTILE, null,
-            false, false, "Hostile aquatic predator in all oceans."),
-
     GENERAL_PIGLIN("general_piglin", "General Piglin", "general_piglin",
             EntityType.ZOMBIE, 200, 15, MobCategory.HOSTILE, LegendaryTier.RARE,
             false, false, "Mini-boss guarding bastion treasure rooms."),

@@ -49,8 +49,11 @@ public class CreativeMenuManager implements Listener {
                         .append(Component.text("| Menu Principal", NamedTextColor.WHITE)));
 
         inv.setItem(10, buildCategoryIcon(Material.DIAMOND_SWORD, "Armas Comuns", "20 armas tier COMMON", "cat_weapons_common", NamedTextColor.WHITE));
+        inv.setItem(11, buildCategoryIcon(Material.IRON_SWORD, "Itens Criados", "15 itens craftaveis (Lunar, Fang, Void, etc.)", "cat_crafted", NamedTextColor.AQUA));
         inv.setItem(12, buildCategoryIcon(Material.DIAMOND_SWORD, "Armas Raras", "8 armas tier RARE", "cat_weapons_rare", NamedTextColor.GREEN));
+        inv.setItem(13, buildCategoryIcon(Material.BONE, "Drops de Mobs", "13 itens dropados por mobs custom", "cat_drops", NamedTextColor.GRAY));
         inv.setItem(14, buildCategoryIcon(Material.DIAMOND_SWORD, "Armas Epicas", "7 armas tier EPIC", "cat_weapons_epic", NamedTextColor.DARK_PURPLE));
+        inv.setItem(15, buildCategoryIcon(Material.REDSTONE, "Itens de Vampiro", "Blood, Essence, Evolver, Ring + Habilidades", "cat_vampire", NamedTextColor.DARK_RED));
         inv.setItem(16, buildCategoryIcon(Material.DIAMOND_SWORD, "Armas Miticas", "24 armas tier MYTHIC", "cat_weapons_mythic", NamedTextColor.GOLD));
 
         inv.setItem(19, buildCategoryIcon(Material.DIAMOND_SWORD, "Armas Abissais", "4 armas tier ABYSSAL", "cat_weapons_abyssal", NamedTextColor.DARK_RED));
@@ -64,6 +67,7 @@ public class CreativeMenuManager implements Listener {
         inv.setItem(34, buildCategoryIcon(Material.DIAMOND_HOE, "Sickles & Spears", "Foices e Lancas de batalha", "cat_sickles", NamedTextColor.GREEN));
 
         inv.setItem(37, buildCategoryIcon(Material.NETHERITE_PICKAXE, "Super Tools", "Ferramentas super diamond/netherite", "cat_supertools", NamedTextColor.DARK_AQUA));
+        inv.setItem(38, buildCategoryIcon(Material.BLAZE_ROD, "Itens Magicos", "Wand of Wands e outros itens magicos", "cat_magic", NamedTextColor.LIGHT_PURPLE));
         inv.setItem(39, buildCategoryIcon(Material.ENCHANTED_BOOK, "Enchantment Books", "Todos os 64+ encantamentos custom", "cat_enchantbooks", NamedTextColor.YELLOW));
         inv.setItem(41, buildCategoryIcon(Material.WOLF_ARMOR, "Best Buddies", "Armadura de lobo com Best Buddies", "cat_bestbuddies", NamedTextColor.LIGHT_PURPLE));
         inv.setItem(43, buildInfoIcon(Material.BOOK, "Guia do Servidor", "Use /guia para receber o livro-guia completo!"));
@@ -606,6 +610,10 @@ public class CreativeMenuManager implements Listener {
                 }
                 player.sendMessage(Component.text("Recebeu item do Infinito!", NamedTextColor.GREEN));
             }
+            case "give_crafted" -> giveCraftedItem(player, category);
+            case "give_drop" -> giveDropItem(player, category);
+            case "give_vampire" -> giveVampireItem(player, category);
+            case "give_magic" -> giveMagicItem(player, category);
         }
     }
 
@@ -626,6 +634,10 @@ public class CreativeMenuManager implements Listener {
             case "cat_supertools" -> openSuperToolsPage(player);
             case "cat_enchantbooks" -> openEnchantBooksPage(player, 0);
             case "cat_bestbuddies" -> openBestBuddiesPage(player);
+            case "cat_crafted" -> openCraftedItemsPage(player);
+            case "cat_drops" -> openDropItemsPage(player);
+            case "cat_vampire" -> openVampireItemsPage(player);
+            case "cat_magic" -> openMagicItemsPage(player);
         }
     }
 
@@ -742,5 +754,195 @@ public class CreativeMenuManager implements Listener {
 
     private String toRoman(int num) {
         return switch (num) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; case 4 -> "IV"; case 5 -> "V"; default -> String.valueOf(num); };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NEW PAGES — Crafted / Drops / Vampire / Magic
+    // ═══════════════════════════════════════════════════════════════
+
+    public void openCraftedItemsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, SLOTS,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Itens Criados", NamedTextColor.AQUA)));
+        com.jglims.plugin.crafting.CraftedItemManager cim = plugin.getCraftedItemManager();
+        if (cim != null) {
+            ItemStack[] items = {
+                    tagForMenu(cim.createBloodChalice(),      "give_crafted", "blood_chalice"),
+                    tagForMenu(cim.createFangDagger(),        "give_crafted", "fang_dagger"),
+                    tagForMenu(cim.createLunarBlade(),        "give_crafted", "lunar_blade"),
+                    tagForMenu(cim.createRaptorGauntlet(),    "give_crafted", "raptor_gauntlet"),
+                    tagForMenu(cim.createSharkToothNecklace(),"give_crafted", "shark_tooth_necklace"),
+                    tagForMenu(cim.createTremorShield(),      "give_crafted", "tremor_shield"),
+                    tagForMenu(cim.createVoidScepter(),       "give_crafted", "void_scepter"),
+                    tagForMenu(cim.createSoulLanternItem(),   "give_crafted", "soul_lantern_item"),
+                    tagForMenu(cim.createDinosaurBoneBow(),   "give_crafted", "dinosaur_bone_bow"),
+                    tagForMenu(cim.createCrimsonElixir(),     "give_crafted", "crimson_elixir"),
+                    tagForMenu(cim.createNightwalkerCloak(),  "give_crafted", "nightwalker_cloak"),
+                    tagForMenu(cim.createTrollHelmet(),       "give_crafted", "troll_helmet"),
+                    tagForMenu(cim.createTrollChestplate(),   "give_crafted", "troll_chestplate"),
+                    tagForMenu(cim.createTrollLeggings(),     "give_crafted", "troll_leggings"),
+                    tagForMenu(cim.createTrollBoots(),        "give_crafted", "troll_boots"),
+            };
+            int slot = 10;
+            for (ItemStack it : items) {
+                if (it == null) continue;
+                inv.setItem(slot, it);
+                slot++;
+                if ((slot + 1) % 9 == 0) slot += 2; // skip right/left borders
+            }
+        }
+        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    public void openDropItemsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, SLOTS,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Drops de Mobs", NamedTextColor.GRAY)));
+        com.jglims.plugin.custommobs.DropItemManager dim = plugin.getDropItemManager();
+        if (dim != null) {
+            ItemStack[] items = {
+                    tagForMenu(dim.createTrollHide(1),       "give_drop", "troll_hide"),
+                    tagForMenu(dim.createLunarFragment(1),   "give_drop", "lunar_fragment"),
+                    tagForMenu(dim.createLunarBeastHide(1),  "give_drop", "lunar_beast_hide"),
+                    tagForMenu(dim.createSharkTooth(1),      "give_drop", "shark_tooth"),
+                    tagForMenu(dim.createBearClaw(1),        "give_drop", "bear_claw"),
+                    tagForMenu(dim.createRaptorClaw(1),      "give_drop", "raptor_claw"),
+                    tagForMenu(dim.createBasiliskFang(1),    "give_drop", "basilisk_fang"),
+                    tagForMenu(dim.createDarkEssence(1),     "give_drop", "dark_essence"),
+                    tagForMenu(dim.createVoidEssence(1),     "give_drop", "void_essence"),
+                    tagForMenu(dim.createSoulFragment(1),    "give_drop", "soul_fragment"),
+                    tagForMenu(dim.createTremorScale(1),     "give_drop", "tremor_scale"),
+                    tagForMenu(dim.createHorn(1),            "give_drop", "horn"),
+                    tagForMenu(dim.createSpinosaurusSail(1), "give_drop", "spinosaurus_sail"),
+            };
+            int slot = 10;
+            for (ItemStack it : items) {
+                if (it == null) continue;
+                inv.setItem(slot, it);
+                slot++;
+                if ((slot + 1) % 9 == 0) slot += 2;
+            }
+        }
+        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    public void openVampireItemsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, SLOTS,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Itens de Vampiro", NamedTextColor.DARK_RED)));
+        com.jglims.plugin.vampire.VampireManager vm = plugin.getVampireManager();
+        if (vm != null) {
+            inv.setItem(10, tagForMenu(vm.createVampireBlood(),   "give_vampire", "blood"));
+            inv.setItem(11, tagForMenu(vm.createVampireEssence(), "give_vampire", "essence"));
+            inv.setItem(12, tagForMenu(vm.createVampireEvolver(), "give_vampire", "evolver"));
+            inv.setItem(13, tagForMenu(vm.createSuperBlood(),     "give_vampire", "super_blood"));
+            inv.setItem(14, tagForMenu(vm.createVampireRing(),    "give_vampire", "ring"));
+        }
+        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    public void openMagicItemsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, SLOTS,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Itens Magicos", NamedTextColor.LIGHT_PURPLE)));
+        com.jglims.plugin.magic.MagicItemManager mim = plugin.getMagicItemManager();
+        if (mim != null) {
+            inv.setItem(13, tagForMenu(mim.createWandOfWands(), "give_magic", "wand_of_wands"));
+        }
+        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        player.openInventory(inv);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  GIVE HELPERS — look up the raw item from the manager and give it
+    // ═══════════════════════════════════════════════════════════════
+
+    private void giveCraftedItem(Player player, String id) {
+        if (id == null) return;
+        com.jglims.plugin.crafting.CraftedItemManager cim = plugin.getCraftedItemManager();
+        if (cim == null) return;
+        ItemStack item = switch (id) {
+            case "blood_chalice"        -> cim.createBloodChalice();
+            case "fang_dagger"          -> cim.createFangDagger();
+            case "lunar_blade"          -> cim.createLunarBlade();
+            case "raptor_gauntlet"      -> cim.createRaptorGauntlet();
+            case "shark_tooth_necklace" -> cim.createSharkToothNecklace();
+            case "tremor_shield"        -> cim.createTremorShield();
+            case "void_scepter"         -> cim.createVoidScepter();
+            case "soul_lantern_item"    -> cim.createSoulLanternItem();
+            case "dinosaur_bone_bow"    -> cim.createDinosaurBoneBow();
+            case "crimson_elixir"       -> cim.createCrimsonElixir();
+            case "nightwalker_cloak"    -> cim.createNightwalkerCloak();
+            case "troll_helmet"         -> cim.createTrollHelmet();
+            case "troll_chestplate"     -> cim.createTrollChestplate();
+            case "troll_leggings"       -> cim.createTrollLeggings();
+            case "troll_boots"          -> cim.createTrollBoots();
+            default -> null;
+        };
+        if (item != null) {
+            player.getInventory().addItem(item);
+            player.sendMessage(Component.text("Recebeu item craftado!", NamedTextColor.AQUA));
+        }
+    }
+
+    private void giveDropItem(Player player, String id) {
+        if (id == null) return;
+        com.jglims.plugin.custommobs.DropItemManager dim = plugin.getDropItemManager();
+        if (dim == null) return;
+        ItemStack item = switch (id) {
+            case "troll_hide"       -> dim.createTrollHide(4);
+            case "lunar_fragment"   -> dim.createLunarFragment(4);
+            case "lunar_beast_hide" -> dim.createLunarBeastHide(4);
+            case "shark_tooth"      -> dim.createSharkTooth(4);
+            case "bear_claw"        -> dim.createBearClaw(4);
+            case "raptor_claw"      -> dim.createRaptorClaw(4);
+            case "basilisk_fang"    -> dim.createBasiliskFang(4);
+            case "dark_essence"     -> dim.createDarkEssence(4);
+            case "void_essence"     -> dim.createVoidEssence(4);
+            case "soul_fragment"    -> dim.createSoulFragment(4);
+            case "tremor_scale"     -> dim.createTremorScale(4);
+            case "horn"             -> dim.createHorn(4);
+            case "spinosaurus_sail" -> dim.createSpinosaurusSail(4);
+            default -> null;
+        };
+        if (item != null) {
+            player.getInventory().addItem(item);
+            player.sendMessage(Component.text("Recebeu drop item! (x4)", NamedTextColor.GRAY));
+        }
+    }
+
+    private void giveVampireItem(Player player, String id) {
+        if (id == null) return;
+        com.jglims.plugin.vampire.VampireManager vm = plugin.getVampireManager();
+        if (vm == null) return;
+        ItemStack item = switch (id) {
+            case "blood"       -> vm.createVampireBlood();
+            case "essence"     -> vm.createVampireEssence();
+            case "evolver"     -> vm.createVampireEvolver();
+            case "super_blood" -> vm.createSuperBlood();
+            case "ring"        -> vm.createVampireRing();
+            default -> null;
+        };
+        if (item != null) {
+            player.getInventory().addItem(item);
+            player.sendMessage(Component.text("Recebeu item de vampiro!", NamedTextColor.DARK_RED));
+        }
+    }
+
+    private void giveMagicItem(Player player, String id) {
+        if (id == null) return;
+        com.jglims.plugin.magic.MagicItemManager mim = plugin.getMagicItemManager();
+        if (mim == null) return;
+        ItemStack item = switch (id) {
+            case "wand_of_wands" -> mim.createWandOfWands();
+            default -> null;
+        };
+        if (item != null) {
+            player.getInventory().addItem(item);
+            player.sendMessage(Component.text("Recebeu item magico!", NamedTextColor.LIGHT_PURPLE));
+        }
     }
 }

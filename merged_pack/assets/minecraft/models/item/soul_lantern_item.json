@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/soul_lantern",
+  "textures": {
+    "layer0": "minecraft:block/soul_lantern"
+  }
+}

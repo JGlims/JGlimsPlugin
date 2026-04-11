@@ -1,0 +1,26 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/blaze_rod"
+    },
+    "cases": [
+      {
+        "when": 40010,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/wand_of_wands"
+        }
+      },
+      {
+        "when": 42011,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/blaze_rod"
+        }
+      }
+    ]
+  }
+}

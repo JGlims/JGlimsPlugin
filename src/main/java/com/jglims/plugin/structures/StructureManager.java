@@ -118,94 +118,18 @@ public class StructureManager implements Listener {
     }
 
     private void buildStructure(StructureType type, StructureBuilder b) {
-        switch (type) {
-            // ── Overworld (delegated to OverworldStructureBuilders) ──
-            case CAMPING_SMALL -> OverworldStructureBuilders.buildCampingSmall(b);
-            case CAMPING_LARGE -> OverworldStructureBuilders.buildCampingLarge(b);
-            case ABANDONED_HOUSE -> OverworldStructureBuilders.buildAbandonedHouse(b);
-            case WITCH_HOUSE_FOREST -> OverworldStructureBuilders.buildWitchHouseForest(b);
-            case WITCH_HOUSE_SWAMP -> OverworldStructureBuilders.buildWitchHouseSwamp(b);
-            case HOUSE_TREE -> OverworldStructureBuilders.buildHouseTree(b);
-            case DRUIDS_GROVE -> OverworldStructureBuilders.buildDruidsGrove(b);
-            case ALLAY_SANCTUARY -> OverworldStructureBuilders.buildAllaySanctuary(b);
-            case MAGE_TOWER -> OverworldStructureBuilders.buildMageTower(b);
-            case RUINED_COLOSSEUM -> OverworldStructureBuilders.buildRuinedColosseum(b);
-            case SHREK_HOUSE -> OverworldStructureBuilders.buildShrekHouse(b);
-            case ANCIENT_TEMPLE -> OverworldStructureBuilders.buildAncientTemple(b);
-            case VOLCANO -> OverworldStructureBuilders.buildVolcano(b);
-            case FORTRESS -> OverworldStructureBuilders.buildFortress(b);
-            case GIGANTIC_CASTLE -> OverworldStructureBuilders.buildGiganticCastle(b);
-            case ULTRA_VILLAGE -> OverworldStructureBuilders.buildUltraVillage(b);
-            case DUNGEON_DEEP -> OverworldStructureBuilders.buildDungeonDeep(b);
-            case THANOS_TEMPLE -> OverworldStructureBuilders.buildThanosTemple(b);
-            case PILLAGER_FORTRESS -> OverworldStructureBuilders.buildPillagerFortress(b);
-            case PILLAGER_AIRSHIP -> OverworldStructureBuilders.buildPillagerAirship(b);
-            case FROST_DUNGEON -> OverworldStructureBuilders.buildFrostDungeon(b);
-            case BANDIT_HIDEOUT -> OverworldStructureBuilders.buildBanditHideout(b);
-            case SUNKEN_RUINS -> OverworldStructureBuilders.buildSunkenRuins(b);
-            case CURSED_GRAVEYARD -> OverworldStructureBuilders.buildCursedGraveyard(b);
-            case SKY_ALTAR -> OverworldStructureBuilders.buildSkyAltar(b);
-            case FORGE -> OverworldStructureBuilders.buildForge(b);
-            case OGRIN_HUT -> OverworldStructureBuilders.buildOgrinHut(b);
-            case FAIRY_GLADE -> OverworldStructureBuilders.buildFairyGlade(b);
-            case JAPANESE_TEMPLE -> OverworldStructureBuilders.buildJapaneseTemple(b);
-            case MONSTER_ISLAND -> OverworldStructureBuilders.buildMonsterIsland(b);
-            case WEREWOLF_DEN -> OverworldStructureBuilders.buildWerewolfDen(b);
-            case NECROMANCER_DUNGEON -> OverworldStructureBuilders.buildNecromancerDungeon(b);
-
-            // ── Nether (delegated to DimensionStructureBuilders) ──
-            case CRIMSON_CITADEL -> DimensionStructureBuilders.buildCrimsonCitadel(b);
-            case SOUL_SANCTUM -> DimensionStructureBuilders.buildSoulSanctum(b);
-            case BASALT_SPIRE -> DimensionStructureBuilders.buildBasaltSpire(b);
-            case NETHER_DUNGEON -> DimensionStructureBuilders.buildNetherDungeon(b);
-            case PIGLIN_PALACE -> DimensionStructureBuilders.buildPiglinPalace(b);
-            case WITHER_SANCTUM -> DimensionStructureBuilders.buildWitherSanctum(b);
-            case BLAZE_COLOSSEUM -> DimensionStructureBuilders.buildBlazeColosseum(b);
-            case NETHER_KINGS_CASTLE -> DimensionStructureBuilders.buildNetherKingsCastle(b);
-            case DEMON_FORTRESS -> DimensionStructureBuilders.buildDemonFortress(b);
-
-            // ── End ──
-            case VOID_SHRINE -> DimensionStructureBuilders.buildVoidShrine(b);
-            case ENDER_MONASTERY -> DimensionStructureBuilders.buildEnderMonastery(b);
-            case DRAGONS_HOARD -> DimensionStructureBuilders.buildDragonsHoard(b);
-            case END_RIFT_ARENA -> DimensionStructureBuilders.buildEndRiftArena(b);
-            case DRAGON_DEATH_CHEST -> DimensionStructureBuilders.buildDragonDeathChest(b);
-            case GLEEOK_ARENA -> DimensionStructureBuilders.buildGleeokArena(b);
-            case ILLIDAN_PRISON -> DimensionStructureBuilders.buildIllidanPrison(b);
-            case SKELETON_DRAGON_LAIR -> DimensionStructureBuilders.buildSkeletonDragonLair(b);
-
-            // ── Abyss ──
-            case ABYSSAL_CASTLE -> DimensionStructureBuilders.buildAbyssalCastle(b);
-            case VOID_NEXUS -> DimensionStructureBuilders.buildVoidNexus(b);
-            case SHATTERED_CATHEDRAL -> DimensionStructureBuilders.buildShatteredCathedral(b);
-
-            // ── Aether ──
-            case AETHER_VILLAGE -> DimensionStructureBuilders.buildAetherVillage(b);
-            case CRYSTAL_CAVERN -> DimensionStructureBuilders.buildCrystalCavern(b);
-            case STORM_PEAK_TOWER -> DimensionStructureBuilders.buildStormPeakTower(b);
-            case PITLORD_LAIR -> DimensionStructureBuilders.buildPitlordLair(b);
-            case WARRIOR_SKY_FORTRESS -> DimensionStructureBuilders.buildWarriorSkyFortress(b);
-            case DRAGONKIN_TEMPLE -> DimensionStructureBuilders.buildDragonkinTemple(b);
-            case AETHER_ANCIENT_RUINS -> DimensionStructureBuilders.buildAetherAncientRuins(b);
-
-            // ── Lunar ──
-            case INVADERLING_OUTPOST -> DimensionStructureBuilders.buildInvaderlingOutpost(b);
-            case UNDERGROUND_HIVE -> DimensionStructureBuilders.buildUndergroundHive(b);
-            case ALIEN_CITADEL -> DimensionStructureBuilders.buildAlienCitadel(b);
-            case METEOR_CRASH_SITE -> DimensionStructureBuilders.buildMeteorCrashSite(b);
-            case OBSERVATION_TOWER -> DimensionStructureBuilders.buildObservationTower(b);
-            case LUNAR_BASE -> DimensionStructureBuilders.buildLunarBase(b);
-
-            // ── Jurassic ──
-            case BONE_ARENA -> DimensionStructureBuilders.buildBoneArena(b);
-            case DINOBOT_ARENA -> DimensionStructureBuilders.buildDinobotArena(b);
-            case RAPTOR_NEST -> DimensionStructureBuilders.buildRaptorNest(b);
-            case WATERING_HOLE -> DimensionStructureBuilders.buildWateringHole(b);
-            case VOLCANIC_FORGE -> DimensionStructureBuilders.buildVolcanicForge(b);
-            case TAR_PIT -> DimensionStructureBuilders.buildTarPit(b);
-            case NESTING_GROUND -> DimensionStructureBuilders.buildNestingGround(b);
-
-            default -> buildGenericStructure(b, type);
+        // Every structure is dispatched through the one-class-per-structure registry.
+        // Types that have been upgraded to their own builder class (AncientTempleBuilder,
+        // SkyAltarBuilder, etc.) execute the new high-quality code. Types that still
+        // live in the legacy monolithic files delegate through lambda wrappers in the
+        // registry, preserving exact behavior.
+        com.jglims.plugin.structures.builders.IStructureBuilder builder =
+                com.jglims.plugin.structures.builders.StructureRegistry.get(type);
+        if (builder != null) {
+            builder.build(b);
+        } else {
+            // Safety fallback for any type not yet registered.
+            buildGenericStructure(b, type);
         }
     }
 
@@ -832,4 +756,34 @@ public class StructureManager implements Listener {
 
     public StructureBossManager getBossManager() { return bossManager; }
     public StructureLootPopulator getLootPopulator() { return lootPopulator; }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  ADMIN / TESTING HOOKS
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Force-builds a structure at the given origin, bypassing spacing,
+     * terrain, biome, and dimension checks. Used by {@code /jglims locate}
+     * for admin testing.
+     *
+     * @return the {@link StructureBuilder} used (caller can read chest
+     *         locations and boss spawn from it)
+     */
+    public StructureBuilder forceBuild(StructureType type, Location origin) {
+        World world = origin.getWorld();
+        if (world == null) return null;
+        StructureBuilder builder = new StructureBuilder(plugin, world, origin);
+        buildStructure(type, builder);
+        recordStructure(world.getName(), origin.getBlockX(), origin.getBlockZ());
+        for (Location chestLoc : builder.getChestLocations()) {
+            lootPopulator.populateChest(chestLoc, type);
+        }
+        if (type.hasBoss() && builder.getBossSpawnLocation() != null) {
+            bossManager.spawnStructureBoss(type, builder.getBossSpawnLocation());
+        }
+        plugin.getLogger().info("Force-built " + type.getDisplayName() +
+                " at " + origin.getBlockX() + "," + origin.getBlockY() + "," + origin.getBlockZ() +
+                " in " + world.getName());
+        return builder;
+    }
 }

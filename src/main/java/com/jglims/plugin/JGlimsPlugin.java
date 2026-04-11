@@ -2,6 +2,7 @@ package com.jglims.plugin;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -15,17 +16,22 @@ import com.jglims.plugin.abyss.AbyssDragonBoss;
 import com.jglims.plugin.custommobs.CustomMobListener;
 import com.jglims.plugin.custommobs.CustomMobManager;
 import com.jglims.plugin.custommobs.CustomMobSpawnManager;
+import com.jglims.plugin.custommobs.DropItemManager;
 import com.jglims.plugin.dimensions.AetherDimensionManager;
 import com.jglims.plugin.dimensions.DimensionPortalManager;
 import com.jglims.plugin.dimensions.JurassicDimensionManager;
 import com.jglims.plugin.dimensions.LunarDimensionManager;
 import com.jglims.plugin.magic.MagicItemListener;
 import com.jglims.plugin.magic.MagicItemManager;
+import com.jglims.plugin.vampire.VampireAbilityListener;
+import com.jglims.plugin.vampire.VampireAbilityManager;
 import com.jglims.plugin.vampire.VampireListener;
 import com.jglims.plugin.vampire.VampireManager;
 import com.jglims.plugin.blessings.BlessingListener;
 import com.jglims.plugin.blessings.BlessingManager;
 import com.jglims.plugin.config.ConfigManager;
+import com.jglims.plugin.crafting.CraftedItemListener;
+import com.jglims.plugin.crafting.CraftedItemManager;
 import com.jglims.plugin.crafting.RecipeManager;
 import com.jglims.plugin.crafting.VanillaRecipeRemover;
 import com.jglims.plugin.enchantments.AnvilRecipeListener;
@@ -86,7 +92,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
-public class JGlimsPlugin extends JavaPlugin {
+public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
 
     private static JGlimsPlugin instance;
     private ConfigManager configManager;
@@ -108,6 +114,8 @@ public class JGlimsPlugin extends JavaPlugin {
     private CreativeMenuManager creativeMenuManager;
     private GuideBookManager guideBookManager;
     private RecipeManager recipeManager;
+    private CraftedItemManager craftedItemManager;
+    private CraftedItemListener craftedItemListener;
     private MobDifficultyManager mobDifficultyManager;
     private KingMobManager kingMobManager;
     private BloodMoonManager bloodMoonManager;
@@ -126,7 +134,9 @@ public class JGlimsPlugin extends JavaPlugin {
     private NpcWizardManager npcWizardManager;
     private CustomMobManager customMobManager;
     private CustomMobSpawnManager customMobSpawnManager;
+    private DropItemManager dropItemManager;
     private VampireManager vampireManager;
+    private VampireAbilityManager vampireAbilityManager;
     private MagicItemManager magicItemManager;
     private DimensionPortalManager dimensionPortalManager;
     private AetherDimensionManager aetherDimensionManager;
@@ -168,7 +178,9 @@ public class JGlimsPlugin extends JavaPlugin {
         eventManager.initialize();
         customMobManager = new CustomMobManager(this);
         customMobSpawnManager = new CustomMobSpawnManager(this, customMobManager);
+        dropItemManager = new DropItemManager(this);
         vampireManager = new VampireManager(this);
+        vampireAbilityManager = new VampireAbilityManager(this, vampireManager);
         magicItemManager = new MagicItemManager(this);
         dimensionPortalManager = new DimensionPortalManager(this);
         registerDimensionPortals();
@@ -183,13 +195,17 @@ public class JGlimsPlugin extends JavaPlugin {
         creativeMenuManager = new CreativeMenuManager(this);
         guideBookManager = new GuideBookManager(this);
 
+        craftedItemManager = new CraftedItemManager(this);
         recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
                 battleBowManager, battleMaceManager, superToolManager,
                 battleSwordManager, battlePickaxeManager, battleTridentManager,
                 battleSpearManager, battleShovelManager, spearManager,
                 infinityStoneManager, infinityGauntletManager, legendaryArmorManager);
+        recipeManager.setCraftedItemManager(craftedItemManager);
+        recipeManager.setDropItemManager(dropItemManager);
         recipeManager.registerAllRecipes();
         VanillaRecipeRemover.remove(this);
+        craftedItemListener = new CraftedItemListener(this, craftedItemManager, vampireManager);
 
         mobDifficultyManager = new MobDifficultyManager(this, configManager);
         kingMobManager = new KingMobManager(this, configManager);
@@ -248,6 +264,8 @@ public class JGlimsPlugin extends JavaPlugin {
         VampireListener vampireListener = new VampireListener(this, vampireManager);
         pm.registerEvents(vampireListener, this);
         vampireListener.startDayNightCycle();
+        pm.registerEvents(new VampireAbilityListener(this, vampireManager, vampireAbilityManager), this);
+        pm.registerEvents(craftedItemListener, this);
         pm.registerEvents(new MagicItemListener(this, magicItemManager), this);
         pm.registerEvents(dimensionPortalManager, this);
         pm.registerEvents(aetherDimensionManager, this);
@@ -277,6 +295,11 @@ public class JGlimsPlugin extends JavaPlugin {
         customMobSpawnManager.startScheduler();
         questManager.startScheduler();
         npcWizardManager.startScheduler();
+
+        // Tab completion for /jglims
+        if (getCommand("jglims") != null) {
+            getCommand("jglims").setTabCompleter(this);
+        }
 
         long elapsed = System.currentTimeMillis() - start;
         getLogger().info("JGlimsPlugin v" + getDescription().getVersion() + " enabled in " + elapsed + "ms!");
@@ -330,6 +353,10 @@ public class JGlimsPlugin extends JavaPlugin {
             case "bosstitles" -> { if (sender instanceof Player player) bossMasteryManager.showBossTitles(player); else sender.sendMessage(Component.text("Only players can view boss titles.", NamedTextColor.RED)); }
             case "gauntlet" -> handleGauntletCommand(sender, args);
             case "abyss" -> handleAbyssCommand(sender, args);
+            case "locate" -> handleLocateCommand(sender, args);
+            case "tp" -> handleTpCommand(sender, args);
+            case "spawn" -> handleSpawnCommand(sender, args);
+            case "boss" -> handleBossCommand(sender, args);
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -346,12 +373,16 @@ public class JGlimsPlugin extends JavaPlugin {
                 sender.sendMessage(Component.text("/jglims guia", NamedTextColor.YELLOW).append(Component.text(" - Receive guide books (PT-BR)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims gauntlet <glove|gauntlet|stone> [type]", NamedTextColor.YELLOW).append(Component.text(" - Give Infinity items (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims abyss <key|tp>", NamedTextColor.YELLOW).append(Component.text(" - Abyss dimension commands (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims locate <structure>", NamedTextColor.YELLOW).append(Component.text(" - Force-build structure at your location (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims tp <dimension>", NamedTextColor.YELLOW).append(Component.text(" - Teleport to a custom dimension (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims spawn <mob> [amount]", NamedTextColor.YELLOW).append(Component.text(" - Spawn a custom mob (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims boss <name>", NamedTextColor.YELLOW).append(Component.text(" - Spawn a specific boss (OP)", NamedTextColor.GRAY)));
             }
             case "vampire" -> handleVampireCommand(sender, args);
             case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
             case "menu" -> { if (sender instanceof Player player) creativeMenuManager.openMainMenu(player); else sender.sendMessage(Component.text("Only players can open the menu.", NamedTextColor.RED)); }
             case "guia" -> { if (sender instanceof Player player) guideBookManager.giveAllVolumes(player); else sender.sendMessage(Component.text("Only players can receive the guide.", NamedTextColor.RED)); }
-            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, abyss, vampire, menu, guia, quests, help", NamedTextColor.RED));
+            default -> sender.sendMessage(Component.text("Unknown subcommand. Use: reload, stats, enchants, sort, mastery, legendary, armor, powerup, bosstitles, gauntlet, abyss, vampire, menu, guia, quests, locate, tp, spawn, boss, help", NamedTextColor.RED));
         }
         return true;
     }
@@ -545,7 +576,11 @@ public class JGlimsPlugin extends JavaPlugin {
     public QuestManager getQuestManager() { return questManager; }
     public NpcWizardManager getNpcWizardManager() { return npcWizardManager; }
     public CustomMobManager getCustomMobManager() { return customMobManager; }
+    public DropItemManager getDropItemManager() { return dropItemManager; }
+    public CraftedItemManager getCraftedItemManager() { return craftedItemManager; }
+    public CraftedItemListener getCraftedItemListener() { return craftedItemListener; }
     public VampireManager getVampireManager() { return vampireManager; }
+    public VampireAbilityManager getVampireAbilityManager() { return vampireAbilityManager; }
     public MagicItemManager getMagicItemManager() { return magicItemManager; }
     public DimensionPortalManager getDimensionPortalManager() { return dimensionPortalManager; }
     public AetherDimensionManager getAetherDimensionManager() { return aetherDimensionManager; }
@@ -661,5 +696,222 @@ public class JGlimsPlugin extends JavaPlugin {
             }
             default -> sender.sendMessage(Component.text("Unknown sub: set, remove, info, reset, essence", NamedTextColor.RED));
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NEW ADMIN COMMANDS — locate, tp, spawn, boss
+    // ═══════════════════════════════════════════════════════════════
+
+    private void handleLocateCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use /jglims locate.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims locate <structure>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Example: /jglims locate BONE_ARENA", NamedTextColor.GRAY));
+            return;
+        }
+        com.jglims.plugin.structures.StructureType type;
+        try {
+            type = com.jglims.plugin.structures.StructureType.valueOf(args[1].toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage(Component.text("Unknown structure type: " + args[1], NamedTextColor.RED));
+            sender.sendMessage(Component.text("Use /jglims locate <TAB> to see options.", NamedTextColor.GRAY));
+            return;
+        }
+        // Force-build the structure 30 blocks in front of the player
+        org.bukkit.util.Vector dir = player.getLocation().getDirection().setY(0).normalize();
+        Location origin = player.getLocation().clone().add(dir.multiply(30));
+        origin.setY(player.getWorld().getHighestBlockYAt(origin.getBlockX(), origin.getBlockZ()) + 1);
+        structureManager.forceBuild(type, origin);
+        player.sendMessage(Component.text("✦ Built " + type.getDisplayName() + " at "
+                + origin.getBlockX() + ", " + origin.getBlockY() + ", " + origin.getBlockZ(), NamedTextColor.GREEN));
+        player.sendMessage(Component.text("Teleporting you there...", NamedTextColor.GRAY));
+        player.teleport(origin.add(0, 2, 0));
+    }
+
+    private void handleTpCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use /jglims tp.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims tp <overworld|nether|end|abyss|aether|lunar|jurassic>", NamedTextColor.YELLOW));
+            return;
+        }
+        String target = args[1].toLowerCase();
+        String worldName = switch (target) {
+            case "overworld", "world" -> "world";
+            case "nether" -> "world_nether";
+            case "end", "the_end" -> "world_the_end";
+            case "abyss" -> "world_abyss";
+            case "aether" -> "world_aether";
+            case "lunar", "moon" -> "world_lunar";
+            case "jurassic", "dino" -> "world_jurassic";
+            default -> null;
+        };
+        if (worldName == null) {
+            sender.sendMessage(Component.text("Unknown dimension: " + args[1], NamedTextColor.RED));
+            return;
+        }
+        World world = getServer().getWorld(worldName);
+        if (world == null) {
+            sender.sendMessage(Component.text("World '" + worldName + "' is not loaded.", NamedTextColor.RED));
+            return;
+        }
+        Location spawn = world.getSpawnLocation();
+        // Snap to safe Y
+        int safeY = world.getHighestBlockYAt(spawn.getBlockX(), spawn.getBlockZ());
+        spawn.setY(safeY + 1);
+        player.teleport(spawn);
+        player.sendMessage(Component.text("✦ Teleported to " + target + " (" + worldName + ")", NamedTextColor.GREEN));
+    }
+
+    private void handleSpawnCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use /jglims spawn.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims spawn <mob> [amount]", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Example: /jglims spawn T_REX 1", NamedTextColor.GRAY));
+            return;
+        }
+        com.jglims.plugin.custommobs.CustomMobType mobType;
+        try {
+            mobType = com.jglims.plugin.custommobs.CustomMobType.valueOf(args[1].toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage(Component.text("Unknown mob type: " + args[1], NamedTextColor.RED));
+            sender.sendMessage(Component.text("Use /jglims spawn <TAB> to see options.", NamedTextColor.GRAY));
+            return;
+        }
+        int amount = 1;
+        if (args.length >= 3) {
+            try { amount = Math.max(1, Math.min(20, Integer.parseInt(args[2]))); }
+            catch (NumberFormatException ignored) {}
+        }
+        // Spawn at where the player is looking (up to 10 blocks away)
+        org.bukkit.block.Block target = player.getTargetBlockExact(10);
+        Location loc = target != null ? target.getLocation().add(0.5, 1, 0.5) : player.getLocation();
+        int spawned = 0;
+        for (int i = 0; i < amount; i++) {
+            Location spawnLoc = loc.clone().add((Math.random() - 0.5) * 2, 0, (Math.random() - 0.5) * 2);
+            if (customMobManager.spawnMob(mobType, spawnLoc) != null) spawned++;
+        }
+        player.sendMessage(Component.text("✦ Spawned " + spawned + "× " + mobType.getDisplayName(), NamedTextColor.GREEN));
+    }
+
+    private void handleBossCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players can use /jglims boss.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims boss <name>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Bosses: THE_WARRIOR, KING_GLEEOK, GODZILLA, GHIDORAH, NETHER_KING, PITLORD, ILLIDAN,", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("        WHULVK_WEREWOLF, JAVION_DRAGONKIN, OGRIN_GIANT, FROSTMAW, PROTECTOR_OF_FORGE,", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("        INVADERLING_COMMANDER, SKELETON_DRAGON, REALISTIC_DRAGON, RIPPER_ZOMBIE,", NamedTextColor.GRAY));
+            sender.sendMessage(Component.text("        WITHER_STORM, T_REX, DINOBOT, PARASAUROLOPHUS, ABYSS_DRAGON, MUSHROOM_MONSTROSITY", NamedTextColor.GRAY));
+            return;
+        }
+        String bossName = args[1].toUpperCase();
+        // Abyss Dragon is its own summon path
+        if (bossName.equals("ABYSS_DRAGON")) {
+            if (abyssDragonBoss != null) {
+                abyssDragonBoss.manualTrigger(player);
+                player.sendMessage(Component.text("✦ Triggered Abyss Dragon fight", NamedTextColor.DARK_PURPLE));
+                return;
+            }
+        }
+        com.jglims.plugin.custommobs.CustomMobType mobType;
+        try {
+            mobType = com.jglims.plugin.custommobs.CustomMobType.valueOf(bossName);
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage(Component.text("Unknown boss: " + args[1], NamedTextColor.RED));
+            return;
+        }
+        // Verify it's actually a boss category
+        if (mobType.getCategory() != com.jglims.plugin.custommobs.MobCategory.WORLD_BOSS
+                && mobType.getCategory() != com.jglims.plugin.custommobs.MobCategory.EVENT_BOSS
+                && mobType.getCategory() != com.jglims.plugin.custommobs.MobCategory.BOSS) {
+            sender.sendMessage(Component.text(mobType.getDisplayName() + " is not a boss (category: "
+                    + mobType.getCategory() + "). Use /jglims spawn instead.", NamedTextColor.YELLOW));
+            return;
+        }
+        org.bukkit.block.Block target = player.getTargetBlockExact(15);
+        Location loc = target != null ? target.getLocation().add(0.5, 1, 0.5) : player.getLocation();
+        com.jglims.plugin.custommobs.CustomMobEntity spawned = customMobManager.spawnMob(mobType, loc);
+        if (spawned != null) {
+            player.sendMessage(Component.text("✦ Spawned boss: " + mobType.getDisplayName(), NamedTextColor.GOLD));
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_WITHER_SPAWN, 1.0f, 0.8f);
+        } else {
+            player.sendMessage(Component.text("Failed to spawn " + mobType.getDisplayName(), NamedTextColor.RED));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  TAB COMPLETION
+    // ═══════════════════════════════════════════════════════════════
+
+    private static final java.util.List<String> SUBCOMMANDS = java.util.List.of(
+            "reload", "stats", "enchants", "sort", "mastery", "legendary", "armor", "powerup",
+            "bosstitles", "quests", "gauntlet", "abyss", "vampire", "menu", "guia", "help",
+            "locate", "tp", "spawn", "boss"
+    );
+
+    private static final java.util.List<String> DIMENSIONS = java.util.List.of(
+            "overworld", "nether", "end", "abyss", "aether", "lunar", "jurassic"
+    );
+
+    @Override
+    public java.util.List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (!command.getName().equalsIgnoreCase("jglims")) return java.util.Collections.emptyList();
+        if (args.length == 1) {
+            return filterStarts(SUBCOMMANDS, args[0]);
+        }
+        if (args.length == 2) {
+            return switch (args[0].toLowerCase()) {
+                case "locate" -> filterStarts(
+                        java.util.Arrays.stream(com.jglims.plugin.structures.StructureType.values())
+                                .map(Enum::name).toList(),
+                        args[1]);
+                case "tp" -> filterStarts(DIMENSIONS, args[1]);
+                case "spawn" -> filterStarts(
+                        java.util.Arrays.stream(com.jglims.plugin.custommobs.CustomMobType.values())
+                                .map(Enum::name).toList(),
+                        args[1]);
+                case "boss" -> {
+                    java.util.List<String> bosses = new java.util.ArrayList<>();
+                    for (com.jglims.plugin.custommobs.CustomMobType mt :
+                            com.jglims.plugin.custommobs.CustomMobType.values()) {
+                        com.jglims.plugin.custommobs.MobCategory cat = mt.getCategory();
+                        if (cat == com.jglims.plugin.custommobs.MobCategory.WORLD_BOSS
+                                || cat == com.jglims.plugin.custommobs.MobCategory.EVENT_BOSS
+                                || cat == com.jglims.plugin.custommobs.MobCategory.BOSS) {
+                            bosses.add(mt.name());
+                        }
+                    }
+                    bosses.add("ABYSS_DRAGON");
+                    yield filterStarts(bosses, args[1]);
+                }
+                case "vampire" -> {
+                    java.util.List<String> names = new java.util.ArrayList<>();
+                    for (Player p : getServer().getOnlinePlayers()) names.add(p.getName());
+                    yield filterStarts(names, args[1]);
+                }
+                case "gauntlet" -> filterStarts(java.util.List.of("glove", "gauntlet", "stone", "fragment"), args[1]);
+                case "abyss" -> filterStarts(java.util.List.of("key", "tp", "boss"), args[1]);
+                case "powerup" -> filterStarts(java.util.List.of("heart", "soul", "titan", "phoenix", "keep", "vitality", "berserker", "stats"), args[1]);
+                case "legendary" -> filterStarts(java.util.List.of("list", "COMMON", "RARE", "EPIC", "MYTHIC", "ABYSSAL"), args[1]);
+                case "armor" -> filterStarts(java.util.List.of("list", "set"), args[1]);
+                default -> java.util.Collections.emptyList();
+            };
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("spawn")) {
+            return filterStarts(java.util.List.of("1", "3", "5", "10"), args[2]);
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    private static java.util.List<String> filterStarts(java.util.List<String> options, String prefix) {
+        String p = prefix.toLowerCase();
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String o : options) {
+            if (o.toLowerCase().startsWith(p)) out.add(o);
+        }
+        return out;
     }
 }

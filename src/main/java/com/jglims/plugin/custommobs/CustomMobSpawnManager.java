@@ -140,11 +140,6 @@ public class CustomMobSpawnManager {
                 Biome.FOREST, Biome.BIRCH_FOREST, Biome.OLD_GROWTH_BIRCH_FOREST,
                 Biome.OLD_GROWTH_PINE_TAIGA, Biome.OLD_GROWTH_SPRUCE_TAIGA, Biome.TAIGA), 6);
 
-        addRule(CustomMobType.SHARK, 0.04, Set.of("world"), biomes(
-                Biome.OCEAN, Biome.DEEP_OCEAN, Biome.WARM_OCEAN,
-                Biome.LUKEWARM_OCEAN, Biome.DEEP_LUKEWARM_OCEAN, Biome.COLD_OCEAN,
-                Biome.DEEP_COLD_OCEAN, Biome.FROZEN_OCEAN, Biome.DEEP_FROZEN_OCEAN), 8);
-
         addRule(CustomMobType.GRASS_FATHER, 0.005, Set.of("world"), biomes(
                 Biome.PLAINS, Biome.SUNFLOWER_PLAINS, Biome.MEADOW), 2);
 

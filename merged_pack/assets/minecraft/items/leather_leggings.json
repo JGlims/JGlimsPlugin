@@ -1,11 +1,19 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/leather_leggings"
+    },
     "cases": [
-      { "when": "reinforced_leather_leggings", "model": { "type": "minecraft:model", "model": "minecraft:item/reinforced_leather_leggings" } }
-    ],
-    "fallback": { "type": "minecraft:model", "model": "minecraft:item/leather_leggings" }
+      {
+        "when": 42005,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/leather_leggings"
+        }
+      }
+    ]
   }
 }

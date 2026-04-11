@@ -1,20 +1,26 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",
-    "index": 0,
-    "cases": [
-      {
-        "when": "titan_resolve",
-        "model": {
-          "type": "minecraft:model",
-          "model": "minecraft:item/powerups/titan_resolve"
-        }
-      }
-    ],
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/iron_nugget"
-    }
+    },
+    "cases": [
+      {
+        "when": 41002,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lunar_fragment"
+        }
+      },
+      {
+        "when": 41011,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/tremor_scale"
+        }
+      }
+    ]
   }
 }

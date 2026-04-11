@@ -1,0 +1,33 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/leather"
+    },
+    "cases": [
+      {
+        "when": 41001,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/troll_hide"
+        }
+      },
+      {
+        "when": 41003,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lunar_beast_hide"
+        }
+      },
+      {
+        "when": 41013,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/spinosaurus_sail"
+        }
+      }
+    ]
+  }
+}

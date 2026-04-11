@@ -62,7 +62,6 @@ public final class CustomMobFactory {
             case DEMON_GUY -> new DemonGuyMob(plugin);
             case PRISMAMORPHA -> new PrismamorphaMob(plugin);
             case REDSTONE_GOLEM -> new RedstoneGolemMob(plugin);
-            case SHARK -> new SharkMob(plugin);
             case GENERAL_PIGLIN -> new GeneralPiglinMob(plugin);
             case BASALT_GOLEM -> new BasaltGolemMob(plugin);
             case CATACOMBS_GOLEM -> new CatacombsGolemMob(plugin);

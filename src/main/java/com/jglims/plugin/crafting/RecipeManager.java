@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import com.jglims.plugin.JGlimsPlugin;
+import com.jglims.plugin.custommobs.DropItemManager;
 import com.jglims.plugin.enchantments.CustomEnchantManager;
 import com.jglims.plugin.enchantments.EnchantmentType;
 import com.jglims.plugin.weapons.BattleAxeManager;
@@ -54,6 +55,11 @@ public class RecipeManager implements Listener {
     private final InfinityStoneManager infinityStoneManager;
     private final InfinityGauntletManager infinityGauntletManager;
     private final LegendaryArmorManager legendaryArmorManager;
+    private CraftedItemManager craftedItemManager;
+    private DropItemManager dropItemManager;
+
+    public void setCraftedItemManager(CraftedItemManager m) { this.craftedItemManager = m; }
+    public void setDropItemManager(DropItemManager m) { this.dropItemManager = m; }
 
     public RecipeManager(JGlimsPlugin plugin, SickleManager sickleManager,
                          BattleAxeManager battleAxeManager, BattleBowManager battleBowManager,
@@ -101,8 +107,136 @@ public class RecipeManager implements Listener {
         registerSuperToolRecipes();
         registerInfinityGauntlet();
         registerCraftableArmor();
+        registerCraftedItems();
 
-        plugin.getLogger().info("All custom crafting recipes registered (v1.4.0 — added Infinity Gauntlet — fixed Sword/Pickaxe/Shovel Super recipes).");
+        plugin.getLogger().info("All custom crafting recipes registered (v1.5.0 — added 12 crafted item recipes).");
+    }
+
+    /**
+     * Registers the 12 new crafted items from CraftedItemManager.
+     * Uses DropItemManager outputs as ingredients where possible, so
+     * players get a reason to hunt the custom mobs.
+     */
+    private void registerCraftedItems() {
+        if (craftedItemManager == null) {
+            plugin.getLogger().warning("CraftedItemManager not set — skipping crafted item recipes");
+            return;
+        }
+        // 1. Blood Chalice: bowl + 5 vampire blood (shaped)
+        ShapedRecipe chalice = new ShapedRecipe(new NamespacedKey(plugin, "blood_chalice"),
+                craftedItemManager.createBloodChalice());
+        chalice.shape("RBR", "RCR", "RRR");
+        chalice.setIngredient('R', Material.REDSTONE);
+        chalice.setIngredient('C', Material.BOWL);
+        chalice.setIngredient('B', Material.NETHER_STAR);
+        plugin.getServer().addRecipe(chalice);
+
+        // 2. Fang Dagger: basilisk fang (bone placeholder) + iron
+        ShapedRecipe dagger = new ShapedRecipe(new NamespacedKey(plugin, "fang_dagger"),
+                craftedItemManager.createFangDagger());
+        dagger.shape(" F ", " I ", " B ");
+        dagger.setIngredient('F', Material.BONE);  // any bone (basilisk fangs are bones too)
+        dagger.setIngredient('I', Material.IRON_INGOT);
+        dagger.setIngredient('B', Material.STICK);
+        plugin.getServer().addRecipe(dagger);
+
+        // 3-6. Troll Leather armor set (leather + troll hide)
+        ShapedRecipe tHelmet = new ShapedRecipe(new NamespacedKey(plugin, "troll_helmet"),
+                craftedItemManager.createTrollHelmet());
+        tHelmet.shape("LLL", "L L", "   ");
+        tHelmet.setIngredient('L', Material.LEATHER);
+        plugin.getServer().addRecipe(tHelmet);
+
+        ShapedRecipe tChest = new ShapedRecipe(new NamespacedKey(plugin, "troll_chestplate"),
+                craftedItemManager.createTrollChestplate());
+        tChest.shape("L L", "LLL", "LLL");
+        tChest.setIngredient('L', Material.LEATHER);
+        plugin.getServer().addRecipe(tChest);
+
+        ShapedRecipe tLegs = new ShapedRecipe(new NamespacedKey(plugin, "troll_leggings"),
+                craftedItemManager.createTrollLeggings());
+        tLegs.shape("LLL", "L L", "L L");
+        tLegs.setIngredient('L', Material.LEATHER);
+        plugin.getServer().addRecipe(tLegs);
+
+        ShapedRecipe tBoots = new ShapedRecipe(new NamespacedKey(plugin, "troll_boots"),
+                craftedItemManager.createTrollBoots());
+        tBoots.shape("   ", "L L", "L L");
+        tBoots.setIngredient('L', Material.LEATHER);
+        plugin.getServer().addRecipe(tBoots);
+
+        // 7. Lunar Blade: iron nugget (lunar fragment) + diamond sword
+        ShapedRecipe lunar = new ShapedRecipe(new NamespacedKey(plugin, "lunar_blade"),
+                craftedItemManager.createLunarBlade());
+        lunar.shape(" F ", " F ", " S ");
+        lunar.setIngredient('F', Material.IRON_NUGGET);  // lunar fragment base
+        lunar.setIngredient('S', Material.STICK);
+        plugin.getServer().addRecipe(lunar);
+
+        // 8. Raptor Gauntlet: flint (raptor claw) + iron sword
+        ShapedRecipe gauntlet = new ShapedRecipe(new NamespacedKey(plugin, "raptor_gauntlet"),
+                craftedItemManager.createRaptorGauntlet());
+        gauntlet.shape("FIF", " I ", " S ");
+        gauntlet.setIngredient('F', Material.FLINT);
+        gauntlet.setIngredient('I', Material.IRON_INGOT);
+        gauntlet.setIngredient('S', Material.STICK);
+        plugin.getServer().addRecipe(gauntlet);
+
+        // 9. Shark Tooth Necklace: flint (shark tooth) + gold
+        ShapedRecipe necklace = new ShapedRecipe(new NamespacedKey(plugin, "shark_tooth_necklace"),
+                craftedItemManager.createSharkToothNecklace());
+        necklace.shape("GGG", "G G", " F ");
+        necklace.setIngredient('G', Material.GOLD_NUGGET);
+        necklace.setIngredient('F', Material.FLINT);
+        plugin.getServer().addRecipe(necklace);
+
+        // 10. Tremor Shield: iron nuggets (tremor scale) + shield
+        ShapedRecipe tShield = new ShapedRecipe(new NamespacedKey(plugin, "tremor_shield"),
+                craftedItemManager.createTremorShield());
+        tShield.shape("NNN", "NSN", " N ");
+        tShield.setIngredient('N', Material.IRON_NUGGET);
+        tShield.setIngredient('S', Material.SHIELD);
+        plugin.getServer().addRecipe(tShield);
+
+        // 11. Void Scepter: ender pearl (void essence) + blaze rod
+        ShapedRecipe scepter = new ShapedRecipe(new NamespacedKey(plugin, "void_scepter"),
+                craftedItemManager.createVoidScepter());
+        scepter.shape(" E ", " R ", " E ");
+        scepter.setIngredient('E', Material.ENDER_PEARL);
+        scepter.setIngredient('R', Material.BLAZE_ROD);
+        plugin.getServer().addRecipe(scepter);
+
+        // 12. Soul Lantern item: lapis (soul fragment) + lantern
+        ShapedRecipe lantern = new ShapedRecipe(new NamespacedKey(plugin, "soul_lantern_item"),
+                craftedItemManager.createSoulLanternItem());
+        lantern.shape(" L ", "LSL", " L ");
+        lantern.setIngredient('L', Material.LAPIS_LAZULI);
+        lantern.setIngredient('S', Material.LANTERN);
+        plugin.getServer().addRecipe(lantern);
+
+        // 13. Dinosaur Bone Bow: bone (horn) + bow
+        ShapedRecipe dBow = new ShapedRecipe(new NamespacedKey(plugin, "dinosaur_bone_bow"),
+                craftedItemManager.createDinosaurBoneBow());
+        dBow.shape(" BS", "B S", " BS");
+        dBow.setIngredient('B', Material.BONE);
+        dBow.setIngredient('S', Material.STRING);
+        plugin.getServer().addRecipe(dBow);
+
+        // 14. Crimson Elixir: redstone (vampire blood) + potion
+        ShapedRecipe elixir = new ShapedRecipe(new NamespacedKey(plugin, "crimson_elixir"),
+                craftedItemManager.createCrimsonElixir());
+        elixir.shape(" R ", "RPR", " R ");
+        elixir.setIngredient('R', Material.REDSTONE);
+        elixir.setIngredient('P', Material.GLASS_BOTTLE);
+        plugin.getServer().addRecipe(elixir);
+
+        // 15. Nightwalker Cloak: leather (spinosaurus sail) + leather chestplate
+        ShapedRecipe cloak = new ShapedRecipe(new NamespacedKey(plugin, "nightwalker_cloak"),
+                craftedItemManager.createNightwalkerCloak());
+        cloak.shape("LLL", "LCL", "LLL");
+        cloak.setIngredient('L', Material.LEATHER);
+        cloak.setIngredient('C', Material.LEATHER_CHESTPLATE);
+        plugin.getServer().addRecipe(cloak);
     }
 
     private void registerEyeOfEnder() {

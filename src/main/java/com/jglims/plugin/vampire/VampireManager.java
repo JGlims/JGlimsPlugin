@@ -255,6 +255,7 @@ public class VampireManager {
                         .append(Component.text("All buffs will be wiped!", NamedTextColor.RED))
                         .decoration(TextDecoration.ITALIC, false)
         ));
+        meta.setCustomModelData(40002);
         meta.getPersistentDataContainer().set(keyVampireEssence, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -290,6 +291,7 @@ public class VampireManager {
                 Component.text("Consume to evolve your vampirism.", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false)
         ));
+        meta.setCustomModelData(40003);
         meta.getPersistentDataContainer().set(keyVampireEvolver, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -309,6 +311,7 @@ public class VampireManager {
                 Component.text("Consume 5 to become Dracula.", NamedTextColor.DARK_RED)
                         .decoration(TextDecoration.ITALIC, false)
         ));
+        meta.setCustomModelData(40004);
         meta.getPersistentDataContainer().set(keySuperBlood, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
@@ -326,6 +329,7 @@ public class VampireManager {
                 Component.text("Consume to gain permanent sun immunity.", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false)
         ));
+        meta.setCustomModelData(40005);
         meta.getPersistentDataContainer().set(keyVampireRing, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;

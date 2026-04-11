@@ -703,3 +703,534 @@ Working PowerShell injection script (or alternative method) that replaces the .b
 Complete AbyssDragonModel.java (~400–600 lines) — full BetterModel tracker wrapper with all public methods, animation presets, phase effects, particle helpers, movement, cleanup, logging, null-safety
 Updated AbyssDragonBoss.java — all attack methods wired to model animations, movement loop calls fly/walk animations, death calls death animation with callback, phase changes call visual effects, damage calls damageTint
 END OF CONTINUATION SUMMARY v17.1 — Paste this at the start of the next chat session.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JGLIMSPLUGIN v2.0.0 — FINAL PRODUCTION MASTER PROMPT
+# Complete audit, vampire system, item integration, performance, deployment
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# IDENTITY & MISSION
+You are a senior Minecraft plugin architect with 15 years of Java, PaperMC API,
+resource pack engineering, and server optimization experience. Your mission is to
+bring JGlimsPlugin to 100% production-ready status in a SINGLE SESSION. You will
+audit every system, fix every bug, create every missing feature, integrate every
+texture, optimize every hotpath, and output a deployment-ready plugin + resource
+pack. You plan first, execute in batches, minimize redundant file reads, and
+never ask questions.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT CONTEXT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Repository & Paths
+- Local source: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin\
+- GitHub: https://github.com/JGlims/JGlimsPlugin (READ for full context)
+- Build command: cd C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin && .\gradlew clean build
+- Output JAR: build\libs\JGlimsPlugin-2.0.0.jar
+- BBModels staged: C:\Users\jgmel\Documents\projects\JGlimsPlugin\bbmodels\
+- BBModels deploy ready: C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin\bbmodels_deploy\
+- Resource pack workdir: C:\Users\jgmel\Documents\projects\JGlimsPlugin\resourcepack-work\JGlimsResourcePack\
+- Merged pack (THIS is what ships): C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin\merged_pack\
+- Texture PNGs location: merged_pack\assets\minecraft\textures\item\ (ALREADY PLACED THERE)
+
+## Server Infrastructure
+- Oracle Cloud ARM64 free-tier VM, IP: 144.22.198.184
+- SSH key: C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key
+- SSH user: ubuntu
+- SSH command template: ssh -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" ubuntu@144.22.198.184
+- SCP command template: scp -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" <local_file> ubuntu@144.22.198.184:<remote_path>
+- Docker container: mc-crossplay (itzg/minecraft-server)
+- Ports: 25565 (Java), 19132 (Bedrock/Geyser), 8080 (nginx resource pack), 22 (SSH)
+- Server data volume: /home/ubuntu/minecraft-server/data
+- Plugin path on server: /home/ubuntu/minecraft-server/data/plugins/
+- BetterModel models on server: /home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+- Resource pack served at: http://144.22.198.184:8080/JGlimsResourcePack.zip
+- Resource pack upload path: /var/www/resourcepack/JGlimsResourcePack.zip
+- docker-compose location: /home/ubuntu/minecraft-server/docker-compose.yml
+- Resource pack SHA1 is stored in docker-compose.yml as RESOURCE_PACK_SHA1
+
+## Tech Stack
+- Java 21, PaperMC 1.21.4, Gradle
+- BetterModel 2.1.0 API (compileOnly 'io.github.toxicity188:bettermodel-bukkit-api:2.1.0')
+- Adventure API (net.kyori) for text components
+- pack_format: 75
+
+## Exclusion List (PERMANENTLY SKIP these mobs — no models, no code, no animations):
+low_poly_troll, necromancer, demon_mob, prismamorpha, observer_golem,
+wildfire, pegasus, mutant_zombie, stone_golem, general_piglin
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 0: DEEP PROJECT AUDIT (Read & Understand Everything)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+Before writing ANY code, perform a complete audit. Read each file ONCE.
+
+## 0A: Read the GitHub README.md completely
+- Understand every feature, every system, every mob, every weapon, every armor set
+- Understand the full game design vision
+
+## 0B: Read RESOURCE_PACK_ADDITIONS.md
+- Cross-reference the 72 mob model list against bbmodels_deploy/ and bbmodels/
+- Note which mobs have .bbmodel files and which are missing
+
+## 0C: Read BETTERMODEL_SETUP_GUIDE.txt
+- Understand how BetterModel loads models, the expected YAML config, reload commands
+
+## 0D: Read ALL source files (one pass each, in this order):
+1. JGlimsPlugin.java — understand manager registration, command routing, scheduler setup
+2. vampire/ package: VampireLevel.java, VampireState.java, VampireManager.java, VampireListener.java
+3. magic/ package: MagicItemManager.java, MagicItemListener.java
+4. custommobs/ package: CustomMobType.java, CustomMobEntity.java, CustomBossEntity.java,
+   CustomMobFactory.java, CustomMobListener.java, CustomMobManager.java,
+   CustomMobSpawnManager.java, CustomNpcEntity.java, CustomWorldBoss.java,
+   MobCategory.java, RideableMobEntity.java
+5. crafting/ package: RecipeManager.java, VanillaRecipeRemover.java
+6. structures/ package: StructureType.java, StructureManager.java, StructureBuilder.java,
+   OverworldStructureBuilders.java, DimensionStructureBuilders.java,
+   StructureBossManager.java, StructureLootPopulator.java
+7. legendary/ package: all files (LegendaryWeapon, LegendaryWeaponManager, LegendaryArmorSet,
+   LegendaryArmorManager, LegendaryAbilityListener, LegendaryLootListener,
+   InfinityStoneManager, InfinityGauntletManager)
+8. dimensions/ package: DimensionPortalManager, AetherDimensionManager,
+   LunarDimensionManager, JurassicDimensionManager
+9. abyss/ package: AbyssDimensionManager, AbyssDragonBoss
+10. powerups/: PowerUpManager, PowerUpListener
+11. blessings/: BlessingManager, BlessingListener
+12. enchantments/: CustomEnchantManager, EnchantmentEffectListener, AnvilRecipeListener
+13. guilds/: GuildManager, GuildListener
+14. quests/: QuestManager, QuestProgressListener, NpcWizardManager
+15. events/: EventManager and all event classes
+16. mobs/: BloodMoonManager, RoamingBossManager, BossMasteryManager, etc.
+17. weapons/: all Battle*Manager, SickleManager, SpearManager, etc.
+18. menu/: CreativeMenuManager, GuideBookManager
+19. utility/: all utility listeners and tasks
+
+## 0E: Scan the merged_pack folder
+- List all files in merged_pack/assets/minecraft/textures/item/
+- List all files in merged_pack/assets/minecraft/models/item/
+- List all files in merged_pack/assets/minecraft/items/
+- Check pack.mcmeta exists with pack_format 75
+
+## 0F: Scan bbmodels_deploy/ and bbmodels/
+- List all .bbmodel files that exist
+- Compare against CustomMobType.java enum entries
+- Note mismatches (mobs that reference models that don't exist)
+
+## 0G: Create AUDIT_REPORT.md at project root with:
+- Total Java source files and line count
+- Every custom mob: name, category, has .bbmodel (Y/N), has animations (Y/N), model name matches code (Y/N)
+- Every custom item: name, base material, CMD value, has texture PNG (Y/N), has model JSON (Y/N), has item JSON entry (Y/N), has functional use (Y/N), what the use is
+- Every crafting recipe: name, ingredients, output, registered (Y/N)
+- Every structure: name, associated boss, quality rating (stub/basic/good/excellent based on op count and complexity)
+- Every system: name, has manager (Y/N), has listener (Y/N), registered in main class (Y/N), potential bugs spotted
+- Resource pack: total PNGs, total model JSONs, total item JSONs, orphaned files, missing references
+- Performance concerns spotted during read
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 1: VAMPIRE ABILITY SYSTEM (NEW — the crown jewel feature)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Context: Ability Design Philosophy
+Vampires trade ALL armor and potions for raw power. A max Dracula at night must be
+SLIGHTLY stronger than a full Abyssal legendary + all power-ups + Infinity Gauntlet player.
+The tradeoff is fragility: no armor, no potions, sun damage, must hunt blood.
+
+Vampires are COOL and POWERFUL. Abilities must feel epic, with dramatic particles,
+screen-shaking sounds, and meaningful tactical depth.
+
+## IMPORTANT: Maximum 5 ability hotbar slots
+The current VampireState.java defines 9 ability IDs. This is too many for the hotbar.
+REDESIGN the ability system as follows:
+
+### 5 Core Ability Slots (evolve with vampire level):
+
+SLOT 1 — VAMPIRE CLAW (always available, evolves with level)
+- This is the vampire's BASIC ATTACK replacing the bare hand. It is NOT optional.
+- FLEDGLING: simple claw slash, 3-block range, 120° arc, damage = getEffectiveClawDamage(), 1.5s CD
+- VAMPIRE: adds lifesteal (heal 15% of damage), claw leaves red particle trail
+- ELDER VAMPIRE: claw becomes 3-hit combo (rapid 3 slashes in 0.5s), 180° arc, lifesteal 25%
+- VAMPIRE LORD: claw creates a shockwave that travels 6 blocks forward dealing 60% damage to anything in path
+- DRACULA: claw hits phase through blocks, 5-block range, 270° arc, lifesteal 40%, every 5th hit triggers a blood explosion (3-block AoE) dealing extra damage
+
+SLOT 2 — VAMPIRE BITE (unlocked at VAMPIRE, evolves)
+- VAMPIRE: Lunge 3 blocks + bite, damage = getEffectiveTeethDamage(), heals 50%, 5s CD
+- ELDER VAMPIRE: Lunge 5 blocks, bite chains to 2 nearby enemies, heals 60%, 4s CD
+- VAMPIRE LORD: Bite marks target for 8s (25% extra damage from you), chain to 3 enemies, heal 70%
+- DRACULA: Bite EXECUTES targets below 15% HP instantly, chain to ALL enemies in 4-block radius, full HP heal on kill, 3s CD
+
+SLOT 3 — BAT SWARM / BAT TRANSFORM (unlocked at ELDER VAMPIRE, evolves)
+- ELDER VAMPIRE: Summon 8 bats that attack nearest enemy 6s, each deals 3 dmg, 15s CD
+- VAMPIRE LORD: Bats + you become invisible with SPEED 3 for 8 seconds, 20s CD
+- DRACULA: Full bat transformation — you dissolve into 12 bats, become invulnerable for 5s, teleport to cursor location (up to 40 blocks), reform dealing 20 AoE damage at arrival, 25s CD
+
+SLOT 4 — BLOOD NOVA (unlocked at VAMPIRE LORD, evolves)
+- VAMPIRE LORD: 6-block radius AoE, 15 + (blood×0.1) damage, heal 25% of total dealt, 25s CD, red dust sphere
+- DRACULA: 10-block radius, 25 + (blood×0.15) + (evolvers×1.5) damage, heal 40%, applies Wither II to survivors for 5s, pulls enemies toward center before detonation, 20s CD
+
+SLOT 5 — DOMAIN OF NIGHT (DRACULA only — ultimate ability)
+- Creates 30-block radius dome: forced night for 30s, non-vampires get Darkness + Slowness II
+- Vampire inside gets STRENGTH 3, SPEED 3, REGENERATION 3, RESISTANCE 1
+- All vampire abilities have halved cooldowns inside the domain
+- Visual: dark particle dome border, red lightning strikes inside, ambient heartbeat sound
+- 120s CD
+
+### Update VampireState.java:
+- Change recalculateAbilities() to only track: vampire_claw (always), vampire_bite (VAMPIRE+), bat_ability (ELDER+), blood_nova (LORD+), domain_of_night (DRACULA)
+- Add ability tier tracking (so the system knows which evolution of each ability to use)
+- Buff Dracula stats: clawDamage 22→25, teethDamage 28→32, bloodShootDamage 35→40, baseDefense 10→12
+
+### Update VampireLevel.java:
+- Update DRACULA enum values to match the buffed stats above
+
+### Create VampireAbilityManager.java (~400-500 lines):
+- Manages the 5-slot ability system
+- Ability items use these materials with CMD:
+  * vampire_claw: IRON_SWORD, CMD 50001
+  * vampire_bite: BONE, CMD 50002
+  * bat_ability: PHANTOM_MEMBRANE, CMD 50003
+  * blood_nova: REDSTONE_BLOCK, CMD 50004
+  * domain_of_night: BLACK_DYE, CMD 50005
+- Ability GUI: Sneak + F (swap hand) opens a 3-row chest GUI
+  * Row 1: 5 ability slots showing unlocked abilities (custom items with textures)
+  * Row 2: vampire stats display (claw dmg, teeth dmg, level, blood count, etc.)
+  * Row 3: locked abilities as GRAY_STAINED_GLASS_PANE with "Unlocked at [LEVEL]" lore
+- Clicking an unlocked ability equips it in the player's offhand
+- Right-clicking with an ability item in offhand triggers the ability
+- Each ability: particles, sounds, cooldown, damage, healing, everything implemented
+- Cooldown feedback via action bar
+
+### Create VampireAbilityListener.java (~250-350 lines):
+- PlayerSwapHandItemsEvent while sneaking → open GUI
+- PlayerInteractEvent RIGHT_CLICK with ability item in offhand → execute ability
+- InventoryClickEvent in ability GUI → equip ability
+- EntityDamageByEntityEvent → apply vampire_bite mark bonus damage
+- All cooldown tracking with HashMap<UUID, Map<String, Long>>
+
+### Update VampireListener.java:
+- In applyNightBuffs() for DRACULA: STRENGTH 3, RESISTANCE 1, REGENERATION 2
+- If hasVampireRing: additional HASTE 2
+
+### Register in JGlimsPlugin.java:
+- Add VampireAbilityManager vampireAbilityManager field + getter
+- Instantiate after vampireManager
+- Register VampireAbilityListener
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 2: ITEM TEXTURE INTEGRATION & RESOURCE PACK
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Texture PNGs Already in merged_pack/assets/minecraft/textures/item/:
+(the user has placed these — verify they exist, if any are missing log it)
+
+### Ability icons (5 used, others available as alternates):
+vampire_claw.png, vampire_teeth.png, vampire_teeth_alt.png, bat_swarm.png,
+bat_transform.png, blood_nova.png, crimson_mark.png, dracula_wrath.png,
+domain_of_night.png, vampire_symbol.png
+
+### Vampire consumable items:
+vampire_blood.png, vampire_essence.png, vampire_evolver.png, super_blood.png, vampire_ring.png
+
+### Wand of Wands:
+wand_of_wands.png
+
+### Mob drop items:
+troll_hide.png, lunar_fragment.png, lunar_beast_hide.png, shark_tooth.png,
+bear_claw.png, raptor_claw.png, basilisk_fang.png, dark_essence.png,
+void_essence.png, soul_fragment.png, tremor_scale.png, horn.png, spinosaurus_sail.png
+
+## For EVERY texture PNG that exists, create:
+
+### A) Model JSON at merged_pack/assets/minecraft/models/item/<name>.json:
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "minecraft:item/<name>" }
+}
+
+### B) Base material item JSON at merged_pack/assets/minecraft/items/<base_material>.json:
+Use the 1.21.4+ select model format with CustomModelData cases.
+If the base material JSON already exists (e.g., diamond_sword.json), ADD the new case
+to the existing cases array. Do NOT overwrite existing entries.
+Format:
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "fallback": { "type": "minecraft:model", "model": "minecraft:item/<vanilla_model>" },
+    "cases": [
+      { "when": "<CMD_NUMBER>", "model": { "type": "minecraft:model", "model": "minecraft:item/<custom_name>" } }
+    ]
+  }
+}
+
+### CMD Allocation Table (follow exactly):
+| Item | Base Material | CMD | Texture File |
+|------|--------------|-----|-------------|
+| Wand of Wands | blaze_rod | 40010 | wand_of_wands.png |
+| Vampire Blood | redstone | 40001 | vampire_blood.png |
+| Vampire Essence | nether_star | 40002 | vampire_essence.png |
+| Vampire Evolver | echo_shard | 40003 | vampire_evolver.png |
+| Super Blood | magma_cream | 40004 | super_blood.png |
+| Vampire Ring | gold_nugget | 40005 | vampire_ring.png |
+| Vampire Claw ability | iron_sword | 50001 | vampire_claw.png |
+| Vampire Bite ability | bone | 50002 | vampire_teeth.png |
+| Bat Ability | phantom_membrane | 50003 | bat_swarm.png |
+| Blood Nova ability | redstone_block | 50004 | blood_nova.png |
+| Domain of Night ability | black_dye | 50005 | domain_of_night.png |
+| Troll Hide | leather | 41001 | troll_hide.png |
+| Lunar Fragment | iron_nugget | 41002 | lunar_fragment.png |
+| Lunar Beast Hide | leather | 41003 | lunar_beast_hide.png |
+| Shark Tooth | flint | 41004 | shark_tooth.png |
+| Bear Claw | bone | 41005 | bear_claw.png |
+| Raptor Claw | flint | 41006 | raptor_claw.png |
+| Basilisk Fang | bone | 41007 | basilisk_fang.png |
+| Dark Essence | ender_pearl | 41008 | dark_essence.png |
+| Void Essence | ender_pearl | 41009 | void_essence.png |
+| Soul Fragment | lapis_lazuli | 41010 | soul_fragment.png |
+| Tremor Scale | iron_nugget | 41011 | tremor_scale.png |
+| Horn | bone | 41012 | horn.png |
+| Spinosaurus Sail | leather | 41013 | spinosaurus_sail.png |
+
+NOTE: For base materials that share multiple CMDs (e.g., bone has 41005, 41007, 41012,
+and 50002), merge ALL cases into ONE item JSON with multiple case entries.
+
+## Update VampireManager.java:
+- Add meta.setCustomModelData() calls to: createVampireEssence (40002), createVampireEvolver (40003), createSuperBlood (40004), createVampireRing (40005)
+- Do NOT change any other functionality
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 3: MOB DROP ITEM SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Create DropItemManager.java in com.jglims.plugin.custommobs:
+- createTrollHide(), createLunarFragment(), createLunarBeastHide(), createSharkTooth(),
+  createBearClaw(), createRaptorClaw(), createBasiliskFang(), createDarkEssence(),
+  createVoidEssence(), createSoulFragment(), createTremorScale(), createHorn(),
+  createSpinosaurusSail()
+- Each method: correct Material, display name (colored), lore describing what it's from
+  and what it crafts into, PDC tag "drop_item" with the item ID, CustomModelData per table above
+- Register in JGlimsPlugin.java
+
+## Update CustomMobListener.java:
+- Replace any hardcoded vanilla item drops with DropItemManager calls
+- Ensure every mob that should drop a custom item actually does
+- Match drops to the RESOURCE_PACK_ADDITIONS.md table
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 4: NEW CRAFTED ITEMS WITH FUNCTIONAL ABILITIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## Create CraftedItemManager.java in com.jglims.plugin.crafting:
+Create methods for each item below. Every item MUST have a functional use.
+
+1. Blood Chalice (BOWL, CMD 42001) — stores 5 Vampire Blood charges, right-click to consume one
+2. Fang Dagger (IRON_SWORD, CMD 42002) — 12 dmg, Poison II 3s on hit, unbreakable
+3. Troll Leather Armor set (LEATHER_*, CMD 42003-42006) — +4 toughness/piece, Thorns I
+4. Lunar Blade (DIAMOND_SWORD, CMD 42007) — 14 dmg, Smite V, glows at night
+5. Raptor Gauntlet (IRON_SWORD, CMD 42008) — 10 dmg, +50% attack speed, right-click pounce dash
+6. Shark Tooth Necklace (GOLD_NUGGET, CMD 42009) — offhand, Water Breathing + Dolphin's Grace
+7. Tremor Shield (SHIELD, CMD 42010) — 50% projectile reflect, shockwave on block
+8. Void Scepter (BLAZE_ROD, CMD 42011) — right-click 15-block teleport through walls, 8s CD
+9. Soul Lantern (LANTERN, CMD 42012) — offhand, Slowness II + Weakness I to hostiles in 8 blocks
+10. Dinosaur Bone Bow (BOW, CMD 42013) — +8 arrow damage, no-gravity arrows
+11. Crimson Elixir (POTION, CMD 42014) — vampire-only, +2 permanent claw damage (max 3 uses)
+12. Nightwalker Cloak (LEATHER_CHESTPLATE, CMD 42015) — only chestplate vampires can wear, Invisibility + Speed 2 at night
+
+## Create CraftedItemListener.java in com.jglims.plugin.crafting:
+- Void Scepter: PlayerInteractEvent right-click → raycast 15 blocks, teleport, 8s CD, ender particles
+- Blood Chalice: right-click → consume 1 charge (stored in PDC), same effect as consuming Vampire Blood
+- Raptor Gauntlet: right-click → lunge 6 blocks forward, deal damage on contact, 4s CD
+- Soul Lantern: repeating task checking offhand for soul lantern, apply debuffs to nearby hostiles
+- Nightwalker Cloak: repeating task, if equipped + vampire + night → Invisibility, Speed
+- Fang Dagger: EntityDamageByEntityEvent → apply Poison II for 3s
+- Tremor Shield: EntityDamageByEntityEvent when blocking → shockwave, projectile reflect
+- Dinosaur Bone Bow: ProjectileLaunchEvent → setGravity(false), add +8 damage on hit
+- Crimson Elixir: PlayerInteractEvent → check vampire, check PDC uses counter ≤3, buff claw damage permanently
+
+## Add 12 shaped/shapeless recipes to RecipeManager.java
+(ingredients from Phase 3 drop items + vanilla materials, as specified in the item list above)
+
+## Register CraftedItemManager and CraftedItemListener in JGlimsPlugin.java
+
+## Generate textures for the 12 crafted items:
+You CANNOT generate images. Instead, for each item that lacks a texture PNG,
+create a placeholder model JSON that uses the vanilla base material texture as fallback.
+Log which textures the user still needs to generate. DO NOT block on missing textures.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 5: FULL SYSTEM VERIFICATION & BUG FIXING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 5A: Custom Mob Verification
+For EVERY entry in CustomMobType.java:
+- Verify the model name matches an existing .bbmodel file in bbmodels_deploy/
+- Verify the mob has proper HP, damage, category, spawn rules
+- Verify the mob drops the correct custom drop item (not a raw vanilla item)
+- Fix any mob whose model name doesn't match its .bbmodel filename
+- Skip excluded mobs (the 10 in the exclusion list)
+
+## 5B: Custom Item Verification
+For EVERY custom item in the project:
+- Verify it has a create method
+- Verify it has a CustomModelData value
+- Verify the CMD matches a resource pack model JSON
+- Verify it has a functional use (crafting ingredient, consumable, weapon, armor, ability)
+- If any item is "decoration only" with no use, ADD a use (crafting recipe, special effect, etc.)
+- Print the complete item verification table
+
+## 5C: Resource Pack Integrity Check
+- Verify every model JSON references a texture that exists
+- Verify every item JSON references a model JSON that exists
+- Verify no duplicate CMD values across different items
+- Verify pack.mcmeta has pack_format: 75
+- Remove any orphaned files (JSONs pointing to missing textures, backup files like .bak)
+
+## 5D: Structure Quality Audit
+- For every structure in StructureType.java, read its builder method
+- Rate each: STUB (<15 ops), BASIC (15-30), GOOD (30-60), EXCELLENT (60+)
+- For any rated STUB: add at minimum 15 more block-placement operations with
+  interesting geometry (columns, arches, floor patterns, loot chests, decorative blocks)
+- For any rated BASIC: add at minimum 10 more ops (elevation changes, rubble, vegetation, lighting)
+- PRIORITIZE: boss arenas, dimension-specific structures, quest locations
+- The 11 weak structures from the previous session audit (MeteorCrashSite, AetherAncientRuins,
+  DruidsGrove, AllaySanctuary, SunkenRuins, Volcano, UndergroundHive, NestingGround, etc.)
+  — improve ALL of them
+
+## 5E: Animation Verification
+- Check that bbmodels_deploy/MANIFEST.txt exists and lists all animated models
+- Cross-reference with CustomMobType model names
+- For models with <3 bones or 0 animations, log them as "needs Blockbench work"
+- shark.bbmodel: if un-rigged (0 bones), log it
+
+## 5F: Compilation & Runtime Bug Detection
+- Read every Java file looking for:
+  * NullPointerException risks (unchecked .get() calls, missing null checks on player.getInventory())
+  * Missing event registrations in JGlimsPlugin.java
+  * Managers that are instantiated but never used
+  * Listeners that reference managers not yet initialized (order-of-operations bugs)
+  * Deprecated PaperMC API calls
+  * Resource leaks (unclosed streams, schedulers not cancelled in onDisable)
+  * ConcurrentModificationException risks in collections iterated during events
+  * Hardcoded paths or values that should be configurable
+- FIX every bug found
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 6: PERFORMANCE OPTIMIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+This server runs on a FREE-TIER ARM64 VM with limited CPU/RAM.
+Every tick matters. Optimize for high FPS and zero lag spikes.
+
+## 6A: Scheduler Optimization
+- Audit every BukkitRunnable and runTaskTimer call
+- Any task running every tick (1L) that doesn't need to: increase to 5L or 10L
+- VampireListener day/night cycle runs every 40L (2s) — this is fine
+- Custom mob spawn scheduler: ensure it's not checking all chunks every run
+- Particle-heavy abilities: ensure particle counts are reasonable (not 200+ per tick)
+
+## 6B: Event Listener Optimization
+- Any EventHandler with priority HIGH that just checks a boolean and returns:
+  add early-return checks at the TOP before any computation
+- Inventory click events: return immediately if not the correct inventory
+- Entity damage events: cache lookups, avoid repeated getCustomMobManager() chains
+
+## 6C: Collection Optimization
+- Any HashMap that grows unbounded per-player: add cleanup in onDisable or scheduled cleanup
+- Cooldown maps: add periodic purge of expired entries
+- Vampire states: already persisted to disk, good
+
+## 6D: Structure Generation Optimization
+- Large structure builders (164KB DimensionStructureBuilders!): ensure they use
+  setBlockData instead of setType where possible, batch operations, avoid unnecessary
+  getBlock calls, use chunk snapshots if reading large areas
+
+## 6E: Memory Optimization
+- Large lists of legendary weapons/armor: ensure they're static final, not re-created per call
+- ItemStack creation: cache common items if created frequently (Vampire Blood drops)
+- String concatenations in hot loops: use StringBuilder
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PHASE 7: FINAL BUILD, PACKAGE & DEPLOYMENT PREP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+## 7A: Build the Plugin
+cd C:\Users\jgmel\Documents\projects\JGlimsPlugin\JGlimsPlugin && .\gradlew clean build
+- If build fails: READ the error, FIX it, rebuild. Repeat until SUCCESS.
+- Report final JAR size
+
+## 7B: Package the Resource Pack
+- Ensure merged_pack/ contains: pack.mcmeta, pack.png (if exists), assets/ tree
+- Create the ZIP: use PowerShell to 7z or Compress-Archive merged_pack/* into JGlimsResourcePack.zip
+- Compute SHA1 of the ZIP
+- Place ZIP at project root
+
+## 7C: Generate Deployment Script
+Create a file deploy.ps1 at project root that:
+1. Copies JGlimsPlugin-2.0.0.jar to server via SCP
+2. Copies all .bbmodel files from bbmodels_deploy/ to server's BetterModel/models/
+3. Copies JGlimsResourcePack.zip to server's /var/www/resourcepack/
+4. SSHes in and updates RESOURCE_PACK_SHA1 in docker-compose.yml
+5. Restarts the Docker container: docker compose down && docker compose up -d
+6. Waits 30 seconds then runs: docker exec mc-crossplay rcon-cli "bettermodel reload"
+
+Use the SSH key path: C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key
+
+## 7D: Generate the Final Status Report
+Create DEPLOYMENT_STATUS.md at project root with:
+
+### Server Readiness: YES/NO
+### What Works:
+- Complete list of functional systems with status
+### What Needs Manual Attention:
+- Missing .bbmodel files (list them)
+- Missing textures for crafted items (list which ones the user needs to generate)
+- Any mob animations that need Blockbench visual tweaking
+### How to Make Textures Work In-Game:
+Step-by-step instructions for the user:
+1. Generate remaining textures with ChatGPT (give the prompts)
+2. Place PNGs in merged_pack/assets/minecraft/textures/item/
+3. Run deploy.ps1
+4. Join server, download resource pack
+5. Use /jglims vampire to test items
+### How to Make Models Work In-Game:
+1. .bbmodel files go to plugins/BetterModel/models/ on the server
+2. /bettermodel reload
+3. Spawn a mob with /jglims mob spawn <type> and verify model renders
+### Performance Expectations:
+- Expected TPS on ARM64 free tier
+- Recommended player count
+- Known performance bottlenecks and mitigations
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXECUTION RULES (FOLLOW STRICTLY)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+1. PLAN FIRST: After Phase 0 audit, create a numbered task list before writing code
+2. BATCH READS: Read files once, take notes, never re-read the same file
+3. BATCH WRITES: Accumulate changes per file, write once
+4. NEVER ASK QUESTIONS: If something is ambiguous, make the best engineering decision
+5. FIX FORWARD: If you encounter a bug while working on something else, fix it immediately
+6. LOG EVERYTHING: Every file created, modified, or deleted goes in the final report
+7. COMPILE OFTEN: Build after each major phase to catch errors early
+8. DO NOT SKIP PHASES: Execute every phase in order, even if it seems "good enough"
+9. CREDIT EFFICIENCY: Minimize token usage by being precise, not verbose in code comments
+10. ABSOLUTE QUALITY: Every line of code must be production-grade. No TODOs, no placeholders, no stubs
+11. The previous Claude Code session animated 62 models and rebuilt 6 structures. 
+    BUILD ON THAT WORK — do not redo it. Check what exists and extend it.
+12. VS Code performance: add to .vscode/settings.json to exclude *.bak, bbmodels/ from search/watcher
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BEGIN EXECUTION. NO QUESTIONS. FULL AUTONOMY. MAKE IT PERFECT.
+# ═══════════════════════════════════════════════════════════════════════════════

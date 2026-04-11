@@ -1,1 +1,6 @@
-﻿{"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/powerups/soul_fragment"}}
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/soul_fragment"
+  }
+}

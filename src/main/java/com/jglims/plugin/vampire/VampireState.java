@@ -50,26 +50,51 @@ public class VampireState {
 
     /**
      * Updates which abilities are unlocked based on current level.
+     * 5-slot system: vampire_claw (always), vampire_bite (VAMPIRE+),
+     * bat_ability (ELDER+), blood_nova (LORD+), domain_of_night (DRACULA).
+     * The tier of each ability (which evolution is active) is derived from the level.
      */
     private void recalculateAbilities() {
         unlockedAbilities.clear();
-        unlockedAbilities.add("vampire_claw"); // Always available
+        unlockedAbilities.add("vampire_claw"); // Always — evolves with level
         if (level.ordinal() >= VampireLevel.VAMPIRE.ordinal()) {
-            unlockedAbilities.add("vampire_teeth");
+            unlockedAbilities.add("vampire_bite");
         }
         if (level.ordinal() >= VampireLevel.ELDER_VAMPIRE.ordinal()) {
-            unlockedAbilities.add("vampire_teeth_alt");
-            unlockedAbilities.add("bat_swarm");
+            unlockedAbilities.add("bat_ability");
         }
         if (level.ordinal() >= VampireLevel.VAMPIRE_LORD.ordinal()) {
-            unlockedAbilities.add("bat_transform");
             unlockedAbilities.add("blood_nova");
-            unlockedAbilities.add("crimson_mark");
         }
         if (level == VampireLevel.DRACULA) {
-            unlockedAbilities.add("dracula_wrath");
             unlockedAbilities.add("domain_of_night");
         }
+    }
+
+    /**
+     * Returns the evolution tier of an ability for the current vampire level.
+     * Tier 1 is the base form; higher tiers add more power/effects.
+     */
+    public int getAbilityTier(String abilityId) {
+        int lvl = level.ordinal();
+        return switch (abilityId) {
+            case "vampire_claw" -> lvl + 1;  // Tier 1..5 for Fledgling..Dracula
+            case "vampire_bite" -> lvl >= VampireLevel.VAMPIRE.ordinal()
+                    ? (lvl - VampireLevel.VAMPIRE.ordinal() + 1) : 0;
+            case "bat_ability" -> lvl >= VampireLevel.ELDER_VAMPIRE.ordinal()
+                    ? (lvl - VampireLevel.ELDER_VAMPIRE.ordinal() + 1) : 0;
+            case "blood_nova" -> lvl >= VampireLevel.VAMPIRE_LORD.ordinal()
+                    ? (lvl - VampireLevel.VAMPIRE_LORD.ordinal() + 1) : 0;
+            case "domain_of_night" -> level == VampireLevel.DRACULA ? 1 : 0;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Returns true if the player has unlocked this ability at the given vampire level.
+     */
+    public boolean hasAbility(String abilityId) {
+        return unlockedAbilities.contains(abilityId);
     }
 
     // ── Calculated Stats ───────────────────────────────────────────────

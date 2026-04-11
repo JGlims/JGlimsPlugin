@@ -102,15 +102,22 @@ public class VampireListener implements Listener {
         int slot = event.getRawSlot();
         // Armor slots in player inventory: 5=helmet, 6=chestplate, 7=leggings, 8=boots
         if (slot >= 5 && slot <= 8) {
-            // Allow Elytra in chestplate slot
+            ItemStack cursor = event.getCursor();
+            // Allow Elytra and Nightwalker Cloak in chestplate slot
             if (slot == 6) {
-                ItemStack cursor = event.getCursor();
                 if (cursor != null && cursor.getType() == Material.ELYTRA) return;
+                if (cursor != null && cursor.hasItemMeta()
+                        && cursor.getItemMeta().getPersistentDataContainer().has(
+                                new org.bukkit.NamespacedKey(plugin, "crafted_item_id"),
+                                org.bukkit.persistence.PersistentDataType.STRING)) {
+                    String id = cursor.getItemMeta().getPersistentDataContainer().get(
+                            new org.bukkit.NamespacedKey(plugin, "crafted_item_id"),
+                            org.bukkit.persistence.PersistentDataType.STRING);
+                    if ("nightwalker_cloak".equals(id)) return;
+                }
             }
             // Block all other armor
-            ItemStack clickedItem = event.getCurrentItem();
-            ItemStack cursorItem = event.getCursor();
-            if (isArmor(cursorItem)) {
+            if (isArmor(cursor)) {
                 event.setCancelled(true);
                 player.sendMessage(Component.text("Vampires cannot wear armor!", NamedTextColor.RED));
             }
@@ -246,6 +253,18 @@ public class VampireListener implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING,
                 100, 0, false, false, false));
 
+        // DRACULA endgame buffs
+        if (level == VampireLevel.DRACULA) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 2, false, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 0, false, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1, false, false, false));
+            // Ring holders get bonus haste for mining/crafting flair
+            VampireState draculaState = manager.getOrCreateState(player.getUniqueId());
+            if (draculaState.hasVampireRing()) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1, false, false, false));
+            }
+        }
+
         // Dracula flight — creative-mode flying for max-level vampires
         if (level == VampireLevel.DRACULA) {
             if (!player.getAllowFlight()) {
@@ -366,5 +385,58 @@ public class VampireListener implements Listener {
         return name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE")
                 || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS")
                 || name.equals("TURTLE_HELMET");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  VAMPIRE INNATE ABILITY — MERCHANT MIND MANIPULATION
+    // ═══════════════════════════════════════════════════════════════
+    //
+    // Every time a vampire selects a trade from a villager (or NPC wizard/quest
+    // giver with a merchant inventory), there is a 50% chance the vampire mind-
+    // controls the merchant and receives the result item *for free* — no
+    // ingredients consumed, no merchant refresh charge. Passive, always on,
+    // costs no cooldown; a core perk of being an undead predator.
+    //
+    // Implementation: hook MerchantInventory clicks in the RESULT slot (slot 2
+    // of a villager trade GUI). When the trade is valid and the clicker is a
+    // vampire, roll the 50% chance. On success, give the player the result
+    // item directly and cancel the event so the ingredients stay in place.
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVampireMerchantClick(InventoryClickEvent e) {
+        if (!(e.getWhoClicked() instanceof Player player)) return;
+        if (!manager.isVampire(player)) return;
+        if (!(e.getClickedInventory() instanceof org.bukkit.inventory.MerchantInventory merchant)) return;
+        // Only the result slot (slot 2 in a merchant GUI) matters
+        if (e.getSlot() != 2) return;
+        org.bukkit.inventory.ItemStack result = e.getCurrentItem();
+        if (result == null || result.getType() == Material.AIR) return;
+        // Must actually have a selected trade
+        if (merchant.getSelectedRecipe() == null) return;
+
+        // 50% mind-manipulation roll
+        if (Math.random() >= 0.50) return;
+
+        // FREE TRADE — cancel the normal transaction, give the item directly
+        e.setCancelled(true);
+        org.bukkit.inventory.ItemStack give = result.clone();
+        java.util.Map<Integer, org.bukkit.inventory.ItemStack> overflow =
+                player.getInventory().addItem(give);
+        for (org.bukkit.inventory.ItemStack leftover : overflow.values()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+        }
+
+        // Feedback
+        player.sendActionBar(Component.text("✦ Mind manipulated — free trade!", NamedTextColor.DARK_RED));
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_AMBIENT, 0.7f, 1.6f);
+        player.getWorld().spawnParticle(
+                Particle.SOUL,
+                player.getLocation().add(0, 1.2, 0),
+                15, 0.4, 0.6, 0.4, 0.02);
+        player.getWorld().spawnParticle(
+                Particle.DUST,
+                player.getLocation().add(0, 1.0, 0),
+                10, 0.3, 0.3, 0.3,
+                new Particle.DustOptions(Color.fromRGB(120, 0, 0), 1.2f));
     }
 }
