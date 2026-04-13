@@ -76,7 +76,7 @@ public class AbyssCitadelBuilder {
     private static final int NAVE_HEIGHT = 50;        // interior ceiling height
     private static final int FACADE_WIDTH = 60;       // half-width of the front facade
     private static final int FACADE_HEIGHT = 80;      // front facade peak
-    private static final int ARENA_RADIUS = 40;       // boss arena radius
+    private static final int ARENA_RADIUS = 55;       // boss arena radius (was 40; enlarged to fit the dragon)
     private static final int ARENA_DIST = 120;        // arena center distance behind cathedral
 
     private int sY; // surface Y level
@@ -439,6 +439,186 @@ public class AbyssCitadelBuilder {
                 s(dx, diaY + dy, fz - 1, CRY);
             }
         }
+
+        // Grand projecting entrance porch (narthex) — projects 16 blocks forward
+        // from the main facade so the front is no longer visually a single flat
+        // slab. Adds vestibule architecture, flying buttresses, a peaked roof,
+        // and soul-lantern sconces.
+        buildFrontPorch(fz);
+    }
+
+    /**
+     * Projecting front porch attached to the facade at z = fz. Pushes the
+     * entrance forward by 16 blocks and gives the cathedral a true Gothic
+     * vestibule that reads from a distance as layered, not flat.
+     */
+    private void buildFrontPorch(int fz) {
+        plugin.getLogger().info("[Citadel] Building projecting entrance porch...");
+        final int porchDepth = 16;     // blocks projecting forward from facade
+        final int porchHalfW = 14;     // half-width of the porch (28 wide)
+        final int porchH     = 24;     // interior clear height
+        final int porchZmax  = fz + porchDepth;
+
+        // 1. Floor platform — polished deepslate bricks, extending a step past
+        //    the porch walls on all sides so it reads as a grand stoop.
+        for (int x = -porchHalfW - 2; x <= porchHalfW + 2; x++) {
+            for (int z = fz; z <= porchZmax + 2; z++) {
+                s(x, sY,     z, PBB);
+                s(x, sY - 1, z, BL);
+            }
+        }
+        // Ascending steps on the far (+z) face of the stoop
+        for (int step = 0; step < 3; step++) {
+            for (int x = -porchHalfW - 1; x <= porchHalfW + 1; x++) {
+                s(x, sY - step, porchZmax + 2 + step, PBB);
+            }
+        }
+
+        // 2. Side walls — solid deepslate brick with vertical pilaster trim
+        //    every 4 blocks and a blind arcade along the lower half.
+        for (int z = fz + 1; z < porchZmax; z++) {
+            for (int y = sY; y <= sY + porchH; y++) {
+                // Left wall
+                s(-porchHalfW, y, z, DS);
+                s(-porchHalfW - 1, y, z, DT);
+                // Right wall
+                s( porchHalfW, y, z, DS);
+                s( porchHalfW + 1, y, z, DT);
+            }
+            // Vertical pilaster accents every 4 blocks
+            if ((z - fz) % 4 == 0) {
+                for (int y = sY; y <= sY + porchH - 4; y++) {
+                    s(-porchHalfW, y, z, PIL);
+                    s( porchHalfW, y, z, PIL);
+                }
+            }
+        }
+
+        // 3. Open archways on each side wall (three on each) — so the porch is
+        //    an open colonnade, not a sealed box
+        for (int side = -1; side <= 1; side += 2) {
+            int wx = side * porchHalfW;
+            for (int i = 0; i < 3; i++) {
+                int cz = fz + 3 + i * 5;
+                int archH = 9;
+                for (int dy = 0; dy < archH; dy++) {
+                    int half = Math.max(0, (archH - dy - 1));
+                    for (int dz = -half; dz <= half; dz++) {
+                        if (Math.abs(dz) > 2) continue; // max arch half-width 2
+                        s(wx, sY + 1 + dy, cz + dz, AIR);
+                    }
+                }
+                // Arch frame
+                for (int dz = -2; dz <= 2; dz++) {
+                    s(wx, sY + archH, cz + dz, CD);
+                }
+                s(wx, sY + archH + 1, cz, CD);
+            }
+        }
+
+        // 4. Massive clustered front columns flanking the outer archway
+        for (int side = -1; side <= 1; side += 2) {
+            int cx = side * (porchHalfW - 2);
+            for (int y = sY; y <= sY + porchH + 6; y++) {
+                s(cx,     y, porchZmax - 1, PIL);
+                s(cx,     y, porchZmax,     PIL);
+                s(cx + side, y, porchZmax,     CD);
+                s(cx,     y, porchZmax + 1, CD);
+            }
+            // Capital flourish at the top
+            for (int dx = -2; dx <= 2; dx++) {
+                s(cx + dx, sY + porchH + 7, porchZmax, CD);
+                s(cx + dx, sY + porchH + 7, porchZmax - 1, CD);
+            }
+            // Soul-fire cresset on top of each column
+            s(cx, sY + porchH + 9, porchZmax, SF);
+        }
+
+        // 5. Outer great arch (front-facing) — the player walks THROUGH this to
+        //    enter the porch. Taller than the interior entry arch so it reads
+        //    as the dominant element.
+        int outerArchH = 20;
+        int outerHalfW = porchHalfW - 4;
+        for (int x = -outerHalfW; x <= outerHalfW; x++) {
+            double xRatio = (double) Math.abs(x) / outerHalfW;
+            int localH = (int)(outerArchH * (1.0 - xRatio * xRatio));
+            // Clear the arch opening
+            for (int y = sY + 1; y <= sY + localH; y++) {
+                s(x, y, porchZmax, AIR);
+                s(x, y, porchZmax - 1, AIR);
+            }
+            // Arch ring
+            s(x, sY + localH, porchZmax,     CRY);
+            s(x, sY + localH + 1, porchZmax, OBS);
+            s(x, sY + localH, porchZmax - 1, OBS);
+        }
+
+        // 6. Peaked roof over the porch — fully sealed triangular cross-section
+        int roofRise = porchHalfW;
+        for (int z = fz; z <= porchZmax + 1; z++) {
+            for (int x = -porchHalfW - 1; x <= porchHalfW + 1; x++) {
+                int dy = porchHalfW - Math.abs(x);
+                if (dy < 0) continue;
+                if (dy > roofRise) dy = roofRise;
+                int y = sY + porchH + 1 + dy;
+                s(x, y, z, DT);
+                if (x == 0) s(x, y, z, CD);
+                if (Math.abs(x) == porchHalfW) s(x, y, z, CD);
+            }
+        }
+        // Ridge finial — end rods at the very front of the porch roof
+        s(0, sY + porchH + 2 + roofRise, porchZmax + 1, ER);
+        s(0, sY + porchH + 2 + roofRise, fz,            ER);
+
+        // 7. Flying buttresses arching from the side walls of the porch out to
+        //    freestanding pylon columns that project even further forward. This
+        //    is what sells the "massive layered front" look.
+        for (int side = -1; side <= 1; side += 2) {
+            int pylonX = side * (porchHalfW + 6);
+            // Pylon column out beyond the porch
+            for (int y = sY; y <= sY + porchH + 4; y++) {
+                s(pylonX, y, porchZmax + 4, PIL);
+                s(pylonX, y, porchZmax + 5, DS);
+                s(pylonX, y, porchZmax + 3, DS);
+            }
+            // Pylon cap
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = 3; dz <= 5; dz++) {
+                    s(pylonX + dx, sY + porchH + 5, porchZmax + dz, CD);
+                }
+            }
+            // Pinnacle on top
+            for (int dy = 0; dy < 7; dy++) {
+                s(pylonX, sY + porchH + 6 + dy, porchZmax + 4, dy < 4 ? DS : ER);
+            }
+            // Flying buttress arching from porch side wall up to pylon cap
+            for (int t = 0; t <= 12; t++) {
+                double p = t / 12.0;
+                int bx = (int) Math.round(side * (porchHalfW + p * 6));
+                int bz = porchZmax + (int) Math.round(p * 4);
+                int by = sY + porchH + 4 - (int) Math.round(Math.sin(p * Math.PI) * 3);
+                s(bx, by, bz, DS);
+                if (t % 3 == 0) s(bx, by + 1, bz, CD);
+            }
+        }
+
+        // 8. Grand brazier pair at the foot of the steps
+        for (int side = -1; side <= 1; side += 2) {
+            int bx = side * (porchHalfW);
+            int bz = porchZmax + 4;
+            s(bx, sY,     bz, PBB);
+            s(bx, sY + 1, bz, PBB);
+            s(bx, sY + 2, bz, PBB);
+            s(bx, sY + 3, bz, SF);
+        }
+
+        // 9. Soul-lantern sconces along the porch ceiling so it glows
+        for (int z = fz + 2; z <= porchZmax - 2; z += 4) {
+            s(-porchHalfW + 2, sY + porchH - 1, z, SL);
+            s( porchHalfW - 2, sY + porchH - 1, z, SL);
+        }
+        s(0, sY + porchH - 1, porchZmax - 3, SL);
+        s(0, sY + porchH - 1, fz + 3, SL);
     }
     // ═══════════════════════════════════════════════════════════
     private void buildCenterSpire() {
@@ -634,18 +814,33 @@ public class AbyssCitadelBuilder {
     }
 
     private void buildRoofLine() {
-        plugin.getLogger().info("[Citadel] Building roof...");
-        // Pointed roof along the nave
+        plugin.getLogger().info("[Citadel] Building pointed nave roof (fully sealed)...");
+        // Pointed roof along the nave — FIXED: now a fully-covering surface instead
+        // of just the two edge lines. Earlier versions only placed the edges at each
+        // layer, so the entire nave ceiling had visible holes between the sloped
+        // sides. Now: for each x column, compute the roof Y as a pointed triangular
+        // profile, place one solid block per column so the surface is watertight.
+        final int rise = 15;
         for (int z = -40; z <= 40; z++) {
-            for (int dy = 0; dy <= 15; dy++) {
-                int halfW = NAVE_WIDTH - dy;
-                if (halfW < 0) break;
-                s(-halfW, sY + NAVE_HEIGHT + dy, z, DT);
-                s(halfW, sY + NAVE_HEIGHT + dy, z, DT);
-                if (dy == 15 || halfW == 0) {
-                    s(0, sY + NAVE_HEIGHT + dy, z, CD);
-                }
+            for (int x = -NAVE_WIDTH; x <= NAVE_WIDTH; x++) {
+                int dy = NAVE_WIDTH - Math.abs(x);
+                if (dy < 0) continue;
+                if (dy > rise) dy = rise;
+                int y = sY + NAVE_HEIGHT + dy;
+                // Primary surface block
+                s(x, y, z, DT);
+                // Accent trim at the ridge + at the eaves
+                if (x == 0)            s(x, y, z, CD);     // ridge accent
+                if (Math.abs(x) == NAVE_WIDTH) s(x, y, z, CD); // eave trim
             }
+            // Ridge end-caps at the north & south ends get a glow
+            if (z == -40 || z == 40) {
+                s(0, sY + NAVE_HEIGHT + rise + 1, z, ER);
+            }
+        }
+        // Decorative ridge tiles running the length of the roof
+        for (int z = -38; z <= 38; z += 4) {
+            s(0, sY + NAVE_HEIGHT + rise + 1, z, AME);
         }
     }
 
@@ -1083,28 +1278,28 @@ public class AbyssCitadelBuilder {
 
     private void spawnGuards() {
         plugin.getLogger().info("[Citadel] Spawning guards...");
-        // Courtyard guards
-        for (int i = 0; i < 12; i++) {
+        // Courtyard guards — previously 12, reduced to 5 for a less-crowded approach
+        for (int i = 0; i < 5; i++) {
             double a = rng.nextDouble() * Math.PI * 2;
             double d = 20 + rng.nextDouble() * 25;
             int gx = (int)(d * Math.cos(a));
             int gz = 65 + (int)(d * Math.sin(a));
             spawnGuard(gx, sY + 1, gz, "Abyssal Sentinel", false);
         }
-        // Interior guards
-        for (int z = -30; z <= 30; z += 15) {
+        // Interior nave guards — previously 8 (4 rows × 2), reduced to 4 (2 rows × 2)
+        for (int z = -20; z <= 20; z += 40) {
             spawnGuard(-NAVE_WIDTH + 10, sY + 1, z, "Cathedral Warden", false);
             spawnGuard(NAVE_WIDTH - 10, sY + 1, z, "Cathedral Warden", false);
         }
-        // Weapon chamber elite guards (6 per room)
+        // Weapon chamber elite guards — previously 6 per room (24 total), reduced to 2 per room (8 total)
         int[][] chamberPos = {{-NAVE_WIDTH-10,-25},{NAVE_WIDTH+10,-25},{-NAVE_WIDTH-10,25},{NAVE_WIDTH+10,25}};
         for (int[] cp : chamberPos) {
-            for (int g = 0; g < 6; g++) {
+            for (int g = 0; g < 2; g++) {
                 spawnGuard(cp[0] + rng.nextInt(8) - 4, sY + 1, cp[1] + rng.nextInt(8) - 4, "Abyssal Weapon Guardian", true);
             }
         }
-        // Enderman patrols
-        for (int i = 0; i < 8; i++) {
+        // Enderman patrols — previously 8, reduced to 3
+        for (int i = 0; i < 3; i++) {
             int ex = -60 + rng.nextInt(120);
             int ez = -50 + rng.nextInt(100);
             Location loc = new Location(world, ex + 0.5, sY + 1, ez + 0.5);
@@ -1114,13 +1309,14 @@ public class AbyssCitadelBuilder {
                 Objects.requireNonNull(e.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(60); e.setHealth(60);
             });
         }
-        // Arena guards
-        for (int a = 0; a < 360; a += 45) {
+        // Arena guards — previously 8 (every 45°), reduced to 4 (every 90°)
+        for (int a = 0; a < 360; a += 90) {
             double rad = Math.toRadians(a);
             int gx = (int)((ARENA_RADIUS - 5) * Math.cos(rad));
             int gz = -ARENA_DIST + (int)((ARENA_RADIUS - 5) * Math.sin(rad));
             spawnGuard(gx, sY + 1, gz, "Arena Sentinel", false);
         }
+        // Total guards reduced from 52 to 21 (60% reduction) — still guarded but breathable
     }
 
     private void spawnGuard(int x, int y, int z, String name, boolean elite) {

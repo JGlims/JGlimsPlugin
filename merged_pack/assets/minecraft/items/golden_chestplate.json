@@ -1,12 +1,27 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",
     "index": 0,
     "cases": [
-      { "when": "thanos_glove", "model": { "type": "minecraft:model", "model": "minecraft:item/thanos_glove" } },
-      { "when": "infinity_gauntlet", "model": { "type": "minecraft:model", "model": "minecraft:item/infinity_gauntlet" } }
+      {
+        "when": "thanos_glove",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/thanos_glove"
+        }
+      },
+      {
+        "when": "infinity_gauntlet",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/infinity_gauntlet"
+        }
+      }
     ],
-    "fallback": { "type": "minecraft:model", "model": "minecraft:item/golden_chestplate" }
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/golden_chestplate"
+    }
   }
 }

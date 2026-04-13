@@ -1,4 +1,4 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",

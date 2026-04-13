@@ -95,6 +95,12 @@ public class AbyssDimensionManager implements Listener {
         // === CRITICAL: Disable the vanilla DragonBattle ===
         disableVanillaDragonBattle();
 
+        // === Scrub vanilla End features (obsidian altar towers, end crystals,
+        // exit portal, gateway) from the main island area. Vanilla End gen
+        // builds these regardless of the custom chunk generator, so we nuke
+        // them after world load on a short delay. ===
+        Bukkit.getScheduler().runTaskLater(plugin, () -> scrubVanillaEndFeatures(abyssWorld), 40L);
+
         // === Build citadel if fresh world ===
         if (!citadelBuilt) {
             boolean hasBlocks = false;
@@ -113,18 +119,37 @@ public class AbyssDimensionManager implements Listener {
             }
         }
 
-        // === Repeating task: remove stray EnderDragons and their boss bars ===
+        // === Repeating task: aggressively remove stray EnderDragons, boss bars,
+        //     and end crystals. Runs every 3 seconds (60 ticks) — the vanilla
+        //     dragon fight re-spawns the dragon if the fight state isn't fully
+        //     dismantled, so we need to be relentless here. ===
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (abyssWorld == null) { cancel(); return; }
                 disableVanillaDragonBattle();
-                // Remove any EnderDragon entities
                 abyssWorld.getEntitiesByClass(EnderDragon.class).forEach(dragon -> {
                     dragon.remove();
                 });
+                // Also remove vanilla end crystals that might be on top of
+                // obsidian pillars (some survive the block scrub because
+                // they're entities, not blocks).
+                abyssWorld.getEntitiesByClass(org.bukkit.entity.EnderCrystal.class).forEach(c -> {
+                    if (Math.abs(c.getLocation().getX()) < 80 && Math.abs(c.getLocation().getZ()) < 80) {
+                        c.remove();
+                    }
+                });
             }
-        }.runTaskTimer(plugin, 200L, 200L); // every 10 seconds
+        }.runTaskTimer(plugin, 20L, 60L); // first run 1s after init, repeat every 3s
+
+        // === Set the Abyss world spawn to a safe approach position ===
+        // The citadel footprint (including porch + pylons) extends from
+        // roughly z=-80 to z=~65 with towers up to y=200+. We place spawn at
+        // (0, 67, 90) — 25 blocks past the front pylons, at the Abyss's flat
+        // ground level. This puts players on open ground looking north at
+        // the full cathedral facade — the intended first impression.
+        abyssWorld.setSpawnLocation(0, 67, 90);
+        plugin.getLogger().info("[Abyss] Spawn set to approach ground (0, 67, 90).");
 
         // === Start ambient mob spawner ===
         startAmbientSpawner();
@@ -157,6 +182,84 @@ public class AbyssDimensionManager implements Listener {
             // Some versions may not support all these methods
             plugin.getLogger().fine("[Abyss] DragonBattle cleanup note: " + e.getMessage());
         }
+    }
+
+    /**
+     * Hard block on vanilla EnderDragon spawns in the Abyss dimension. The
+     * vanilla End respawn mechanic can schedule a dragon to spawn even after
+     * the DragonBattle is "disabled", and the 3-second cleanup task lets the
+     * dragon exist briefly. This listener intercepts the spawn itself and
+     * cancels it before the dragon is added to the world.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onCreatureSpawn(org.bukkit.event.entity.CreatureSpawnEvent event) {
+        if (event.getEntityType() != org.bukkit.entity.EntityType.ENDER_DRAGON) return;
+        if (event.getLocation().getWorld() == null) return;
+        if (!WORLD_NAME.equals(event.getLocation().getWorld().getName())) return;
+        event.setCancelled(true);
+        plugin.getLogger().info("[Abyss] Cancelled vanilla EnderDragon spawn attempt.");
+    }
+
+    /**
+     * Removes all vanilla End features from the main-island area of the
+     * Abyss: obsidian altar towers, end crystals (cages + crystals), the
+     * exit portal block, and any stray end-gateway blocks. The Abyss uses
+     * {@code World.Environment.THE_END}, so vanilla generation places
+     * these regardless of the custom chunk generator.
+     *
+     * <p>Scan radius: 80 blocks from the main island spawn, Y 30-120.
+     * That is large enough to cover all 10 vanilla obsidian pillars
+     * without clipping into the Abyssal Citadel which lives further out.
+     */
+    private void scrubVanillaEndFeatures(World abyss) {
+        if (abyss == null) return;
+        plugin.getLogger().info("[Abyss] Scrubbing vanilla End altar/crystals/gateways...");
+        int removed = 0;
+        // Remove block-level End altar features
+        for (int x = -80; x <= 80; x++) {
+            for (int z = -80; z <= 80; z++) {
+                // Skip blocks under the citadel footprint — the citadel may have
+                // legitimate obsidian in its construction at z=~0 or higher.
+                // The vanilla altar towers center around (0, ~76, 0) with a
+                // 43-block ring. We clear only the tower footprints.
+                double dist = Math.sqrt(x * x + z * z);
+                if (dist > 50) continue;
+                for (int y = 30; y <= 120; y++) {
+                    Block b = abyss.getBlockAt(x, y, z);
+                    Material mat = b.getType();
+                    if (mat == Material.OBSIDIAN ||
+                        mat == Material.BEDROCK ||
+                        mat == Material.END_STONE ||
+                        mat == Material.IRON_BARS ||
+                        mat == Material.END_GATEWAY ||
+                        mat == Material.END_PORTAL ||
+                        mat == Material.END_CRYSTAL) {
+                        // Only remove if NOT inside the citadel footprint
+                        // (citadel occupies a roughly 200x250 box between
+                        // z=-150..70, x=-70..70 at sY~70). The vanilla altar
+                        // is a small feature right around world spawn.
+                        // We use a tight radius-30 sphere to be safe.
+                        double d = Math.sqrt(x * x + z * z);
+                        if (d <= 30) {
+                            b.setType(Material.AIR, false);
+                            removed++;
+                        }
+                    }
+                }
+            }
+        }
+        // Remove End Crystal entities within the scrub region
+        int crystalCount = 0;
+        for (org.bukkit.entity.EnderCrystal c :
+                abyss.getEntitiesByClass(org.bukkit.entity.EnderCrystal.class)) {
+            Location loc = c.getLocation();
+            if (Math.abs(loc.getX()) < 80 && Math.abs(loc.getZ()) < 80) {
+                c.remove();
+                crystalCount++;
+            }
+        }
+        plugin.getLogger().info("[Abyss] Scrubbed " + removed
+                + " vanilla blocks and " + crystalCount + " end crystals.");
     }
 
     private void startAmbientSpawner() {

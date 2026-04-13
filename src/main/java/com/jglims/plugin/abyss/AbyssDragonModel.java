@@ -10,7 +10,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Zombie;
+import org.bukkit.entity.Giant;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -48,8 +48,12 @@ public class AbyssDragonModel {
     /** Must match the .bbmodel filename (without extension) in BetterModel's models folder. */
     private static final String MODEL_NAME = "abyss_dragon";
 
-    /** Base hitbox scale applied via the SCALE attribute. */
-    private static final double BASE_SCALE = 3.0;
+    /**
+     * Base hitbox scale applied via the SCALE attribute.
+     * Was 3.0, reduced to 2.0 so the dragon actually fits inside the 55-block
+     * Abyssal arena without clipping through the walls or ceiling.
+     */
+    private static final double BASE_SCALE = 2.0;
 
     /** Dragon max HP — must match AbyssDragonBoss.DRAGON_HP. */
     private static final double DRAGON_HP = 1500.0;
@@ -118,7 +122,10 @@ public class AbyssDragonModel {
     private final Logger logger;
 
     /** Invisible Zombie used for collision, HP bar, and as BetterModel's host entity. */
-    private Zombie hitboxEntity;
+    // Was Zombie — switched to Giant so the invisible base entity has a
+    // 12-block-tall x 1.8-wide hitbox. With BASE_SCALE 2.0 that's 24 x 3.6,
+    // which matches the dragon's visual size so players can actually land hits.
+    private Giant hitboxEntity;
 
     /** BetterModel tracker rendering the 3D model on top of the hitbox entity. */
     private EntityTracker tracker;
@@ -158,7 +165,7 @@ public class AbyssDragonModel {
             double hp = Math.min(requestedHp, HP_CAP);
 
             // ── Create invisible zombie hitbox ──
-            hitboxEntity = (Zombie) world.spawnEntity(location, EntityType.ZOMBIE);
+            hitboxEntity = (Giant) world.spawnEntity(location, EntityType.GIANT);
             hitboxEntity.setInvisible(true);
             hitboxEntity.setSilent(true);
             hitboxEntity.setAI(false);
@@ -578,17 +585,17 @@ public class AbyssDragonModel {
     // ── Getters ──────────────────────────────────────────────────────────
 
     /** Returns the invisible Zombie hitbox entity, or null if despawned. */
-    public Zombie getEntity() {
+    public Giant getEntity() {
         return hitboxEntity;
     }
 
     /** Alias used by AbyssDragonBoss. */
-    public Zombie getHitboxEntity() {
+    public Giant getHitboxEntity() {
         return hitboxEntity;
     }
 
     /** Alias used by AbyssDragonBoss. */
-    public Zombie getBaseEntity() {
+    public Giant getBaseEntity() {
         return hitboxEntity;
     }
 

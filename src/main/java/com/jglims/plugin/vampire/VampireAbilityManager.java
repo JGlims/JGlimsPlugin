@@ -559,51 +559,73 @@ public class VampireAbilityManager {
             setCooldown(player.getUniqueId(), abilityCdMs(BAT, tier, player));
             return;
         }
-        // Tier 3: full bat transformation — teleport to cursor
-        // Raycast to find target location
-        RayTraceResult trace = world.rayTraceBlocks(player.getEyeLocation(),
-                player.getEyeLocation().getDirection(), 40, org.bukkit.FluidCollisionMode.NEVER, true);
-        Location target;
-        if (trace != null && trace.getHitPosition() != null) {
-            target = trace.getHitPosition().toLocation(world).add(0, 1, 0);
-        } else {
-            target = player.getEyeLocation().add(player.getEyeLocation().getDirection().multiply(40));
-            // Find safe Y
-            for (int sy = target.getBlockY(); sy > world.getMinHeight(); sy--) {
-                if (world.getBlockAt(target.getBlockX(), sy, target.getBlockZ()).getType().isSolid()) {
-                    target.setY(sy + 1);
-                    break;
-                }
-            }
-        }
+        // Tier 3: FULL BAT FORM — player literally becomes a flying bat for
+        // 8 seconds. Invisible, can fly freely (creative-style), a shadow
+        // bat entity glued to their position so others see a bat in the sky.
+        // At the end of the duration, reverts automatically. Alternative
+        // use for enemies: any mob within 4 blocks of the player during the
+        // transform takes 20 damage (the "bat dive" hit).
 
         // Dissolve visual
         world.playSound(loc, Sound.ENTITY_BAT_TAKEOFF, 2f, 0.5f);
         world.spawnParticle(Particle.CLOUD, loc.add(0, 1, 0), 60, 0.8, 0.8, 0.8, 0.1);
-        summonBats(player, loc, 12, 5);
+        world.spawnParticle(Particle.DUST, loc.add(0, 1, 0), 60, 0.8, 0.8, 0.8, 0,
+                new Particle.DustOptions(Color.fromRGB(120, 0, 0), 2.0f));
+        summonBats(player, loc, 6, 8);
 
-        // Invulnerable 5s: absorption hearts
-        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, false, false));
+        // Apply invisibility + resistance for the duration
+        final int durationTicks = 160; // 8 seconds
+        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, durationTicks, 4, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, false));
 
-        // Teleport with slight delay
-        Location finalTarget = target;
+        // Creative-style flight for the duration
+        final boolean wasAllowFlight = player.getAllowFlight();
+        final boolean wasFlying = player.isFlying();
+        player.setAllowFlight(true);
+        player.setFlying(true);
+
+        // Spawn the shadow bat that visually represents the player's form
+        Bat shadowBat = (Bat) world.spawnEntity(player.getLocation().add(0, 0.5, 0), EntityType.BAT);
+        shadowBat.setCustomName("§4§l" + player.getName());
+        shadowBat.setCustomNameVisible(false);
+        shadowBat.setInvulnerable(true);
+        shadowBat.setSilent(true);
+        shadowBat.setPersistent(true);
+
+        // Initial bat-dive AoE damage at the player's starting location
+        for (Entity e : world.getNearbyEntities(loc, 4, 4, 4)) {
+            if (!(e instanceof LivingEntity le) || e == player) continue;
+            if (e instanceof Player p && isVampireAlly(player, p)) continue;
+            damageMob(player, le, 20);
+        }
+
+        // Per-tick task: keep the shadow bat glued to the player's location
         new BukkitRunnable() {
+            int t = 0;
             @Override public void run() {
-                if (!player.isOnline()) return;
-                player.teleport(finalTarget);
-                player.getWorld().playSound(finalTarget, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5f, 0.6f);
-                player.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, finalTarget, 1);
-                player.getWorld().spawnParticle(Particle.DUST, finalTarget, 100, 2, 2, 2, 0,
-                        new Particle.DustOptions(Color.fromRGB(120, 0, 0), 2.5f));
-                // AoE damage on arrival
-                for (Entity e : finalTarget.getWorld().getNearbyEntities(finalTarget, 4, 4, 4)) {
-                    if (!(e instanceof LivingEntity le) || e == player) continue;
-                    if (e instanceof Player p && isVampireAlly(player, p)) continue;
-                    damageMob(player, le, 20);
+                t += 2;
+                if (t >= durationTicks || !player.isOnline() || shadowBat.isDead()) {
+                    shadowBat.remove();
+                    if (player.isOnline()) {
+                        player.setFlying(wasFlying);
+                        player.setAllowFlight(wasAllowFlight);
+                        player.getWorld().playSound(player.getLocation(),
+                                Sound.ENTITY_BAT_DEATH, 1.2f, 0.6f);
+                        player.getWorld().spawnParticle(Particle.SMOKE,
+                                player.getLocation().add(0, 1, 0), 20, 0.4, 0.4, 0.4, 0.02);
+                    }
+                    cancel();
+                    return;
+                }
+                if (!shadowBat.isDead()) {
+                    shadowBat.teleport(player.getLocation().add(0, 0.6, 0));
+                    player.getWorld().spawnParticle(Particle.DUST,
+                            player.getLocation().add(0, 0.8, 0), 2, 0.3, 0.3, 0.3, 0,
+                            new Particle.DustOptions(Color.fromRGB(60, 0, 0), 1.0f));
                 }
             }
-        }.runTaskLater(plugin, 15L);
+        }.runTaskTimer(plugin, 0L, 2L);
 
         setCooldown(player.getUniqueId(), abilityCdMs(BAT, tier, player));
     }

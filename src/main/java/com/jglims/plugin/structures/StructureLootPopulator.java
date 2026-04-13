@@ -38,7 +38,26 @@ public class StructureLootPopulator {
      */
     public void populateChest(Location chestLoc, StructureType structureType) {
         Block block = chestLoc.getBlock();
-        if (!(block.getState() instanceof Chest chest)) return;
+        Chest chest;
+        if (block.getState() instanceof Chest c) {
+            chest = c;
+        } else {
+            // Previously this returned silently, which made it impossible to
+            // diagnose empty-chest bugs in structures. Now we log a clear
+            // warning and *replace* the block with a chest so the loot still
+            // lands somewhere visible (the typical cause is a later build
+            // phase in the same structure overwriting the chest).
+            plugin.getLogger().warning("[LootPopulator] Expected CHEST at "
+                    + chestLoc.getBlockX() + "," + chestLoc.getBlockY() + "," + chestLoc.getBlockZ()
+                    + " for " + structureType.name() + " but block is "
+                    + block.getType() + " — forcing CHEST.");
+            block.setType(Material.CHEST, false);
+            if (!(block.getState() instanceof Chest forced)) {
+                plugin.getLogger().warning("[LootPopulator] Chest forced-place failed, skipping loot.");
+                return;
+            }
+            chest = forced;
+        }
         Inventory inv = chest.getInventory();
         inv.clear();
 

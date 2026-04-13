@@ -1,12 +1,27 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",
     "index": 0,
     "cases": [
-      { "when": "copper_armor_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/copper_armor_chestplate" } },
-      { "when": "chainmail_reinforced_chestplate", "model": { "type": "minecraft:model", "model": "minecraft:item/chainmail_reinforced_chestplate" } }
+      {
+        "when": "copper_armor_chestplate",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/copper_armor_chestplate"
+        }
+      },
+      {
+        "when": "chainmail_reinforced_chestplate",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/chainmail_reinforced_chestplate"
+        }
+      }
     ],
-    "fallback": { "type": "minecraft:model", "model": "minecraft:item/chainmail_chestplate" }
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/chainmail_chestplate"
+    }
   }
 }

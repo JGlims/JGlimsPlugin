@@ -4,7 +4,13 @@
     "property": "minecraft:custom_model_data",
     "index": 0,
     "cases": [
-      { "when": "mjolnir", "model": { "type": "minecraft:model", "model": "minecraft:item/mjolnir" } }
+      {
+        "when": "mjolnir",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/mjolnir"
+        }
+      }
     ],
     "fallback": {
       "type": "minecraft:model",

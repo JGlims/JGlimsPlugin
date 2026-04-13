@@ -5,7 +5,6 @@ import com.jglims.plugin.enchantments.CustomEnchantManager;
 import com.jglims.plugin.enchantments.EnchantmentType;
 import com.jglims.plugin.legendary.*;
 import com.jglims.plugin.powerups.PowerUpManager;
-import com.jglims.plugin.weapons.BattleShovelManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -62,11 +61,9 @@ public class CreativeMenuManager implements Listener {
         inv.setItem(25, buildCategoryIcon(Material.AMETHYST_SHARD, "Infinity Items", "Manopla + 6 pedras", "cat_infinity", NamedTextColor.DARK_AQUA));
 
         inv.setItem(28, buildCategoryIcon(Material.GOLDEN_APPLE, "Blessings", "3 blessings permanentes", "cat_blessings", NamedTextColor.GOLD));
-        inv.setItem(30, buildCategoryIcon(Material.BOW, "Battle Tools", "Todas as armas de batalha", "cat_battletools", NamedTextColor.YELLOW));
         inv.setItem(32, buildCategoryIcon(Material.ECHO_SHARD, "Abyssal Key", "Chave para o Abyss", "cat_abyssal_key", NamedTextColor.DARK_RED));
-        inv.setItem(34, buildCategoryIcon(Material.DIAMOND_HOE, "Sickles & Spears", "Foices e Lancas de batalha", "cat_sickles", NamedTextColor.GREEN));
+        inv.setItem(34, buildCategoryIcon(Material.DIAMOND_HOE, "Sickles & Spears", "Foices e Lancas", "cat_sickles", NamedTextColor.GREEN));
 
-        inv.setItem(37, buildCategoryIcon(Material.NETHERITE_PICKAXE, "Super Tools", "Ferramentas super diamond/netherite", "cat_supertools", NamedTextColor.DARK_AQUA));
         inv.setItem(38, buildCategoryIcon(Material.BLAZE_ROD, "Itens Magicos", "Wand of Wands e outros itens magicos", "cat_magic", NamedTextColor.LIGHT_PURPLE));
         inv.setItem(39, buildCategoryIcon(Material.ENCHANTED_BOOK, "Enchantment Books", "Todos os 64+ encantamentos custom", "cat_enchantbooks", NamedTextColor.YELLOW));
         inv.setItem(41, buildCategoryIcon(Material.WOLF_ARMOR, "Best Buddies", "Armadura de lobo com Best Buddies", "cat_bestbuddies", NamedTextColor.LIGHT_PURPLE));
@@ -232,28 +229,6 @@ public class CreativeMenuManager implements Listener {
         player.openInventory(inv);
     }
 
-    // ========== BATTLE TOOLS PAGE ==========
-
-    public void openBattleToolsPage(Player player) {
-        Inventory inv = Bukkit.createInventory(null, SLOTS,
-                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
-                        .append(Component.text("| Battle Tools", NamedTextColor.YELLOW)));
-
-        inv.setItem(10, tagForMenu(plugin.getBattleSwordManager().createBattleSword(Material.NETHERITE_SWORD), "give_battletool", "battle_sword"));
-        inv.setItem(11, tagForMenu(plugin.getBattleAxeManager().createBattleAxe(Material.NETHERITE_AXE), "give_battletool", "battle_axe"));
-        inv.setItem(12, tagForMenu(plugin.getBattleBowManager().createBattleBow(), "give_battletool", "battle_bow"));
-        inv.setItem(13, tagForMenu(plugin.getBattleBowManager().createBattleCrossbow(), "give_battletool", "battle_crossbow"));
-        inv.setItem(14, tagForMenu(plugin.getBattleMaceManager().createBattleMace(), "give_battletool", "battle_mace"));
-        inv.setItem(15, tagForMenu(plugin.getBattleTridentManager().createBattleTrident(), "give_battletool", "battle_trident"));
-        inv.setItem(16, tagForMenu(plugin.getBattlePickaxeManager().createBattlePickaxe(Material.NETHERITE_PICKAXE), "give_battletool", "battle_pickaxe"));
-
-        inv.setItem(19, tagForMenu(plugin.getBattleShovelManager().createBattleShovel(BattleShovelManager.ShovelTier.NETHERITE), "give_battletool", "battle_shovel"));
-        inv.setItem(20, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.NETHERITE_SPEAR), "give_battletool", "battle_spear"));
-
-        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
-        player.openInventory(inv);
-    }
-
     // ========== SICKLES & SPEARS PAGE ==========
 
     public void openSicklesPage(Player player) {
@@ -267,46 +242,14 @@ public class CreativeMenuManager implements Listener {
         inv.setItem(13, tagForMenu(plugin.getSickleManager().createSickle(Material.DIAMOND_HOE), "give_sickle", "DIAMOND_HOE"));
         inv.setItem(14, tagForMenu(plugin.getSickleManager().createSickle(Material.NETHERITE_HOE), "give_sickle", "NETHERITE_HOE"));
 
-        inv.setItem(19, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.WOODEN_SPEAR), "give_spear", "WOODEN_SPEAR"));
-        inv.setItem(20, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.STONE_SPEAR), "give_spear", "STONE_SPEAR"));
-        inv.setItem(21, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.IRON_SPEAR), "give_spear", "IRON_SPEAR"));
-        inv.setItem(22, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.DIAMOND_SPEAR), "give_spear", "DIAMOND_SPEAR"));
-        inv.setItem(23, tagForMenu(plugin.getBattleSpearManager().createBattleSpear(Material.NETHERITE_SPEAR), "give_spear", "NETHERITE_SPEAR"));
+        inv.setItem(19, tagForMenu(new ItemStack(Material.WOODEN_SPEAR), "give_spear", "WOODEN_SPEAR"));
+        inv.setItem(20, tagForMenu(new ItemStack(Material.STONE_SPEAR), "give_spear", "STONE_SPEAR"));
+        inv.setItem(21, tagForMenu(new ItemStack(Material.IRON_SPEAR), "give_spear", "IRON_SPEAR"));
+        inv.setItem(22, tagForMenu(new ItemStack(Material.DIAMOND_SPEAR), "give_spear", "DIAMOND_SPEAR"));
+        inv.setItem(23, tagForMenu(new ItemStack(Material.NETHERITE_SPEAR), "give_spear", "NETHERITE_SPEAR"));
 
         inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
         player.openInventory(inv);
-    }
-
-    // ========== SUPER TOOLS PAGE ==========
-
-    public void openSuperToolsPage(Player player) {
-        Inventory inv = Bukkit.createInventory(null, SLOTS,
-                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
-                        .append(Component.text("| Super Tools", NamedTextColor.DARK_AQUA)));
-
-        inv.setItem(10, tagForMenu(makeSuperFromBattle(plugin.getBattleSwordManager().createBattleSword(Material.NETHERITE_SWORD), 3), "give_supertool", "super_sword"));
-        inv.setItem(11, tagForMenu(makeSuperFromBattle(plugin.getBattleAxeManager().createBattleAxe(Material.NETHERITE_AXE), 3), "give_supertool", "super_axe"));
-        inv.setItem(12, tagForMenu(makeSuperFromBattle(plugin.getBattlePickaxeManager().createBattlePickaxe(Material.NETHERITE_PICKAXE), 3), "give_supertool", "super_pickaxe"));
-        inv.setItem(13, tagForMenu(makeSuperFromBattle(plugin.getBattleShovelManager().createBattleShovel(BattleShovelManager.ShovelTier.NETHERITE), 3), "give_supertool", "super_shovel"));
-        inv.setItem(14, tagForMenu(makeSuperFromBattle(plugin.getSickleManager().createSickle(Material.NETHERITE_HOE), 3), "give_supertool", "super_sickle"));
-
-        inv.setItem(19, tagForMenu(makeSuperFromBattle(plugin.getBattleSwordManager().createBattleSword(Material.DIAMOND_SWORD), 2), "give_supertool", "super_diamond_sword"));
-        inv.setItem(20, tagForMenu(makeSuperFromBattle(plugin.getBattleAxeManager().createBattleAxe(Material.DIAMOND_AXE), 2), "give_supertool", "super_diamond_axe"));
-        inv.setItem(21, tagForMenu(makeSuperFromBattle(plugin.getBattlePickaxeManager().createBattlePickaxe(Material.DIAMOND_PICKAXE), 2), "give_supertool", "super_diamond_pickaxe"));
-        inv.setItem(22, tagForMenu(makeSuperFromBattle(plugin.getBattleShovelManager().createBattleShovel(BattleShovelManager.ShovelTier.DIAMOND), 2), "give_supertool", "super_diamond_shovel"));
-        inv.setItem(23, tagForMenu(makeSuperFromBattle(plugin.getSickleManager().createSickle(Material.DIAMOND_HOE), 2), "give_supertool", "super_diamond_sickle"));
-
-        inv.setItem(28, tagForMenu(plugin.getSuperToolManager().createSuperTool(new ItemStack(Material.ELYTRA), 3), "give_supertool", "super_elytra"));
-        inv.setItem(29, tagForMenu(plugin.getSuperToolManager().createSuperTool(new ItemStack(Material.SHIELD), 3), "give_supertool", "super_shield"));
-
-        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
-        player.openInventory(inv);
-    }
-
-    private ItemStack makeSuperFromBattle(ItemStack battleItem, int tier) {
-        if (battleItem == null) return new ItemStack(Material.BARRIER);
-        ItemStack result = plugin.getSuperToolManager().createSuperTool(battleItem, tier);
-        return result != null ? result : new ItemStack(Material.BARRIER);
     }
 
     // ========== ENCHANTMENT BOOKS PAGE ==========
@@ -490,25 +433,6 @@ public class CreativeMenuManager implements Listener {
                     player.sendMessage(Component.text("Recebeu blessing!", NamedTextColor.GREEN));
                 }
             }
-            case "give_battletool" -> {
-                if (category == null) return;
-                ItemStack bt = switch (category) {
-                    case "battle_sword" -> plugin.getBattleSwordManager().createBattleSword(Material.NETHERITE_SWORD);
-                    case "battle_axe" -> plugin.getBattleAxeManager().createBattleAxe(Material.NETHERITE_AXE);
-                    case "battle_bow" -> plugin.getBattleBowManager().createBattleBow();
-                    case "battle_crossbow" -> plugin.getBattleBowManager().createBattleCrossbow();
-                    case "battle_mace" -> plugin.getBattleMaceManager().createBattleMace();
-                    case "battle_trident" -> plugin.getBattleTridentManager().createBattleTrident();
-                    case "battle_pickaxe" -> plugin.getBattlePickaxeManager().createBattlePickaxe(Material.NETHERITE_PICKAXE);
-                    case "battle_shovel" -> plugin.getBattleShovelManager().createBattleShovel(BattleShovelManager.ShovelTier.NETHERITE);
-                    case "battle_spear" -> plugin.getBattleSpearManager().createBattleSpear(Material.NETHERITE_SPEAR);
-                    default -> null;
-                };
-                if (bt != null) {
-                    player.getInventory().addItem(bt);
-                    player.sendMessage(Component.text("Recebeu battle tool!", NamedTextColor.GREEN));
-                }
-            }
             case "give_abyssal_key" -> {
                 player.getInventory().addItem(plugin.getAbyssDimensionManager().createAbyssalKey());
                 player.sendMessage(Component.text("Recebeu Abyssal Key!", NamedTextColor.DARK_RED));
@@ -527,33 +451,9 @@ public class CreativeMenuManager implements Listener {
                 if (category == null) return;
                 Material spearMat;
                 try { spearMat = Material.valueOf(category); } catch (Exception e) { return; }
-                ItemStack sp = plugin.getBattleSpearManager().createBattleSpear(spearMat);
-                if (sp != null) {
-                    player.getInventory().addItem(sp);
-                    player.sendMessage(Component.text("Recebeu battle spear!", NamedTextColor.GREEN));
-                }
-            }
-            case "give_supertool" -> {
-                if (category == null) return;
-                ItemStack clicked = event.getCurrentItem();
-                if (clicked != null) {
-                    ItemStack give = clicked.clone();
-                    ItemMeta gm = give.getItemMeta();
-                    if (gm != null) {
-                        gm.getPersistentDataContainer().remove(KEY_MENU_ACTION);
-                        gm.getPersistentDataContainer().remove(KEY_MENU_CATEGORY);
-                        List<Component> lore = gm.lore();
-                        if (lore != null && lore.size() >= 2) {
-                            lore = new ArrayList<>(lore);
-                            lore.remove(lore.size() - 1);
-                            lore.remove(lore.size() - 1);
-                            gm.lore(lore);
-                        }
-                        give.setItemMeta(gm);
-                    }
-                    player.getInventory().addItem(give);
-                    player.sendMessage(Component.text("Recebeu super tool!", NamedTextColor.GREEN));
-                }
+                ItemStack sp = new ItemStack(spearMat);
+                player.getInventory().addItem(sp);
+                player.sendMessage(Component.text("Recebeu spear!", NamedTextColor.GREEN));
             }
             case "give_enchantbook" -> {
                 if (category == null) return;
@@ -628,10 +528,8 @@ public class CreativeMenuManager implements Listener {
             case "cat_powerups" -> openPowerUpsPage(player);
             case "cat_infinity" -> openInfinityPage(player);
             case "cat_blessings" -> openBlessingsPage(player);
-            case "cat_battletools" -> openBattleToolsPage(player);
             case "cat_abyssal_key" -> giveAbyssalKey(player);
             case "cat_sickles" -> openSicklesPage(player);
-            case "cat_supertools" -> openSuperToolsPage(player);
             case "cat_enchantbooks" -> openEnchantBooksPage(player, 0);
             case "cat_bestbuddies" -> openBestBuddiesPage(player);
             case "cat_crafted" -> openCraftedItemsPage(player);

@@ -233,6 +233,11 @@ public class LegendaryLootListener implements Listener {
             }
             // Blood Moon King also drops 1-2 books
             dropCustomBooks(event, 1, 2, 2, 4);
+            // Guaranteed Werewolf Blood drop — this is currently the only
+            // in-world source of the werewolf infection item.
+            if (plugin.getWerewolfManager() != null) {
+                event.getDrops().add(plugin.getWerewolfManager().createWerewolfBlood());
+            }
         }
     }
 

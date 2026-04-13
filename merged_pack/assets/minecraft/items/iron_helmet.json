@@ -1,13 +1,34 @@
-﻿{
+{
   "model": {
     "type": "minecraft:select",
     "property": "minecraft:custom_model_data",
     "index": 0,
     "cases": [
-      { "when": "amethyst_armor_helmet", "model": { "type": "minecraft:model", "model": "minecraft:item/amethyst_armor_helmet" } },
-      { "when": "bone_armor_helmet", "model": { "type": "minecraft:model", "model": "minecraft:item/bone_armor_helmet" } },
-      { "when": "sculk_armor_helmet", "model": { "type": "minecraft:model", "model": "minecraft:item/sculk_armor_helmet" } }
+      {
+        "when": "amethyst_armor_helmet",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/amethyst_armor_helmet"
+        }
+      },
+      {
+        "when": "bone_armor_helmet",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/bone_armor_helmet"
+        }
+      },
+      {
+        "when": "sculk_armor_helmet",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/sculk_armor_helmet"
+        }
+      }
     ],
-    "fallback": { "type": "minecraft:model", "model": "minecraft:item/iron_helmet" }
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/iron_helmet"
+    }
   }
 }

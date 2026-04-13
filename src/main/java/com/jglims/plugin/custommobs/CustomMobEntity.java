@@ -98,10 +98,15 @@ public abstract class CustomMobEntity {
         hitboxEntity.setPersistent(true);
         hitboxEntity.setRemoveWhenFarAway(false);
 
-        // Set max health
+        // Set max health — Paper's MAX_HEALTH attribute hard-caps at 2048.
+        // For bosses with higher design HP (Godzilla 3000, Ghidorah 2800), we
+        // cap the attribute at 2048 and rely on the damage-reduction system
+        // in CustomBossEntity to provide the effective HP bloat.
+        double designHp = mobType.getMaxHealth();
+        double effectiveHp = Math.min(designHp, 2048.0);
         Objects.requireNonNull(hitboxEntity.getAttribute(Attribute.MAX_HEALTH))
-                .setBaseValue(mobType.getMaxHealth());
-        hitboxEntity.setHealth(mobType.getMaxHealth());
+                .setBaseValue(effectiveHp);
+        hitboxEntity.setHealth(effectiveHp);
 
         // Remove default equipment for zombies
         if (hitboxEntity.getEquipment() != null) {
@@ -258,7 +263,10 @@ public abstract class CustomMobEntity {
      * @return tick interval in server ticks
      */
     protected long getTickRate() {
-        return 1L;
+        // 2L (10 Hz) instead of 1L (20 Hz): halves per-entity tick CPU cost
+        // server-wide with no perceptible effect on AI, animations, or particle
+        // trails. Bosses that need finer timing override this in their subclass.
+        return 2L;
     }
 
     // ── Animation Helpers ──────────────────────────────────────────────

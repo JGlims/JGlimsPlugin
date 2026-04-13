@@ -63,7 +63,6 @@ import org.bukkit.util.Vector;
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import com.jglims.plugin.JGlimsPlugin;
-import com.jglims.plugin.weapons.BattleAxeManager;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -441,12 +440,8 @@ public class EnchantmentEffectListener implements Listener {
         if (plugin.getConfigManager().isAxeNerfEnabled()) {
             String matName = weapon.getType().name();
             if (matName.endsWith("_AXE")) {
-                BattleAxeManager bam = plugin.getBattleAxeManager();
-                if (bam != null && !bam.isBattleAxe(weapon)) {
-                    // This is a regular axe — apply damage reduction via attack cooldown
-                    // Set the player's attack cooldown high
-                    attacker.setCooldown(weapon.getType(), 40); // 2 seconds = 40 ticks
-                }
+                // Apply damage reduction via attack cooldown
+                attacker.setCooldown(weapon.getType(), 40); // 2 seconds = 40 ticks
             }
         }
     }
@@ -726,16 +721,10 @@ public class EnchantmentEffectListener implements Listener {
 
         int timberLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.TIMBER);
         if (timberLvl > 0 && isLog(block.getType())) {
-            // Block Battle Axes from using Timber
-            BattleAxeManager bam = plugin.getBattleAxeManager();
-            if (bam != null && bam.isBattleAxe(tool)) {
-                // Battle axes cannot use Timber — do nothing
-            } else {
-                int max = switch (timberLvl) { case 1 -> 8; case 2 -> 16; default -> 64; };
-                breakConnectedBlocks(player, block, max, EnchantmentEffectListener::isLog);
-                decayNearbyLeaves(block.getLocation(), 6);
-                return;
-            }
+            int max = switch (timberLvl) { case 1 -> 8; case 2 -> 16; default -> 64; };
+            breakConnectedBlocks(player, block, max, EnchantmentEffectListener::isLog);
+            decayNearbyLeaves(block.getLocation(), 6);
+            return;
         }
 
         int veinLvl = enchantManager.getEnchantLevel(tool, EnchantmentType.VEINMINER);
@@ -987,15 +976,6 @@ public class EnchantmentEffectListener implements Listener {
             }
         }
 
-        int elytraTier = plugin.getSuperToolManager().getElytraDurabilityTier(item);
-        if (elytraTier > 0) {
-            double saveChance = switch (elytraTier) {
-                case 1 -> 0.30; case 2 -> 0.50; case 3 -> 0.70; default -> 0;
-            };
-            if (ThreadLocalRandom.current().nextDouble() < saveChance) {
-                event.setCancelled(true);
-            }
-        }
     }
 
     // ========================================================================
@@ -1073,10 +1053,6 @@ public class EnchantmentEffectListener implements Listener {
         if (plugin.getConfigManager().isAxeNerfEnabled()) {
             String matName = mainHand.getType().name();
             boolean holdingRegularAxe = matName.endsWith("_AXE");
-            BattleAxeManager bam = plugin.getBattleAxeManager();
-            if (holdingRegularAxe && bam != null && bam.isBattleAxe(mainHand)) {
-                holdingRegularAxe = false; // It's a battle axe, not a regular axe
-            }
 
             AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
             if (attackSpeed != null) {

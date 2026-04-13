@@ -26,7 +26,9 @@ public class CustomMobSpawnManager {
     private static final int MAX_PER_TYPE = 10;
 
     /** Spawn check interval in ticks (every 30 seconds). */
-    private static final long SPAWN_INTERVAL = 600L;
+    // Was 600L (30s). Halved to 300L so custom-mob dimensions (especially
+    // Jurassic) feel alive faster after a player joins.
+    private static final long SPAWN_INTERVAL = 300L;
 
     /** Spawn attempt radius around players (in blocks). */
     private static final int SPAWN_RADIUS = 60;
@@ -182,14 +184,19 @@ public class CustomMobSpawnManager {
         addRule(CustomMobType.INVADERLING_ARCHER, 0.04, Set.of("world_lunar"), Set.of(), 6);
         addRule(CustomMobType.INVADERLING_RIDER, 0.02, Set.of("world_lunar"), Set.of(), 4);
 
-        // ── Jurassic ──
-        addRule(CustomMobType.VELOCIRAPTOR, 0.05, Set.of("world_jurassic"), Set.of(), 8);
-        addRule(CustomMobType.SPINOSAURUS, 0.02, Set.of("world_jurassic"), Set.of(), 4);
-        addRule(CustomMobType.TREMORSAURUS, 0.015, Set.of("world_jurassic"), Set.of(), 4);
-        addRule(CustomMobType.STEGOSAURUS, 0.03, Set.of("world_jurassic"), Set.of(), 6);
-        addRule(CustomMobType.GROTTOCERATOPS, 0.03, Set.of("world_jurassic"), Set.of(), 6);
-        addRule(CustomMobType.BASILISK, 0.015, Set.of("world_jurassic"), Set.of(), 4);
-        addRule(CustomMobType.SUBTERRANODON, 0.02, Set.of("world_jurassic"), Set.of(), 4);
+        // ── Jurassic ── (density boosted ~4x — player reported the dimension
+        // felt empty, and the old rates produced maybe one dino every few
+        // minutes). Raised chances and max-active caps across the board.
+        addRule(CustomMobType.VELOCIRAPTOR,   0.22, Set.of("world_jurassic"), Set.of(), 16);
+        addRule(CustomMobType.SPINOSAURUS,    0.08, Set.of("world_jurassic"), Set.of(),  6);
+        addRule(CustomMobType.TREMORSAURUS,   0.06, Set.of("world_jurassic"), Set.of(),  6);
+        addRule(CustomMobType.STEGOSAURUS,    0.12, Set.of("world_jurassic"), Set.of(), 10);
+        addRule(CustomMobType.GROTTOCERATOPS, 0.12, Set.of("world_jurassic"), Set.of(), 10);
+        addRule(CustomMobType.BASILISK,       0.06, Set.of("world_jurassic"), Set.of(),  6);
+        addRule(CustomMobType.SUBTERRANODON,  0.08, Set.of("world_jurassic"), Set.of(),  6);
+        // Additional ambient population — grizzly bears make sense in the
+        // Jurassic valleys and weren't previously spawning there at all
+        addRule(CustomMobType.GRIZZLY_BEAR,   0.10, Set.of("world_jurassic"), Set.of(),  8);
     }
 
     private void addRule(CustomMobType type, double chance, Set<String> dimensions,

@@ -68,22 +68,54 @@ public class VampireListener implements Listener {
             return;
         }
 
-        if (!manager.isVampire(player)) return;
-
+        // ── ALWAYS block placement/use of our custom redstone/echo-shard/etc.
+        // items, even for non-vampires. Otherwise the underlying Material
+        // (e.g. redstone) would be placeable as a normal block and the user
+        // loses their one-shot consumable.
         if (manager.isVampireBlood(item)) {
             event.setCancelled(true);
+            if (!manager.isVampire(player)) {
+                player.sendActionBar(Component.text(
+                        "You need to be a vampire to consume this blood.",
+                        NamedTextColor.DARK_RED));
+                return;
+            }
             manager.consumeBlood(player);
             item.setAmount(item.getAmount() - 1);
-        } else if (manager.isVampireEvolver(item)) {
+            return;
+        }
+        if (manager.isVampireEvolver(item)) {
             event.setCancelled(true);
+            if (!manager.isVampire(player)) {
+                player.sendActionBar(Component.text(
+                        "Only a vampire can absorb this essence.",
+                        NamedTextColor.DARK_RED));
+                return;
+            }
             manager.consumeEvolver(player);
             item.setAmount(item.getAmount() - 1);
-        } else if (manager.isSuperBlood(item)) {
+            return;
+        }
+        if (manager.isSuperBlood(item)) {
             event.setCancelled(true);
+            if (!manager.isVampire(player)) {
+                player.sendActionBar(Component.text(
+                        "Only a vampire can drink Super Blood.",
+                        NamedTextColor.DARK_RED));
+                return;
+            }
             manager.consumeSuperBlood(player);
             item.setAmount(item.getAmount() - 1);
-        } else if (manager.isVampireRingItem(item)) {
+            return;
+        }
+        if (manager.isVampireRingItem(item)) {
             event.setCancelled(true);
+            if (!manager.isVampire(player)) {
+                player.sendActionBar(Component.text(
+                        "Only a vampire can wear this ring.",
+                        NamedTextColor.DARK_RED));
+                return;
+            }
             manager.applyVampireRing(player);
             item.setAmount(item.getAmount() - 1);
         }

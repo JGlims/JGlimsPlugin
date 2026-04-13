@@ -3,6 +3,9 @@ package com.jglims.plugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -70,18 +73,8 @@ import com.jglims.plugin.utility.InventorySortListener;
 import com.jglims.plugin.utility.LootBoosterListener;
 import com.jglims.plugin.utility.PaleGardenFogTask;
 import com.jglims.plugin.utility.VillagerTradeListener;
-import com.jglims.plugin.weapons.BattleAxeManager;
-import com.jglims.plugin.weapons.BattleBowManager;
-import com.jglims.plugin.weapons.BattleMaceManager;
-import com.jglims.plugin.weapons.BattlePickaxeManager;
-import com.jglims.plugin.weapons.BattleShovelManager;
-import com.jglims.plugin.weapons.BattleSpearManager;
-import com.jglims.plugin.weapons.BattleSwordManager;
-import com.jglims.plugin.weapons.BattleTridentManager;
 import com.jglims.plugin.weapons.SickleManager;
 import com.jglims.plugin.weapons.SpearManager;
-import com.jglims.plugin.weapons.SuperToolManager;
-import com.jglims.plugin.weapons.WeaponAbilityListener;
 import com.jglims.plugin.weapons.WeaponMasteryManager;
 
 import com.jglims.plugin.menu.CreativeMenuManager;
@@ -92,23 +85,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
-public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
+public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
 
     private static JGlimsPlugin instance;
     private ConfigManager configManager;
     private CustomEnchantManager enchantManager;
     private BlessingManager blessingManager;
     private SickleManager sickleManager;
-    private BattleAxeManager battleAxeManager;
-    private BattleBowManager battleBowManager;
-    private BattleMaceManager battleMaceManager;
-    private BattleShovelManager battleShovelManager;
-    private BattleSwordManager battleSwordManager;
-    private BattlePickaxeManager battlePickaxeManager;
-    private BattleTridentManager battleTridentManager;
-    private BattleSpearManager battleSpearManager;
     private SpearManager spearManager;
-    private SuperToolManager superToolManager;
     private LegendaryWeaponManager legendaryWeaponManager;
     private LegendaryArmorManager legendaryArmorManager;
     private CreativeMenuManager creativeMenuManager;
@@ -137,6 +121,8 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
     private DropItemManager dropItemManager;
     private VampireManager vampireManager;
     private VampireAbilityManager vampireAbilityManager;
+    private com.jglims.plugin.werewolf.WerewolfManager werewolfManager;
+    private com.jglims.plugin.werewolf.WerewolfListener werewolfListener;
     private MagicItemManager magicItemManager;
     private DimensionPortalManager dimensionPortalManager;
     private AetherDimensionManager aetherDimensionManager;
@@ -154,16 +140,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
         blessingManager = new BlessingManager(this);
 
         sickleManager = new SickleManager(this);
-        battleAxeManager = new BattleAxeManager(this);
-        battleBowManager = new BattleBowManager(this);
-        battleMaceManager = new BattleMaceManager(this);
-        battleSwordManager = new BattleSwordManager(this);
-        battlePickaxeManager = new BattlePickaxeManager(this);
-        battleTridentManager = new BattleTridentManager(this);
-        battleSpearManager = new BattleSpearManager(this);
-        superToolManager = new SuperToolManager(this);
         spearManager = new SpearManager(this, configManager);
-        battleShovelManager = new BattleShovelManager(this, configManager);
 
         legendaryWeaponManager = new LegendaryWeaponManager(this);
         legendaryArmorManager = new LegendaryArmorManager(this);
@@ -181,6 +158,8 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
         dropItemManager = new DropItemManager(this);
         vampireManager = new VampireManager(this);
         vampireAbilityManager = new VampireAbilityManager(this, vampireManager);
+        werewolfManager = new com.jglims.plugin.werewolf.WerewolfManager(this);
+        werewolfListener = new com.jglims.plugin.werewolf.WerewolfListener(this, werewolfManager);
         magicItemManager = new MagicItemManager(this);
         dimensionPortalManager = new DimensionPortalManager(this);
         registerDimensionPortals();
@@ -196,10 +175,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
         guideBookManager = new GuideBookManager(this);
 
         craftedItemManager = new CraftedItemManager(this);
-        recipeManager = new RecipeManager(this, sickleManager, battleAxeManager,
-                battleBowManager, battleMaceManager, superToolManager,
-                battleSwordManager, battlePickaxeManager, battleTridentManager,
-                battleSpearManager, battleShovelManager, spearManager,
+        recipeManager = new RecipeManager(this, sickleManager, spearManager,
                 infinityStoneManager, infinityGauntletManager, legendaryArmorManager);
         recipeManager.setCraftedItemManager(craftedItemManager);
         recipeManager.setDropItemManager(dropItemManager);
@@ -231,16 +207,12 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
         pm.registerEvents(new DropRateListener(this, configManager), this);
         pm.registerEvents(new VillagerTradeListener(this, configManager), this);
         pm.registerEvents(sickleManager, this);
-        pm.registerEvents(battleAxeManager, this);
-        pm.registerEvents(battleShovelManager, this);
-        pm.registerEvents(superToolManager, this);
         pm.registerEvents(recipeManager, this);
         pm.registerEvents(weaponMasteryManager, this);
         pm.registerEvents(bloodMoonManager, this);
         pm.registerEvents(new GuildListener(this, guildManager), this);
         pm.registerEvents(bossMasteryManager, this);
         pm.registerEvents(roamingBossManager, this);
-        pm.registerEvents(new WeaponAbilityListener(this, configManager, enchantManager, superToolManager, spearManager, battleShovelManager, guildManager), this);
         pm.registerEvents(new BestBuddiesListener(this, configManager), this);
         pm.registerEvents(new LegendaryAbilityListener(this, configManager, legendaryWeaponManager, guildManager), this);
         pm.registerEvents(new LegendaryLootListener(this, legendaryWeaponManager, bloodMoonManager), this);
@@ -265,6 +237,8 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
         pm.registerEvents(vampireListener, this);
         vampireListener.startDayNightCycle();
         pm.registerEvents(new VampireAbilityListener(this, vampireManager, vampireAbilityManager), this);
+        pm.registerEvents(werewolfListener, this);
+        werewolfListener.startShadowWolfTicker();
         pm.registerEvents(craftedItemListener, this);
         pm.registerEvents(new MagicItemListener(this, magicItemManager), this);
         pm.registerEvents(dimensionPortalManager, this);
@@ -301,6 +275,12 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
             getCommand("jglims").setTabCompleter(this);
         }
 
+        // First-join spawn guard: if a player hasn't played before, force them
+        // to the Overworld's spawn point. Previously, a race condition during
+        // plugin init could cause first-join players to land in the Jurassic
+        // dimension instead of the Overworld.
+        getServer().getPluginManager().registerEvents(this, this);
+
         long elapsed = System.currentTimeMillis() - start;
         getLogger().info("JGlimsPlugin v" + getDescription().getVersion() + " enabled in " + elapsed + "ms!");
     }
@@ -309,6 +289,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
     public void onDisable() {
         if (customMobManager != null) customMobManager.despawnAll();
         if (vampireManager != null) vampireManager.saveAll();
+        if (werewolfManager != null) werewolfManager.cleanupAll();
         getLogger().info("JGlimsPlugin disabled.");
     }
 
@@ -357,6 +338,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
             case "tp" -> handleTpCommand(sender, args);
             case "spawn" -> handleSpawnCommand(sender, args);
             case "boss" -> handleBossCommand(sender, args);
+            case "werewolf" -> handleWerewolfCommand(sender, args);
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -548,16 +530,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
     public CustomEnchantManager getEnchantManager() { return enchantManager; }
     public BlessingManager getBlessingManager() { return blessingManager; }
     public SickleManager getSickleManager() { return sickleManager; }
-    public BattleAxeManager getBattleAxeManager() { return battleAxeManager; }
-    public BattleBowManager getBattleBowManager() { return battleBowManager; }
-    public BattleMaceManager getBattleMaceManager() { return battleMaceManager; }
-    public BattleShovelManager getBattleShovelManager() { return battleShovelManager; }
-    public BattleSwordManager getBattleSwordManager() { return battleSwordManager; }
-    public BattlePickaxeManager getBattlePickaxeManager() { return battlePickaxeManager; }
-    public BattleTridentManager getBattleTridentManager() { return battleTridentManager; }
-    public BattleSpearManager getBattleSpearManager() { return battleSpearManager; }
     public SpearManager getSpearManager() { return spearManager; }
-    public SuperToolManager getSuperToolManager() { return superToolManager; }
     public LegendaryWeaponManager getLegendaryWeaponManager() { return legendaryWeaponManager; }
     public LegendaryArmorManager getLegendaryArmorManager() { return legendaryArmorManager; }
     public KingMobManager getKingMobManager() { return kingMobManager; }
@@ -580,6 +553,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
     public CraftedItemManager getCraftedItemManager() { return craftedItemManager; }
     public CraftedItemListener getCraftedItemListener() { return craftedItemListener; }
     public VampireManager getVampireManager() { return vampireManager; }
+    public com.jglims.plugin.werewolf.WerewolfManager getWerewolfManager() { return werewolfManager; }
     public VampireAbilityManager getVampireAbilityManager() { return vampireAbilityManager; }
     public MagicItemManager getMagicItemManager() { return magicItemManager; }
     public DimensionPortalManager getDimensionPortalManager() { return dimensionPortalManager; }
@@ -843,13 +817,49 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  WEREWOLF ADMIN COMMAND
+    // ═══════════════════════════════════════════════════════════════
+
+    private void handleWerewolfCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP.", NamedTextColor.RED)); return; }
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /jglims werewolf <blood|infect|ability> [player]", NamedTextColor.YELLOW));
+            return;
+        }
+        if (werewolfManager == null) {
+            sender.sendMessage(Component.text("Werewolf system not loaded.", NamedTextColor.RED));
+            return;
+        }
+        switch (args[1].toLowerCase()) {
+            case "blood" -> {
+                if (!(sender instanceof Player p)) { sender.sendMessage(Component.text("Player only.", NamedTextColor.RED)); return; }
+                p.getInventory().addItem(werewolfManager.createWerewolfBlood());
+                p.sendMessage(Component.text("Received: Werewolf Blood", NamedTextColor.DARK_RED));
+            }
+            case "infect" -> {
+                Player target = (args.length >= 3) ? getServer().getPlayer(args[2])
+                        : (sender instanceof Player sp ? sp : null);
+                if (target == null) { sender.sendMessage(Component.text("Player not found.", NamedTextColor.RED)); return; }
+                werewolfManager.infect(target);
+                sender.sendMessage(Component.text("Infected " + target.getName() + " with the werewolf curse.", NamedTextColor.GREEN));
+            }
+            case "ability" -> {
+                if (!(sender instanceof Player p)) { sender.sendMessage(Component.text("Player only.", NamedTextColor.RED)); return; }
+                p.getInventory().addItem(werewolfManager.createWolfFormItem());
+                p.sendMessage(Component.text("Received: Wolf Form ability", NamedTextColor.DARK_RED));
+            }
+            default -> sender.sendMessage(Component.text("Unknown werewolf sub: blood, infect, ability", NamedTextColor.RED));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  TAB COMPLETION
     // ═══════════════════════════════════════════════════════════════
 
     private static final java.util.List<String> SUBCOMMANDS = java.util.List.of(
             "reload", "stats", "enchants", "sort", "mastery", "legendary", "armor", "powerup",
             "bosstitles", "quests", "gauntlet", "abyss", "vampire", "menu", "guia", "help",
-            "locate", "tp", "spawn", "boss"
+            "locate", "tp", "spawn", "boss", "werewolf"
     );
 
     private static final java.util.List<String> DIMENSIONS = java.util.List.of(
@@ -913,5 +923,50 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter {
             if (o.toLowerCase().startsWith(p)) out.add(o);
         }
         return out;
+    }
+
+    /**
+     * Forces new players to spawn in the Overworld. This is a safety net for
+     * the race condition between the plugin's dimension init and Paper's
+     * default-world selection — without it, first-join players occasionally
+     * land in the Jurassic dimension instead of the Overworld.
+     */
+    @EventHandler
+    public void onFirstJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        // Force ALL players joining to the overworld — not just first-timers.
+        // This prevents the Jurassic dimension from capturing players' spawn.
+        World overworld = getServer().getWorld("world");
+        if (overworld == null) return;
+        if (!player.getWorld().getName().equals("world")) {
+            getServer().getScheduler().runTask(this, () ->
+                    player.teleport(overworld.getSpawnLocation()));
+            getLogger().info("[JoinGuard] Moved " + player.getName() + " from "
+                    + player.getWorld().getName() + " to overworld spawn.");
+        }
+    }
+
+    /**
+     * Forces death-respawn to the Overworld. Without this, players who die in
+     * custom dimensions respawn at the custom dimension's world spawn instead
+     * of the Overworld, because Paper stores the respawn location per-player
+     * and defaults to the world the player is in.
+     */
+    @EventHandler
+    public void onRespawn(org.bukkit.event.player.PlayerRespawnEvent event) {
+        Location respawnLoc = event.getRespawnLocation();
+        if (respawnLoc.getWorld() == null) return;
+        String worldName = respawnLoc.getWorld().getName();
+        // If respawning in a custom dimension (anything except overworld/nether/end),
+        // redirect to the Overworld spawn.
+        if (!worldName.equals("world") && !worldName.equals("world_nether")
+                && !worldName.equals("world_the_end")) {
+            World overworld = getServer().getWorld("world");
+            if (overworld != null) {
+                event.setRespawnLocation(overworld.getSpawnLocation());
+                getLogger().info("[RespawnGuard] Redirected " + event.getPlayer().getName()
+                        + " from " + worldName + " to overworld.");
+            }
+        }
     }
 }

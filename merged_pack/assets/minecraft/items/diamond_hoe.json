@@ -4,7 +4,13 @@
     "property": "minecraft:custom_model_data",
     "index": 0,
     "cases": [
-      { "when": "jadehalberd", "model": { "type": "minecraft:model", "model": "minecraft:item/jadehalberd" } }
+      {
+        "when": "jadehalberd",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/jadehalberd"
+        }
+      }
     ],
     "fallback": {
       "type": "minecraft:model",

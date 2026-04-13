@@ -177,17 +177,8 @@ public class WeaponMasteryManager implements Listener {
         if (weapon == null || weapon.getType().isAir()) return null;
         String matName = weapon.getType().name();
 
-        // Check custom battle weapons first (specific PDC markers)
+        // Check custom weapons first (specific PDC markers)
         if (plugin.getSickleManager().isSickle(weapon)) return "sickle";
-        if (plugin.getBattleAxeManager().isBattleAxe(weapon)) return "axe";
-        if (plugin.getBattleSwordManager().isBattleSword(weapon)) return "sword";
-        if (plugin.getBattlePickaxeManager().isBattlePickaxe(weapon)) return "pickaxe";
-        if (plugin.getBattleTridentManager().isBattleTrident(weapon)) return "trident";
-        if (plugin.getBattleSpearManager().isBattleSpear(weapon)) return "spear";
-        if (plugin.getBattleShovelManager().isBattleShovel(weapon)) return "shovel";
-        if (plugin.getBattleMaceManager() != null && plugin.getBattleMaceManager().isBattleMace(weapon)) return "mace";
-        if (plugin.getBattleBowManager().isBattleBow(weapon)) return "bow";
-        if (plugin.getBattleBowManager().isBattleCrossbow(weapon)) return "crossbow";
 
         // Fallback to vanilla material checks
         if (matName.endsWith("_SWORD")) return "sword";

@@ -18,17 +18,8 @@ import com.jglims.plugin.JGlimsPlugin;
 import com.jglims.plugin.custommobs.DropItemManager;
 import com.jglims.plugin.enchantments.CustomEnchantManager;
 import com.jglims.plugin.enchantments.EnchantmentType;
-import com.jglims.plugin.weapons.BattleAxeManager;
-import com.jglims.plugin.weapons.BattleBowManager;
-import com.jglims.plugin.weapons.BattleMaceManager;
-import com.jglims.plugin.weapons.BattlePickaxeManager;
-import com.jglims.plugin.weapons.BattleShovelManager;
-import com.jglims.plugin.weapons.BattleSpearManager;
-import com.jglims.plugin.weapons.BattleSwordManager;
-import com.jglims.plugin.weapons.BattleTridentManager;
 import com.jglims.plugin.weapons.SickleManager;
 import com.jglims.plugin.weapons.SpearManager;
-import com.jglims.plugin.weapons.SuperToolManager;
 import com.jglims.plugin.legendary.InfinityStoneManager;
 import com.jglims.plugin.legendary.LegendaryArmorManager;
 import com.jglims.plugin.legendary.LegendaryArmorSet;
@@ -42,15 +33,6 @@ public class RecipeManager implements Listener {
 
     private final JGlimsPlugin plugin;
     private final SickleManager sickleManager;
-    private final BattleAxeManager battleAxeManager;
-    private final BattleBowManager battleBowManager;
-    private final BattleMaceManager battleMaceManager;
-    private final SuperToolManager superToolManager;
-    private final BattleSwordManager battleSwordManager;
-    private final BattlePickaxeManager battlePickaxeManager;
-    private final BattleTridentManager battleTridentManager;
-    private final BattleSpearManager battleSpearManager;
-    private final BattleShovelManager battleShovelManager;
     private final SpearManager spearManager;
     private final InfinityStoneManager infinityStoneManager;
     private final InfinityGauntletManager infinityGauntletManager;
@@ -62,24 +44,11 @@ public class RecipeManager implements Listener {
     public void setDropItemManager(DropItemManager m) { this.dropItemManager = m; }
 
     public RecipeManager(JGlimsPlugin plugin, SickleManager sickleManager,
-                         BattleAxeManager battleAxeManager, BattleBowManager battleBowManager,
-                         BattleMaceManager battleMaceManager, SuperToolManager superToolManager,
-                         BattleSwordManager battleSwordManager, BattlePickaxeManager battlePickaxeManager,
-                         BattleTridentManager battleTridentManager, BattleSpearManager battleSpearManager,
-                         BattleShovelManager battleShovelManager, SpearManager spearManager,
+                         SpearManager spearManager,
                          InfinityStoneManager infinityStoneManager, InfinityGauntletManager infinityGauntletManager,
                          LegendaryArmorManager legendaryArmorManager) {
         this.plugin = plugin;
         this.sickleManager = sickleManager;
-        this.battleAxeManager = battleAxeManager;
-        this.battleBowManager = battleBowManager;
-        this.battleMaceManager = battleMaceManager;
-        this.superToolManager = superToolManager;
-        this.battleSwordManager = battleSwordManager;
-        this.battlePickaxeManager = battlePickaxeManager;
-        this.battleTridentManager = battleTridentManager;
-        this.battleSpearManager = battleSpearManager;
-        this.battleShovelManager = battleShovelManager;
         this.spearManager = spearManager;
         this.infinityStoneManager = infinityStoneManager;
         this.infinityGauntletManager = infinityGauntletManager;
@@ -94,17 +63,7 @@ public class RecipeManager implements Listener {
         registerBestBuddies();
 
         registerSickles();
-        registerBattleAxes();
-        registerBattleSwords();
-        registerBattlePickaxes();
-        registerBattleBow();
-        registerBattleCrossbow();
-        registerBattleMace();
-        registerBattleTrident();
-        registerBattleShovels();
-        registerBattleSpears();
 
-        registerSuperToolRecipes();
         registerInfinityGauntlet();
         registerCraftableArmor();
         registerCraftedItems();
@@ -341,244 +300,6 @@ public class RecipeManager implements Listener {
         }
     }
 
-    private void registerBattleSwords() {
-        for (Material swordMat : battleSwordManager.getBattleSwordTiers()) {
-            Material ingredient = battleSwordManager.getBattleSwordIngredient(swordMat);
-            if (ingredient == null) continue;
-            ItemStack battleSword = battleSwordManager.createBattleSword(swordMat);
-            if (battleSword == null) continue;
-            String tierName = swordMat.name().replace("_SWORD", "").toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "battle_sword_" + tierName);
-            ShapedRecipe recipe = new ShapedRecipe(key, battleSword);
-            recipe.shape(" I ", " S ", "   ");
-            recipe.setIngredient('I', ingredient);
-            recipe.setIngredient('S', swordMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    private void registerBattlePickaxes() {
-        for (Material pickMat : battlePickaxeManager.getBattlePickaxeTiers()) {
-            Material ingredient = battlePickaxeManager.getBattlePickaxeIngredient(pickMat);
-            if (ingredient == null) continue;
-            ItemStack battlePick = battlePickaxeManager.createBattlePickaxe(pickMat);
-            if (battlePick == null) continue;
-            String tierName = pickMat.name().replace("_PICKAXE", "").toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "battle_pickaxe_" + tierName);
-            ShapedRecipe recipe = new ShapedRecipe(key, battlePick);
-            recipe.shape(" I ", " P ", "   ");
-            recipe.setIngredient('I', ingredient);
-            recipe.setIngredient('P', pickMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    private void registerBattleAxes() {
-        for (Material axeMat : battleAxeManager.getBattleAxeTiers()) {
-            Material ingredient = battleAxeManager.getBattleAxeIngredient(axeMat);
-            if (ingredient == null) continue;
-            ItemStack battleAxe = battleAxeManager.createBattleAxe(axeMat);
-            if (battleAxe == null) continue;
-            String tierName = axeMat.name().replace("_AXE", "").toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "battle_axe_" + tierName);
-            ShapedRecipe recipe = new ShapedRecipe(key, battleAxe);
-            recipe.shape(" I ", " A ", "   ");
-            recipe.setIngredient('I', ingredient);
-            recipe.setIngredient('A', axeMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    private void registerBattleShovels() {
-        for (BattleShovelManager.ShovelTier tier : BattleShovelManager.ShovelTier.values()) {
-            Material ingredient = tier.getIngredient();
-            ItemStack battleShovel = battleShovelManager.createBattleShovel(tier);
-            if (battleShovel == null) continue;
-            String tierName = tier.name().toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "battle_shovel_" + tierName);
-            ShapedRecipe recipe = new ShapedRecipe(key, battleShovel);
-            recipe.shape(" I ", " S ", "   ");
-            recipe.setIngredient('I', ingredient);
-            recipe.setIngredient('S', tier.getShovelMaterial());
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    private void registerBattleSpears() {
-        for (Material spearMat : battleSpearManager.getBattleSpearTiers()) {
-            Material ingredient = battleSpearManager.getBattleSpearIngredient(spearMat);
-            if (ingredient == null) continue;
-            ItemStack battleSpear = battleSpearManager.createBattleSpear(spearMat);
-            if (battleSpear == null) continue;
-            String tierName = spearMat.name().replace("_SPEAR", "").toLowerCase();
-            NamespacedKey key = new NamespacedKey(plugin, "battle_spear_" + tierName);
-            ShapedRecipe recipe = new ShapedRecipe(key, battleSpear);
-            recipe.shape(" I ", " S ", "   ");
-            recipe.setIngredient('I', ingredient);
-            recipe.setIngredient('S', spearMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    private void registerBattleBow() {
-        ItemStack battleBow = battleBowManager.createBattleBow();
-        if (battleBow == null) return;
-        NamespacedKey key = new NamespacedKey(plugin, "battle_bow");
-        ShapedRecipe recipe = new ShapedRecipe(key, battleBow);
-        recipe.shape(" K ", " B ", "   ");
-        recipe.setIngredient('K', Material.STICK);
-        recipe.setIngredient('B', Material.BOW);
-        plugin.getServer().addRecipe(recipe);
-    }
-
-    private void registerBattleCrossbow() {
-        ItemStack battleCrossbow = battleBowManager.createBattleCrossbow();
-        if (battleCrossbow == null) return;
-        NamespacedKey key = new NamespacedKey(plugin, "battle_crossbow");
-        ShapedRecipe recipe = new ShapedRecipe(key, battleCrossbow);
-        recipe.shape(" K ", " C ", "   ");
-        recipe.setIngredient('K', Material.STICK);
-        recipe.setIngredient('C', Material.CROSSBOW);
-        plugin.getServer().addRecipe(recipe);
-    }
-
-    private void registerBattleMace() {
-        ItemStack battleMace = battleMaceManager.createBattleMace();
-        if (battleMace == null) return;
-        NamespacedKey key = new NamespacedKey(plugin, "battle_mace");
-        ShapedRecipe recipe = new ShapedRecipe(key, battleMace);
-        recipe.shape(" K ", " M ", "   ");
-        recipe.setIngredient('K', Material.STICK);
-        recipe.setIngredient('M', Material.MACE);
-        plugin.getServer().addRecipe(recipe);
-    }
-
-    private void registerBattleTrident() {
-        ItemStack battleTrident = battleTridentManager.createBattleTrident();
-        if (battleTrident == null) return;
-        NamespacedKey key = new NamespacedKey(plugin, "battle_trident");
-        ShapedRecipe recipe = new ShapedRecipe(key, battleTrident);
-        recipe.shape(" K ", " T ", "   ");
-        recipe.setIngredient('K', Material.STICK);
-        recipe.setIngredient('T', Material.TRIDENT);
-        plugin.getServer().addRecipe(recipe);
-    }
-
-    // =====================================================================
-    // FIX v1.3.1: Swords, Pickaxes, and Shovels now use
-    // registerSuperTiersForBattleItem() instead of registerAllSuperTiers().
-    //
-    // ROOT CAUSE: registerAllSuperTiers() creates a plain "new ItemStack(mat)"
-    // with NO battle PDC key, then passes it to createSuperTool() which checks
-    // isBattleItem() — returns false — returns null — recipe never registered.
-    //
-    // registerSuperTiersForBattleItem() receives an actual battle item with
-    // the PDC marker, so isBattleItem() returns true and the recipe registers.
-    //
-    // registerAllSuperTiers() is kept ONLY for Elytra and Shield which bypass
-    // the battle step (isBattleItem returns true for them by material check).
-    // =====================================================================
-    private void registerSuperToolRecipes() {
-        // FIX: Swords — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
-        for (Material swordMat : battleSwordManager.getBattleSwordTiers()) {
-            ItemStack battleSword = battleSwordManager.createBattleSword(swordMat);
-            if (battleSword == null) continue;
-            registerSuperTiersForBattleItem(battleSword, swordMat, "battle_sword_" + swordMat.name().toLowerCase());
-        }
-
-        // FIX: Pickaxes — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
-        for (Material pickMat : battlePickaxeManager.getBattlePickaxeTiers()) {
-            ItemStack battlePick = battlePickaxeManager.createBattlePickaxe(pickMat);
-            if (battlePick == null) continue;
-            registerSuperTiersForBattleItem(battlePick, pickMat, "battle_pickaxe_" + pickMat.name().toLowerCase());
-        }
-
-        // FIX: Shovels — was registerAllSuperTiers (broken), now registerSuperTiersForBattleItem
-        for (BattleShovelManager.ShovelTier tier : BattleShovelManager.ShovelTier.values()) {
-            ItemStack battleShovel = battleShovelManager.createBattleShovel(tier);
-            if (battleShovel == null) continue;
-            registerSuperTiersForBattleItem(battleShovel, tier.getShovelMaterial(), "battle_shovel_" + tier.name().toLowerCase());
-        }
-
-        // Sickles — already correct (uses registerSuperTiersForBattleItem)
-        for (Material hoeMat : sickleManager.getSickleTiers()) {
-            ItemStack sickle = sickleManager.createSickle(hoeMat);
-            if (sickle == null) continue;
-            registerSuperTiersForBattleItem(sickle, hoeMat, "sickle_" + hoeMat.name().toLowerCase());
-        }
-
-        // Battle Axes — already correct
-        for (Material axeMat : battleAxeManager.getBattleAxeTiers()) {
-            ItemStack battleAxe = battleAxeManager.createBattleAxe(axeMat);
-            if (battleAxe == null) continue;
-            registerSuperTiersForBattleItem(battleAxe, axeMat, "battle_axe_" + axeMat.name().toLowerCase());
-        }
-
-        // Battle Spears — already correct
-        for (Material spearMat : battleSpearManager.getBattleSpearTiers()) {
-            ItemStack battleSpear = battleSpearManager.createBattleSpear(spearMat);
-            if (battleSpear == null) continue;
-            registerSuperTiersForBattleItem(battleSpear, spearMat, "battle_spear_" + spearMat.name().toLowerCase());
-        }
-
-        // Single-material battle items — already correct
-        ItemStack battleTrident = battleTridentManager.createBattleTrident();
-        if (battleTrident != null) registerSuperTiersForBattleItem(battleTrident, Material.TRIDENT, "battle_trident");
-        ItemStack battleBow = battleBowManager.createBattleBow();
-        if (battleBow != null) registerSuperTiersForBattleItem(battleBow, Material.BOW, "battle_bow");
-        ItemStack battleCrossbow = battleBowManager.createBattleCrossbow();
-        if (battleCrossbow != null) registerSuperTiersForBattleItem(battleCrossbow, Material.CROSSBOW, "battle_crossbow");
-        ItemStack battleMace = battleMaceManager.createBattleMace();
-        if (battleMace != null) registerSuperTiersForBattleItem(battleMace, Material.MACE, "battle_mace");
-
-        // Elytra and Shield — these bypass battle, so registerAllSuperTiers is correct for them
-        registerAllSuperTiers(Material.ELYTRA, "elytra");
-        registerAllSuperTiers(Material.SHIELD, "shield");
-    }
-
-    /**
-     * Registers super tiers for items that bypass the battle step (Elytra, Shield).
-     * Creates a plain ItemStack — works because isBattleItem() returns true for
-     * Elytra/Shield by material check.
-     * DO NOT use this for weapons that require battle PDC markers.
-     */
-    private void registerAllSuperTiers(Material baseMat, String namePrefix) {
-        Material[] upgradeMats = { Material.IRON_INGOT, Material.DIAMOND, Material.NETHERITE_INGOT };
-        int[] tiers = { SuperToolManager.TIER_IRON, SuperToolManager.TIER_DIAMOND, SuperToolManager.TIER_NETHERITE };
-        String[] tierNames = { "iron", "diamond", "netherite" };
-        for (int i = 0; i < 3; i++) {
-            ItemStack baseItem = new ItemStack(baseMat);
-            ItemStack result = superToolManager.createSuperTool(baseItem, tiers[i]);
-            if (result == null) continue;
-            NamespacedKey key = new NamespacedKey(plugin, "super_" + tierNames[i] + "_" + namePrefix);
-            ShapedRecipe recipe = new ShapedRecipe(key, result);
-            recipe.shape("MMM", " T ", "   ");
-            recipe.setIngredient('M', upgradeMats[i]);
-            recipe.setIngredient('T', baseMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
-
-    /**
-     * Registers super tiers for battle items that have PDC markers.
-     * Receives an actual battle item (with PDC) so createSuperTool's
-     * isBattleItem() check passes correctly.
-     */
-    private void registerSuperTiersForBattleItem(ItemStack battleItem, Material baseMat, String namePrefix) {
-        Material[] upgradeMats = { Material.IRON_INGOT, Material.DIAMOND, Material.NETHERITE_INGOT };
-        int[] tiers = { SuperToolManager.TIER_IRON, SuperToolManager.TIER_DIAMOND, SuperToolManager.TIER_NETHERITE };
-        String[] tierNames = { "iron", "diamond", "netherite" };
-        for (int i = 0; i < 3; i++) {
-            ItemStack result = superToolManager.createSuperTool(battleItem.clone(), tiers[i]);
-            if (result == null) continue;
-            NamespacedKey key = new NamespacedKey(plugin, "super_" + tierNames[i] + "_" + namePrefix);
-            ShapedRecipe recipe = new ShapedRecipe(key, result);
-            recipe.shape("MMM", " T ", "   ");
-            recipe.setIngredient('M', upgradeMats[i]);
-            recipe.setIngredient('T', baseMat);
-            plugin.getServer().addRecipe(recipe);
-        }
-    }
     // =================== INFINITY GAUNTLET (Phase 22) ===================
     private void registerInfinityGauntlet() {
         if (infinityStoneManager == null || infinityGauntletManager == null) return;
@@ -671,7 +392,7 @@ public class RecipeManager implements Listener {
 
         // --- 1. Block custom weapons from non-plugin recipes ---
         for (ItemStack ingredient : matrix) {
-            if (ingredient != null && isAnyBattleWeapon(ingredient)) {
+            if (ingredient != null && isCustomWeapon(ingredient)) {
                 if (event.getRecipe() instanceof ShapedRecipe shaped) {
                     if (shaped.getKey().getNamespace().equals(plugin.getName().toLowerCase())) continue;
                 }
@@ -683,80 +404,21 @@ public class RecipeManager implements Listener {
             }
         }
 
-        // --- 2. Block battle-to-battle re-crafting ---
-        // If a battle/sickle recipe is matched but the center item is ALREADY battle, block it
+        // --- 2. Block sickle-to-sickle re-crafting ---
         if (event.getRecipe() instanceof ShapedRecipe shaped) {
             String rKey = shaped.getKey().getKey();
-            if (rKey.startsWith("battle_") || rKey.startsWith("sickle_")) {
-                // For pattern " I " / " T " / "   ", the tool is slot 4
+            if (rKey.startsWith("sickle_")) {
                 ItemStack center = matrix.length >= 5 ? matrix[4] : null;
-                if (center != null && isAnyBattleWeapon(center)) {
+                if (center != null && isCustomWeapon(center)) {
                     event.getInventory().setResult(null);
                     return;
                 }
             }
         }
-
-        // --- 3. Super recipe PDC guard ---
-        if (event.getRecipe() instanceof ShapedRecipe shaped) {
-            String recipeKey = shaped.getKey().getKey();
-            if (recipeKey.startsWith("super_")) {
-                ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
-                if (centerItem != null) {
-                    if (superToolManager.isSuperTool(centerItem)) {
-                        // allow upgrade — fall through to section 4
-                    } else if (!superToolManager.isBattleItem(centerItem)) {
-                        event.getInventory().setResult(null);
-                        return;
-                    }
-                    // Verify the specific battle type matches the recipe
-                    if (recipeKey.contains("sickle_") && !sickleManager.isSickle(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_axe_") && !battleAxeManager.isBattleAxe(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_sword_") && !battleSwordManager.isBattleSword(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_pickaxe_") && !battlePickaxeManager.isBattlePickaxe(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_shovel_") && !battleShovelManager.isBattleShovel(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_spear_") && !battleSpearManager.isBattleSpear(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_trident") && centerItem.getType() == Material.TRIDENT && !battleTridentManager.isBattleTrident(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_bow") && !recipeKey.contains("crossbow") && centerItem.getType() == Material.BOW && !battleBowManager.isBattleBow(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_crossbow") && centerItem.getType() == Material.CROSSBOW && !battleBowManager.isBattleCrossbow(centerItem)) { event.getInventory().setResult(null); return; }
-                    if (recipeKey.contains("battle_mace") && centerItem.getType() == Material.MACE && !battleMaceManager.isBattleMace(centerItem)) { event.getInventory().setResult(null); return; }
-                }
-            }
-        }
-
-        // --- 4. Super tool upgrade via crafting table ---
-        ItemStack centerItem = matrix.length >= 5 ? matrix[4] : null;
-        if (centerItem != null && superToolManager.isSuperTool(centerItem)) {
-            int currentTier = superToolManager.getSuperTier(centerItem);
-            Material topMat = null;
-            boolean topRowValid = true;
-            for (int i = 0; i <= 2; i++) {
-                if (matrix[i] == null || matrix[i].getType() == Material.AIR) { topRowValid = false; break; }
-                if (topMat == null) topMat = matrix[i].getType();
-                else if (matrix[i].getType() != topMat) { topRowValid = false; break; }
-            }
-            boolean otherSlotsEmpty = true;
-            for (int slot : new int[]{ 3, 5, 6, 7, 8 }) {
-                if (slot < matrix.length && matrix[slot] != null && matrix[slot].getType() != Material.AIR) { otherSlotsEmpty = false; break; }
-            }
-            if (topRowValid && otherSlotsEmpty && topMat != null) {
-                int targetTier = SuperToolManager.TIER_NONE;
-                if (topMat == Material.IRON_INGOT) targetTier = SuperToolManager.TIER_IRON;
-                else if (topMat == Material.DIAMOND) targetTier = SuperToolManager.TIER_DIAMOND;
-                else if (topMat == Material.NETHERITE_INGOT) targetTier = SuperToolManager.TIER_NETHERITE;
-                if (targetTier > currentTier) {
-                    ItemStack upgraded = superToolManager.upgradeSuperTool(centerItem, targetTier);
-                    if (upgraded != null) event.getInventory().setResult(upgraded);
-                }
-            }
-        }
     }
 
-    private boolean isAnyBattleWeapon(ItemStack item) {
+    private boolean isCustomWeapon(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
-        return sickleManager.isSickle(item) || battleAxeManager.isBattleAxe(item) || battleMaceManager.isBattleMace(item)
-                || battleBowManager.isBattleBow(item) || battleBowManager.isBattleCrossbow(item) || battleSwordManager.isBattleSword(item)
-                || battlePickaxeManager.isBattlePickaxe(item) || battleTridentManager.isBattleTrident(item)
-                || battleSpearManager.isBattleSpear(item) || battleShovelManager.isBattleShovel(item) || superToolManager.isSuperTool(item);
+        return sickleManager.isSickle(item);
     }
 }

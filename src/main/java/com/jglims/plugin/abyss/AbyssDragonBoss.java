@@ -16,6 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -31,7 +32,7 @@ public class AbyssDragonBoss implements Listener {
 
     private static final double DRAGON_HP = 1500.0;
     private static final double DAMAGE_REDUCTION = 0.25;
-    private static final int ARENA_RADIUS = 40;
+    private static final int ARENA_RADIUS = 55;
     private static final long RESPAWN_COOLDOWN_MS = 30 * 60 * 1000; // 30 min
 
     private final JGlimsPlugin plugin;
@@ -509,6 +510,41 @@ public class AbyssDragonBoss implements Listener {
 
     // ==================== DAMAGE HANDLING ====================
 
+    // ==================== AUTO-TRIGGER ON ARENA ENTRY ====================
+    //
+    // Detects when a player steps into the Abyss arena and automatically
+    // awakens the dragon (respecting the respawn cooldown). Previously the
+    // fight could only be started via `/jglims boss ABYSS_DRAGON`, which
+    // caused players who walked into the arena to see only the stage,
+    // the wither skeleton guards, and the leftover gateway exit portal —
+    // no dragon.
+    //
+    // Performance: the event fires on every head rotation too, so we cheap
+    // out by bailing when the player's block coordinates don't change. The
+    // actual distance check is also cheap (no sqrt).
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerMoveIntoArena(PlayerMoveEvent event) {
+        if (fightActive) return;
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
+        Player player = event.getPlayer();
+        World abyss = dimensionManager.getAbyssWorld();
+        if (abyss == null || !player.getWorld().getName().equals(abyss.getName())) return;
+        // Cheap distance-squared check against arena center
+        int dx = event.getTo().getBlockX();
+        int dz = event.getTo().getBlockZ() - AbyssDimensionManager.ARENA_CENTER_Z;
+        int distSq = dx * dx + dz * dz;
+        int triggerRadius = ARENA_RADIUS - 2;
+        if (distSq > triggerRadius * triggerRadius) return;
+        // Cooldown check — silent abort (no spam)
+        long timeSinceLastFight = System.currentTimeMillis() - lastFightEnd;
+        if (timeSinceLastFight < RESPAWN_COOLDOWN_MS && lastFightEnd > 0) return;
+        // Everything checks out — summon the dragon
+        plugin.getLogger().info("[DragonBoss] Auto-trigger: " + player.getName() + " entered the arena.");
+        startFight(player);
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!fightActive || dragonModel == null) return;
@@ -663,14 +699,10 @@ public class AbyssDragonBoss implements Listener {
         abyss.dropItemNaturally(loc, new ItemStack(Material.DIAMOND, 16));
         abyss.dropItemNaturally(loc, new ItemStack(Material.EMERALD, 32));
 
-        // Exit portal
-        Location portalLoc = new Location(abyss, 0, loc.getBlockY(), AbyssDimensionManager.ARENA_CENTER_Z);
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                abyss.getBlockAt(portalLoc.getBlockX() + x, portalLoc.getBlockY(),
-                    portalLoc.getBlockZ() + z).setType(Material.END_GATEWAY);
-            }
-        }
+        // Exit portal — a single central gateway block (was 3x3 previously which
+        // looked like a scattered cluster in the arena floor)
+        abyss.getBlockAt(0, loc.getBlockY(), AbyssDimensionManager.ARENA_CENTER_Z)
+                .setType(Material.END_GATEWAY);
     }
 
     // ==================== UTILITIES ====================

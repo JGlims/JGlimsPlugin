@@ -2,8 +2,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [32, 32],
 	"textures": {
-		"0": "item/3d_totem",
-		"particle": "item/3d_totem"
+		"0": "item/totem_of_undying",
+		"particle": "item/totem_of_undying"
 	},
 	"elements": [
 		{
