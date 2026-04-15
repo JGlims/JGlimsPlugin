@@ -108,6 +108,13 @@ public abstract class CustomMobEntity {
                 .setBaseValue(effectiveHp);
         hitboxEntity.setHealth(effectiveHp);
 
+        // Scale hitbox to match the BetterModel visual size so players can
+        // actually hit large bosses and tiny mobs have sensible collision.
+        var scaleAttr = hitboxEntity.getAttribute(Attribute.SCALE);
+        if (scaleAttr != null) {
+            scaleAttr.setBaseValue(mobType.getHitboxScale());
+        }
+
         // Remove default equipment for zombies
         if (hitboxEntity.getEquipment() != null) {
             hitboxEntity.getEquipment().clear();

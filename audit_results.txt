@@ -1,0 +1,15 @@
+=== TEXTURE AUDIT RESULTS ===
+
+BROKEN REFERENCES (will show magenta):
+  (none)
+
+ORPHANED CASES (CMD in Java but no items/*.json case): 4
+  AbyssDimensionManager.java → setCustomModelData(9001) — no matching case in any items/*.json
+  InfinityStoneManager.java → setStrings("infinity_stone_") — no matching case in any items/*.json
+  InfinityStoneManager.java → setStrings("infinity_stone_") — no matching case in any items/*.json
+  PowerUpManager.java → setStrings("titan_resolve") — no matching case in any items/*.json
+
+STRUCTURAL ISSUES:
+  items/abyss_dragon.json — not a valid vanilla item ID, delete this file
+
+SUMMARY: 0 broken references, 4 orphaned cases, 1 structural issues
