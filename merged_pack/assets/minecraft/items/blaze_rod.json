@@ -1,22 +1,22 @@
 {
   "model": {
-    "type": "minecraft:select",
+    "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "scale": 1.0,
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/blaze_rod"
     },
-    "cases": [
+    "entries": [
       {
-        "when": 40010,
+        "threshold": 40010.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/wand_of_wands"
         }
       },
       {
-        "when": 42011,
+        "threshold": 42011.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/blaze_rod"

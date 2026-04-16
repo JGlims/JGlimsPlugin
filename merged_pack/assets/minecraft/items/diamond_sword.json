@@ -332,13 +332,6 @@
           "type": "minecraft:model",
           "model": "minecraft:item/whisperwind_awakened"
         }
-      },
-      {
-        "when": 42007,
-        "model": {
-          "type": "minecraft:model",
-          "model": "minecraft:item/diamond_sword"
-        }
       }
     ],
     "fallback": {

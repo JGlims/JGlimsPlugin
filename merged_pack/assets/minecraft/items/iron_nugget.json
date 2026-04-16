@@ -1,22 +1,22 @@
 {
   "model": {
-    "type": "minecraft:select",
+    "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "scale": 1.0,
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/iron_nugget"
     },
-    "cases": [
+    "entries": [
       {
-        "when": 41002,
+        "threshold": 41002.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/lunar_fragment"
         }
       },
       {
-        "when": 41011,
+        "threshold": 41011.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/tremor_scale"

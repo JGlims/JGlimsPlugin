@@ -1,32 +1,32 @@
 {
   "model": {
-    "type": "minecraft:select",
+    "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "scale": 1.0,
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/iron_sword"
     },
-    "cases": [
+    "entries": [
       {
-        "when": 50001,
-        "model": {
-          "type": "minecraft:model",
-          "model": "minecraft:item/vampire_claw"
-        }
-      },
-      {
-        "when": 42002,
+        "threshold": 42002.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/iron_sword"
         }
       },
       {
-        "when": 42008,
+        "threshold": 42008.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/raptor_gauntlet"
+        }
+      },
+      {
+        "threshold": 50001.0,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/vampire_claw"
         }
       }
     ]

@@ -1,39 +1,39 @@
 {
   "model": {
-    "type": "minecraft:select",
+    "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "scale": 1.0,
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/bone"
     },
-    "cases": [
+    "entries": [
       {
-        "when": 50002,
-        "model": {
-          "type": "minecraft:model",
-          "model": "minecraft:item/vampire_teeth"
-        }
-      },
-      {
-        "when": 41005,
+        "threshold": 41005.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/bear_claw"
         }
       },
       {
-        "when": 41007,
+        "threshold": 41007.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/basilisk_fang"
         }
       },
       {
-        "when": 41012,
+        "threshold": 41012.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/horn"
+        }
+      },
+      {
+        "threshold": 50002.0,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/vampire_teeth"
         }
       }
     ]

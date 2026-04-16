@@ -44,10 +44,12 @@ else:
     print("[sync] skipped (--offline); BetterModel overlays may be stale")
 
 if os.path.exists(OUT): os.remove(OUT)
+SKIP_EXT = (".bak", ".bak.removed", ".orig")
 count = 0
 with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
     for dp, _, files in os.walk(ROOT):
         for f in files:
+            if f.endswith(SKIP_EXT): continue
             full = os.path.join(dp, f)
             rel = os.path.relpath(full, ROOT).replace(os.sep, "/")
             z.write(full, rel)

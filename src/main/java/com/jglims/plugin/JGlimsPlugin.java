@@ -1,5 +1,6 @@
 package com.jglims.plugin;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -9,6 +10,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
@@ -19,6 +23,7 @@ import com.jglims.plugin.abyss.AbyssDragonBoss;
 import com.jglims.plugin.custommobs.CustomMobListener;
 import com.jglims.plugin.custommobs.CustomMobManager;
 import com.jglims.plugin.custommobs.CustomMobSpawnManager;
+import com.jglims.plugin.custommobs.CustomMobType;
 import com.jglims.plugin.custommobs.DropItemManager;
 import com.jglims.plugin.dimensions.AetherDimensionManager;
 import com.jglims.plugin.dimensions.DimensionPortalManager;
@@ -339,6 +344,8 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
             case "spawn" -> handleSpawnCommand(sender, args);
             case "boss" -> handleBossCommand(sender, args);
             case "werewolf" -> handleWerewolfCommand(sender, args);
+            case "testmob" -> handleTestMobCommand(sender, args);
+            case "testmodel" -> handleTestModelCommand(sender, args);
             case "help" -> {
                 sender.sendMessage(Component.text("=== JGlimsPlugin Commands ===", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
                 sender.sendMessage(Component.text("/jglims reload", NamedTextColor.YELLOW).append(Component.text(" - Reload config", NamedTextColor.GRAY)));
@@ -359,6 +366,8 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
                 sender.sendMessage(Component.text("/jglims tp <dimension>", NamedTextColor.YELLOW).append(Component.text(" - Teleport to a custom dimension (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims spawn <mob> [amount]", NamedTextColor.YELLOW).append(Component.text(" - Spawn a custom mob (OP)", NamedTextColor.GRAY)));
                 sender.sendMessage(Component.text("/jglims boss <name>", NamedTextColor.YELLOW).append(Component.text(" - Spawn a specific boss (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims testmodel <modelName>", NamedTextColor.YELLOW).append(Component.text(" - Debug: attach BetterModel to armor stand (OP)", NamedTextColor.GRAY)));
+                sender.sendMessage(Component.text("/jglims testmob <MOB_TYPE>", NamedTextColor.YELLOW).append(Component.text(" - Debug: spawn visible zombie + model (OP)", NamedTextColor.GRAY)));
             }
             case "vampire" -> handleVampireCommand(sender, args);
             case "quests" -> { if (sender instanceof Player player) questManager.showQuestProgress(player); else sender.sendMessage(Component.text("Only players can view quests.", NamedTextColor.RED)); }
@@ -853,13 +862,155 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  DEBUG / ISOLATION TEST COMMANDS (for BetterModel troubleshooting)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * /jglims testmodel <modelName> — attach a BetterModel renderer to a
+     * fresh ArmorStand at the player's crosshair. No CustomMobEntity, no
+     * invisibility, no scale attribute — the most isolated render test.
+     * Verbose console logging at every step so we can see exactly where
+     * (if) it fails.
+     */
+    private void handleTestModelCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players.", NamedTextColor.RED)); return; }
+        if (args.length < 2) { player.sendMessage(Component.text("Usage: /jglims testmodel <model_name>", NamedTextColor.YELLOW)); return; }
+        String modelName = args[1];
+        getLogger().info("[TestModel] ── START: model='" + modelName + "' requester=" + player.getName() + " ──");
+
+        Location loc;
+        try {
+            org.bukkit.block.Block target = player.getTargetBlockExact(30);
+            loc = (target != null ? target.getLocation().add(0.5, 1.0, 0.5) : player.getLocation());
+        } catch (Exception e) {
+            loc = player.getLocation();
+        }
+        getLogger().info("[TestModel] Spawning ArmorStand at " + loc.getWorld().getName() + " ["
+                + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + "]");
+
+        ArmorStand stand = (ArmorStand) loc.getWorld().spawnEntity(loc, EntityType.ARMOR_STAND);
+        stand.setInvulnerable(true);
+        stand.setGravity(false);
+        stand.setBasePlate(false);
+        stand.setSmall(false);
+        stand.customName(Component.text("TestModel: " + modelName, NamedTextColor.AQUA));
+        stand.setCustomNameVisible(true);
+        getLogger().info("[TestModel] ArmorStand spawned, UUID=" + stand.getUniqueId());
+
+        if (!Bukkit.getPluginManager().isPluginEnabled("BetterModel")) {
+            getLogger().warning("[TestModel] BetterModel plugin NOT enabled — aborting.");
+            player.sendMessage(Component.text("BetterModel not loaded!", NamedTextColor.RED));
+            return;
+        }
+        try {
+            java.util.Optional<kr.toxicity.model.api.data.renderer.ModelRenderer> renderer =
+                    kr.toxicity.model.api.BetterModel.model(modelName);
+            if (renderer.isEmpty()) {
+                getLogger().warning("[TestModel] BetterModel.model('" + modelName + "') returned empty — model NOT LOADED server-side.");
+                player.sendMessage(Component.text("Model not found: " + modelName, NamedTextColor.RED));
+                return;
+            }
+            getLogger().info("[TestModel] BetterModel.model() returned renderer — attaching...");
+            kr.toxicity.model.api.tracker.EntityTracker tracker = renderer.get().getOrCreate(
+                    kr.toxicity.model.api.bukkit.platform.BukkitAdapter.adapt(stand));
+            getLogger().info("[TestModel] EntityTracker created: " + (tracker != null ? "OK" : "NULL"));
+
+            try {
+                tracker.animate("idle", kr.toxicity.model.api.animation.AnimationModifier.builder()
+                        .type(kr.toxicity.model.api.animation.AnimationIterator.Type.LOOP).build());
+                getLogger().info("[TestModel] Started 'idle' animation.");
+            } catch (Exception animEx) {
+                getLogger().info("[TestModel] No 'idle' animation for model — " + animEx.getMessage());
+            }
+
+            player.sendMessage(Component.text("TestModel: armor stand + model '" + modelName
+                    + "' spawned. If it renders OK, the CustomMobEntity pipeline is the issue.", NamedTextColor.GREEN));
+            getLogger().info("[TestModel] ── END SUCCESS ──");
+        } catch (Throwable t) {
+            getLogger().severe("[TestModel] Exception: " + t.getClass().getSimpleName() + ": " + t.getMessage());
+            t.printStackTrace();
+            player.sendMessage(Component.text("Exception: " + t.getMessage(), NamedTextColor.RED));
+        }
+    }
+
+    /**
+     * /jglims testmob <MOB_TYPE> — spawn a zombie at the player's crosshair
+     * and attach the MobType's model WITHOUT setInvisible() and WITHOUT
+     * scale-attribute changes. Isolates invisibility+scale as variables.
+     */
+    private void handleTestMobCommand(CommandSender sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
+        if (!(sender instanceof Player player)) { sender.sendMessage(Component.text("Only players.", NamedTextColor.RED)); return; }
+        if (args.length < 2) { player.sendMessage(Component.text("Usage: /jglims testmob <MOB_TYPE>", NamedTextColor.YELLOW)); return; }
+        CustomMobType type;
+        try { type = CustomMobType.valueOf(args[1].toUpperCase()); }
+        catch (Exception e) { player.sendMessage(Component.text("Unknown MOB_TYPE: " + args[1], NamedTextColor.RED)); return; }
+
+        getLogger().info("[TestMob] ── START: type=" + type.name() + " model=" + type.getModelName() + " ──");
+
+        Location loc;
+        try {
+            org.bukkit.block.Block target = player.getTargetBlockExact(30);
+            loc = (target != null ? target.getLocation().add(0.5, 1.0, 0.5) : player.getLocation());
+        } catch (Exception e) {
+            loc = player.getLocation();
+        }
+        getLogger().info("[TestMob] Spawning base entity " + type.getBaseEntityType()
+                + " at " + loc.getWorld().getName() + " [" + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + "]");
+
+        LivingEntity hitbox = (LivingEntity) loc.getWorld().spawnEntity(loc, type.getBaseEntityType());
+        // DELIBERATELY do not call setInvisible(true), do not touch SCALE attribute.
+        hitbox.setInvulnerable(true);
+        hitbox.setSilent(true);
+        hitbox.customName(Component.text("TestMob: " + type.name(), NamedTextColor.AQUA));
+        hitbox.setCustomNameVisible(true);
+        if (hitbox.getEquipment() != null) hitbox.getEquipment().clear();
+        getLogger().info("[TestMob] Hitbox entity spawned, UUID=" + hitbox.getUniqueId()
+                + " invisible=" + hitbox.isInvisible() + " (expected false)");
+
+        if (!Bukkit.getPluginManager().isPluginEnabled("BetterModel")) {
+            getLogger().warning("[TestMob] BetterModel plugin NOT enabled.");
+            player.sendMessage(Component.text("BetterModel not loaded!", NamedTextColor.RED));
+            return;
+        }
+        try {
+            java.util.Optional<kr.toxicity.model.api.data.renderer.ModelRenderer> renderer =
+                    kr.toxicity.model.api.BetterModel.model(type.getModelName());
+            if (renderer.isEmpty()) {
+                getLogger().warning("[TestMob] Model '" + type.getModelName() + "' NOT LOADED server-side.");
+                player.sendMessage(Component.text("Model not found: " + type.getModelName(), NamedTextColor.RED));
+                return;
+            }
+            getLogger().info("[TestMob] Model resolved — attaching tracker...");
+            kr.toxicity.model.api.tracker.EntityTracker tracker = renderer.get().getOrCreate(
+                    kr.toxicity.model.api.bukkit.platform.BukkitAdapter.adapt(hitbox));
+            getLogger().info("[TestMob] EntityTracker created: " + (tracker != null ? "OK" : "NULL"));
+            try {
+                tracker.animate("idle", kr.toxicity.model.api.animation.AnimationModifier.builder()
+                        .type(kr.toxicity.model.api.animation.AnimationIterator.Type.LOOP).build());
+                getLogger().info("[TestMob] Playing 'idle'.");
+            } catch (Exception animEx) {
+                getLogger().info("[TestMob] idle animation missing — " + animEx.getMessage());
+            }
+            player.sendMessage(Component.text("TestMob spawned with model '" + type.getModelName()
+                    + "'. Base=" + type.getBaseEntityType() + ", no invisibility, no scale.", NamedTextColor.GREEN));
+            getLogger().info("[TestMob] ── END SUCCESS ──");
+        } catch (Throwable t) {
+            getLogger().severe("[TestMob] Exception: " + t.getClass().getSimpleName() + ": " + t.getMessage());
+            t.printStackTrace();
+            player.sendMessage(Component.text("Exception: " + t.getMessage(), NamedTextColor.RED));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  TAB COMPLETION
     // ═══════════════════════════════════════════════════════════════
 
     private static final java.util.List<String> SUBCOMMANDS = java.util.List.of(
             "reload", "stats", "enchants", "sort", "mastery", "legendary", "armor", "powerup",
             "bosstitles", "quests", "gauntlet", "abyss", "vampire", "menu", "guia", "help",
-            "locate", "tp", "spawn", "boss", "werewolf"
+            "locate", "tp", "spawn", "boss", "werewolf", "testmob", "testmodel"
     );
 
     private static final java.util.List<String> DIMENSIONS = java.util.List.of(
@@ -907,6 +1058,15 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
                 case "powerup" -> filterStarts(java.util.List.of("heart", "soul", "titan", "phoenix", "keep", "vitality", "berserker", "stats"), args[1]);
                 case "legendary" -> filterStarts(java.util.List.of("list", "COMMON", "RARE", "EPIC", "MYTHIC", "ABYSSAL"), args[1]);
                 case "armor" -> filterStarts(java.util.List.of("list", "set"), args[1]);
+                case "testmob" -> filterStarts(
+                        java.util.Arrays.stream(com.jglims.plugin.custommobs.CustomMobType.values())
+                                .map(Enum::name).toList(),
+                        args[1]);
+                case "testmodel" -> filterStarts(
+                        java.util.Arrays.stream(com.jglims.plugin.custommobs.CustomMobType.values())
+                                .map(com.jglims.plugin.custommobs.CustomMobType::getModelName)
+                                .distinct().toList(),
+                        args[1]);
                 default -> java.util.Collections.emptyList();
             };
         }

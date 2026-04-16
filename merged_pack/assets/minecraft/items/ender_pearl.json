@@ -1,22 +1,22 @@
 {
   "model": {
-    "type": "minecraft:select",
+    "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
-    "index": 0,
+    "scale": 1.0,
     "fallback": {
       "type": "minecraft:model",
       "model": "minecraft:item/ender_pearl"
     },
-    "cases": [
+    "entries": [
       {
-        "when": 41008,
+        "threshold": 41008.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/dark_essence"
         }
       },
       {
-        "when": 41009,
+        "threshold": 41009.0,
         "model": {
           "type": "minecraft:model",
           "model": "minecraft:item/void_essence"
