@@ -1,0 +1,28 @@
+# Schematic → Builder class name mapping.
+# Format: <schematic filename> -> <ClassName>
+# Excludes: duplicates, zero-dim broken files, structures over ~300K blocks.
+
+Ancient oak tree - (mcbuild_org).schematic -> AncientOakTree
+Big Tree - (mcbuild_org).schematic -> BigTree
+Cave House - (mcbuild_org).schematic -> CaveHouse
+Clock Tower - (mcbuild_org).schematic -> ClockTower
+Dark Mansion - (mcbuild_org).schematic -> DarkMansion
+Desert City - (mcbuild_org).schematic -> DesertCity
+Desert House - (mcbuild_org).schematic -> DesertHouse
+Giant Church - (mcbuild_org).schematic -> GiantChurch
+Great Library  - (mcbuild_org).schematic -> GreatLibrary
+Great Oak Tree with Spanish Moss - (mcbuild_org).schematic -> GreatOakTreeMoss
+Great Pyramid - (mcbuild_org).schematic -> GreatPyramid
+Japanese Pagoda - (mcbuild_org).schematic -> JapanesePagoda
+Jungle Temple - (mcbuild_org).schematic -> JungleTempleSchem
+Masive Aztec Pyramid - (mcbuild_org).schematic -> AztecPyramid
+Maya temple - (mcbuild_org).schematic -> MayaTemple
+Medieval Mine - (mcbuild_org).schematic -> MedievalMine
+Medieval Tavern Inn  - (mcbuild_org).schematic -> MedievalTavernInn
+Round Medieval House - (mcbuild_org).schematic -> RoundMedievalHouse
+Rustic Mott & Bailey - (mcbuild_org).schematic -> RusticMottBailey
+Small_Medium Castle - (mcbuild_org).schematic -> SmallMedievalCastle
+Stone Ruins - (mcbuild_org).schematic -> StoneRuinsSchem
+The Black Pearl - (mcbuild_org).schematic -> BlackPearlShip
+Tower of Gods - (mcbuild_org).schematic -> TowerOfGods
+Tree in Minecraft - (mcbuild_org).schematic -> TallTree

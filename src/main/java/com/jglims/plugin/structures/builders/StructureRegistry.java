@@ -123,6 +123,32 @@ public final class StructureRegistry {
         REGISTRY.put(StructureType.RAPTOR_NEST,           new RaptorNestBuilder());
         REGISTRY.put(StructureType.WATERING_HOLE,         new WateringHoleBuilder());
         REGISTRY.put(StructureType.NESTING_GROUND,        new NestingGroundBuilder());
+
+        // ── Schematic-imported structures ──────────────────────────────
+        REGISTRY.put(StructureType.ANCIENT_OAK_TREE,      new AncientOakTreeBuilder());
+        REGISTRY.put(StructureType.BIG_TREE,              new BigTreeBuilder());
+        REGISTRY.put(StructureType.TALL_TREE,             new TallTreeBuilder());
+        REGISTRY.put(StructureType.GREAT_OAK_TREE_MOSS,   new GreatOakTreeMossBuilder());
+        REGISTRY.put(StructureType.CAVE_HOUSE,            new CaveHouseBuilder());
+        REGISTRY.put(StructureType.CLOCK_TOWER,           new ClockTowerBuilder());
+        REGISTRY.put(StructureType.DARK_MANSION,          new DarkMansionBuilder());
+        REGISTRY.put(StructureType.DESERT_CITY,           new DesertCityBuilder());
+        REGISTRY.put(StructureType.DESERT_HOUSE,          new DesertHouseBuilder());
+        REGISTRY.put(StructureType.GIANT_CHURCH,          new GiantChurchBuilder());
+        REGISTRY.put(StructureType.GREAT_LIBRARY,         new GreatLibraryBuilder());
+        REGISTRY.put(StructureType.GREAT_PYRAMID,         new GreatPyramidBuilder());
+        REGISTRY.put(StructureType.JAPANESE_PAGODA,       new JapanesePagodaBuilder());
+        REGISTRY.put(StructureType.JUNGLE_TEMPLE_SCHEM,   new JungleTempleSchemBuilder());
+        REGISTRY.put(StructureType.AZTEC_PYRAMID,         new AztecPyramidBuilder());
+        REGISTRY.put(StructureType.MAYA_TEMPLE,           new MayaTempleBuilder());
+        REGISTRY.put(StructureType.MEDIEVAL_MINE,         new MedievalMineBuilder());
+        REGISTRY.put(StructureType.MEDIEVAL_TAVERN_INN,   new MedievalTavernInnBuilder());
+        REGISTRY.put(StructureType.ROUND_MEDIEVAL_HOUSE,  new RoundMedievalHouseBuilder());
+        REGISTRY.put(StructureType.RUSTIC_MOTT_BAILEY,    new RusticMottBaileyBuilder());
+        REGISTRY.put(StructureType.SMALL_MEDIEVAL_CASTLE, new SmallMedievalCastleBuilder());
+        REGISTRY.put(StructureType.STONE_RUINS_SCHEM,     new StoneRuinsSchemBuilder());
+        REGISTRY.put(StructureType.BLACK_PEARL_SHIP,      new BlackPearlShipBuilder());
+        REGISTRY.put(StructureType.TOWER_OF_GODS,         new TowerOfGodsBuilder());
     }
 
     private StructureRegistry() {}
