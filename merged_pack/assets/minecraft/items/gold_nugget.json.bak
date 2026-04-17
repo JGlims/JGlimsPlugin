@@ -1,0 +1,27 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/gold_nugget"
+    },
+    "cases": [
+      {
+        "when": 40005,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/vampire_ring"
+        }
+      },
+      {
+        "when": 42009,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/shark_tooth_necklace"
+        }
+      }
+    ]
+  }
+}

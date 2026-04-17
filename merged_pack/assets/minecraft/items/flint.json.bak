@@ -1,0 +1,27 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/flint"
+    },
+    "cases": [
+      {
+        "when": 41004,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/shark_tooth"
+        }
+      },
+      {
+        "when": 41006,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/raptor_claw"
+        }
+      }
+    ]
+  }
+}

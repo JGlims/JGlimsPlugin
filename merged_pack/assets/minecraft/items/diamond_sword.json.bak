@@ -1,0 +1,349 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "amethyst_shuriken",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/amethyst_shuriken"
+        }
+      },
+      {
+        "when": "revenants_gravescepter",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/revenants_gravescepter"
+        }
+      },
+      {
+        "when": "lycanbane",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lycanbane"
+        }
+      },
+      {
+        "when": "gloomsteel_katana",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/gloomsteel_katana"
+        }
+      },
+      {
+        "when": "revenants_gravecleaver",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/revenants_gravecleaver"
+        }
+      },
+      {
+        "when": "amethyst_greatblade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/amethyst_greatblade"
+        }
+      },
+      {
+        "when": "flamberge",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/flamberge"
+        }
+      },
+      {
+        "when": "crystal_frostblade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/crystal_frostblade"
+        }
+      },
+      {
+        "when": "demonslayers_greatsword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/demonslayers_greatsword"
+        }
+      },
+      {
+        "when": "vengeance_blade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/vengeance_blade"
+        }
+      },
+      {
+        "when": "oculus",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/oculus"
+        }
+      },
+      {
+        "when": "ancient_greatslab",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/ancient_greatslab"
+        }
+      },
+      {
+        "when": "spider_sword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/spider_sword"
+        }
+      },
+      {
+        "when": "aquantic_sacred_blade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/aquantic_sacred_blade"
+        }
+      },
+      {
+        "when": "royalchakram",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/royalchakram"
+        }
+      },
+      {
+        "when": "muramasa",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/muramasa"
+        }
+      },
+      {
+        "when": "windreaper",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/windreaper"
+        }
+      },
+      {
+        "when": "moonlight",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/moonlight"
+        }
+      },
+      {
+        "when": "talonbrand",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/talonbrand"
+        }
+      },
+      {
+        "when": "black_iron_greatsword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/black_iron_greatsword"
+        }
+      },
+      {
+        "when": "solstice",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/solstice"
+        }
+      },
+      {
+        "when": "grand_claymore",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/grand_claymore"
+        }
+      },
+      {
+        "when": "demons_blood_blade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/demons_blood_blade"
+        }
+      },
+      {
+        "when": "excalibur",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/excalibur"
+        }
+      },
+      {
+        "when": "requiem_of_hell",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/requiem_of_hell"
+        }
+      },
+      {
+        "when": "soul_collector",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/soul_collector"
+        }
+      },
+      {
+        "when": "valhakyra",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/valhakyra"
+        }
+      },
+      {
+        "when": "phantomguard_greatsword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/phantomguard_greatsword"
+        }
+      },
+      {
+        "when": "zenith",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/zenith"
+        }
+      },
+      {
+        "when": "dragon_sword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/dragon_sword"
+        }
+      },
+      {
+        "when": "nocturne",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/nocturne"
+        }
+      },
+      {
+        "when": "yoru",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/yoru"
+        }
+      },
+      {
+        "when": "tengens_blade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/tengens_blade"
+        }
+      },
+      {
+        "when": "edge_astral_plane",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/edge_astral_plane"
+        }
+      },
+      {
+        "when": "fallen_gods_spear",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/fallen_gods_spear"
+        }
+      },
+      {
+        "when": "nature_sword",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/nature_sword"
+        }
+      },
+      {
+        "when": "heavenly_partisan",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/heavenly_partisan"
+        }
+      },
+      {
+        "when": "soul_devourer",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/soul_devourer"
+        }
+      },
+      {
+        "when": "thousand_demon_daggers",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/thousand_demon_daggers"
+        }
+      },
+      {
+        "when": "star_edge",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/star_edge"
+        }
+      },
+      {
+        "when": "rivers_of_blood",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/rivers_of_blood"
+        }
+      },
+      {
+        "when": "dragon_slaying_blade",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/dragon_slaying_blade"
+        }
+      },
+      {
+        "when": "creation_splitter",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/creation_splitter"
+        }
+      },
+      {
+        "when": "requiem_awakened",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/requiem_awakened"
+        }
+      },
+      {
+        "when": "excalibur_awakened",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/excalibur_awakened"
+        }
+      },
+      {
+        "when": "creation_splitter_awakened",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/creation_splitter_awakened"
+        }
+      },
+      {
+        "when": "whisperwind_awakened",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/whisperwind_awakened"
+        }
+      },
+      {
+        "when": 42007,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/diamond_sword"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond_sword"
+    }
+  }
+}
