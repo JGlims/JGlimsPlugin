@@ -1,0 +1,242 @@
+JGLIMS PLUGIN — FULL PROJECT CONTEXT (2026-04-22)
+WHO I AM & WHAT I NEED
+I'm JGlims, building a massive Minecraft Paper 26.1.2 plugin called JGlimsPlugin v2.0.0 with 72 custom mobs, 72+ structures, 63 legendary weapons, 64 enchantments, 4 custom dimensions, vampire/werewolf systems, and BetterModel 3D model rendering. I use Claude Code (the CLI agent) to make changes to my codebase, build, deploy to my server, and test. I come to you (Claude Opus) to create detailed prompts and plans that I then paste into Claude Code.
+
+GitHub: https://github.com/JGlims/JGlimsPlugin
+
+SERVER & INFRASTRUCTURE
+CopyServer IP:          144.22.198.184 (Oracle Cloud free-tier ARM64 VM)
+SSH user:           ubuntu
+SSH key:            C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key
+Container:          mc-crossplay (Docker Compose, itzg/minecraft-server:latest)
+Server dir:         /home/ubuntu/minecraft-server/
+Plugin dir:         /home/ubuntu/minecraft-server/data/plugins/
+BetterModel models: /home/ubuntu/minecraft-server/data/plugins/BetterModel/models/ (63 .bbmodel files)
+BetterModel config: /home/ubuntu/minecraft-server/data/plugins/BetterModel/config.yml
+BetterModel pack:   /home/ubuntu/minecraft-server/data/plugins/BetterModel/pack/BetterModel-Pack.zip
+Resource pack web:  /var/www/resourcepack/JGlimsResourcePack-merged.zip (served by nginx port 8080)
+Resource pack URL:  http://144.22.198.184:8080/resourcepack/JGlimsResourcePack-merged.zip
+Current pack SHA1:  8e27932f130ca68dcf41adae7a673fca535879da
+docker-compose.yml: /home/ubuntu/minecraft-server/docker-compose.yml
+  Key env vars: TYPE=PAPER, VERSION=26.1.2, MEMORY=8G, ONLINE_MODE=false, MODE=creative,
+  OVERRIDE_SERVER_PROPERTIES=TRUE (critical — without this, SHA1 gets overwritten)
+Installed plugins:  BetterModel 3.0.0-SNAPSHOT-487, Chunky 1.4.40, JGlimsPlugin 2.0.0, SkinsRestorer 15.11.1
+Removed plugins:    Geyser, Floodgate (incompatible with Paper 26.1.x — Cloud command framework crash)
+LOCAL PROJECT STRUCTURE
+CopyJGlimsPlugin/                     repo root
+├── README.md                     single-source-of-truth project snapshot (very detailed)
+├── CLAUDE.md                     guidance file for Claude Code
+├── SCHEMATIC_LESSONS.md          block palette analysis from schematic conversion
+├── ANIMATION_GUIDE.md            BetterModel animation reference
+├── bbmodels/                     source .bbmodel files + .bak backups + _animator.py
+├── bbmodels_deploy/              staged .bbmodel output ready for SCP
+├── schematics/                   downloaded .schem/.schematic files for structure conversion
+├── just_to_make_sure/            PNGs user wants verified are in the resource pack
+├── JGlimsPlugin/                 Gradle project
+│   ├── build.gradle              Paper 26.1.2-alpha, Java 25, BetterModel compileOnly
+│   ├── build_rp.py               Python resource pack zip builder (ONLY way to build pack)
+│   ├── fix_items.py              audit/repair for items/*.json
+│   ├── schem_to_builder.py       schematic → Java StructureBuilder converter
+│   ├── merged_pack/              resource pack source files
+│   │   ├── pack.mcmeta           pack_format: 84, BetterModel overlays declared
+│   │   ├── assets/minecraft/items/*.json       58 item-model selector JSONs (1.21.4+ format)
+│   │   ├── assets/minecraft/models/item/*.json 379 model JSONs
+│   │   ├── assets/minecraft/textures/item/*.png 553 custom textures
+│   │   ├── bettermodel_legacy/   BetterModel overlay (format 22-45)
+│   │   └── bettermodel_modern/   BetterModel overlay (format 46-99)
+│   └── src/main/java/com/jglims/plugin/   all Java source (~240 files)
+│       ├── JGlimsPlugin.java     main class
+│       ├── custommobs/           72 mobs, CustomMobEntity, CustomMobType, CustomMobFactory
+│       ├── legendary/            63 weapons, 13 armor sets, Infinity items
+│       ├── structures/           72+ structures, StructureBuilder primitives, builders/
+│       ├── vampire/              VampireManager, VampireAbilityManager, VampireListener
+│       ├── werewolf/             WerewolfManager, WerewolfListener
+│       ├── enchantments/         64 custom enchantments
+│       ├── dimensions/           Abyss, Aether, Lunar, Jurassic
+│       ├── events/               Blood Moon, random world events
+│       ├── guilds/               guild system
+│       ├── menu/                 CreativeMenuManager (/jglims menu)
+│       ├── crafting/             15 crafted items, recipes
+│       ├── quests/               11 quest lines
+│       └── weapons/              SickleManager, SpearManager (battle weapons REMOVED)
+Build: cd JGlimsPlugin && ./gradlew build → JGlimsPlugin/build/libs/JGlimsPlugin-2.0.0.jar
+Pack:  python3 build_rp.py → JGlimsResourcePack.zip (NEVER use PowerShell Compress-Archive)
+DEPLOY PROTOCOL
+Copycd JGlimsPlugin && ./gradlew build
+python3 build_rp.py
+sha1sum JGlimsResourcePack.zip  # note NEW_SHA1
+scp -i <KEY> build/libs/JGlimsPlugin-2.0.0.jar ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/
+scp -i <KEY> JGlimsResourcePack.zip ubuntu@144.22.198.184:/tmp/rp.zip
+ssh -i <KEY> ubuntu@144.22.198.184 "sudo mv /tmp/rp.zip /var/www/resourcepack/JGlimsResourcePack-merged.zip && sudo chown www-data:www-data /var/www/resourcepack/JGlimsResourcePack-merged.zip"
+ssh -i <KEY> ubuntu@144.22.198.184 "sed -i 's|RESOURCE_PACK_SHA1: .*|RESOURCE_PACK_SHA1: <NEW_SHA1>|' /home/ubuntu/minecraft-server/docker-compose.yml"
+ssh -i <KEY> ubuntu@144.22.198.184 "cd /home/ubuntu/minecraft-server && docker compose down && docker compose up -d"
+sleep 70
+ssh -i <KEY> ubuntu@144.22.198.184 "docker logs mc-crossplay 2>&1 | tail -100"
+CRITICAL: Always use docker compose down && docker compose up -d (full recreate) because OVERRIDE_SERVER_PROPERTIES=TRUE only takes effect on fresh container creation, and the entrypoint overwrites SHA1 in server.properties otherwise.
+
+CURRENT STATE AS OF 2026-04-22 (WHAT'S WORKING & WHAT'S BROKEN)
+WORKING
+BetterModel 3D models load correctly — mob geometry renders (Godzilla, dragon, etc. show correct 3D shapes)
+Custom item textures work — legendary weapons in hotbar/inventory show custom art, not magenta
+Resource pack syncs — SHA1 issue was fixed by adding OVERRIDE_SERVER_PROPERTIES=TRUE to docker-compose.yml
+96 structure types registered and compile
+24 schematic structures converted via schem_to_builder.py
+BOM stripped from 93 model JSON files
+/jglims testmodel <name> and /jglims testmob <type> debug commands exist and work
+BetterModel config: follow-mob-invisibility: false set, 63 models loaded
+BROKEN — NEEDS FIXING
+1. Mob model TEXTURES are wrong (dark/black/incorrect colors) The 3D geometry loads but textures appear mostly black or with wrong coloring. The model shape is correct but the skin is broken. Likely cause: texture atlas in BetterModel's generated pack may not be properly merged into the resource pack, OR textures in .bbmodel files have issues. The models render — this is a texture/UV issue, not a model loading issue.
+
+2. Custom items lack 3D depth effect Custom weapon items look flat like paper when held. Vanilla swords have a subtle 3D layered look. Fix: change weapon model JSONs from "parent": "minecraft:item/generated" to "parent": "minecraft:item/handheld". Non-weapon items should stay as generated.
+
+3. Vampire abilities completely broken
+
+No ability slots appear
+No ability GUI appears
+No powers work at all (only maybe flight partially)
+Flight animation is wrong: shows sprinting + periodic lay-down instead of elytra gliding animation
+Fix for elytra animation: player.setGliding(true) AND cancel EntityToggleGlideEvent to prevent server from resetting glide state (confirmed working approach from SpigotMC forum)
+Vampires can still use legendary weapons and regular armor (they should be restricted)
+Level system overflow: items can be consumed beyond max (e.g., 44/20 uses)
+Progression too hard — reduce all thresholds by ~40-50%
+Max level (Dracula) should be EXTREMELY powerful — stronger than max gear player
+4. Vampire/Werewolf transformation requirements
+
+Both transformations should require the player to have a COMPLETELY EMPTY inventory (all 36 slots + 4 armor + offhand = 41 slots total must be empty)
+Show message "You must empty your entire inventory before transforming" if not empty
+After transformation, player can pick up items normally
+5. Werewolf system needs verification and rename
+
+The transformation item should be called "Moon Stone" (NOT "Werewolf Blood")
+Moon Stone drops from Blood Moon event boss
+Permanent one-time transformation
+Vampires blocked from becoming werewolves
+Moon Stone has NO texture yet (user will generate it with ChatGPT later)
+Verify all werewolf abilities actually work (wolf form toggle, night buffs, shadow wolf)
+6. /jglims menu is disorganized
+
+Missing items that should be there
+Still has Spear section (spear is vanilla, doesn't need a section)
+Still has Sickle section (sickle was a battle weapon type that was removed)
+Needs complete reorganization with clear categories and section headers
+7. Events too frequent
+
+Blood Moon happens too often — should be ~1% chance per night, or min 7-10 in-game day cooldown
+Pillager event too frequent — make rare AND only trigger near villages (within 200 blocks)
+Global cooldown: at least 30 real-time minutes between any two random events
+8. NPCs spawning everywhere
+
+Quest/friendly NPCs (Steve, Garrett, etc.) spawn randomly all over the map
+Should ONLY spawn near villages (within 100 blocks of a village structure)
+9. Guild system incomplete
+
+Needs all subcommands working: create, invite, join, leave, kick, disband, info, list
+Data must persist across restarts
+Proper permissions (only leader can kick/disband)
+Simple tab-completed commands
+10. Commands need simplification
+
+Tab completion for everything
+Clear help text with usage examples
+Short intuitive commands
+11. just_to_make_sure/ folder PNGs
+
+Contains PNGs the user wants verified are in the resource pack
+Check each PNG against merged_pack/assets/minecraft/textures/item/
+Copy any missing ones to the pack
+12. 30 structures still need rework
+
+CampingSmall (partially reworked — 27→70 ops), CampingLarge, AbandonedHouse, WitchHouseForest, WitchHouseSwamp, HouseTree, DruidsGrove, AllaySanctuary, Volcano, ThanosTemple, PillagerAirship, FrostDungeon, BanditHideout, SunkenRuins, CursedGraveyard, OgrinHut, FairyGlade, WerewolfDen, NecromancerDungeon, DragonkinTemple, AetherAncientRuins, InvaderlingOutpost, UndergroundHive, AlienCitadel, MeteorCrashSite, ObservationTower, LunarBase, RaptorNest, WateringHole, NestingGround
+Use rich material palettes, depth techniques, weathering, interiors, lighting
+Minimum operations: small ≥50, medium ≥150, large ≥300, massive ≥500
+13. Abyss Dragon model
+
+108 bones, ALL unnamed (name: None). 177 elements, 3 textures, 9 animations
+Requires manual Blockbench rework — cannot be auto-fixed
+Low priority — report only, don't attempt automated fix
+KEY TECHNICAL DETAILS
+Custom Model Data Format (Paper 26.1.2 / 1.21.4+)
+Items use minecraft:select in items/*.json:
+
+Copy{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "fallback": {"type": "minecraft:model", "model": "minecraft:item/diamond_sword"},
+    "cases": [
+      {"when": "excalibur", "model": {"type": "minecraft:model", "model": "minecraft:item/excalibur"}}
+    ]
+  }
+}
+"index": 0 is REQUIRED or Paper silently fails
+All files must be UTF-8 without BOM
+Legendary weapons use setStrings(List.of("weapon_id")) on CustomModelDataComponent
+Vampire/werewolf/drops use deprecated setCustomModelData(int) which sets floats[0]
+CMD Ranges
+Range	System
+30000-30099	Legendary weapons (strings)
+40001-40005	Vampire consumables (numeric/floats)
+41001-41013	Mob drop items
+42001-42015	Crafted items
+43001-43002	Werewolf items
+50001-50005	Vampire ability icons
+BetterModel Resource Pack Generation
+BetterModel auto-generates a resource pack at plugins/BetterModel/pack/BetterModel-Pack.zip on startup/reload. This contains texture atlases, model JSONs, and overlays. These MUST be merged into our main resource pack via build_rp.py. The command /bettermodel reload or bm reload via rcon forces regeneration.
+
+Elytra Glide Animation Trick (for vampire bat flight)
+To show elytra gliding animation without actual elytra:
+
+Call player.setGliding(true)
+Listen to EntityToggleGlideEvent and cancel it when the player should be gliding (prevents server from resetting the state)
+This shows the smooth horizontal glide pose instead of running animation
+Item 3D Depth
+"parent": "minecraft:item/handheld" = 3D held-out look (for swords/weapons)
+"parent": "minecraft:item/generated" = flat paper look (for materials/consumables)
+Weapons should use handheld, non-weapons should use generated
+IMPORTANT PROJECT HISTORY & LESSONS LEARNED
+NEVER use PowerShell Compress-Archive for the resource pack — it silently drops directories
+SHA1 mismatch was a persistent problem — the Docker entrypoint (mc-image-helper) overwrites server.properties SHA1. Fixed by adding OVERRIDE_SERVER_PROPERTIES=TRUE to docker-compose.yml
+Always use docker compose down && docker compose up -d (full recreate) not just restart, to ensure env vars take effect
+25 items/*.json files were missing "index": 0 — caused silent failures
+93 model JSON files had UTF-8 BOM — stripped in a previous session
+Battle weapons were removed (BattleAxeManager, BattleSwordManager, etc.) — legendary system replaced them
+Sickle is also a removed battle weapon type — should not appear in menus
+Spear is vanilla — doesn't need a custom section
+HP cap is 2048 — Paper hard limit on Attribute.MAX_HEALTH
+8 mob types have no model (exclusion list) — they function but are invisible by design
+SHARK mob was fully removed on 2026-04-11
+WHAT I NEED FROM YOU (CLAUDE OPUS)
+When I come to you, I typically need one of these things:
+
+Claude Code prompts — massive detailed instructions I paste into Claude Code after /clear so it knows exactly what to do. These must be extremely detailed, include file paths, SSH commands, deployment steps, and explicit verification requirements.
+
+NotebookLM prompts — instructions for Google's NotebookLM to analyze videos/documents and produce structured output (like building tutorials → block-by-block plans, or animation guides).
+
+Debugging help — analyzing screenshots, error logs, or code snippets to figure out what's wrong.
+
+Architecture planning — designing new systems, planning reworks, organizing large changes.
+
+When creating Claude Code prompts, always:
+
+Give 100% autonomous permission
+Include ALL file paths, SSH details, server info
+Require evidence for every claim (log outputs, file contents)
+Require deployment + verification after changes
+Include the deployment protocol
+Emphasize deep code reading BEFORE changes
+List explicit step-by-step instructions, not vague goals
+Include hard constraints (never PowerShell, always build_rp.py, HP cap 2048, etc.)
+EXECUTION PRIORITY FOR NEXT CLAUDE CODE SESSION
+Copy1. Verify just_to_make_sure/ PNGs (quick)
+2. Fix mob model textures (dark/black colors)
+3. Fix item 3D depth (handheld vs generated)
+4. Fix vampire system entirely (abilities, flight, levels, restrictions, transformation)
+5. Fix werewolf system (rename to Moon Stone, verify, transformation requirements)
+6. Fix /jglims menu (reorganize, remove dead sections)
+7. Fix event frequency (Blood Moon, Pillagers — make rare, village-only)
+8. Fix NPC spawning (village proximity only)
+9. Verify all schematic structures registered
+10. Fix guild system
+11. Simplify commands
+12. Rework 30 weak structures (batches of 5)
