@@ -1,0 +1,356 @@
+CLAUDE CODE ULTIMATE EXECUTION PROMPT — FULL PLUGIN RECOVERY
+Paste into Claude Code after /clear. This is the ONLY prompt you need.
+
+PRIME DIRECTIVE
+You are authorized to do ANYTHING autonomously. You have 100% permission to read, write, modify, delete, deploy, SSH, restart servers, rewrite entire systems. No asking for confirmation. No stopping to ask "should I proceed?" Just DO IT.
+
+Before you touch a single file, you MUST spend your first action doing a DEEP READ of the entire codebase structure. Read the README.md, CLAUDE.md, every Java package, every key class. Understand the architecture DEEPLY before making changes. Map out how systems connect. Then plan. Then execute.
+
+YOUR BEHAVIORAL RULES:
+
+THINK DEEPLY before acting. Read related files. Understand the WHY before changing the WHAT.
+NEVER claim something is "fixed" or "already implemented" without verifying it works. Read the actual code. Check the actual server logs.
+SHOW EVIDENCE for every claim. Paste file contents, log outputs, diff results.
+DEPLOY AND VERIFY after every major change. Don't batch 10 fixes and hope they all work.
+If your fix doesn't work, try a DIFFERENT approach. Don't repeat the same thing.
+Track your progress. After each fix, update a progress checklist so we know what's done.
+PROJECT CONTEXT
+CopyRepository:        https://github.com/JGlims/JGlimsPlugin
+Plugin:            JGlimsPlugin v2.0.0
+Minecraft:         Paper 26.1.2 (Java 25)
+BetterModel:       3.0.0-SNAPSHOT-487
+Server IP:         144.22.198.184
+SSH user:          ubuntu
+SSH key:           C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key
+Container:         mc-crossplay
+Server dir:        /home/ubuntu/minecraft-server/
+Plugin dir:        /home/ubuntu/minecraft-server/data/plugins/
+BetterModel models:/home/ubuntu/minecraft-server/data/plugins/BetterModel/models/
+BetterModel config:/home/ubuntu/minecraft-server/data/plugins/BetterModel/config.yml
+BetterModel pack:  /home/ubuntu/minecraft-server/data/plugins/BetterModel/pack/BetterModel-Pack.zip
+Resource pack web: /var/www/resourcepack/JGlimsResourcePack-merged.zip
+Pack SHA1:         8e27932f130ca68dcf41adae7a673fca535879da
+Pack sources:      JGlimsPlugin/merged_pack/
+Build command:     cd JGlimsPlugin && ./gradlew build
+Pack build:        python3 build_rp.py (NEVER PowerShell Compress-Archive)
+Schematics:        schematics/
+Verification PNGs: just_to_make_sure/
+PHASE 0 — DEEP CODEBASE UNDERSTANDING (DO THIS FIRST)
+Before ANY changes, read and understand:
+
+Copy1. README.md and CLAUDE.md — full project context
+2. JGlimsPlugin.java — main class, how systems initialize
+3. CustomMobEntity.java — how mobs spawn, attach BetterModel, invisibility
+4. CustomMobType.java — all 72 mob definitions
+5. LegendaryWeaponManager.java — how weapons set CustomModelData
+6. VampireManager.java — vampire transformation, items, levels
+7. VampireAbilityManager.java — ability system, slots, GUI
+8. VampireAbilityListener.java — ability activation
+9. VampireListener.java — day/night, consumption tracking
+10. WerewolfManager.java — infection, transformation, wolf form
+11. WerewolfListener.java — event wiring
+12. StructureType.java — all structure enum entries
+13. StructureRegistry.java — structure registration
+14. CreativeMenuManager.java — /jglims menu GUI
+15. At least 3 structure builder files to understand the pattern
+16. build_rp.py — how the resource pack is built
+17. _animator.py — how animations are generated
+18. At least 3 items/*.json files to understand the format
+19. At least 3 models/item/*.json files
+20. GuildManager or equivalent — guild system
+21. Event-related files — Blood Moon, random events, spawn rates
+After reading, produce a brief ARCHITECTURE SUMMARY showing how the systems connect. Then proceed to fixes.
+
+TASK 1 — FIX MOB MODEL TEXTURES (HIGH PRIORITY)
+Current state
+The 3D models ARE loading (geometry works — Godzilla, dragon, etc. render with correct shapes). But the TEXTURES on the models are wrong — they appear mostly black, dark, or with incorrect coloring. The model geometry is correct but the skin/texture is broken.
+
+What to investigate
+Read BetterModel's generated pack — check assets/bettermodel/textures/. Are the texture PNGs actually in the merged resource pack?
+Compare the texture atlas — BetterModel generates a texture atlas (often a.png or similar). Check if it's a valid image or corrupted.
+Check .bbmodel texture embedding — Open 3 .bbmodel files (e.g., godzilla.bbmodel, skeleton_knight.bbmodel, raptor.bbmodel). Check if textures are embedded as base64 source fields or if they reference external PNG files. If external, check those PNGs exist in BetterModel/models/ directory on the server.
+Check BetterModel logs during model load — SSH and grep for texture-related warnings:
+Copydocker logs mc-crossplay 2>&1 | grep -iE 'texture|atlas|image|png|bettermodel' | head -50
+Check if _animator.py damaged texture references — Read _animator.py and verify it does NOT modify the textures array or resolution field in .bbmodel files. If it does, that's the problem.
+Possible fixes
+If texture PNGs are missing from the pack → extract them from .bbmodel files and include them
+If the texture atlas is corrupted → force BetterModel reload to regenerate it
+If _animator.py stripped texture data → restore from .bak files or git history
+If textures are external and missing from server → SCP them to BetterModel/models/
+After fixing
+Deploy, restart, check logs for texture errors, ask user to test /jglims testmodel godzilla and verify textures look correct (not black).
+
+TASK 2 — CUSTOM ITEM 3D DEPTH EFFECT (MEDIUM PRIORITY)
+Current state
+Custom items (weapons with custom textures) look FLAT like paper when held. Vanilla swords/tools have a subtle 3D layered appearance. Custom items should have the same look.
+
+What to do
+The "3D layer" effect on items comes from the model JSON parent. Check the custom model JSONs in models/item/*.json:
+
+If they use "parent": "minecraft:item/generated" → This creates flat 2D items. This is correct for most items.
+
+If you want the 3D handheld look like swords → They need "parent": "minecraft:item/handheld" for tools/weapons that the player holds out in front.
+
+For each custom item model JSON:
+
+Legendary WEAPONS (swords, axes, maces, tridents, bows) → use "parent": "minecraft:item/handheld"
+Regular ITEMS (consumables, materials, misc) → keep "parent": "minecraft:item/generated"
+Write a Python script that:
+
+Reads every models/item/*.json
+Cross-references with LegendaryWeapon.java to identify which are weapons vs items
+Changes weapons to "parent": "minecraft:item/handheld" if they aren't already
+Leaves non-weapons as "parent": "minecraft:item/generated"
+Rebuild pack after.
+
+TASK 3 — FIX VAMPIRE SYSTEM (HIGH PRIORITY)
+3A — Vampire Abilities Not Showing
+Read VampireAbilityManager.java and VampireAbilityListener.java completely. The user reports:
+
+No custom ability slots appear
+No ability GUI appears
+No powers work (except maybe fly)
+Find WHERE abilities are supposed to appear (inventory slots? custom GUI? hotbar items?). Check if the ability registration code actually runs. Add debug logging if needed. Fix whatever is broken.
+
+3B — Vampire Flight Animation
+The vampire bat form flight currently shows the player running/sprinting animation with periodic lying down. It should show the ELYTRA gliding animation.
+
+In the code that handles bat form flight:
+
+When enabling flight, also set the player's gliding state: player.setGliding(true)
+You may need to give the player an elytra in their chestplate slot (invisible/unbreakable) to trigger the glide animation, or use Paper's API to force the elytra flight pose
+Research how to force elytra animation on Paper 26.1.2 without actual elytra — this might require setting the entity metadata flag for elytra flying
+3C — Vampire Level System Overflow
+The user reports being able to use vampire items beyond the maximum (e.g., 44/20 uses).
+
+Find the consumption tracking code in VampireListener.java or VampireManager.java. There should be a counter that tracks usage. Fix:
+
+Before incrementing, check if currentUses >= maxUses → if so, reject the consumption with a message
+Never allow the counter to exceed the max
+When max is reached, show a message like "You have reached the maximum benefit from this item"
+3D — Vampire Level Balance
+Make progression easier. Read the current thresholds for each vampire level (Fledgling → Vampire → Elder Vampire → Vampire Lord → Dracula). Reduce all thresholds by approximately 40-50%. For example if Vampire requires 20 blood uses, reduce to 10-12.
+
+3E — Vampire Max Level Power
+At Dracula level, the vampire should be EXTREMELY powerful — stronger than a player with max upgrades and max abyssal gear. Ensure:
+
+Massive stat bonuses (strength, speed, resistance)
+All 5 ability slots active with strongest versions
+Night-time buffs should be very significant
+Dracula-level vampire should feel like a boss mob in player form
+3F — Vampire Weapon/Item Restrictions
+Currently vampires can use everything normally. Fix:
+
+Vampires CANNOT use legendary weapons (they have their own vampire weapons/abilities)
+Vampires CANNOT wear regular armor (they have vampire armor or innate defense)
+When a vampire tries to equip a restricted item, cancel the event and show a message: "Vampires cannot use mortal weapons"
+Vampire-specific items (blood, evolver, abilities) work normally
+3G — Transformation Requirements
+For BOTH vampire and werewolf transformation:
+
+Before allowing transformation, check that the player's ENTIRE inventory is empty (all 36 slots + armor slots + offhand)
+If not empty, show message: "You must empty your entire inventory before transforming"
+After transformation completes, the player can pick up items again normally
+TASK 4 — FIX WEREWOLF SYSTEM (MEDIUM PRIORITY)
+Current state
+Werewolf transformation requires a Moon Stone (NOT "Werewolf Blood"). The Moon Stone:
+
+Drops from the Blood Moon event boss
+Is a one-time-use consumable
+Permanently transforms the player into a werewolf
+Cannot be used if the player is already a vampire
+Does NOT have a texture yet (user will provide later)
+Verify and fix:
+
+Read WerewolfManager.java — check if the transformation item is called "Moon Stone" or "Werewolf Blood". If it's "Werewolf Blood", rename it to "Moon Stone" everywhere (display name, internal references, lore text)
+Verify the Moon Stone drops from Blood Moon boss kills
+Verify the transformation is permanent and one-way
+Verify vampires are blocked from becoming werewolves
+Apply the same inventory-empty requirement as vampires (Task 3G)
+Verify werewolf abilities work (wolf form toggle, night buffs, shadow wolf)
+TASK 5 — VERIFY & COMPLETE SCHEMATIC STRUCTURES (MEDIUM PRIORITY)
+What to check
+List ALL files in schematics/ folder
+For each schematic, verify there is a corresponding builder class in structures/builders/
+For each builder, verify it's registered in StructureType enum and StructureRegistry
+Compile and confirm no errors
+Count: how many schematics exist vs how many are converted and registered?
+If any schematics are NOT converted, convert them using schem_to_builder.py
+Report the status as a table:
+Copy| Schematic File | Builder Class | Registered | Status |
+|---------------|--------------|------------|--------|
+| castle1.schem | Castle1Builder | Yes | OK |
+| temple.schem  | (missing)    | No         | NEEDS WORK |
+TASK 6 — REWORK WEAK STRUCTURES (LOWER PRIORITY — DO AFTER TASKS 1-5)
+The 30 structure candidates that need rework (from README): CampingSmall, CampingLarge, AbandonedHouse, WitchHouseForest, WitchHouseSwamp, HouseTree, DruidsGrove, AllaySanctuary, Volcano, ThanosTemple, PillagerAirship, FrostDungeon, BanditHideout, SunkenRuins, CursedGraveyard, OgrinHut, FairyGlade, WerewolfDen, NecromancerDungeon, DragonkinTemple, AetherAncientRuins, InvaderlingOutpost, UndergroundHive, AlienCitadel, MeteorCrashSite, ObservationTower, LunarBase, RaptorNest, WateringHole, NestingGround.
+
+For each, follow the SCHEMATIC_LESSONS.md techniques. Minimum standards per size:
+
+Small (<20×20): ≥50 operations, ≥5 materials, furnished interior, 1+ chest, lighting
+Medium (20-40): ≥150 operations, ≥8 materials, detailed walls with depth, 2+ chests
+Large (40-60): ≥300 operations, ≥12 materials, multiple rooms, weathering, 3+ chests
+Massive (>60): ≥500 operations, ≥15 materials, complex architecture, boss spawn, 5+ chests
+Material palettes by theme (DO NOT use stone_bricks for everything):
+
+Medieval: stone_bricks, mossy_stone_bricks, cobblestone, oak/dark_oak/spruce planks, stripped_logs, deepslate_bricks
+Gothic: deepslate_tiles, polished_blackstone_bricks, crying_obsidian, chain, soul_lantern
+Nether: red_nether_bricks, blackstone, magma_blocks, basalt, crimson/warped planks
+Ruins: cracked_stone_bricks, mossy_cobblestone, cobwebs, dead_bush
+Fairy: amethyst_block, calcite, cherry_planks, pink_petals, flowering_azalea, sea_lanterns
+Ice: packed_ice, blue_ice, snow_block, prismarine, light_blue_stained_glass
+Alien: end_stone_bricks, purpur_block, purpur_pillar, sea_lanterns
+Jurassic: coarse_dirt, podzol, moss_block, packed_mud, bamboo_planks, mangrove_roots
+Desert: sandstone, smooth_sandstone, cut_sandstone, terracotta
+Witch: dark_oak, mangrove, cauldrons, brewing_stands, mushroom_blocks, cobwebs
+Compile every 5 structures. Deploy after all 30 are done.
+
+TASK 7 — FIX JGLIMS MENU (MEDIUM PRIORITY)
+Current problems
+Menu is disorganized
+Missing items that should be there
+Still has Spear and Sickle sections (these were removed — Sickle is a battle weapon that was deleted, Spear is vanilla)
+What to do
+Read CreativeMenuManager.java completely
+Remove the Spear section entirely
+Remove the Sickle section entirely
+Organize items into clear categories:
+Legendary Weapons (all 63, organized by tier: Common → Uncommon → Rare → Epic → Mythic)
+Armor Sets (all 13 sets)
+Vampire Items (blood, evolver, superblood, ring, abilities)
+Werewolf Items (Moon Stone, ability item)
+Mob Drops (all 13 drop items)
+Crafted Items (all 15)
+Power-ups (all 7)
+Infinity Items (6 stones + gauntlet)
+Dimension Keys (Abyss, Aether, Lunar, Jurassic portal items)
+Miscellaneous (Wand of Wands, blessings, enchantment books)
+Each section should have a clear header/divider item (stained glass pane with section name)
+All items must be present — cross-reference with Java enums to ensure completeness
+Use multiple pages if needed (6 rows × 9 columns = 54 slots per page)
+TASK 8 — FIX EVENT FREQUENCY & NPC SPAWNING (MEDIUM PRIORITY)
+Events too frequent
+Read the event system code (likely in events/ package or mobs/ package)
+Find Blood Moon trigger frequency — make it MUCH rarer (e.g., 1% chance per night, or once every 7-10 in-game days minimum)
+Find Pillager event frequency — make it rare AND only trigger near villages (check if there's a village within 200 blocks)
+All random events should have a global cooldown of at least 30 real-time minutes between any two events
+NPCs spawning everywhere
+NPCs like Steve, Garrett, etc. (friendly/quest NPCs) should ONLY spawn near villages:
+
+Find the NPC spawn code
+Add a village proximity check: only spawn if there's a village structure within 100 blocks
+If no village nearby, cancel the spawn
+TASK 9 — FIX GUILD SYSTEM (LOWER PRIORITY)
+Read the entire guild system code
+Verify all subcommands work: create, invite, join, leave, kick, disband, info, list
+Ensure guild data persists across server restarts (saved to file/database)
+Ensure proper permission checks (only leader can kick/disband, only members can leave, etc.)
+Add missing features if any core functionality is broken
+Make commands simple: /guild create MyGuild, /guild invite PlayerName, etc.
+Tab completion for all subcommands
+TASK 10 — SIMPLIFY COMMANDS (LOWER PRIORITY)
+Review all /jglims subcommands. Ensure:
+
+Tab completion works for everything
+Help text is clear and shows usage
+Error messages are helpful (not just "invalid command")
+Common commands are short (e.g., /jglims spawn godzilla not /jglims custommob spawn GODZILLA 1)
+Player-facing commands are intuitive
+TASK 11 — VERIFY just_to_make_sure/ FOLDER (DO EARLY)
+List all PNG files in the just_to_make_sure/ folder
+For each PNG, check if an identical or similar file exists in merged_pack/assets/minecraft/textures/item/
+If a PNG is MISSING from the pack, copy it to the correct location
+If a PNG exists but differs (different file), compare sizes and report
+After adding any missing PNGs, rebuild the pack
+DEPLOYMENT PROTOCOL
+Copy# Build plugin
+cd JGlimsPlugin && ./gradlew build
+echo "BUILD: $?"
+
+# Build resource pack  
+python3 build_rp.py
+NEW_SHA1=$(sha1sum JGlimsResourcePack.zip | cut -d' ' -f1)
+echo "SHA1: $NEW_SHA1"
+
+# Upload JAR + Pack
+scp -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" \
+    build/libs/JGlimsPlugin-2.0.0.jar \
+    ubuntu@144.22.198.184:/home/ubuntu/minecraft-server/data/plugins/
+
+scp -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" \
+    JGlimsResourcePack.zip ubuntu@144.22.198.184:/tmp/rp.zip
+
+# Install + update SHA1 + restart
+ssh -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" \
+    ubuntu@144.22.198.184 << EOF
+sudo mv /tmp/rp.zip /var/www/resourcepack/JGlimsResourcePack-merged.zip
+sudo chown www-data:www-data /var/www/resourcepack/JGlimsResourcePack-merged.zip
+sed -i "s|RESOURCE_PACK_SHA1: .*|RESOURCE_PACK_SHA1: $NEW_SHA1|" /home/ubuntu/minecraft-server/docker-compose.yml
+cd /home/ubuntu/minecraft-server && docker compose down && docker compose up -d
+EOF
+
+# Wait and verify
+sleep 70
+ssh -i "C:\Users\jgmel\Documents\projects\server_minecraft\ssh-key-2026-02-25.key" \
+    ubuntu@144.22.198.184 \
+    "docker logs mc-crossplay 2>&1 | tail -100"
+Copy
+ALWAYS use docker compose down && docker compose up -d (full recreate, not just restart) to ensure OVERRIDE_SERVER_PROPERTIES takes effect.
+
+ALWAYS paste the last 100 lines of logs after every deploy.
+
+HARD CONSTRAINTS
+NEVER use PowerShell Compress-Archive — only python3 build_rp.py
+NEVER modify .bbmodel outliner/elements/textures — only animations via _animator.py
+NEVER claim "fixed" without log evidence or code proof
+ALL items/*.json: UTF-8 no BOM, "index": 0, valid JSON
+HP cap 2048 for all mobs
+Back up files as .bak before modifying
+CMD ranges: legendary 30000-30099, vampire 40001-40005, drops 41001-41013, crafted 42001-42015, werewolf 43001-43002, vampire icons 50001-50005
+Moon Stone (werewolf item) has NO texture yet — keep it as vanilla base material appearance
+Compile after every 5 structure reworks
+The vampire max level (Dracula) must be EXTREMELY powerful
+EXECUTION ORDER
+CopyPHASE 0: Deep codebase read (30 min)
+  → Architecture summary
+  → Identify all broken systems
+
+TASK 11: Verify just_to_make_sure/ PNGs (quick — 5 min)
+
+TASK 1: Fix mob model textures (black/wrong colors)
+  → Investigate texture atlas
+  → Fix and deploy
+  → VERIFY with logs + ask user to test
+
+TASK 2: Fix item 3D depth effect
+  → Update model JSON parents
+  → Rebuild pack, deploy
+
+TASK 3: Fix vampire system (all sub-tasks 3A through 3G)
+  → Abilities, flight, levels, restrictions, transformation
+  → Deploy and verify
+
+TASK 4: Fix werewolf system
+  → Rename to Moon Stone, verify functionality
+  → Deploy and verify
+
+TASK 7: Fix menu
+  → Remove dead sections, reorganize
+  → Deploy
+
+TASK 8: Fix event frequency + NPC spawning
+  → Reduce rates, add village proximity
+  → Deploy
+
+TASK 5: Verify schematic structures
+  → Report status table
+  → Convert any missing schematics
+
+TASK 9: Fix guild system
+TASK 10: Simplify commands
+
+TASK 6: Rework 30 weak structures (do in batches of 5)
+  → Compile after each batch
+  → Deploy after all 30
+
+FINAL: Full deploy, full log verification, progress report
+START NOW. Phase 0 — read the codebase deeply. Then proceed through tasks in order. GO.
