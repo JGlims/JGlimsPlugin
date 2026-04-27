@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -156,6 +157,63 @@ public class VampireListener implements Listener {
         }
     }
 
+    // ── Legendary Weapon Restriction ───────────────────────────────────
+
+    /**
+     * Block vampires from using legendary weapons (primary-hand interact).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVampireInteractWithLegendary(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        Player player = event.getPlayer();
+        if (!manager.isVampire(player)) return;
+        ItemStack held = event.getItem();
+        if (held == null) return;
+        if (plugin.getLegendaryWeaponManager() == null) return;
+        if (plugin.getLegendaryWeaponManager().isLegendary(held)) {
+            event.setCancelled(true);
+            player.sendActionBar(Component.text("Vampires cannot wield mortal weapons",
+                    NamedTextColor.DARK_RED));
+        }
+    }
+
+    /**
+     * Block vampires from landing hits with legendary weapons.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVampireAttackWithLegendary(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) return;
+        if (!manager.isVampire(player)) return;
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (plugin.getLegendaryWeaponManager() == null) return;
+        if (plugin.getLegendaryWeaponManager().isLegendary(held)) {
+            event.setCancelled(true);
+            player.sendActionBar(Component.text("Vampires cannot wield mortal weapons",
+                    NamedTextColor.DARK_RED));
+        }
+    }
+
+    // ── Tip on Join ────────────────────────────────────────────────────
+
+    @EventHandler
+    public void onVampireJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (!manager.isVampire(player)) return;
+        org.bukkit.NamespacedKey shownKey = new org.bukkit.NamespacedKey(plugin, "vampire_tip_shown");
+        var pdc = player.getPersistentDataContainer();
+        if (pdc.has(shownKey, org.bukkit.persistence.PersistentDataType.BYTE)) return;
+        pdc.set(shownKey, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.sendMessage(Component.text("Tip: sneak + swap-hands (F) to open your vampire ability menu.",
+                        NamedTextColor.GOLD));
+                player.sendMessage(Component.text("Or run: /jglims vampire " + player.getName() + " abilities",
+                        NamedTextColor.GRAY));
+            }
+        }.runTaskLater(plugin, 40L);
+    }
+
     // ── Potion Restriction ─────────────────────────────────────────────
 
     /**
@@ -285,16 +343,15 @@ public class VampireListener implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.WATER_BREATHING,
                 100, 0, false, false, false));
 
-        // DRACULA endgame buffs
+        // DRACULA endgame buffs — boss-tier power at night
         if (level == VampireLevel.DRACULA) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 2, false, false, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 0, false, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 1, false, false, false));
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 1, false, false, false));
-            // Ring holders get bonus haste for mining/crafting flair
-            VampireState draculaState = manager.getOrCreateState(player.getUniqueId());
-            if (draculaState.hasVampireRing()) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1, false, false, false));
-            }
+            // Haste always at Dracula tier (previously ring-gated)
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 100, 1, false, false, false));
+            // Large max-HP bonus + damage-absorption via attribute (handled elsewhere via attribute modifiers)
+            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 200, 2, false, false, false));
         }
 
         // Dracula flight — creative-mode flying for max-level vampires

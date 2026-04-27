@@ -640,7 +640,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
     private void handleVampireCommand(CommandSender sender, String[] args) {
         if (!sender.isOp()) { sender.sendMessage(Component.text("You need OP to use this command.", NamedTextColor.RED)); return; }
         if (args.length < 3) {
-            sender.sendMessage(Component.text("Usage: /jglims vampire <player> <set|remove|info|reset|essence>", NamedTextColor.YELLOW));
+            sender.sendMessage(Component.text("Usage: /jglims vampire <player> <set|remove|info|reset|essence|abilities>", NamedTextColor.YELLOW));
             return;
         }
         Player target = getServer().getPlayer(args[1]);
@@ -677,7 +677,15 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
                 target.getInventory().addItem(vampireManager.createVampireEssence());
                 sender.sendMessage(Component.text("Gave Vampire Essence to " + target.getName(), NamedTextColor.GREEN));
             }
-            default -> sender.sendMessage(Component.text("Unknown sub: set, remove, info, reset, essence", NamedTextColor.RED));
+            case "abilities", "gui", "menu" -> {
+                if (!vampireManager.isVampire(target)) {
+                    sender.sendMessage(Component.text(target.getName() + " is not a vampire.", NamedTextColor.RED));
+                    return;
+                }
+                vampireAbilityManager.openAbilityGui(target);
+                sender.sendMessage(Component.text("Opened vampire ability GUI for " + target.getName(), NamedTextColor.GREEN));
+            }
+            default -> sender.sendMessage(Component.text("Unknown sub: set, remove, info, reset, essence, abilities", NamedTextColor.RED));
         }
     }
 
@@ -843,7 +851,7 @@ public class JGlimsPlugin extends JavaPlugin implements TabCompleter, Listener {
             case "blood" -> {
                 if (!(sender instanceof Player p)) { sender.sendMessage(Component.text("Player only.", NamedTextColor.RED)); return; }
                 p.getInventory().addItem(werewolfManager.createWerewolfBlood());
-                p.sendMessage(Component.text("Received: Werewolf Blood", NamedTextColor.DARK_RED));
+                p.sendMessage(Component.text("Received: Moon Stone", NamedTextColor.LIGHT_PURPLE));
             }
             case "infect" -> {
                 Player target = (args.length >= 3) ? getServer().getPlayer(args[2])

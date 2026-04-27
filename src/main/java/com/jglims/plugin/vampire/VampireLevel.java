@@ -16,7 +16,7 @@ public enum VampireLevel {
     VAMPIRE_LORD("Vampire Lord", TextColor.color(240, 10, 10),
             20, 24, 25, 1.8, 1.4, 0.85, 8.0),
     DRACULA("Dracula", TextColor.color(100, 0, 0),
-            25, 32, 40, 2.0, 1.5, 0.9, 12.0);
+            40, 50, 60, 2.5, 1.8, 0.95, 20.0);
 
     private final String displayName;
     private final TextColor color;

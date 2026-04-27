@@ -63,11 +63,27 @@ public class VampireManager {
             return;
         }
 
+        // Block werewolves from becoming vampires (symmetrical guard).
+        if (plugin.getWerewolfManager() != null && plugin.getWerewolfManager().isWerewolf(player)) {
+            player.sendMessage(Component.text("Your wolf blood rejects the vampire curse.",
+                    NamedTextColor.RED));
+            return;
+        }
+
         // Check: player must have empty armor slots
         if (!isArmorEmpty(player)) {
             player.sendMessage(Component.text("Remove ALL armor before transforming!",
                     NamedTextColor.RED));
             return;
+        }
+
+        // Check: player must have empty main inventory + offhand.
+        for (ItemStack it : player.getInventory().getContents()) {
+            if (it != null && it.getType() != Material.AIR) {
+                player.sendMessage(Component.text("You must empty your entire inventory before transforming.",
+                        NamedTextColor.RED));
+                return;
+            }
         }
 
         // Wipe existing plugin buffs
@@ -92,6 +108,10 @@ public class VampireManager {
         player.sendMessage(Component.text("All previous buffs have been wiped.",
                 NamedTextColor.GRAY));
         player.sendMessage(Component.text("Your only weapons are now your vampire abilities.",
+                NamedTextColor.GRAY));
+        player.sendMessage(Component.text("Tip: sneak + swap-hands (F) to open your ability menu.",
+                NamedTextColor.GOLD));
+        player.sendMessage(Component.text("Or run: /jglims vampire " + player.getName() + " abilities",
                 NamedTextColor.GRAY));
         player.sendMessage(Component.text(""));
 
@@ -150,12 +170,17 @@ public class VampireManager {
     public void consumeBlood(Player player) {
         VampireState state = getOrCreateState(player.getUniqueId());
         if (!state.isVampire()) return;
+        if (state.getBloodConsumed() >= 50) {
+            player.sendMessage(Component.text("Your body is saturated with blood. (50/50)",
+                    NamedTextColor.YELLOW));
+            return;
+        }
 
         state.setBloodConsumed(state.getBloodConsumed() + 1);
         VampireLevel oldLevel = state.getLevel();
         state.recalculateLevel();
 
-        player.sendMessage(Component.text("Blood consumed! (" + state.getBloodConsumed() + "/100)",
+        player.sendMessage(Component.text("Blood consumed! (" + state.getBloodConsumed() + "/50)",
                 NamedTextColor.DARK_RED));
 
         if (state.getLevel() != oldLevel) {
@@ -177,7 +202,7 @@ public class VampireManager {
     public void consumeEvolver(Player player) {
         VampireState state = getOrCreateState(player.getUniqueId());
         if (!state.isVampire()) return;
-        if (state.getEvolversConsumed() >= 20) {
+        if (state.getEvolversConsumed() >= 10) {
             player.sendMessage(Component.text("You have consumed the maximum evolvers!",
                     NamedTextColor.YELLOW));
             return;
@@ -187,7 +212,7 @@ public class VampireManager {
         VampireLevel oldLevel = state.getLevel();
         state.recalculateLevel();
 
-        player.sendMessage(Component.text("Evolver consumed! (" + state.getEvolversConsumed() + "/20)",
+        player.sendMessage(Component.text("Evolver consumed! (" + state.getEvolversConsumed() + "/10)",
                 NamedTextColor.DARK_PURPLE));
 
         if (state.getLevel() != oldLevel) {
@@ -205,13 +230,18 @@ public class VampireManager {
     public void consumeSuperBlood(Player player) {
         VampireState state = getOrCreateState(player.getUniqueId());
         if (!state.isVampire()) return;
+        if (state.getSuperBloodConsumed() >= 3) {
+            player.sendMessage(Component.text("You have reached the pinnacle of the curse. (3/3)",
+                    NamedTextColor.YELLOW));
+            return;
+        }
 
         state.setSuperBloodConsumed(state.getSuperBloodConsumed() + 1);
         VampireLevel oldLevel = state.getLevel();
         state.recalculateLevel();
 
         player.sendMessage(Component.text("Super Blood consumed! ("
-                + state.getSuperBloodConsumed() + "/5)", NamedTextColor.DARK_RED));
+                + state.getSuperBloodConsumed() + "/3)", NamedTextColor.DARK_RED));
 
         if (state.getLevel() != oldLevel) {
             announceEvolution(player, state.getLevel());
@@ -399,9 +429,9 @@ public class VampireManager {
         }
         viewer.sendMessage(Component.text("Level: ", NamedTextColor.GRAY)
                 .append(Component.text(state.getLevel().getDisplayName(), state.getLevel().getColor())));
-        viewer.sendMessage(Component.text("Blood: " + state.getBloodConsumed() + "/100", NamedTextColor.GRAY));
-        viewer.sendMessage(Component.text("Evolvers: " + state.getEvolversConsumed() + "/20", NamedTextColor.GRAY));
-        viewer.sendMessage(Component.text("Super Blood: " + state.getSuperBloodConsumed() + "/5", NamedTextColor.GRAY));
+        viewer.sendMessage(Component.text("Blood: " + state.getBloodConsumed() + "/50", NamedTextColor.GRAY));
+        viewer.sendMessage(Component.text("Evolvers: " + state.getEvolversConsumed() + "/10", NamedTextColor.GRAY));
+        viewer.sendMessage(Component.text("Super Blood: " + state.getSuperBloodConsumed() + "/3", NamedTextColor.GRAY));
         viewer.sendMessage(Component.text("Ring: " + (state.hasVampireRing() ? "Yes" : "No"), NamedTextColor.GRAY));
         viewer.sendMessage(Component.text("Claw Dmg: " + String.format("%.1f", state.getEffectiveClawDamage()), NamedTextColor.GRAY));
         viewer.sendMessage(Component.text("Sun Immune: " + state.isSunImmune(), NamedTextColor.GRAY));

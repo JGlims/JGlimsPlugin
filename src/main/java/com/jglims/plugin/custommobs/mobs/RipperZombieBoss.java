@@ -152,6 +152,11 @@ public class RipperZombieBoss extends CustomBossEntity {
             LegendaryWeaponManager wm = JGlimsPlugin.getInstance().getLegendaryWeaponManager();
             drops.add(wm.createWeapon(weapons[new Random().nextInt(weapons.length)]));
         }
+        // Guaranteed Moon Stone drop (werewolf transformation item)
+        var werewolfManager = JGlimsPlugin.getInstance().getWerewolfManager();
+        if (werewolfManager != null) {
+            drops.add(werewolfManager.createWerewolfBlood());
+        }
         return drops;
     }
 }

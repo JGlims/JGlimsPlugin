@@ -282,7 +282,7 @@ public class ConfigManager {
         // --- Blood Moon ---
         bloodMoonEnabled = config.getBoolean("blood-moon.enabled", true);
         bloodMoonCheckInterval = config.getInt("blood-moon.check-interval", 100);
-        bloodMoonChance = config.getDouble("blood-moon.chance", 0.15);
+        bloodMoonChance = config.getDouble("blood-moon.chance", 0.02);
         bloodMoonMobHealthMult = config.getDouble("blood-moon.mob-health-multiplier", 1.5);
         bloodMoonMobDamageMult = config.getDouble("blood-moon.mob-damage-multiplier", 1.3);
         bloodMoonBossEveryNth = config.getInt("blood-moon.boss-every-nth", 10);

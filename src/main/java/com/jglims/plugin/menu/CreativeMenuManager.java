@@ -62,7 +62,7 @@ public class CreativeMenuManager implements Listener {
 
         inv.setItem(28, buildCategoryIcon(Material.GOLDEN_APPLE, "Blessings", "3 blessings permanentes", "cat_blessings", NamedTextColor.GOLD));
         inv.setItem(32, buildCategoryIcon(Material.ECHO_SHARD, "Abyssal Key", "Chave para o Abyss", "cat_abyssal_key", NamedTextColor.DARK_RED));
-        inv.setItem(34, buildCategoryIcon(Material.DIAMOND_HOE, "Sickles & Spears", "Foices e Lancas", "cat_sickles", NamedTextColor.GREEN));
+        inv.setItem(34, buildCategoryIcon(Material.BONE, "Werewolf Items", "Moon Stone + Wolf Form", "cat_werewolf", NamedTextColor.LIGHT_PURPLE));
 
         inv.setItem(38, buildCategoryIcon(Material.BLAZE_ROD, "Itens Magicos", "Wand of Wands e outros itens magicos", "cat_magic", NamedTextColor.LIGHT_PURPLE));
         inv.setItem(39, buildCategoryIcon(Material.ENCHANTED_BOOK, "Enchantment Books", "Todos os 64+ encantamentos custom", "cat_enchantbooks", NamedTextColor.YELLOW));
@@ -437,23 +437,15 @@ public class CreativeMenuManager implements Listener {
                 player.getInventory().addItem(plugin.getAbyssDimensionManager().createAbyssalKey());
                 player.sendMessage(Component.text("Recebeu Abyssal Key!", NamedTextColor.DARK_RED));
             }
-            case "give_sickle" -> {
-                if (category == null) return;
-                Material sickleMat;
-                try { sickleMat = Material.valueOf(category); } catch (Exception e) { return; }
-                ItemStack sk = plugin.getSickleManager().createSickle(sickleMat);
-                if (sk != null) {
-                    player.getInventory().addItem(sk);
-                    player.sendMessage(Component.text("Recebeu sickle!", NamedTextColor.GREEN));
-                }
+            case "give_moon_stone" -> {
+                if (plugin.getWerewolfManager() == null) return;
+                player.getInventory().addItem(plugin.getWerewolfManager().createWerewolfBlood());
+                player.sendMessage(Component.text("Recebeu Moon Stone!", NamedTextColor.LIGHT_PURPLE));
             }
-            case "give_spear" -> {
-                if (category == null) return;
-                Material spearMat;
-                try { spearMat = Material.valueOf(category); } catch (Exception e) { return; }
-                ItemStack sp = new ItemStack(spearMat);
-                player.getInventory().addItem(sp);
-                player.sendMessage(Component.text("Recebeu spear!", NamedTextColor.GREEN));
+            case "give_wolf_form" -> {
+                if (plugin.getWerewolfManager() == null) return;
+                player.getInventory().addItem(plugin.getWerewolfManager().createWolfFormItem());
+                player.sendMessage(Component.text("Recebeu Wolf Form ability!", NamedTextColor.LIGHT_PURPLE));
             }
             case "give_enchantbook" -> {
                 if (category == null) return;
@@ -529,7 +521,7 @@ public class CreativeMenuManager implements Listener {
             case "cat_infinity" -> openInfinityPage(player);
             case "cat_blessings" -> openBlessingsPage(player);
             case "cat_abyssal_key" -> giveAbyssalKey(player);
-            case "cat_sickles" -> openSicklesPage(player);
+            case "cat_werewolf" -> openWerewolfItemsPage(player);
             case "cat_enchantbooks" -> openEnchantBooksPage(player, 0);
             case "cat_bestbuddies" -> openBestBuddiesPage(player);
             case "cat_crafted" -> openCraftedItemsPage(player);
@@ -556,6 +548,21 @@ public class CreativeMenuManager implements Listener {
             LegendaryTier tier = LegendaryTier.fromId(tierStr);
             if (tier != null) openWeaponPage(player, tier, page);
         }
+    }
+
+    public void openWerewolfItemsPage(Player player) {
+        Inventory inv = Bukkit.createInventory(null, SLOTS,
+                Component.text("JGlims ", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                        .append(Component.text("| Itens de Werewolf", NamedTextColor.LIGHT_PURPLE)));
+        var wm = plugin.getWerewolfManager();
+        if (wm != null) {
+            inv.setItem(11, tagForMenu(wm.createWerewolfBlood(), "give_moon_stone", "MOON_STONE"));
+            inv.setItem(13, tagForMenu(wm.createWolfFormItem(), "give_wolf_form", "WOLF_FORM"));
+        }
+        inv.setItem(45, buildNavIcon(Material.ARROW, "Voltar ao Menu", "nav_back", NamedTextColor.RED));
+        ItemStack border = buildBorder();
+        for (int i = 0; i < SLOTS; i++) { if (inv.getItem(i) == null) inv.setItem(i, border); }
+        player.openInventory(inv);
     }
 
     private void giveAbyssalKey(Player player) {

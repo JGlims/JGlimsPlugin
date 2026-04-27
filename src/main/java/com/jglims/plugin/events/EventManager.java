@@ -35,7 +35,7 @@ public class EventManager {
     private final NamespacedKey KEY_EVENT_TYPE;
 
     private final Map<String, Long> activeEvents = new HashMap<>();
-    private static final long EVENT_COOLDOWN_MS = 10 * 60 * 1000L;
+    private static final long EVENT_COOLDOWN_MS = 30 * 60 * 1000L; // 30 minutes global cooldown per world
 
     private NetherStormEvent netherStorm;
     private PiglinUprisingEvent piglinUprising;
@@ -80,8 +80,13 @@ public class EventManager {
             if (world.getPlayers().isEmpty()) continue;
             if (isEventActive(world.getName())) continue;
             if (isOnCooldown(world.getName())) continue;
-            if (random.nextDouble() < 0.06) { startEvent(world, "PILLAGER_WAR_PARTY"); pillagerWarParty.start(world); return; }
-            if (world.getTime() >= 13000 && world.getTime() <= 23000 && random.nextDouble() < 0.04) {
+            // Pillager events now require a player to be within 200 blocks of a village
+            // AND trigger at ~1% per minute (was 6% / 4%)
+            if (random.nextDouble() < 0.01 && anyPlayerNearVillage(world, 200)) {
+                startEvent(world, "PILLAGER_WAR_PARTY"); pillagerWarParty.start(world); return;
+            }
+            if (world.getTime() >= 13000 && world.getTime() <= 23000 && random.nextDouble() < 0.008
+                    && anyPlayerNearVillage(world, 200)) {
                 startEvent(world, "PILLAGER_SIEGE"); pillagerSiege.start(world); return;
             }
         }
@@ -93,8 +98,8 @@ public class EventManager {
             if (world.getPlayers().isEmpty()) continue;
             if (isEventActive(world.getName())) continue;
             if (isOnCooldown(world.getName())) continue;
-            if (random.nextDouble() < 0.10) { startEvent(world, "NETHER_STORM"); netherStorm.start(world); return; }
-            if (random.nextDouble() < 0.08) { startEvent(world, "PIGLIN_UPRISING"); piglinUprising.start(world); return; }
+            if (random.nextDouble() < 0.015) { startEvent(world, "NETHER_STORM"); netherStorm.start(world); return; }
+            if (random.nextDouble() < 0.012) { startEvent(world, "PIGLIN_UPRISING"); piglinUprising.start(world); return; }
         }
     }
 
@@ -104,8 +109,23 @@ public class EventManager {
             if (world.getPlayers().isEmpty()) continue;
             if (isEventActive(world.getName())) continue;
             if (isOnCooldown(world.getName())) continue;
-            if (random.nextDouble() < 0.05) { startEvent(world, "VOID_COLLAPSE"); voidCollapse.start(world); return; }
+            if (random.nextDouble() < 0.008) { startEvent(world, "VOID_COLLAPSE"); voidCollapse.start(world); return; }
         }
+    }
+
+    /**
+     * Returns true if any online player in this world has a Villager within {@code radius} blocks.
+     * We use villager presence as a proxy for "a village exists nearby" since
+     * the Paper structure-type API has churned between 1.21 releases.
+     */
+    private boolean anyPlayerNearVillage(World world, int radius) {
+        double rr = (double) radius;
+        for (Player p : world.getPlayers()) {
+            for (org.bukkit.entity.Entity e : p.getNearbyEntities(rr, 64, rr)) {
+                if (e instanceof org.bukkit.entity.Villager) return true;
+            }
+        }
+        return false;
     }
 
     public boolean tryTriggerEndRift() {

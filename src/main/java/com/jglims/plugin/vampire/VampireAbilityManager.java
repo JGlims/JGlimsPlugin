@@ -579,11 +579,14 @@ public class VampireAbilityManager {
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false));
         player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 1, false, false));
 
-        // Creative-style flight for the duration
+        // Elytra glide for the duration — visually matches the vampire bat-form animation
         final boolean wasAllowFlight = player.getAllowFlight();
         final boolean wasFlying = player.isFlying();
+        final boolean wasGliding = player.isGliding();
         player.setAllowFlight(true);
-        player.setFlying(true);
+        player.setGliding(true);
+        // Give a small upward boost so the glide has air to work with
+        player.setVelocity(player.getVelocity().add(new org.bukkit.util.Vector(0, 0.8, 0)));
 
         // Spawn the shadow bat that visually represents the player's form
         Bat shadowBat = (Bat) world.spawnEntity(player.getLocation().add(0, 0.5, 0), EntityType.BAT);
@@ -608,6 +611,7 @@ public class VampireAbilityManager {
                 if (t >= durationTicks || !player.isOnline() || shadowBat.isDead()) {
                     shadowBat.remove();
                     if (player.isOnline()) {
+                        player.setGliding(wasGliding);
                         player.setFlying(wasFlying);
                         player.setAllowFlight(wasAllowFlight);
                         player.getWorld().playSound(player.getLocation(),
@@ -624,6 +628,8 @@ public class VampireAbilityManager {
                             player.getLocation().add(0, 0.8, 0), 2, 0.3, 0.3, 0.3, 0,
                             new Particle.DustOptions(Color.fromRGB(60, 0, 0), 1.0f));
                 }
+                // Re-apply gliding each tick so Paper doesn't drop the state on ground contact
+                if (!player.isGliding()) player.setGliding(true);
             }
         }.runTaskTimer(plugin, 0L, 2L);
 

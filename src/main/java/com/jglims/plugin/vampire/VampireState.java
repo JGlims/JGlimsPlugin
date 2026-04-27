@@ -34,13 +34,13 @@ public class VampireState {
      */
     public void recalculateLevel() {
         if (!isVampire) return;
-        if (superBloodConsumed >= 5) {
+        if (superBloodConsumed >= 3) {
             level = VampireLevel.DRACULA;
-        } else if (evolversConsumed >= 20) {
-            level = VampireLevel.VAMPIRE_LORD;
         } else if (evolversConsumed >= 10) {
+            level = VampireLevel.VAMPIRE_LORD;
+        } else if (evolversConsumed >= 5) {
             level = VampireLevel.ELDER_VAMPIRE;
-        } else if (bloodConsumed >= 100) {
+        } else if (bloodConsumed >= 50) {
             level = VampireLevel.VAMPIRE;
         } else {
             level = VampireLevel.FLEDGLING;
@@ -104,8 +104,8 @@ public class VampireState {
      */
     public double getEffectiveClawDamage() {
         double base = level.getClawDamage();
-        double bloodBonus = Math.min(bloodConsumed, 100) * 0.05;
-        double evolverBonus = Math.min(evolversConsumed, 20) * 0.3;
+        double bloodBonus = Math.min(bloodConsumed, 50) * 0.10;
+        double evolverBonus = Math.min(evolversConsumed, 10) * 0.6;
         return base + bloodBonus + evolverBonus;
     }
 
@@ -114,8 +114,8 @@ public class VampireState {
      */
     public double getEffectiveTeethDamage() {
         double base = level.getTeethDamage();
-        double bloodBonus = Math.min(bloodConsumed, 100) * 0.06;
-        double evolverBonus = Math.min(evolversConsumed, 20) * 0.4;
+        double bloodBonus = Math.min(bloodConsumed, 50) * 0.12;
+        double evolverBonus = Math.min(evolversConsumed, 10) * 0.8;
         return base + bloodBonus + evolverBonus;
     }
 
@@ -124,7 +124,7 @@ public class VampireState {
      */
     public double getEffectiveBloodShootDamage() {
         double base = level.getBloodShootDamage();
-        double evolverBonus = Math.min(evolversConsumed, 20) * 0.5;
+        double evolverBonus = Math.min(evolversConsumed, 10) * 1.0;
         return base + evolverBonus;
     }
 

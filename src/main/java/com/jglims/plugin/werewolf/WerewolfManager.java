@@ -65,18 +65,22 @@ public class WerewolfManager {
         ItemStack item = new ItemStack(Material.REDSTONE, 1);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("Werewolf Blood", NamedTextColor.DARK_RED)
+            meta.displayName(Component.text("Moon Stone", NamedTextColor.LIGHT_PURPLE)
                     .decorate(TextDecoration.BOLD)
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(
-                    Component.text("Thick, musky blood that reeks of the wild.", NamedTextColor.GRAY)
+                    Component.text("A cold shard of crystallised moonlight,", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
-                    Component.text("Right-click to consume. Becoming a werewolf is", NamedTextColor.GRAY)
+                    Component.text("pulsing with the lunar curse. Right-click", NamedTextColor.GRAY)
+                            .decoration(TextDecoration.ITALIC, false),
+                    Component.text("to consume. The transformation is", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
                     Component.text("permanent — choose carefully.", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
                     Component.empty(),
-                    Component.text("✦ Infects on consume", NamedTextColor.RED)
+                    Component.text("✦ Infects on consume", NamedTextColor.LIGHT_PURPLE)
+                            .decoration(TextDecoration.ITALIC, false),
+                    Component.text("✦ Dropped by the Blood Moon King", NamedTextColor.DARK_GRAY)
                             .decoration(TextDecoration.ITALIC, false)
             ));
             meta.setCustomModelData(WEREWOLF_BLOOD_CMD);
@@ -158,6 +162,21 @@ public class WerewolfManager {
             player.sendMessage(Component.text("Your vampire blood rejects the werewolf curse.",
                     NamedTextColor.DARK_RED));
             return;
+        }
+        // Require fully empty inventory + offhand + armor.
+        for (ItemStack it : player.getInventory().getContents()) {
+            if (it != null && it.getType() != Material.AIR) {
+                player.sendMessage(Component.text("You must empty your entire inventory before transforming.",
+                        NamedTextColor.RED));
+                return;
+            }
+        }
+        for (ItemStack it : player.getInventory().getArmorContents()) {
+            if (it != null && it.getType() != Material.AIR) {
+                player.sendMessage(Component.text("You must remove all armor before transforming.",
+                        NamedTextColor.RED));
+                return;
+            }
         }
         state.setWerewolf(true);
         // Infection effects
